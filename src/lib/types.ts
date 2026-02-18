@@ -34,9 +34,22 @@ export interface Appointment {
   status: string;
   purpose?: string;
   address?: string;
+  formattedAddress?: string;
+  latitude?: number;
+  longitude?: number;
   location?: { lat: number; lng: number };
   distanceKm?: number;
   ocularFee?: number;
+  ocularFeeBreakdown?: {
+    label: string;
+    isWithinNCR: boolean;
+    baseFee: number;
+    baseCoveredKm: number;
+    perKmRate: number;
+    additionalDistanceKm: number;
+    additionalFee: number;
+    total: number;
+  };
   ocularFeeMethod?: string;
   rescheduleCount: number;
   maxReschedules: number;

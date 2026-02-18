@@ -58,7 +58,8 @@ export function useRequestAppointment() {
       date: string;
       slotCode: string;
       purpose?: string;
-      address?: string;
+      formattedAddress?: string;
+      customerLocation?: { lat: number; lng: number };
       lockId?: string;
     }) => {
       const { data } = await api.post<ApiResponse<Appointment>>('/appointments', body);
