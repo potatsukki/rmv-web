@@ -50,11 +50,15 @@ export function useGetDownloadUrl() {
  * Upload a file to R2 using a pre-signed URL
  */
 export async function uploadFileToR2(uploadUrl: string, file: File): Promise<void> {
-  await fetch(uploadUrl, {
+  const response = await fetch(uploadUrl, {
     method: 'PUT',
     body: file,
     headers: {
       'Content-Type': file.type,
     },
   });
+
+  if (!response.ok) {
+    throw new Error(`Upload failed (${response.status})`);
+  }
 }

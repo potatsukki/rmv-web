@@ -132,16 +132,6 @@ export default function App() {
 
   useEffect(() => {
     const init = async () => {
-      const publicPaths = [
-        '/',
-        '/login',
-        '/register',
-        '/verify-otp',
-        '/forgot-password',
-        '/reset-password',
-      ];
-      const isPublicPath = publicPaths.includes(window.location.pathname);
-
       try {
         const token = await fetchCsrfToken();
         setCsrfToken(token);
@@ -149,9 +139,7 @@ export default function App() {
         // CSRF fetch may fail if server is down
       }
 
-      if (!isPublicPath) {
-        await fetchMe();
-      }
+      await fetchMe();
     };
     init();
   }, [fetchMe, setCsrfToken]);
