@@ -132,11 +132,26 @@ export default function App() {
 
   useEffect(() => {
     const init = async () => {
+      const publicPaths = [
+        '/',
+        '/login',
+        '/register',
+        '/verify-otp',
+        '/forgot-password',
+        '/reset-password',
+      ];
+      const isPublicPath = publicPaths.includes(window.location.pathname);
+
       try {
         const token = await fetchCsrfToken();
         setCsrfToken(token);
       } catch {
         // CSRF fetch may fail if server is down
+      }
+
+      if (isPublicPath) {
+        useAuthStore.setState({ isLoading: false });
+        return;
       }
 
       await fetchMe();
