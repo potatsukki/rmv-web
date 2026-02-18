@@ -1,6 +1,7 @@
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/auth.store';
+import { disconnectSocket } from '@/lib/socket';
 
 const API_BASE = '/api/v1';
 
@@ -34,9 +35,16 @@ api.interceptors.response.use(
     const status = error.response?.status;
     const requestUrl = originalRequest?.url ?? '';
     const isRefreshRequest = requestUrl.includes('/auth/refresh-token');
+    const isLogoutRequest = requestUrl.includes('/auth/logout');
 
     // If 401 and not retrying already
-    if (status === 401 && originalRequest && !originalRequest._retry && !isRefreshRequest) {
+    if (
+      status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !isRefreshRequest &&
+      !isLogoutRequest
+    ) {
       originalRequest._retry = true;
 
       try {
@@ -44,8 +52,14 @@ api.interceptors.response.use(
         await api.post('/auth/refresh-token');
         return api(originalRequest);
       } catch {
-        // Refresh failed - logout
-        useAuthStore.getState().logout();
+        // Refresh failed - clear local auth without triggering another logout request
+        disconnectSocket();
+        useAuthStore.setState({
+          user: null,
+          isAuthenticated: false,
+          isLoading: false,
+          csrfToken: null,
+        });
         window.location.href = '/login';
         return Promise.reject(error);
       }

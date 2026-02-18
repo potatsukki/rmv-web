@@ -14,7 +14,7 @@ interface AuthStore {
   fetchMe: () => Promise<void>;
 }
 
-export const useAuthStore = create<AuthStore>((set) => ({
+export const useAuthStore = create<AuthStore>((set, get) => ({
   user: null,
   isAuthenticated: false,
   isLoading: true,
@@ -26,9 +26,12 @@ export const useAuthStore = create<AuthStore>((set) => ({
   setCsrfToken: (token: string) => set({ csrfToken: token }),
 
   logout: () => {
+    const wasAuthenticated = get().isAuthenticated;
     disconnectSocket();
-    api.post('/auth/logout').catch(() => {});
     set({ user: null, isAuthenticated: false, isLoading: false, csrfToken: null });
+    if (wasAuthenticated) {
+      api.post('/auth/logout').catch(() => {});
+    }
   },
 
   fetchMe: async () => {
