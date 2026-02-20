@@ -7,7 +7,6 @@ import {
   Calendar,
   FolderKanban,
   CreditCard,
-  Wrench,
   BarChart3,
   Settings,
   Users,
@@ -21,6 +20,7 @@ import {
   ClipboardList,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { BrandLogo } from '@/components/shared/BrandLogo';
 
 interface NavItem {
   label: string;
@@ -137,9 +137,7 @@ export function Sidebar() {
       <div className="relative flex flex-col h-full">
         {/* Logo Header */}
         <div className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06]">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-600/20">
-            <Wrench className="h-4.5 w-4.5" />
-          </div>
+          <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/30 shadow-lg shadow-orange-600/20" />
           <div className="flex flex-col">
             <span className="text-[15px] font-bold tracking-tight text-white">
               RMV Stainless

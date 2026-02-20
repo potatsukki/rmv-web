@@ -3,12 +3,13 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useLocation, useNavigate, Link } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Check, X, Wrench, ShieldCheck } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, X, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api } from '@/lib/api';
 
 const schema = z
@@ -88,9 +89,7 @@ export function ResetPasswordPage() {
       <div className="w-full max-w-md">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/20">
-            <Wrench className="h-5 w-5 text-white" />
-          </div>
+          <BrandLogo className="h-10 w-10 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
         </div>
 
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-xl shadow-gray-100/50">

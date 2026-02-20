@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api, fetchCsrfToken } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -105,9 +106,7 @@ export function LoginPage() {
 
           {/* Brand + Welcome */}
           <div className="flex items-center gap-2.5 mb-8">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-lg shadow-orange-500/20">
-              <Wrench className="h-4 w-4 text-white" />
-            </div>
+            <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
             <span className="font-bold text-gray-900 tracking-tight">RMV Stainless</span>
           </div>
 

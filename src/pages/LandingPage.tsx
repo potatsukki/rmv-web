@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
+import { BrandLogo } from '@/components/shared/BrandLogo';
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -50,9 +51,7 @@ export function LandingPage() {
       <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 text-white shadow-lg shadow-orange-500/20">
-              <Wrench className="h-4.5 w-4.5" />
-            </div>
+            <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
             <div className="flex flex-col leading-none">
               <span className="text-[15px] font-bold tracking-tight text-gray-900">
                 RMV
@@ -477,9 +476,7 @@ export function LandingPage() {
             {/* Brand */}
             <div className="space-y-4">
               <div className="flex items-center gap-2.5">
-                <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 shadow-sm">
-                  <Wrench className="h-4 w-4 text-white" />
-                </div>
+                <BrandLogo className="h-8 w-8 ring-2 ring-orange-500/30 shadow-sm" />
                 <span className="text-base font-bold text-white">RMV Stainless</span>
               </div>
               <p className="text-sm leading-6 text-gray-500">
