@@ -568,7 +568,7 @@ export function AppLayout() {
                         ) : (
                           <ul className="max-h-[420px] overflow-y-auto py-1">
                             {displayResults.map((result, index) => {
-                              const prevType = index > 0 ? displayResults[index - 1].type : null;
+                              const prevType = displayResults[index - 1]?.type ?? null;
                               const showHeader = result.type !== prevType;
                               const meta = CATEGORY_META[result.type];
                               const Icon = meta.icon;
