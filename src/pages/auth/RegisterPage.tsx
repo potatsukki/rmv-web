@@ -230,7 +230,7 @@ export function RegisterPage() {
                 </Label>
                 <Input
                   id="firstName"
-                  placeholder="John"
+                  placeholder="Enter your first name"
                   className={inputClasses}
                   disabled={isLocked}
                   {...register('firstName')}
@@ -245,7 +245,7 @@ export function RegisterPage() {
                 </Label>
                 <Input
                   id="lastName"
-                  placeholder="Doe"
+                  placeholder="Enter your last name"
                   className={inputClasses}
                   disabled={isLocked}
                   {...register('lastName')}
@@ -263,7 +263,7 @@ export function RegisterPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="john.doe@example.com"
+                placeholder="Enter your email"
                 className={inputClasses}
                 disabled={isLocked}
                 {...register('email')}
@@ -280,7 +280,7 @@ export function RegisterPage() {
               <Input
                 id="phone"
                 type="tel"
-                placeholder="09XXXXXXXXX"
+                placeholder="Enter your mobile number"
                 className={inputClasses}
                 disabled={isLocked}
                 {...register('phone')}
@@ -298,6 +298,7 @@ export function RegisterPage() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
+                  placeholder="Enter your password"
                   className={`${inputClasses} pr-10`}
                   disabled={isLocked}
                   {...register('password')}
@@ -374,6 +375,7 @@ export function RegisterPage() {
                 <Input
                   id="confirmPassword"
                   type={showConfirmPassword ? 'text' : 'password'}
+                  placeholder="Confirm your password"
                   className={`${inputClasses} pr-10`}
                   disabled={isLocked}
                   {...register('confirmPassword')}

@@ -5,6 +5,7 @@ import type { ApiResponse, User } from '@/lib/types';
 const KEYS = {
   all: ['users'] as const,
   list: (params?: Record<string, unknown>) => [...KEYS.all, 'list', params] as const,
+  customers: (search: string) => [...KEYS.all, 'customers', search] as const,
 };
 
 export function useUsers(params?: Record<string, string>) {
@@ -82,5 +83,27 @@ export function useEnableUser() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
+  });
+}
+
+export interface CustomerSearchResult {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone?: string;
+}
+
+export function useCustomerSearch(search: string) {
+  return useQuery({
+    queryKey: KEYS.customers(search),
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<CustomerSearchResult[]>>('/users/customers', {
+        params: { search },
+      });
+      return data.data;
+    },
+    enabled: search.length >= 2,
+    staleTime: 30_000,
   });
 }

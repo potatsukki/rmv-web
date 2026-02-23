@@ -1,13 +1,15 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Shield, Phone, Mail, FileKey, Check, CreditCard, LogOut } from 'lucide-react';
+import { Shield, Phone, Mail, Check, Bell, LogOut, KeyRound, Copy } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
+import { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
 import {
   Card,
   CardContent,
@@ -17,10 +19,31 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { Switch } from '@/components/ui/switch';
+import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
+import { Role } from '@/lib/constants';
+
+// ── Which notification toggles each role should see ──
+const ALL_NOTIF_PREFS = [
+  { key: 'appointment' as const, label: 'Appointments', description: 'Booking confirmations, reschedules, and cancellations', roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN] },
+  { key: 'payment' as const, label: 'Payments', description: 'Payment verifications, receipts, and reminders', roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
+  { key: 'blueprint' as const, label: 'Blueprints', description: 'Blueprint uploads, approvals, and revision requests', roles: [Role.CUSTOMER, Role.ENGINEER, Role.ADMIN] },
+  { key: 'fabrication' as const, label: 'Fabrication', description: 'Workshop progress updates and status changes', roles: [Role.CUSTOMER, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN] },
+];
+
+// ── Role-aware phone description ──
+const PHONE_DESCRIPTIONS: Partial<Record<Role, string>> = {
+  [Role.APPOINTMENT_AGENT]: 'Used for contact and schedule-related notifications.',
+  [Role.SALES_STAFF]: 'Used for appointment and payment notifications.',
+  [Role.ENGINEER]: 'Used for blueprint and fabrication notifications.',
+  [Role.CASHIER]: 'Used for payment processing notifications.',
+  [Role.FABRICATION_STAFF]: 'Used for workshop update notifications.',
+  [Role.ADMIN]: 'Used for system-wide notifications.',
+};
+const DEFAULT_PHONE_DESC = 'Used for SMS notifications about project updates.';
 
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -65,6 +88,8 @@ export function ProfilePage() {
     }
   };
 
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
+
   const handleLogout = () => {
     logout();
     navigate('/login');
@@ -72,6 +97,22 @@ export function ProfilePage() {
   };
 
   const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`;
+
+  // Filter notification preferences to only show toggles relevant to the user's roles
+  const visiblePrefs = useMemo(
+    () => ALL_NOTIF_PREFS.filter((p) => user?.roles.some((r) => p.roles.includes(r))),
+    [user?.roles],
+  );
+
+  // Pick the first non-ADMIN role for phone description
+  const primaryRole = user?.roles.find((r) => r !== Role.ADMIN) ?? user?.roles[0];
+  const phoneDescription = primaryRole ? (PHONE_DESCRIPTIONS[primaryRole] ?? DEFAULT_PHONE_DESC) : DEFAULT_PHONE_DESC;
+
+  const handleCopyId = () => {
+    if (!user?._id) return;
+    navigator.clipboard.writeText(user._id);
+    toast.success('User ID copied to clipboard');
+  };
 
   const inputClasses =
     'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
@@ -94,7 +135,6 @@ export function ProfilePage() {
             <div className="px-6 relative">
               <div className="absolute -top-12 left-6">
                 <Avatar className="h-24 w-24 border-4 border-white shadow-lg bg-white">
-                  <AvatarImage src="" />
                   <AvatarFallback className="bg-orange-50 text-orange-600 text-2xl font-bold">
                     {userInitials}
                   </AvatarFallback>
@@ -135,26 +175,37 @@ export function ProfilePage() {
                     <span>{user.phone}</span>
                   </div>
                 )}
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <Shield className="h-4 w-4 text-gray-400 shrink-0" />
+                <button
+                  onClick={handleCopyId}
+                  className="flex items-center gap-3 text-sm text-gray-600 hover:text-orange-600 transition-colors group w-full text-left"
+                  title="Click to copy full ID"
+                >
+                  <Shield className="h-4 w-4 text-gray-400 shrink-0 group-hover:text-orange-500" />
                   <span className="truncate">
                     ID:{' '}
-                    <span className="font-mono text-xs text-gray-400">
+                    <span className="font-mono text-xs text-gray-400 group-hover:text-orange-500">
                       #{user?._id?.substring(0, 8)}
                     </span>
                   </span>
-                </div>
+                  <Copy className="h-3 w-3 text-gray-300 opacity-0 group-hover:opacity-100 transition-opacity ml-auto shrink-0" />
+                </button>
               </div>
             </CardContent>
             <CardFooter className="bg-gray-50 border-t border-gray-100 p-4">
               <Button
                 variant="destructive"
                 className="w-full justify-start pl-4 bg-white text-red-600 border border-red-200 hover:bg-red-50 hover:border-red-300 shadow-sm rounded-xl"
-                onClick={handleLogout}
+                onClick={() => setShowLogoutModal(true)}
               >
                 <LogOut className="mr-2 h-4 w-4" />
                 Sign Out
               </Button>
+
+              <LogoutConfirmModal
+                open={showLogoutModal}
+                onOpenChange={setShowLogoutModal}
+                onConfirm={handleLogout}
+              />
             </CardFooter>
           </Card>
         </div>
@@ -221,7 +272,7 @@ export function ProfilePage() {
                     />
                   </div>
                   <p className="text-xs text-gray-400">
-                    Used for SMS notifications about project updates.
+                    {phoneDescription}
                   </p>
                   {errors.phone && (
                     <p className="text-xs text-red-500">{errors.phone.message}</p>
@@ -251,55 +302,77 @@ export function ProfilePage() {
             </CardContent>
           </Card>
 
-          <Card className="border-gray-100 shadow-sm opacity-80 cursor-not-allowed select-none relative overflow-hidden group rounded-2xl">
-            <div className="absolute inset-0 bg-gray-50/60 z-10 flex items-center justify-center backdrop-blur-[1px]">
-              <Badge
+          {/* Change Password */}
+          <Card className="border-gray-100 shadow-sm rounded-2xl">
+            <CardContent className="flex items-center justify-between p-5">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-gray-100 rounded-xl">
+                  <KeyRound className="h-5 w-5 text-gray-600" />
+                </div>
+                <div>
+                  <p className="font-semibold text-gray-900 text-sm">Change Password</p>
+                  <p className="text-xs text-gray-500 mt-0.5">Update your account password for security.</p>
+                </div>
+              </div>
+              <Button
                 variant="outline"
-                className="bg-white px-3 py-1 shadow-sm border-gray-200 text-gray-500 rounded-lg"
+                size="sm"
+                className="border-gray-200 text-gray-700 hover:text-orange-600 hover:border-orange-200 rounded-lg"
+                onClick={() => navigate('/change-password')}
               >
-                Feature Coming Soon
-              </Badge>
-            </div>
-            <CardHeader>
-              <CardTitle className="text-lg font-semibold text-gray-900">
-                Security & Billing
-              </CardTitle>
-              <CardDescription className="text-gray-500">
-                Manage password and payment methods.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 border border-gray-100 rounded-xl bg-white">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 rounded-xl">
-                    <FileKey className="h-5 w-5 text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Password</p>
-                    <p className="text-xs text-gray-500">Last changed 3 months ago</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" disabled>
-                  Update
-                </Button>
-              </div>
-
-              <div className="flex items-center justify-between p-4 border border-gray-100 rounded-xl bg-white">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 rounded-xl">
-                    <CreditCard className="h-5 w-5 text-gray-500" />
-                  </div>
-                  <div>
-                    <p className="font-medium text-gray-900">Payment Methods</p>
-                    <p className="text-xs text-gray-500">No cards saved</p>
-                  </div>
-                </div>
-                <Button variant="ghost" size="sm" disabled>
-                  Manage
-                </Button>
-              </div>
+                Update
+              </Button>
             </CardContent>
           </Card>
+
+          {/* Notification Preferences — filtered by role */}
+          {visiblePrefs.length > 0 && (
+            <Card className="border-gray-100 shadow-sm rounded-2xl">
+              <CardHeader>
+                <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
+                  <Bell className="h-5 w-5 text-orange-500" />
+                  Notification Preferences
+                </CardTitle>
+                <CardDescription className="text-gray-500">
+                  Choose which notifications you'd like to receive.
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-1">
+                {visiblePrefs.map((pref) => {
+                  const prefs = user?.notificationPreferences;
+                  const checked = prefs ? prefs[pref.key] : true;
+
+                  return (
+                    <div
+                      key={pref.key}
+                      className="flex items-center justify-between p-4 border border-gray-100 rounded-xl bg-white"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-900 text-sm">{pref.label}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{pref.description}</p>
+                      </div>
+                      <Switch
+                        checked={checked}
+                        onCheckedChange={async (val) => {
+                          try {
+                            const updated = {
+                              ...(prefs ?? { appointment: true, payment: true, blueprint: true, fabrication: true }),
+                              [pref.key]: val,
+                            };
+                            await api.patch('/users/profile', { notificationPreferences: updated });
+                            await fetchMe();
+                            toast.success(`${pref.label} notifications ${val ? 'enabled' : 'disabled'}`);
+                          } catch {
+                            toast.error('Failed to update preference');
+                          }
+                        }}
+                      />
+                    </div>
+                  );
+                })}
+              </CardContent>
+            </Card>
+          )}
         </div>
       </div>
     </div>

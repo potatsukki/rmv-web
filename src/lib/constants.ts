@@ -65,6 +65,7 @@ export enum PaymentMethod {
   BANK_TRANSFER = 'bank_transfer',
   GCASH = 'gcash',
   PAYMONGO = 'paymongo',
+  QRPH = 'qrph',
 }
 
 // ── Fabrication ──

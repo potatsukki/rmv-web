@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Loader2, LocateFixed, Search } from 'lucide-react';
+import { Loader2, LocateFixed, Search, X } from 'lucide-react';
 import L from 'leaflet';
 import { MapContainer, Marker, TileLayer, useMap, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
@@ -15,17 +15,15 @@ interface LocationPickerProps {
 
 const DEFAULT_PIN: MapPoint = { lat: 14.5995, lng: 120.9842 };
 
-let leafletIconConfigured = false;
-
-function ensureLeafletIcon() {
-  if (leafletIconConfigured) return;
-  L.Icon.Default.mergeOptions({
-    iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-    iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-    shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  });
-  leafletIconConfigured = true;
-}
+const markerIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+});
 
 function MapClickHandler({ onPick }: { onPick: (location: MapPoint) => void }) {
   useMapEvents({
@@ -45,8 +43,6 @@ function RecenterMap({ location }: { location: MapPoint }) {
 }
 
 export function LocationPicker({ value, onChange }: LocationPickerProps) {
-  ensureLeafletIcon();
-
   const markerPosition = useMemo(() => value ?? DEFAULT_PIN, [value]);
   const [searchInput, setSearchInput] = useState('');
   const [suggestions, setSuggestions] = useState<PlaceSuggestion[]>([]);
@@ -123,9 +119,22 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
                 setSearchInput(event.target.value);
               }}
               placeholder="Search area, street, or landmark"
-              className="h-11 bg-gray-50/50 border-gray-200 pl-9"
+              className="h-11 bg-gray-50/50 border-gray-200 pl-9 pr-9"
               aria-label="Search location"
             />
+            {searchInput && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchInput('');
+                  setSuggestions([]);
+                }}
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Clear search"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            )}
           </div>
           <Button
             type="button"
@@ -174,16 +183,17 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
           center={[markerPosition.lat, markerPosition.lng]}
           zoom={13}
           scrollWheelZoom
+          attributionControl={false}
           className="h-[320px] w-full"
         >
           <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
           <MapClickHandler onPick={(location) => onChange(location)} />
           <RecenterMap location={markerPosition} />
           <Marker
             position={[markerPosition.lat, markerPosition.lng]}
+            icon={markerIcon}
             draggable
             eventHandlers={{
               dragend: (event) => {

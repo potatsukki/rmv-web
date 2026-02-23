@@ -1,5 +1,6 @@
-import { Bell, Check, CheckCheck, Clock, CheckCircle2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { Bell, Check, CheckCheck, Clock, CheckCircle2, ExternalLink } from 'lucide-react';
+import { useEffect, useState, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -14,20 +15,46 @@ import { formatDistanceToNow } from 'date-fns';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { Notification } from '@/lib/types';
 
+const CATEGORY_TABS = [
+  { label: 'All', value: 'all' },
+  { label: 'Appointments', value: 'appointment' },
+  { label: 'Projects', value: 'project' },
+  { label: 'Payments', value: 'payment' },
+  { label: 'Blueprints', value: 'blueprint' },
+  { label: 'Fabrication', value: 'fabrication' },
+  { label: 'System', value: 'system' },
+] as const;
+
 export function NotificationsPage() {
+  const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useNotifications();
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
   const setNotifications = useNotificationStore((state) => state.setNotifications);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
 
   const notifications: Notification[] =
     (data as unknown as { items?: Notification[] })?.items ??
     (Array.isArray(data) ? data : []);
+
+  const filteredNotifications = useMemo(
+    () =>
+      activeFilter === 'all'
+        ? notifications
+        : notifications.filter((n) => n.category === activeFilter),
+    [notifications, activeFilter],
+  );
+
   const unreadCount = notifications.filter((n) => !n.isRead).length;
 
   useEffect(() => {
     setNotifications(notifications);
   }, [notifications, setNotifications]);
+
+  const handleCardClick = (n: Notification) => {
+    if (!n.isRead) markAsRead.mutate(String(n._id));
+    if (n.link) navigate(n.link);
+  };
 
   if (isError) return <PageError onRetry={refetch} />;
 
@@ -54,6 +81,28 @@ export function NotificationsPage() {
         )}
       </div>
 
+      {/* Category filter tabs */}
+      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
+        {CATEGORY_TABS.map((tab) => (
+          <button
+            key={tab.value}
+            onClick={() => setActiveFilter(tab.value)}
+            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+              activeFilter === tab.value
+                ? 'bg-gray-900 text-white'
+                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+            }`}
+          >
+            {tab.label}
+            {tab.value !== 'all' && (
+              <span className="ml-1.5 text-xs opacity-70">
+                {notifications.filter((n) => n.category === tab.value).length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
+
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
@@ -70,22 +119,29 @@ export function NotificationsPage() {
             </Card>
           ))}
         </div>
-      ) : notifications.length === 0 ? (
+      ) : filteredNotifications.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/50">
           <div className="bg-gray-100 p-4 rounded-2xl mb-4">
             <Bell className="h-8 w-8 text-gray-300" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">All caught up!</h3>
+          <h3 className="text-lg font-semibold text-gray-900">
+            {activeFilter === 'all' ? 'All caught up!' : 'No notifications'}
+          </h3>
           <p className="text-gray-500 max-w-sm mt-1 text-sm">
-            You have no new notifications at the moment.
+            {activeFilter === 'all'
+              ? 'You have no new notifications at the moment.'
+              : `No ${activeFilter} notifications yet.`}
           </p>
         </div>
       ) : (
         <div className="space-y-2.5">
-          {notifications.map((n) => (
+          {filteredNotifications.map((n) => (
             <Card
               key={String(n._id)}
+              onClick={() => handleCardClick(n)}
               className={`transition-all duration-200 group hover:shadow-md rounded-xl ${
+                n.link ? 'cursor-pointer' : ''
+              } ${
                 !n.isRead
                   ? 'border-orange-200 bg-orange-50/30 shadow-sm'
                   : 'border-gray-100 bg-white opacity-80 hover:opacity-100'
@@ -127,6 +183,12 @@ export function NotificationsPage() {
                   <p className="mt-1 text-sm text-gray-500 leading-relaxed">
                     {String(n.message || '')}
                   </p>
+                  {n.link && (
+                    <span className="inline-flex items-center gap-1 mt-2 text-xs text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <ExternalLink className="h-3 w-3" />
+                      View details
+                    </span>
+                  )}
                 </div>
 
                 {!n.isRead && (
@@ -134,7 +196,10 @@ export function NotificationsPage() {
                     variant="ghost"
                     size="icon"
                     className="h-8 w-8 text-gray-400 hover:text-orange-600 hover:bg-orange-100 rounded-lg"
-                    onClick={() => markAsRead.mutate(String(n._id))}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      markAsRead.mutate(String(n._id));
+                    }}
                     disabled={markAsRead.isPending}
                     title="Mark as read"
                   >

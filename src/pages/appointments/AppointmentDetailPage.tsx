@@ -1,10 +1,17 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
@@ -43,6 +50,7 @@ export function AppointmentDetailPage() {
   const canUpdateAppointmentStatus = !!user?.roles.some((r) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF].includes(r),
   );
+  const canCompleteAppointment = !!user?.roles.includes(Role.SALES_STAFF);
   const isStaff = user?.roles.some((r) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(r),
   );
@@ -131,7 +139,7 @@ export function AppointmentDetailPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/appointments')}
           className="rounded-xl text-gray-500 hover:text-gray-900"
           aria-label="Go back"
         >
@@ -142,7 +150,13 @@ export function AppointmentDetailPage() {
             Appointment Details
           </h1>
         </div>
-        <StatusBadge status={appt.status} />
+        {isCustomer && !appt.ocularFeePaid && appt.ocularFeeStatus === 'pending' ? (
+          <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
+            Awaiting Payment
+          </span>
+        ) : (
+          <StatusBadge status={appt.status} />
+        )}
       </div>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -200,12 +214,45 @@ export function AppointmentDetailPage() {
           <CardContent className="space-y-4">
             {appt.ocularFee != null && appt.ocularFee > 0 && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
-                <p className="text-lg font-semibold text-orange-600">
-                  {formatCurrency(appt.ocularFee)}
-                </p>
+                {appt.ocularFeePaid ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
+                        <CheckCircle2 className="h-3 w-3" /> Paid
+                      </span>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-900 mt-1">
+                      {formatCurrency(appt.ocularFee)}
+                    </p>
+                  </>
+                ) : appt.ocularFeeStatus === 'pending' && isCustomer ? (
+                  <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-3">
+                    <div className="flex items-center justify-between">
+                      <p className="text-sm font-semibold text-orange-800">Ocular Fee Required</p>
+                      <p className="text-lg font-bold text-orange-600">{formatCurrency(appt.ocularFee)}</p>
+                    </div>
+                    <p className="text-xs text-orange-600">Pay before your appointment can be confirmed.</p>
+                    <Button
+                      asChild
+                      className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-xl h-10"
+                    >
+                      <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Pay {formatCurrency(appt.ocularFee)}
+                      </Link>
+                    </Button>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
+                    <p className="text-lg font-semibold text-orange-600 mt-1">
+                      {formatCurrency(appt.ocularFee)}
+                    </p>
+                  </>
+                )}
                 {appt.ocularFeeMethod && (
-                  <p className="text-xs text-gray-500 capitalize">
+                  <p className="text-xs text-gray-500 capitalize mt-1">
                     via {appt.ocularFeeMethod.replace('_', ' ')}
                   </p>
                 )}
@@ -234,7 +281,6 @@ export function AppointmentDetailPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
 
       {/* Agent: Assign Sales Staff & Confirm */}
       {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && (
@@ -242,43 +288,48 @@ export function AppointmentDetailPage() {
           <CardHeader>
             <CardTitle className="text-lg text-gray-900">Assign Sales Staff & Confirm</CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="salesStaff" className="text-[13px] font-medium text-gray-700">
-                Select Sales Staff
-              </label>
-              <select
-                id="salesStaff"
-                value={selectedSalesStaff}
-                onChange={(e) => setSelectedSalesStaff(e.target.value)}
-                className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-              >
-                <option value="">-- Choose a sales staff --</option>
-                {salesStaffList.map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.firstName} {s.lastName}
-                  </option>
-                ))}
-              </select>
-              {salesStaffList.length === 0 && (
-                <p className="text-xs text-amber-600">No sales staff found. Please create one in the admin panel first.</p>
-              )}
-            </div>
+          <CardContent className="space-y-5">
+            {salesStaffList.length === 0 ? (
+              <div className="flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
+                <Users className="h-4 w-4 shrink-0" />
+                <span>No sales staff found. Please create one in the admin panel first.</span>
+              </div>
+            ) : (
+              <div>
+                <label className="block text-[13px] font-medium text-gray-700 mb-2.5">Sales Staff</label>
+                <Select
+                  value={selectedSalesStaff}
+                  onValueChange={(val) => setSelectedSalesStaff(val)}
+                >
+                  <SelectTrigger className="h-12 rounded-xl border-gray-200 bg-white px-4 text-base text-gray-900 focus:ring-1 focus:ring-gray-100 focus:ring-offset-0 focus:border-gray-300 w-full">
+                    <SelectValue placeholder="Choose a sales staff member..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-gray-200 bg-white shadow-lg max-w-[calc(100vw-3rem)]">
+                    {salesStaffList.map((s) => (
+                      <SelectItem key={s._id} value={s._id} className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-gray-100 focus:text-gray-900 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900">
+                        {s.firstName} {s.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            )}
             <Button
               onClick={handleConfirm}
               disabled={confirmMutation.isPending || !selectedSalesStaff}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm"
             >
               Confirm & Assign
             </Button>
           </CardContent>
         </Card>
       )}
+      </div>
 
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
 
-        {canUpdateAppointmentStatus && appt.status === AppointmentStatus.CONFIRMED && (
+        {canCompleteAppointment && appt.status === AppointmentStatus.CONFIRMED && (
           <>
             <Button
               onClick={handleComplete}

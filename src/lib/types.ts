@@ -11,6 +11,12 @@ export interface User {
   isEmailVerified: boolean;
   isActive: boolean;
   mustChangePassword: boolean;
+  notificationPreferences?: {
+    appointment: boolean;
+    payment: boolean;
+    blueprint: boolean;
+    fabrication: boolean;
+  };
   createdAt: string;
 }
 
@@ -51,6 +57,13 @@ export interface Appointment {
     total: number;
   };
   ocularFeeMethod?: string;
+  ocularFeePaid?: boolean;
+  ocularFeeProofKey?: string;
+  ocularFeeReferenceNumber?: string;
+  ocularFeeStatus?: 'pending' | 'proof_submitted' | 'verified' | 'declined';
+  ocularFeeDeclineReason?: string;
+  paymongoCheckoutSessionId?: string;
+  paymongoCheckoutUrl?: string;
   rescheduleCount: number;
   maxReschedules: number;
   internalNotes?: string;
@@ -170,6 +183,7 @@ export interface Notification {
   title: string;
   message: string;
   category: string;
+  link?: string;
   referenceType?: string;
   referenceId?: string;
   isRead: boolean;

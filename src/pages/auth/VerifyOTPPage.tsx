@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BrandLogo } from '@/components/shared/BrandLogo';
-import { api, fetchCsrfToken } from '@/lib/api';
+import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 
 const OTP_LENGTH = 6;
@@ -15,7 +15,7 @@ const RESEND_COOLDOWN = 60;
 export function VerifyOTPPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fetchMe, setCsrfToken } = useAuthStore();
+  const { fetchMe } = useAuthStore();
 
   const state = location.state as { email?: string; purpose?: string } | null;
   const email = state?.email || '';
@@ -73,8 +73,6 @@ export function VerifyOTPPage() {
     try {
       if (purpose === 'email_verification') {
         await api.post('/auth/verify-email', { email, otp: code });
-        const csrf = await fetchCsrfToken();
-        setCsrfToken(csrf);
         await fetchMe();
         toast.success('Email verified successfully!');
         navigate('/dashboard', { replace: true });
@@ -89,13 +87,16 @@ export function VerifyOTPPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, email, purpose, navigate, fetchMe, setCsrfToken]);
+  }, [otp, email, purpose, navigate, fetchMe]);
 
   useEffect(() => {
     if (otp.every((d) => d !== '')) handleSubmit();
   }, [otp, handleSubmit]);
 
+  const [isResending, setIsResending] = useState(false);
+
   const handleResend = async () => {
+    setIsResending(true);
     try {
       await api.post('/auth/resend-otp', { email, purpose });
       toast.success('New OTP sent to your email');
@@ -105,6 +106,8 @@ export function VerifyOTPPage() {
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string } } } };
       toast.error(error.response?.data?.error?.message || 'Failed to resend OTP');
+    } finally {
+      setIsResending(false);
     }
   };
 
@@ -168,9 +171,11 @@ export function VerifyOTPPage() {
                 <button
                   type="button"
                   onClick={handleResend}
-                  className="text-orange-600 hover:text-orange-500 font-semibold"
+                  disabled={isResending}
+                  className="text-orange-600 hover:text-orange-500 font-semibold inline-flex items-center gap-1.5 disabled:opacity-50"
                 >
-                  Resend OTP
+                  {isResending && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                  {isResending ? 'Sending…' : 'Resend OTP'}
                 </button>
               )}
             </p>

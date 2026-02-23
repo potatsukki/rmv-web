@@ -151,3 +151,13 @@ body {
   background-image: radial-gradient(circle, #d1d5db 1px, transparent 1px);
   background-size: 24px 24px;
 }
+
+/* Hide Leaflet attribution */
+.leaflet-control-attribution {
+  display: none !important;
+}
+
+/* Prevent map from overlapping fixed header */
+.leaflet-container {
+  z-index: 0 !important;
+}

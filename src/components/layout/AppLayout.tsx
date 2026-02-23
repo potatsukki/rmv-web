@@ -1,6 +1,6 @@
 import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 import {
@@ -17,8 +17,10 @@ import {
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useNotifications } from '@/hooks/useNotifications';
+import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket';
 import { Role } from '@/lib/constants';
 import { api } from '@/lib/api';
+import toast from 'react-hot-toast';
 import type { Project, Appointment, User } from '@/lib/types';
 
 const pageMeta: Record<string, { title: string; description: string }> = {
@@ -208,8 +210,30 @@ export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const { unreadCount, setNotifications } = useNotificationStore();
+  const { unreadCount, setNotifications, addNotification } = useNotificationStore();
   const { data: notificationsData } = useNotifications({ limit: '50' });
+  const queryClient = useQueryClient();
+
+  // ── Real-time socket connection ──────────────────────────────────────
+  useEffect(() => {
+    if (!user) return;
+    connectSocket();
+    const socket = getSocket();
+    if (!socket) return;
+
+    const handleNewNotification = (n: import('@/lib/types').Notification) => {
+      addNotification(n);
+      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      toast(n.title + ': ' + n.message);
+    };
+
+    socket.on('notification:new', handleNewNotification);
+
+    return () => {
+      socket.off('notification:new', handleNewNotification);
+      disconnectSocket();
+    };
+  }, [user, addNotification, queryClient]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

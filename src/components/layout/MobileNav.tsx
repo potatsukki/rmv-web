@@ -22,16 +22,33 @@ import {
   Hammer,
   ChevronRight,
   ClipboardList,
+  CalendarOff,
+  Receipt,
+  CalendarPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { BrandLogo } from '@/components/shared/BrandLogo';
+import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
 
 interface NavItem {
   label: string;
   path: string;
   icon: React.ElementType;
   roles: Role[];
+}
+
+function isNavItemActive(pathname: string, itemPath: string): boolean {
+  if (itemPath === '/dashboard') return pathname === '/dashboard';
+
+  if (itemPath === '/appointments') {
+    return (
+      pathname === '/appointments' ||
+      (pathname.startsWith('/appointments/') && pathname !== '/appointments/create-for-customer')
+    );
+  }
+
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 
 const bottomTabItems: NavItem[] = [
@@ -76,6 +93,12 @@ const menuItems: NavItem[] = [
     roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.ADMIN],
   },
   {
+    label: 'Payment History',
+    path: '/payment-history',
+    icon: Receipt,
+    roles: [Role.CUSTOMER],
+  },
+  {
     label: 'Cash Management',
     path: '/cash',
     icon: DollarSign,
@@ -94,6 +117,8 @@ const menuItems: NavItem[] = [
     roles: [Role.ADMIN, Role.CASHIER],
   },
   { label: 'Team', path: '/users', icon: Users, roles: [Role.ADMIN] },
+  { label: 'Slot Management', path: '/slot-management', icon: CalendarOff, roles: [Role.ADMIN, Role.APPOINTMENT_AGENT] },
+  { label: 'Create Appointment', path: '/appointments/create-for-customer', icon: CalendarPlus, roles: [Role.APPOINTMENT_AGENT] },
   { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
 ];
 
@@ -169,6 +194,8 @@ export function MobileNav() {
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [menuOpen]);
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -279,7 +306,7 @@ export function MobileNav() {
 
                 {/* Menu items */}
                 {filteredMenu.map((item) => {
-                  const isActive = location.pathname.startsWith(item.path);
+                  const isActive = isNavItemActive(location.pathname, item.path);
                   return (
                     <Link
                       key={item.path}
@@ -313,7 +340,7 @@ export function MobileNav() {
               <Button
                 variant="outline"
                 className="w-full justify-center gap-2 h-11 border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-medium"
-                onClick={handleLogout}
+                onClick={() => { setMenuOpen(false); setShowLogoutModal(true); }}
               >
                 <LogOut className="h-4 w-4" />
                 Sign Out
@@ -323,6 +350,12 @@ export function MobileNav() {
         </div>
       )}
 
+      <LogoutConfirmModal
+        open={showLogoutModal}
+        onOpenChange={setShowLogoutModal}
+        onConfirm={handleLogout}
+      />
+
       {/* Bottom tab bar */}
       <nav
         className="md:hidden fixed bottom-0 left-0 right-0 z-40 bg-white/90 backdrop-blur-xl border-t border-border pb-[env(safe-area-inset-bottom)]"
@@ -330,10 +363,7 @@ export function MobileNav() {
       >
         <div className="flex">
           {filteredTabs.map((item) => {
-            const isActive =
-              item.path === '/dashboard'
-                ? location.pathname === '/dashboard'
-                : location.pathname.startsWith(item.path);
+            const isActive = isNavItemActive(location.pathname, item.path);
 
             return (
               <Link

@@ -17,21 +17,38 @@ import {
   FileText,
   CheckCircle2,
   Sparkles,
+  ArrowUpRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState } from 'react';
 import { BrandLogo } from '@/components/shared/BrandLogo';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import { 
+  FadeIn, 
+  SlideUp, 
+  SlideInLeft, 
+  SlideInRight, 
+  StaggerContainer, 
+  staggerItem,
+  ScaleIn
+} from '@/components/shared/MotionWrappers';
 
 export function LandingPage() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { scrollY } = useScroll();
+  
+  // Parallax effects
+  const heroTextY = useTransform(scrollY, [0, 500], [0, 150]);
+  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
 
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-
-    const onKeyDown = (event: KeyboardEvent) => {
+    
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const onKeyDown = (event: any) => {
       if (event.key === 'Escape') {
         setMobileMenuOpen(false);
       }
@@ -46,43 +63,53 @@ export function LandingPage() {
   }, [mobileMenuOpen]);
 
   return (
-    <div className="min-h-screen bg-white font-sans text-gray-900">
+    <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-orange-500/30">
       {/* ─── Navigation ─── */}
-      <header className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100">
-        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-2.5">
-            <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
+      <motion.header 
+        initial={{ y: -100 }}
+        animate={{ y: 0 }}
+        transition={{ duration: 0.6, ease: "easeOut" }}
+        className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100/50"
+      >
+        <div className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
+          <Link to="/" className="flex items-center gap-3 group">
+            <motion.div 
+              whileHover={{ rotate: 90 }}
+              transition={{ duration: 0.5 }}
+            >
+              <BrandLogo className="h-10 w-10 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
+            </motion.div>
             <div className="flex flex-col leading-none">
-              <span className="text-[15px] font-bold tracking-tight text-gray-900">
+              <span className="text-lg font-bold tracking-tight text-gray-900 group-hover:text-orange-600 transition-colors">
                 RMV
               </span>
-              <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-gray-400">
-                Stainless Steel
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
+                Stainless
               </span>
             </div>
           </Link>
 
           {/* Desktop Nav */}
-          <nav className="hidden gap-8 md:flex">
+          <nav className="hidden gap-10 md:flex">
             {['Services', 'Process', 'About', 'Contact'].map((item) => (
               <a
                 key={item}
                 href={`#${item.toLowerCase()}`}
-                className="text-[13px] font-medium text-gray-500 transition-colors hover:text-gray-900"
+                className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 hover:scale-105 transform duration-200"
               >
                 {item}
               </a>
             ))}
           </nav>
 
-          <div className="hidden items-center gap-3 md:flex">
+          <div className="hidden items-center gap-4 md:flex">
             <Link
               to="/login"
-              className="text-[13px] font-medium text-gray-600 transition-colors hover:text-gray-900 px-3 py-2"
+              className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
             >
               Sign In
             </Link>
-            <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-sm h-9 px-5 text-[13px]">
+            <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-xl shadow-gray-900/10 h-10 px-6 text-sm rounded-full transition-all hover:scale-105 hover:shadow-2xl">
               <Link to="/register">
                 Get Started
                 <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
@@ -96,407 +123,466 @@ export function LandingPage() {
             className="md:hidden p-2 text-gray-500 hover:text-gray-900 transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-            aria-expanded={mobileMenuOpen}
-            aria-controls="landing-mobile-nav"
           >
-            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
           </button>
         </div>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
-          <div
-            id="landing-mobile-nav"
-            className="border-t border-gray-100 bg-white px-4 py-4 md:hidden"
+          <motion.div
+            initial={{ opacity: 0, height: 0 }}
+            animate={{ opacity: 1, height: "auto" }}
+            exit={{ opacity: 0, height: 0 }}
+            className="border-t border-gray-100 bg-white px-4 py-6 md:hidden shadow-2xl"
           >
-            <nav className="flex flex-col space-y-1">
-              {['Services', 'Process', 'About', 'Contact'].map((item) => (
-                <a
+            <nav className="flex flex-col space-y-2">
+              {['Services', 'Process', 'About', 'Contact'].map((item, idx) => (
+                <motion.a
                   key={item}
+                  initial={{ x: -20, opacity: 0 }}
+                  animate={{ x: 0, opacity: 1 }}
+                  transition={{ delay: idx * 0.1 }}
                   href={`#${item.toLowerCase()}`}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  className="px-4 py-3 rounded-xl text-lg font-medium text-gray-600 hover:bg-gray-50 active:bg-gray-100"
                 >
                   {item}
-                </a>
+                </motion.a>
               ))}
-              <div className="pt-3 mt-2 border-t border-gray-100 space-y-2">
+              <div className="pt-4 mt-2 border-t border-gray-100 space-y-3">
                 <Link
                   to="/login"
                   onClick={() => setMobileMenuOpen(false)}
-                  className="block px-3 py-2 rounded-lg text-sm font-medium text-gray-600 hover:bg-gray-50"
+                  className="block px-4 py-3 rounded-xl text-lg font-medium text-gray-600 hover:bg-gray-50"
                 >
                   Sign In
                 </Link>
-                <Button asChild className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold">
+                <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-12 rounded-xl text-lg">
                   <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
                     Get Started
                   </Link>
                 </Button>
               </div>
             </nav>
-          </div>
+          </motion.div>
         )}
-      </header>
+      </motion.header>
 
       {/* ─── Hero Section ─── */}
-      <section className="relative overflow-hidden bg-gradient-to-b from-gray-950 via-gray-900 to-gray-950 py-24 sm:py-32 lg:py-40">
-        {/* Decorative elements */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-10" />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-gray-950/80" />
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-          }}
-        />
+      <section className="relative overflow-hidden bg-gray-950 flex items-center">
+        {/* Background Parallax */}
+        <motion.div 
+          style={{ y: useTransform(scrollY, [0, 1000], [0, 300]) }}
+          className="absolute inset-0 z-0"
+        >
+          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/80 to-transparent" />
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/50 to-transparent" />
+        </motion.div>
 
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-3xl text-center lg:text-left lg:mx-0">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/20 bg-orange-500/10 px-4 py-1.5 text-sm font-medium text-orange-400 mb-8 backdrop-blur-sm">
-              <Star className="h-3.5 w-3.5 fill-orange-400" />
-              Trusted Stainless Steel Fabricator
-            </div>
+        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full py-8 sm:py-12 lg:py-16">
+          <motion.div 
+            style={{ y: heroTextY, opacity: heroOpacity }}
+            className="mx-auto max-w-4xl lg:mx-0"
+          >
+            {/* Animated Badge */}
+            <FadeIn delay={0.2} className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-orange-400 mb-3 sm:mb-4 backdrop-blur-md shadow-[0_0_15px_rgba(249,115,22,0.3)]">
+              <Star className="h-3.5 w-3.5 fill-orange-400 animate-pulse" />
+              <span>Trusted Stainless Steel Fabricator</span>
+            </FadeIn>
 
-            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-6xl xl:text-7xl leading-[1.08]">
-              Precision Engineered{' '}
-              <span className="relative">
-                <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-                  Stainless Steel
-                </span>
-              </span>{' '}
-              Solutions
+            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-7xl leading-[1.05] mb-2 sm:mb-4">
+              <SlideInLeft delay={0.3} duration={0.8}>Precision.</SlideInLeft>
+              <SlideInLeft delay={0.4} duration={0.8}>Durability.</SlideInLeft>
+              <SlideInLeft delay={0.5} duration={0.8} className="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent pb-2">
+                Excellence.
+              </SlideInLeft>
             </h1>
 
-            <p className="mt-6 text-lg leading-8 text-gray-400 max-w-2xl lg:text-xl">
-              From custom residential railings to industrial kitchen systems. Master
-              craftsmanship meets modern technology for durable, high-quality results.
-            </p>
+            <SlideUp delay={0.7} className="mt-2 sm:mt-4 text-sm sm:text-base lg:text-lg leading-relaxed text-gray-400 max-w-2xl border-l-2 border-orange-500/50 pl-4 sm:pl-6">
+              From custom residential railings to industrial kitchen systems. 
+              Master craftsmanship meets modern technology for durable, high-quality results.
+            </SlideUp>
 
-            <div className="mt-10 flex flex-col sm:flex-row items-center gap-4 lg:justify-start justify-center">
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.9, duration: 0.6 }}
+              className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-5 lg:justify-start justify-center"
+            >
               <Button
                 asChild
                 size="lg"
-                className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-8 h-12 text-base shadow-xl shadow-orange-500/25 w-full sm:w-auto"
+                className="bg-orange-600 hover:bg-orange-500 text-white font-bold h-11 sm:h-12 px-6 sm:px-10 text-sm sm:text-base shadow-[0_0_30px_rgba(249,115,22,0.3)] w-full sm:w-auto rounded-full hover:scale-105 transition-all duration-300 ring-2 ring-orange-500 ring-offset-2 ring-offset-gray-950"
               >
                 <Link to="/register">
                   Start Your Project
-                  <ArrowRight className="ml-2 h-4 w-4" />
+                  <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
               <a
                 href="#services"
-                className="text-sm font-semibold text-gray-300 hover:text-white transition-colors flex items-center gap-1"
+                className="group flex items-center justify-center sm:justify-start gap-2 text-sm sm:text-base font-medium text-white hover:text-orange-400 transition-colors"
               >
-                View Our Capabilities
-                <ChevronRight className="h-4 w-4" />
+                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 group-hover:bg-white/20 transition-all border border-white/10 group-hover:scale-110">
+                   <ChevronRight className="h-4 w-4" />
+                </div>
+                View Capabilities
               </a>
-            </div>
+            </motion.div>
 
             {/* Stats */}
-            <div className="mt-16 grid grid-cols-3 gap-8 border-t border-white/10 pt-10 max-w-lg lg:max-w-xl">
+            <div className="mt-5 sm:mt-8 grid grid-cols-3 gap-4 sm:gap-12 border-t border-white/10 pt-5 sm:pt-6 max-w-2xl">
               {[
-                { value: '15+', label: 'Years Experience' },
-                { value: '500+', label: 'Projects Delivered' },
-                { value: '100%', label: 'Quality Guaranteed' },
-              ].map((stat) => (
-                <div key={stat.label}>
-                  <div className="text-2xl sm:text-3xl font-extrabold text-white">
+                { value: '7+', label: 'Years Experience' },
+                { value: '200+', label: 'Projects Delivered' },
+                { value: '100%', label: 'Quality' },
+              ].map((stat, idx) => (
+                <FadeIn key={stat.label} delay={1 + (idx * 0.1)}>
+                  <div className="text-xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
                     {stat.value}
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500 mt-1 font-medium">
+                  <div className="text-[10px] sm:text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">
                     {stat.label}
                   </div>
-                </div>
+                </FadeIn>
               ))}
             </div>
-          </div>
+          </motion.div>
         </div>
       </section>
 
       {/* ─── Services Section ─── */}
-      <section id="services" className="py-24 bg-white sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-1.5 text-sm font-semibold text-orange-600 mb-4">
-              <Sparkles className="h-3.5 w-3.5" />
-              Our Expertise
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+      <section id="services" className="py-16 sm:py-24 lg:py-32 bg-white relative">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-24">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-4 sm:mb-6">
               Fabrication Capabilities
             </h2>
-            <p className="mt-4 text-lg leading-8 text-gray-500">
+            <div className="h-1 w-24 bg-orange-500 mx-auto rounded-full mb-6" />
+            <p className="text-base sm:text-xl text-gray-500">
               Complete stainless steel fabrication services from design to installation.
             </p>
-          </div>
+          </SlideUp>
 
-          <div className="mx-auto mt-16 max-w-2xl sm:mt-20 lg:max-w-none">
-            <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-              {[
-                {
-                  icon: Shield,
-                  title: 'Gates & Railings',
-                  desc: 'Custom-designed gates and railings combining security with architectural elegance for homes and commercial spaces.',
-                  features: ['Residential', 'Commercial', 'Custom Designs'],
-                },
-                {
-                  icon: Layers,
-                  title: 'Industrial Kitchens',
-                  desc: 'Food-grade stainless steel fabrication for restaurants, hotels, and processing plants. Built for durability.',
-                  features: ['Food Grade', 'Hygienic', 'Compliant'],
-                },
-                {
-                  icon: PenTool,
-                  title: 'Custom Fabrication',
-                  desc: 'Bespoke machinery parts, tanks, and structural components built to precise engineering specifications.',
-                  features: ['CNC Cutting', 'Welding', 'Polishing'],
-                },
-              ].map((service) => (
-                <div
-                  key={service.title}
-                  className="group relative rounded-2xl border border-gray-100 bg-white p-8 shadow-sm transition-all duration-300 hover:shadow-xl hover:border-orange-100 hover:-translate-y-1"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-50 to-orange-100 group-hover:from-orange-100 group-hover:to-orange-200 transition-colors">
-                    <service.icon className="h-6 w-6 text-orange-600" />
-                  </div>
-                  <h3 className="mt-5 text-lg font-bold text-gray-900">{service.title}</h3>
-                  <p className="mt-2 text-sm leading-relaxed text-gray-500">
-                    {service.desc}
-                  </p>
-                  <div className="mt-5 flex flex-wrap gap-2">
-                    {service.features.map((f) => (
-                      <span
-                        key={f}
-                        className="inline-flex items-center rounded-full bg-gray-50 px-3 py-1 text-[11px] font-semibold text-gray-600 ring-1 ring-inset ring-gray-200"
-                      >
-                        {f}
-                      </span>
-                    ))}
-                  </div>
+          <StaggerContainer className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            {[
+              {
+                icon: Shield,
+                title: 'Gates & Railings',
+                desc: 'Custom-designed gates and railings combining security with architectural elegance.',
+                items: ['Residential', 'Commercial', 'Custom Designs'],
+                color: 'bg-blue-50'
+              },
+              {
+                icon: Layers,
+                title: 'Industrial Kitchens',
+                desc: 'Food-grade stainless steel fabrication for restaurants, hotels, and processing plants.',
+                items: ['Food Grade', 'Hygienic', 'Compliant'],
+                color: 'bg-orange-50'
+              },
+              {
+                icon: PenTool,
+                title: 'Custom Fabrication',
+                desc: 'Bespoke machinery parts, tanks, and structural components built to specifications.',
+                items: ['CNC Cutting', 'Welding', 'Polishing'],
+                color: 'bg-emerald-50'
+              },
+            ].map((service) => (
+              <motion.div
+                key={service.title}
+                variants={staggerItem}
+                whileHover={{ y: -10 }}
+                className="group relative rounded-2xl sm:rounded-[2rem] border border-gray-100 bg-white p-6 sm:p-10 shadow-lg shadow-gray-200/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300"
+              >
+                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${service.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                  <service.icon className="h-7 w-7 text-gray-900" />
                 </div>
-              ))}
-            </div>
-          </div>
+                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">{service.title}</h3>
+                <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-5 sm:mb-8">
+                  {service.desc}
+                </p>
+                <div className="flex flex-wrap gap-2">
+                  {service.items.map((item) => (
+                     <span key={item} className="text-xs font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
+                       {item}
+                     </span>
+                  ))}
+                </div>
+                <div className="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0 duration-300">
+                    <ArrowUpRight className="text-orange-500 h-6 w-6" />
+                </div>
+              </motion.div>
+            ))}
+          </StaggerContainer>
         </div>
       </section>
 
       {/* ─── Process Section ─── */}
-      <section id="process" className="bg-gray-50 py-24 sm:py-32 relative overflow-hidden">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="mx-auto max-w-2xl text-center mb-16">
-            <div className="inline-flex items-center gap-2 rounded-full bg-gray-900 px-4 py-1.5 text-sm font-semibold text-gray-300 mb-4">
-              <Wrench className="h-3.5 w-3.5" />
-              How It Works
-            </div>
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-              Streamlined Workflow
-            </h2>
-            <p className="mt-4 text-lg leading-8 text-gray-500">
-              From initial consultation to final delivery — complete transparency at
-              every step.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 gap-8 sm:grid-cols-2 lg:grid-cols-4">
-            {[
-              {
-                step: '01',
-                name: 'Consultation',
-                icon: Calendar,
-                desc: 'Book online. We visit for measurements or meet to discuss your vision.',
-              },
-              {
-                step: '02',
-                name: 'Design & Costing',
-                icon: FileText,
-                desc: 'Receive CAD blueprints and transparent cost breakdowns for approval.',
-              },
-              {
-                step: '03',
-                name: 'Fabrication',
-                icon: Wrench,
-                desc: 'Watch your project come to life with real-time progress updates.',
-              },
-              {
-                step: '04',
-                name: 'Delivery',
-                icon: Truck,
-                desc: 'Professional installation with final quality check and handover.',
-              },
-            ].map((item, idx) => (
-              <div
-                key={item.name}
-                className="relative group"
-              >
-                {/* Connector line */}
-                {idx < 3 && (
-                  <div className="hidden lg:block absolute top-8 left-[calc(50%+32px)] right-[-32px] h-px bg-gray-200 z-0" />
-                )}
-
-                <div className="relative bg-white rounded-2xl border border-gray-100 p-6 shadow-sm hover:shadow-lg transition-all duration-300 group-hover:-translate-y-1">
-                  <div className="flex items-center gap-3 mb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-gray-900 text-white text-sm font-bold group-hover:bg-orange-500 transition-colors">
-                      {item.step}
-                    </div>
-                    <item.icon className="h-5 w-5 text-gray-400 group-hover:text-orange-500 transition-colors" />
+      <section id="process" className="bg-gray-950 py-16 sm:py-24 lg:py-32 relative overflow-hidden">
+        {/* Background Grids */}
+        <div className="absolute inset-0 opacity-[0.05]" 
+          style={{ 
+            backgroundImage: 'linear-gradient(#4b5563 1px, transparent 1px), linear-gradient(90deg, #4b5563 1px, transparent 1px)', 
+            backgroundSize: '40px 40px' 
+          }} 
+        />
+        
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-start">
+             <div className="lg:sticky lg:top-32">
+                <SlideInLeft>
+                  <div className="inline-flex items-center gap-2 rounded-full border border-gray-800 bg-gray-900 px-4 py-1.5 text-sm font-semibold text-gray-300 mb-6">
+                    <Wrench className="h-3.5 w-3.5" />
+                    How It Works
                   </div>
-                  <h3 className="text-base font-bold text-gray-900">{item.name}</h3>
-                  <p className="mt-2 text-sm text-gray-500 leading-relaxed">
-                    {item.desc}
+                  <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white mb-4 sm:mb-6">
+                    Streamlined <br/>
+                    <span className="text-orange-500">Workflow.</span>
+                  </h2>
+                  <p className="text-base sm:text-lg text-gray-400 mb-6 sm:mb-10 max-w-md">
+                    From initial consultation to final delivery — complete transparency at every step of your fabrication journey.
                   </p>
-                </div>
-              </div>
-            ))}
+                  <Button asChild size="lg" className="bg-white text-gray-900 hover:bg-gray-200 font-bold rounded-full">
+                     <Link to="/register">Get Started Now</Link>
+                  </Button>
+                </SlideInLeft>
+             </div>
+
+             <StaggerContainer className="flex flex-col gap-4 sm:gap-8">
+                {[
+                  {
+                    step: '01',
+                    name: 'Consultation',
+                    icon: Calendar,
+                    desc: 'Book online. We visit for measurements or meet to discuss your vision.',
+                  },
+                  {
+                    step: '02',
+                    name: 'Design & Costing',
+                    icon: FileText,
+                    desc: 'Receive CAD blueprints and transparent cost breakdowns for approval.',
+                  },
+                  {
+                    step: '03',
+                    name: 'Fabrication',
+                    icon: Wrench,
+                    desc: 'Watch your project come to life with real-time progress updates.',
+                  },
+                  {
+                    step: '04',
+                    name: 'Delivery',
+                    icon: Truck,
+                    desc: 'Professional installation with final quality check and handover.',
+                  },
+                ].map((item, idx) => (
+                  <motion.div
+                    key={item.name}
+                    variants={staggerItem}
+                    className="flex gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-sm"
+                  >
+                    <div className="flex flex-col items-center gap-2">
+                       <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg sm:rounded-xl bg-orange-600 text-white font-bold text-sm sm:text-lg shadow-lg shadow-orange-600/20">
+                         {item.step}
+                       </div>
+                       {idx !== 3 && <div className="w-px h-full bg-white/10 min-h-[40px] grow" />}
+                    </div>
+                    <div className="pb-4">
+                      <h3 className="text-base sm:text-xl font-bold text-white mb-1 sm:mb-2">{item.name}</h3>
+                      <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
+                        {item.desc}
+                      </p>
+                    </div>
+                  </motion.div>
+                ))}
+             </StaggerContainer>
           </div>
         </div>
       </section>
 
       {/* ─── Why Choose Us ─── */}
-      <section id="about" className="py-24 bg-white sm:py-32">
-        <div className="mx-auto max-w-7xl px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <div className="inline-flex items-center gap-2 rounded-full bg-orange-50 px-4 py-1.5 text-sm font-semibold text-orange-600 mb-4">
-                <Shield className="h-3.5 w-3.5" />
-                Why RMV
-              </div>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Built on Trust, Delivered with Precision
+      <section id="about" className="py-16 sm:py-24 lg:py-32 bg-gray-50 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+            <SlideInLeft>
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-4 sm:mb-6">
+                Built on Trust,<br/>
+                Delivered with <span className="text-orange-600 decoration-4 decoration-orange-200 underline underline-offset-4">Precision</span>
               </h2>
-              <p className="mt-4 text-lg text-gray-500 leading-relaxed">
+              <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-600 leading-relaxed mb-6 sm:mb-10">
                 Over 15 years of experience in stainless steel fabrication. We combine
                 traditional craftsmanship with cutting-edge technology.
               </p>
 
-              <div className="mt-8 space-y-4">
+              <div className="space-y-4 sm:space-y-6">
                 {[
                   'Real-time project tracking through your online portal',
                   'Transparent pricing with detailed cost breakdowns',
                   'Quality-assured with rigorous inspection protocols',
                   'Professional installation by certified technicians',
                   'On-time delivery with milestone-based updates',
-                ].map((item) => (
-                  <div key={item} className="flex items-start gap-3">
-                    <CheckCircle2 className="h-5 w-5 text-orange-500 mt-0.5 flex-shrink-0" />
-                    <span className="text-sm text-gray-600 font-medium">{item}</span>
-                  </div>
+                ].map((item, i) => (
+                  <motion.div 
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ delay: i * 0.1 }}
+                    viewport={{ once: true }}
+                    key={item} 
+                    className="flex items-start gap-4"
+                  >
+                    <div className="flex-shrink-0 mt-1">
+                      <CheckCircle2 className="h-6 w-6 text-orange-600" />
+                    </div>
+                    <span className="text-sm sm:text-lg text-gray-800 font-medium">{item}</span>
+                  </motion.div>
                 ))}
               </div>
-            </div>
+            </SlideInLeft>
 
             {/* Visual card */}
-            <div className="relative">
-              <div className="rounded-2xl bg-gradient-to-br from-gray-900 to-gray-950 p-8 sm:p-10 shadow-2xl">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-500 text-white">
-                    <Wrench className="h-5 w-5" />
-                  </div>
-                  <span className="text-white font-bold text-lg">RMV Portal</span>
-                </div>
-                <div className="space-y-3">
-                  {[
-                    { label: 'Project Status', value: 'Fabrication', color: 'bg-orange-500' },
-                    { label: 'Completion', value: '78%', color: 'bg-emerald-500' },
-                    { label: 'Next Milestone', value: 'Quality Check', color: 'bg-blue-500' },
-                  ].map((row) => (
-                    <div
-                      key={row.label}
-                      className="flex items-center justify-between rounded-xl bg-white/5 border border-white/10 px-4 py-3"
-                    >
-                      <span className="text-sm text-gray-400 font-medium">{row.label}</span>
-                      <span className={`text-sm font-bold text-white px-3 py-1 rounded-full ${row.color}/20`}>
-                        {row.value}
-                      </span>
+            <SlideInRight className="relative flex items-center justify-center">
+              <div className="relative w-full max-w-md">
+                <motion.div 
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ type: "spring", stiffness: 300 }}
+                  className="relative z-10 rounded-2xl sm:rounded-[2.5rem] bg-gray-900 p-5 sm:p-8 md:p-12 shadow-2xl overflow-hidden"
+                >
+                  <div className="absolute top-0 right-0 p-12 bg-orange-500/20 blur-[60px] rounded-full h-64 w-64 -mr-20 -mt-20" />
+                  
+                  <div className="relative z-10">
+                    <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-10">
+                      <div className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/30">
+                        <Wrench className="h-5 w-5 sm:h-7 sm:w-7" />
+                      </div>
+                      <div>
+                        <span className="block text-white font-bold text-lg sm:text-2xl">RMV Portal</span>
+                        <span className="text-gray-400 text-xs sm:text-sm">Client Dashboard</span>
+                      </div>
                     </div>
-                  ))}
-                </div>
-                <div className="mt-6 h-2 rounded-full bg-white/10 overflow-hidden">
-                  <div className="h-full w-[78%] rounded-full bg-gradient-to-r from-orange-500 to-orange-400" />
-                </div>
-                <p className="mt-3 text-xs text-gray-500">
-                  Track every detail from your dashboard
-                </p>
+                    
+                    <div className="space-y-3 sm:space-y-4">
+                      {[
+                        { label: 'Project Status', value: 'Fabrication', color: 'bg-orange-500' },
+                        { label: 'Completion', value: '78%', color: 'bg-emerald-500' },
+                        { label: 'Next Milestone', value: 'Quality Check', color: 'bg-blue-500' },
+                      ].map((row) => (
+                        <div
+                          key={row.label}
+                          className="flex items-center justify-between rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 px-3 sm:px-6 py-3 sm:py-5 hover:bg-white/10 transition-colors cursor-pointer gap-2"
+                        >
+                          <span className="text-xs sm:text-base text-gray-300 font-medium">{row.label}</span>
+                          <span className={`text-xs sm:text-sm font-bold text-white px-2 sm:px-4 py-1 sm:py-1.5 rounded-full ${row.color}/20 text-center whitespace-nowrap`}>
+                            {row.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div className="mt-6 sm:mt-10">
+                       <div className="flex justify-between text-xs sm:text-sm text-gray-400 mb-2">
+                          <span>Overall Progress</span>
+                          <span>78%</span>
+                       </div>
+                       <div className="h-3 rounded-full bg-gray-800 overflow-hidden">
+                         <motion.div 
+                           initial={{ width: 0 }}
+                           whileInView={{ width: "78%" }}
+                           transition={{ duration: 1.5, ease: "easeOut" }}
+                           viewport={{ once: true }}
+                           className="h-full rounded-full bg-gradient-to-r from-orange-600 to-orange-400" 
+                         />
+                       </div>
+                    </div>
+                  </div>
+                </motion.div>
+                
+                {/* Decorative Elements */}
+                <motion.div 
+                   animate={{ y: [0, -20, 0] }}
+                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                   className="absolute -top-6 -right-6 sm:-top-12 sm:-right-12 h-24 w-24 sm:h-40 sm:w-40 rounded-full bg-orange-200/50 backdrop-blur-3xl -z-10" 
+                />
+                <motion.div 
+                   animate={{ y: [0, 30, 0] }}
+                   transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
+                   className="absolute -bottom-6 -left-6 sm:-bottom-10 sm:-left-10 h-32 w-32 sm:h-56 sm:w-56 rounded-full bg-blue-200/50 backdrop-blur-3xl -z-10" 
+                />
               </div>
-              {/* Decorative blurs */}
-              <div className="absolute -top-4 -right-4 h-24 w-24 rounded-full bg-orange-500/20 blur-2xl" />
-              <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-blue-500/10 blur-2xl" />
-            </div>
+            </SlideInRight>
           </div>
         </div>
       </section>
 
       {/* ─── CTA Section ─── */}
-      <section className="relative overflow-hidden bg-gray-950 py-24 sm:py-32">
-        <div
-          className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
-            backgroundSize: '24px 24px',
-          }}
-        />
-        <div className="relative mx-auto max-w-7xl px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold tracking-tight text-white sm:text-4xl max-w-2xl mx-auto">
-            Ready to build something{' '}
-            <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-              extraordinary
-            </span>
-            ?
-          </h2>
-          <p className="mt-4 text-lg text-gray-400 max-w-xl mx-auto">
-            Create a free account to schedule your consultation. Let&apos;s bring your
-            vision to life.
-          </p>
-          <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Button
-              asChild
-              size="lg"
-              className="bg-orange-500 hover:bg-orange-600 text-white font-bold px-10 h-12 text-base shadow-xl shadow-orange-500/25"
-            >
-              <Link to="/register">
-                Get Started Free
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Link>
-            </Button>
-            <Link
-              to="/login"
-              className="text-sm font-semibold text-gray-300 hover:text-white transition-colors"
-            >
-              Already have an account? <span className="text-orange-400">Sign in →</span>
-            </Link>
-          </div>
+      <section className="relative overflow-hidden bg-gray-900 py-16 sm:py-24 lg:py-32">
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1531297461136-82lw9b61d69d?q=80&w=2688&auto=format&fit=crop')] bg-cover bg-fixed opacity-10 mix-blend-overlay" />
+        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-transparent to-gray-900" />
+        
+        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <ScaleIn>
+            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-4xl lg:text-6xl max-w-3xl mx-auto mb-6 sm:mb-8">
+              Ready to build something{' '}
+              <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
+                extraordinary?
+              </span>
+            </h2>
+            <p className="text-base sm:text-xl text-gray-400 max-w-2xl mx-auto mb-8 sm:mb-12 px-2">
+              Create a free account to schedule your consultation. Let&apos;s bring your
+              vision to life with precision engineering.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
+              <Button
+                asChild
+                size="lg"
+                className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-8 sm:px-12 h-12 sm:h-16 text-base sm:text-lg shadow-[0_0_40px_rgba(249,115,22,0.4)] rounded-full hover:scale-105 transition-transform w-full sm:w-auto"
+              >
+                <Link to="/register">
+                  Get Started Free
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Link>
+              </Button>
+            </div>
+          </ScaleIn>
         </div>
       </section>
 
       {/* ─── Footer ─── */}
-      <footer id="contact" className="bg-gray-950 border-t border-white/5">
-        <div className="mx-auto max-w-7xl px-6 py-12 lg:px-8 lg:py-16">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10">
+      <footer id="contact" className="bg-white border-t border-gray-100 pt-12 sm:pt-24 pb-8 sm:pb-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-12 mb-10 sm:mb-16">
             {/* Brand */}
-            <div className="space-y-4">
-              <div className="flex items-center gap-2.5">
-                <BrandLogo className="h-8 w-8 ring-2 ring-orange-500/30 shadow-sm" />
-                <span className="text-base font-bold text-white">RMV Stainless</span>
+            <div className="space-y-4 sm:space-y-6 col-span-2 md:col-span-1">
+              <div className="flex items-center gap-3">
+                <BrandLogo className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-orange-500/20 shadow-sm" />
+                <span className="text-lg sm:text-xl font-bold text-gray-900">RMV Stainless</span>
               </div>
               <p className="text-sm leading-6 text-gray-500">
                 Precision stainless steel fabrication for residential and commercial
-                industries.
+                industries. Quality you can trust.
               </p>
+              <div className="flex gap-4">
+                 {/* Social placeholders */}
+                 {[1,2,3].map(i => (
+                    <div key={i} className="h-8 w-8 rounded-full bg-gray-100 hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center transition-colors cursor-pointer">
+                       <Sparkles className="h-4 w-4" />
+                    </div>
+                 ))}
+              </div>
             </div>
 
             {/* Services */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4 sm:mb-6">
                 Services
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {['Gates & Railings', 'Structural Steel', 'Kitchen Equipment', 'CNC Cutting'].map(
                   (item) => (
                     <li key={item}>
                       <a
                         href="#services"
-                        className="text-sm text-gray-500 hover:text-white transition-colors"
+                        className="text-sm text-gray-500 hover:text-orange-600 transition-colors"
                       >
                         {item}
                       </a>
@@ -508,15 +594,15 @@ export function LandingPage() {
 
             {/* Company */}
             <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4 sm:mb-6">
                 Company
               </h3>
-              <ul className="space-y-3">
+              <ul className="space-y-4">
                 {['About Us', 'Projects', 'Careers', 'Privacy Policy'].map((item) => (
                   <li key={item}>
                     <a
                       href="#about"
-                      className="text-sm text-gray-500 hover:text-white transition-colors"
+                      className="text-sm text-gray-500 hover:text-orange-600 transition-colors"
                     >
                       {item}
                     </a>
@@ -526,33 +612,36 @@ export function LandingPage() {
             </div>
 
             {/* Contact */}
-            <div>
-              <h3 className="text-xs font-bold uppercase tracking-wider text-gray-400 mb-4">
+            <div className="col-span-2 md:col-span-1">
+              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4 sm:mb-6">
                 Contact
               </h3>
-              <ul className="space-y-3">
-                <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <MapPin className="h-4 w-4 text-orange-500 flex-shrink-0" />
-                  <span>M3X3+RF4, Dahlia Ext, Quezon City, Metro Manila</span>
+              <ul className="space-y-3 sm:space-y-4">
+                <li className="flex items-start gap-3 text-sm text-gray-500">
+                  <MapPin className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
+                  <span>BIR Village Novaliches, Quezon City, Quezon City, Philippines, 1118</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <Phone className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                  <Phone className="h-5 w-5 text-orange-500 flex-shrink-0" />
                   <span>0945 285 2974</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <Mail className="h-4 w-4 text-orange-500 flex-shrink-0" />
+                  <Mail className="h-5 w-5 text-orange-500 flex-shrink-0" />
                   <span>rmvstainless@gmail.com</span>
                 </li>
               </ul>
             </div>
           </div>
 
-          <div className="mt-12 border-t border-white/5 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-xs text-gray-600">
+          <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
+            <p className="text-xs text-gray-500 font-medium">
               &copy; {new Date().getFullYear()} RMV Stainless Steel Fabrication. All
               rights reserved.
             </p>
-            <p className="text-xs text-gray-700">Engineered with precision.</p>
+            <div className="flex items-center gap-2">
+               <span className="h-1 w-1 rounded-full bg-green-500"></span>
+               <p className="text-xs text-gray-500 font-medium">All Systems Operational</p>
+            </div>
           </div>
         </div>
       </footer>

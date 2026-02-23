@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CreditCard } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -22,6 +23,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { FileUpload } from '@/components/shared/FileUpload';
+import { useUnpaidOcularFees } from '@/hooks/useAppointments';
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
@@ -45,6 +47,7 @@ export function PaymentsPage() {
   const submitProof = useSubmitPaymentProof();
 
   const isCustomer = user?.roles.includes(Role.CUSTOMER);
+  const { data: unpaidOcularFees } = useUnpaidOcularFees();
 
   const handleSubmitProof = async () => {
     const amount = parseFloat(amountPaid);
@@ -85,6 +88,52 @@ export function PaymentsPage() {
           {isCustomer ? 'Submit and track your payments' : 'View payment details by project'}
         </p>
       </div>
+
+      {/* Unpaid Ocular Fees */}
+      {isCustomer && unpaidOcularFees && unpaidOcularFees.length > 0 && (
+        <Card className="rounded-xl border-amber-200 bg-amber-50/50 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg text-amber-800">
+              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              Unpaid Ocular Fees
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-3">
+            <p className="text-sm text-amber-700">
+              You have ocular inspection fees that need to be paid before your appointment can be confirmed.
+            </p>
+            {unpaidOcularFees.map((appt) => (
+              <div
+                key={String(appt._id)}
+                className="flex items-center justify-between rounded-xl border border-amber-200 bg-white p-4"
+              >
+                <div className="space-y-1">
+                  <p className="text-sm font-semibold text-gray-900">
+                    {format(new Date(appt.date), 'EEEE, MMMM d, yyyy')}
+                  </p>
+                  {appt.address && (
+                    <p className="flex items-center gap-1 text-xs text-gray-500">
+                      <MapPin className="h-3 w-3" />
+                      {appt.address}
+                    </p>
+                  )}
+                  <p className="text-lg font-bold text-orange-600">
+                    {formatCurrency(appt.ocularFee ?? 0)}
+                  </p>
+                </div>
+                <Button
+                  asChild
+                  className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+                >
+                  <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
+                    Pay Now
+                  </Link>
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
 
       {/* Project Selector */}
       <Card className="rounded-xl border-gray-100">

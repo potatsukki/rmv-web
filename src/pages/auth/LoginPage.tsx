@@ -125,7 +125,7 @@ export function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="you@example.com"
+                placeholder="Enter your email"
                 autoComplete="email"
                 className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
                 {...register('email')}
@@ -151,7 +151,7 @@ export function LoginPage() {
                 <Input
                   id="password"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Enter your password"
                   autoComplete="current-password"
                   className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200 pr-10"
                   {...register('password')}

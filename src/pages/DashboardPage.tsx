@@ -15,6 +15,7 @@ import {
   Package,
   Users,
   ArrowUpRight,
+  CalendarPlus,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -80,7 +81,6 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       return [
         { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Scheduled for today', color: 'text-indigo-600 bg-indigo-50' },
         { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Need action', color: 'text-amber-600 bg-amber-50' },
-        activeProjects,
       ];
     case Role.SALES_STAFF:
       return [
@@ -133,7 +133,7 @@ function getRoleActions(role: Role): QuickAction[] {
     case Role.APPOINTMENT_AGENT:
       actions.push(
         { label: 'Appointments', path: '/appointments', icon: CalendarDays, description: 'Manage schedule', color: 'from-indigo-500 to-indigo-600' },
-        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'View all projects', color: 'from-blue-500 to-blue-600' },
+        { label: 'Create Appointment', path: '/appointments/create-for-customer', icon: CalendarPlus, description: 'Book for a customer', color: 'from-emerald-500 to-emerald-600' },
       );
       break;
     case Role.SALES_STAFF:

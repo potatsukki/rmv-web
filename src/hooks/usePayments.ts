@@ -2,6 +2,19 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, Payment, PaymentPlan } from '@/lib/types';
 
+export interface PaymentHistoryItem {
+  _id: string;
+  type: 'project_payment' | 'ocular_fee';
+  amount: number;
+  status: string;
+  method?: string;
+  referenceNumber?: string;
+  receiptNumber?: string;
+  description: string;
+  date: string;
+  declineReason?: string;
+}
+
 const KEYS = {
   all: ['payments'] as const,
   plans: ['payment-plans'] as const,
@@ -9,6 +22,7 @@ const KEYS = {
   byProject: (projectId: string) => [...KEYS.all, 'project', projectId] as const,
   pending: ['payments', 'pending'] as const,
   detail: (id: string) => [...KEYS.all, id] as const,
+  myHistory: ['payments', 'my-history'] as const,
 };
 
 export function usePaymentPlan(projectId: string) {
@@ -140,6 +154,16 @@ export function useDeclinePayment() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useMyPaymentHistory() {
+  return useQuery({
+    queryKey: KEYS.myHistory,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<PaymentHistoryItem[]>>('/payments/my-history');
+      return data.data;
     },
   });
 }

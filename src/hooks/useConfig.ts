@@ -15,6 +15,16 @@ export interface Holiday {
   name: string;
 }
 
+export interface BlockedSlot {
+  _id: string;
+  date: string;
+  slotCode: string;
+  type: 'office' | 'ocular';
+  reason?: string;
+  blockedBy: { _id: string; firstName: string; lastName: string };
+  createdAt: string;
+}
+
 // ─── Queries ──────────────────────────────────────────────────
 export function useConfigs() {
   return useQuery<ConfigItem[]>({
@@ -78,5 +88,76 @@ export function useToggleMaintenance() {
       return data;
     },
     onSuccess: () => qc.invalidateQueries({ queryKey: ['configs'] }),
+  });
+}
+
+// ─── Blocked Slots ────────────────────────────────────────────
+export function useBlockedSlots(date?: string) {
+  return useQuery<BlockedSlot[]>({
+    queryKey: ['blocked-slots', date],
+    queryFn: async () => {
+      const { data } = await api.get('/config/blocked-slots', { params: date ? { date } : {} });
+      return data.data;
+    },
+  });
+}
+
+export function useCreateBlockedSlot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { date: string; slotCode: string; type: 'office' | 'ocular'; reason?: string }) => {
+      const { data } = await api.post('/config/blocked-slots', body);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['blocked-slots'] });
+      qc.invalidateQueries({ queryKey: ['available-slots'] });
+    },
+  });
+}
+
+export function useDeleteBlockedSlot() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete(`/config/blocked-slots/${id}`);
+      return data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['blocked-slots'] });
+      qc.invalidateQueries({ queryKey: ['available-slots'] });
+    },
+  });
+}
+
+export function useBulkBlockSlots() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      date: string;
+      slots: Array<{ slotCode: string; type: 'office' | 'ocular' }>;
+      reason?: string;
+    }) => {
+      const { data } = await api.post('/config/blocked-slots/bulk', body);
+      return data.data as { created: number; skipped: number };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['blocked-slots'] });
+      qc.invalidateQueries({ queryKey: ['available-slots'] });
+    },
+  });
+}
+
+export function useBulkDeleteBlockedSlots() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data } = await api.delete('/config/blocked-slots/bulk', { data: { ids } });
+      return data.data as { deleted: number };
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['blocked-slots'] });
+      qc.invalidateQueries({ queryKey: ['available-slots'] });
+    },
   });
 }

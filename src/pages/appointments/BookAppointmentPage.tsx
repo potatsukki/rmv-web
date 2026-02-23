@@ -22,6 +22,13 @@ import {
 } from '@/lib/maps';
 import { cn } from '@/lib/utils';
 
+function formatSlotTime(slotCode: string): string {
+  const hour = parseInt(slotCode.split(':')[0] ?? '0');
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+  return `${displayHour}:00 ${ampm}`;
+}
+
 const bookingSchema = z.object({
   type: z.enum(['office', 'ocular']),
   date: z.string().min(1, 'Please select a date'),
@@ -198,7 +205,7 @@ export function BookAppointmentPage() {
           }
         }
 
-        await requestMutation.mutateAsync({
+        const result = await requestMutation.mutateAsync({
           type: data.type,
           date: data.date,
           slotCode: data.slotCode,
@@ -206,6 +213,18 @@ export function BookAppointmentPage() {
           customerLocation: selectedLocation ?? undefined,
           formattedAddress: formattedAddress || undefined,
         });
+
+        // If outside NCR, redirect to ocular fee payment page
+        if (
+          data.type === AppointmentType.OCULAR &&
+          feePreview &&
+          !feePreview.fee.isWithinNCR
+        ) {
+          toast.success('Appointment booked! Please pay the ocular fee to proceed.');
+          navigate(`/appointments/${result._id}/pay-ocular-fee`);
+          return;
+        }
+
         toast.success('Appointment booked successfully!');
       }
 
@@ -215,13 +234,16 @@ export function BookAppointmentPage() {
     }
   };
 
+  const isOutsideNcr = !!(feePreview && !feePreview.fee.isWithinNCR);
+
   const submitDisabled = useMemo(() => {
     if (isPending || !selectedSlot) return true;
     if (!isOcularBooking) return false;
     if (!selectedLocation) return true;
     if (isFeeLoading) return true;
     if (!!feeError) return true;
-    return !feePreview;
+    if (!feePreview) return true;
+    return false;
   }, [feeError, feePreview, isFeeLoading, isOcularBooking, isPending, selectedLocation, selectedSlot]);
 
   const inputClasses =
@@ -382,6 +404,20 @@ export function BookAppointmentPage() {
                           </p>
                         </div>
                       )}
+
+                      {!feePreview.fee.isWithinNCR && (
+                        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                          <p className="text-sm font-semibold text-amber-800">
+                            Ocular fee payment required via QRPH
+                          </p>
+                          <p className="mt-1 text-xs text-amber-700">
+                            Your location is outside Metro Manila. After booking, you will be
+                            redirected to pay the ocular fee of{' '}
+                            <strong>{currency(feePreview.fee.total)}</strong> via QRPH.
+                            A cashier will verify your payment before your appointment is confirmed.
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -409,7 +445,7 @@ export function BookAppointmentPage() {
                 {SLOT_CODES.map((slot) => {
                   const slotInfo = slotsData?.slots.find((entry) => entry.slotCode === slot);
                   const available = slotInfo?.available ?? false;
-                  const remaining = slotInfo?.remaining ?? 0;
+                  const blocked = (slotInfo as { blocked?: boolean })?.blocked ?? false;
 
                   return (
                     <button
@@ -426,8 +462,12 @@ export function BookAppointmentPage() {
                             : 'cursor-not-allowed border-gray-100 bg-gray-50 text-gray-400 opacity-50',
                       )}
                     >
-                      <p className="text-sm font-medium">{slot}</p>
-                      {available && <p className="mt-0.5 text-xs text-gray-500">{remaining} left</p>}
+                      <p className="text-sm font-medium">{formatSlotTime(slot)}</p>
+                      {!available && (
+                        <p className="mt-0.5 text-xs text-red-400">
+                          {blocked ? 'Blocked' : 'Unavailable'}
+                        </p>
+                      )}
                     </button>
                   );
                 })}
@@ -468,7 +508,11 @@ export function BookAppointmentPage() {
           ) : (
             <CheckCircle className="mr-2 h-4 w-4" />
           )}
-          {rescheduleId ? 'Submit Reschedule Request' : 'Book Appointment'}
+          {rescheduleId
+            ? 'Submit Reschedule Request'
+            : isOutsideNcr
+              ? 'Book & Pay Ocular Fee'
+              : 'Book Appointment'}
         </Button>
       </form>
     </div>

@@ -130,19 +130,23 @@ export function AppointmentsPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {appointments.map((appt) => (
+          {appointments.map((appt) => {
+            const awaitingPayment = appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
+            return (
             <Link key={appt._id} to={`/appointments/${appt._id}`} className="group block h-full">
               <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-100 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden flex flex-col">
                 {/* Top color bar */}
                 <div
                   className={`h-1 w-full ${
-                    appt.status === 'confirmed'
-                      ? 'bg-blue-500'
-                      : appt.status === 'completed'
-                        ? 'bg-emerald-500'
-                        : appt.status === 'cancelled'
-                          ? 'bg-red-500'
-                          : 'bg-amber-500'
+                    awaitingPayment
+                      ? 'bg-orange-500'
+                      : appt.status === 'confirmed'
+                        ? 'bg-blue-500'
+                        : appt.status === 'completed'
+                          ? 'bg-emerald-500'
+                          : appt.status === 'cancelled'
+                            ? 'bg-red-500'
+                            : 'bg-amber-500'
                   }`}
                 />
                 <CardContent className="p-5 flex-1 flex flex-col">
@@ -153,16 +157,18 @@ export function AppointmentsPage() {
                     <Badge
                       variant="outline"
                       className={`uppercase text-[10px] font-bold tracking-wider ${
-                        appt.status === 'confirmed'
-                          ? 'border-blue-200 text-blue-700 bg-blue-50'
-                          : appt.status === 'completed'
-                            ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
-                            : appt.status === 'cancelled'
-                              ? 'border-red-200 text-red-700 bg-red-50'
-                              : 'border-amber-200 text-amber-700 bg-amber-50'
+                        awaitingPayment
+                          ? 'border-orange-200 text-orange-700 bg-orange-50'
+                          : appt.status === 'confirmed'
+                            ? 'border-blue-200 text-blue-700 bg-blue-50'
+                            : appt.status === 'completed'
+                              ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
+                              : appt.status === 'cancelled'
+                                ? 'border-red-200 text-red-700 bg-red-50'
+                                : 'border-amber-200 text-amber-700 bg-amber-50'
                       }`}
                     >
-                      {appt.status}
+                      {awaitingPayment ? 'Awaiting Payment' : appt.status}
                     </Badge>
                   </div>
 
@@ -195,7 +201,8 @@ export function AppointmentsPage() {
                 </CardContent>
               </Card>
             </Link>
-          ))}
+          );
+          })}
         </div>
       )}
     </div>

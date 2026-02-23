@@ -63,6 +63,21 @@ const BookAppointmentPage = lazy(() =>
     default: module.BookAppointmentPage,
   })),
 );
+const AgentBookAppointmentPage = lazy(() =>
+  import('@/pages/appointments/AgentBookAppointmentPage').then((module) => ({
+    default: module.AgentBookAppointmentPage,
+  })),
+);
+const PayOcularFeePage = lazy(() =>
+  import('@/pages/appointments/PayOcularFeePage').then((module) => ({
+    default: module.PayOcularFeePage,
+  })),
+);
+const OcularFeeQueuePage = lazy(() =>
+  import('@/pages/appointments/OcularFeeQueuePage').then((module) => ({
+    default: module.OcularFeeQueuePage,
+  })),
+);
 
 const ProjectsPage = lazy(() =>
   import('@/pages/projects/ProjectsPage').then((module) => ({ default: module.ProjectsPage })),
@@ -90,6 +105,11 @@ const VisitReportPage = lazy(() =>
 const PaymentsPage = lazy(() =>
   import('@/pages/payments/PaymentsPage').then((module) => ({ default: module.PaymentsPage })),
 );
+const PaymentHistoryPage = lazy(() =>
+  import('@/pages/payments/PaymentHistoryPage').then((module) => ({
+    default: module.PaymentHistoryPage,
+  })),
+);
 const CashierQueuePage = lazy(() =>
   import('@/pages/payments/CashierQueuePage').then((module) => ({
     default: module.CashierQueuePage,
@@ -114,6 +134,11 @@ const UsersPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import('@/pages/admin/SettingsPage').then((module) => ({ default: module.SettingsPage })),
 );
+const SlotManagementPage = lazy(() =>
+  import('@/pages/admin/SlotManagementPage').then((module) => ({
+    default: module.SlotManagementPage,
+  })),
+);
 
 const NotFoundPage = lazy(() =>
   import('@/pages/errors/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
@@ -126,6 +151,8 @@ const UnauthorizedPage = lazy(() =>
 
 const REPORT_ROLES = [Role.CASHIER, Role.ADMIN];
 const ADMIN_ROLES = [Role.ADMIN];
+const SLOT_MGMT_ROLES = [Role.ADMIN, Role.APPOINTMENT_AGENT];
+const AGENT_ROLES = [Role.APPOINTMENT_AGENT];
 
 export default function App() {
   const { fetchMe, setCsrfToken } = useAuthStore();
@@ -179,7 +206,25 @@ export default function App() {
 
               <Route path="/appointments" element={<AppointmentsPage />} />
               <Route path="/appointments/book" element={<BookAppointmentPage />} />
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={AGENT_ROLES} />
+                }
+              >
+                <Route path="/appointments/create-for-customer" element={<AgentBookAppointmentPage />} />
+              </Route>
+              <Route path="/appointments/:id/pay-ocular-fee" element={<PayOcularFeePage />} />
               <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
+
+              <Route
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[Role.CASHIER, Role.ADMIN]}
+                  />
+                }
+              >
+                <Route path="/ocular-fee-queue" element={<OcularFeeQueuePage />} />
+              </Route>
 
               <Route path="/projects" element={<ProjectsPage />} />
               <Route path="/projects/:id" element={<ProjectDetailPage />} />
@@ -206,6 +251,16 @@ export default function App() {
               </Route>
 
               <Route path="/payments" element={<PaymentsPage />} />
+
+              <Route
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[Role.CUSTOMER]}
+                  />
+                }
+              >
+                <Route path="/payment-history" element={<PaymentHistoryPage />} />
+              </Route>
 
               <Route
                 element={
@@ -252,6 +307,10 @@ export default function App() {
               <Route element={<ProtectedRoute allowedRoles={ADMIN_ROLES} />}>
                 <Route path="/users" element={<UsersPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+              </Route>
+
+              <Route element={<ProtectedRoute allowedRoles={SLOT_MGMT_ROLES} />}>
+                <Route path="/slot-management" element={<SlotManagementPage />} />
               </Route>
             </Route>
           </Route>

@@ -71,6 +71,27 @@ export function useRequestAppointment() {
   });
 }
 
+export function useAgentCreateAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      customerId: string;
+      type: string;
+      date: string;
+      slotCode: string;
+      purpose?: string;
+      formattedAddress?: string;
+      customerLocation?: { lat: number; lng: number };
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>('/appointments/agent', body);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
 export function useConfirmAppointment() {
   const qc = useQueryClient();
   return useMutation({
@@ -108,7 +129,7 @@ export function useCancelAppointment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/cancel`);
+      const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/cancel`, {});
       return data.data;
     },
     onSuccess: () => {
@@ -121,7 +142,7 @@ export function useMarkNoShow() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/no-show`);
+      const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/no-show`, {});
       return data.data;
     },
     onSuccess: () => {
@@ -173,6 +194,117 @@ export function useRecordOcularFee() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useCreateOcularFeeCheckout() {
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<
+        ApiResponse<{ checkoutUrl: string; sessionId: string }>
+      >(`/appointments/${id}/ocular-fee-checkout`, {});
+      return data.data;
+    },
+  });
+}
+
+// ⚠️ TESTING ONLY: Simulate payment without PayMongo. Remove for production.
+export function useSimulateOcularPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<ApiResponse<{ verified: boolean }>>(
+        `/appointments/${id}/simulate-ocular-payment`,
+        {},
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+    },
+  });
+}
+// ⚠️ END TESTING ONLY
+
+export function useSubmitOcularFeeProof() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string;
+      referenceNumber: string;
+      proofKey: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/ocular-fee-proof`,
+        body,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useVerifyOcularFee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/ocular-fee-verify`,
+        {},
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['ocular-fee-queue'] });
+    },
+  });
+}
+
+export function useDeclineOcularFee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/ocular-fee-decline`,
+        { reason },
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['ocular-fee-queue'] });
+    },
+  });
+}
+
+export function usePendingOcularFees() {
+  return useQuery({
+    queryKey: ['ocular-fee-queue'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<Appointment[]>>(
+        '/appointments/ocular-fee-queue',
+      );
+      return data.data;
+    },
+  });
+}
+
+export function useUnpaidOcularFees() {
+  return useQuery({
+    queryKey: [...KEYS.all, 'unpaid-ocular-fees'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<PaginatedResponse<Appointment>>>(
+        '/appointments',
+        { params: { type: 'ocular', ocularFeeStatus: 'pending', limit: '50' } },
+      );
+      return data.data.items;
     },
   });
 }

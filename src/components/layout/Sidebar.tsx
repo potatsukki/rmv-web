@@ -18,9 +18,14 @@ import {
   ChevronRight,
   Hammer,
   ClipboardList,
+  CalendarOff,
+  Receipt,
+  CalendarPlus,
 } from 'lucide-react';
+import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { BrandLogo } from '@/components/shared/BrandLogo';
+import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
 
 interface NavItem {
   label: string;
@@ -32,6 +37,19 @@ interface NavItem {
 interface NavGroup {
   title: string;
   items: NavItem[];
+}
+
+function isNavItemActive(pathname: string, itemPath: string): boolean {
+  if (itemPath === '/dashboard') return pathname === '/dashboard';
+
+  if (itemPath === '/appointments') {
+    return (
+      pathname === '/appointments' ||
+      (pathname.startsWith('/appointments/') && pathname !== '/appointments/create-for-customer')
+    );
+  }
+
+  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 
 const navGroups: NavGroup[] = [
@@ -50,6 +68,12 @@ const navGroups: NavGroup[] = [
         path: '/appointments',
         icon: Calendar,
         roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN],
+      },
+      {
+        label: 'Create Appointment',
+        path: '/appointments/create-for-customer',
+        icon: CalendarPlus,
+        roles: [Role.APPOINTMENT_AGENT],
       },
       {
         label: 'Visit Reports',
@@ -87,6 +111,12 @@ const navGroups: NavGroup[] = [
         roles: [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN],
       },
       {
+        label: 'Payment History',
+        path: '/payment-history',
+        icon: Receipt,
+        roles: [Role.CUSTOMER],
+      },
+      {
         label: 'Cash Flow',
         path: '/cash',
         icon: DollarSign,
@@ -95,6 +125,12 @@ const navGroups: NavGroup[] = [
       {
         label: 'Cashier Queue',
         path: '/cashier-queue',
+        icon: CreditCard,
+        roles: [Role.CASHIER, Role.ADMIN],
+      },
+      {
+        label: 'Ocular Fee Queue',
+        path: '/ocular-fee-queue',
         icon: CreditCard,
         roles: [Role.CASHIER, Role.ADMIN],
       },
@@ -110,6 +146,7 @@ const navGroups: NavGroup[] = [
         roles: [Role.ADMIN, Role.CASHIER],
       },
       { label: 'Team', path: '/users', icon: Users, roles: [Role.ADMIN] },
+      { label: 'Slot Management', path: '/slot-management', icon: CalendarOff, roles: [Role.ADMIN, Role.APPOINTMENT_AGENT] },
       { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
     ],
   },
@@ -122,6 +159,8 @@ export function Sidebar() {
   const navigate = useNavigate();
 
   if (!user) return null;
+
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -164,8 +203,7 @@ export function Sidebar() {
                 </h3>
                 <div className="space-y-0.5">
                   {visibleItems.map((item) => {
-                    const isActive = location.pathname === item.path || 
-                      (item.path !== '/dashboard' && location.pathname.startsWith(item.path));
+                    const isActive = isNavItemActive(location.pathname, item.path);
 
                     return (
                       <Link
@@ -215,7 +253,7 @@ export function Sidebar() {
         </div>
 
         {/* User Profile Footer */}
-        <div className="border-t border-white/[0.06] p-3">
+        <div className="border-t border-white/[0.06] p-3 space-y-2">
           <Link
             to="/profile"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
@@ -232,23 +270,25 @@ export function Sidebar() {
                 {user.roles[0]?.replace(/_/g, ' ')}
               </p>
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                handleLogout();
-              }}
-              className="h-8 w-8 text-gray-500 hover:bg-white/[0.08] hover:text-red-400"
-              title="Sign out"
-              aria-label="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </Button>
+            <ChevronRight className="h-4 w-4 text-gray-600" />
           </Link>
+
+          <Button
+            variant="ghost"
+            onClick={() => setShowLogoutModal(true)}
+            className="w-full justify-start gap-3 px-3 h-10 rounded-lg text-gray-400 hover:bg-white/[0.06] hover:text-red-400"
+          >
+            <LogOut className="h-4 w-4" />
+            <span className="text-[13px] font-medium">Sign Out</span>
+          </Button>
         </div>
       </div>
+
+      <LogoutConfirmModal
+        open={showLogoutModal}
+        onOpenChange={setShowLogoutModal}
+        onConfirm={handleLogout}
+      />
     </aside>
   );
 }
