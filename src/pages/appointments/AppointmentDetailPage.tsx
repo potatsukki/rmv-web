@@ -47,9 +47,6 @@ export function AppointmentDetailPage() {
   const isAgent = user?.roles.includes(Role.APPOINTMENT_AGENT);
   const isAdmin = user?.roles.includes(Role.ADMIN);
   const canConfirmAppointment = !!(isAgent || isAdmin);
-  const canUpdateAppointmentStatus = !!user?.roles.some((r) =>
-    [Role.APPOINTMENT_AGENT, Role.SALES_STAFF].includes(r),
-  );
   const canCompleteAppointment = !!user?.roles.includes(Role.SALES_STAFF);
   const isStaff = user?.roles.some((r) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(r),
