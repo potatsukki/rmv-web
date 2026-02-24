@@ -27,7 +27,9 @@ export function AppointmentsPage() {
   const [search, setSearch] = useState('');
 
   const formatSlotTime = (slot: string) => {
-    const [h, m] = slot.split(':').map(Number);
+    const parts = slot.split(':').map(Number);
+    const h = parts[0] ?? 0;
+    const m = parts[1] ?? 0;
     const suffix = h >= 12 ? 'PM' : 'AM';
     const hour12 = h % 12 || 12;
     return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;

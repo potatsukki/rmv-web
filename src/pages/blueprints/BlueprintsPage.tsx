@@ -126,15 +126,15 @@ export function BlueprintsPage() {
       if (uploadRevisionFor) {
         await uploadRevisionMut.mutateAsync({
           id: uploadRevisionFor,
-          blueprintKey: blueprintFileKeys[0],
-          costingKey: costingFileKeys[0],
+          blueprintKey: blueprintFileKeys[0] ?? '',
+          costingKey: costingFileKeys[0] ?? '',
         });
         toast.success('Revision uploaded');
       } else {
         await uploadBlueprintMut.mutateAsync({
           projectId: selectedProjectId,
-          blueprintKey: blueprintFileKeys[0],
-          costingKey: costingFileKeys[0],
+          blueprintKey: blueprintFileKeys[0] ?? '',
+          costingKey: costingFileKeys[0] ?? '',
           quotation: total > 0
             ? {
                 materials,
@@ -591,8 +591,8 @@ export function BlueprintsPage() {
               <FileUpload
                 accept="application/pdf"
                 maxFiles={1}
-                value={blueprintFileKeys}
-                onChange={setBlueprintFileKeys}
+                existingKeys={blueprintFileKeys}
+                onUploadComplete={setBlueprintFileKeys}
                 folder="blueprints"
               />
             </div>
@@ -601,8 +601,8 @@ export function BlueprintsPage() {
               <FileUpload
                 accept="application/pdf"
                 maxFiles={1}
-                value={costingFileKeys}
-                onChange={setCostingFileKeys}
+                existingKeys={costingFileKeys}
+                onUploadComplete={setCostingFileKeys}
                 folder="costings"
               />
             </div>

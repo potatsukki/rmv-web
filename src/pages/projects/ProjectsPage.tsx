@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, FolderOpen, Filter, ArrowUpRight, Calendar, User, Users, Wrench } from 'lucide-react';
+import { Search, FolderOpen, Filter, ArrowUpRight, Calendar, User, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';

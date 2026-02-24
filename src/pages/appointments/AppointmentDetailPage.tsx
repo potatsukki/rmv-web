@@ -108,7 +108,9 @@ export function AppointmentDetailPage() {
   };
 
   const formatSlotTime = (slot: string) => {
-    const [h, m] = slot.split(':').map(Number);
+    const parts = slot.split(':').map(Number);
+    const h = parts[0] ?? 0;
+    const m = parts[1] ?? 0;
     const suffix = h >= 12 ? 'PM' : 'AM';
     const hour12 = h % 12 || 12;
     return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
@@ -360,7 +362,7 @@ export function AppointmentDetailPage() {
                     <tbody className="divide-y divide-gray-50">
                       {appt.customerSiteDetails.lineItems.map((item, i) => (
                         <tr key={i}>
-                          <td className="px-3 py-2 text-gray-700">{item.description || `Item ${i + 1}`}</td>
+                          <td className="px-3 py-2 text-gray-700">{item.label || `Item ${i + 1}`}</td>
                           <td className="px-3 py-2 text-right text-gray-500">{item.length ?? '-'}</td>
                           <td className="px-3 py-2 text-right text-gray-500">{item.width ?? '-'}</td>
                           <td className="px-3 py-2 text-right text-gray-500">{item.height ?? '-'}</td>
@@ -383,10 +385,10 @@ export function AppointmentDetailPage() {
                       <span className="text-gray-700 capitalize">{appt.customerSiteDetails.siteConditions.environment}</span>
                     </div>
                   )}
-                  {appt.customerSiteDetails.siteConditions.hasElectricalAccess != null && (
+                  {appt.customerSiteDetails.siteConditions.hasElectrical != null && (
                     <div>
                       <span className="text-gray-500">Electrical:</span>{' '}
-                      <span className="text-gray-700">{appt.customerSiteDetails.siteConditions.hasElectricalAccess ? 'Yes' : 'No'}</span>
+                      <span className="text-gray-700">{appt.customerSiteDetails.siteConditions.hasElectrical ? 'Yes' : 'No'}</span>
                     </div>
                   )}
                   {appt.customerSiteDetails.siteConditions.accessNotes && (
