@@ -30,6 +30,7 @@ import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { SiteConditionsPanel } from '@/components/shared/SiteConditionsPanel';
 import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
+import { ProjectNavigator } from '@/components/shared/ProjectNavigator';
 import {
   useVisitReport,
   useUpdateVisitReport,
@@ -282,6 +283,13 @@ export function VisitReportPage() {
         </div>
         <StatusBadge status={report.status} />
       </div>
+
+      {/* ── Project Navigator (multi-project strip) ── */}
+      <ProjectNavigator
+        appointmentId={report.appointmentId}
+        activeReportId={String(report._id)}
+        canAdd={!!isSalesStaff && (isDraft || isReturned)}
+      />
 
       {/* ── Return reason banner ── */}
       {report.returnReason && isReturned && (
