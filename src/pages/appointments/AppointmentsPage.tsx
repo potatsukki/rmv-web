@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, Calendar, Search, Filter, Clock, MapPin } from 'lucide-react';
+import { Plus, Calendar, Search, Filter, Clock, MapPin, FileText } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,13 @@ export function AppointmentsPage() {
   const { user } = useAuthStore();
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
+
+  const formatSlotTime = (slot: string) => {
+    const [h, m] = slot.split(':').map(Number);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
+  };
 
   const params: Record<string, string> = {};
   if (statusFilter) params.status = statusFilter;
@@ -131,7 +138,7 @@ export function AppointmentsPage() {
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {appointments.map((appt) => {
-            const awaitingPayment = appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
+            const awaitingPayment = appt.type === 'ocular' && appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
             return (
             <Link key={appt._id} to={`/appointments/${appt._id}`} className="group block h-full">
               <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-100 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden flex flex-col">
@@ -180,6 +187,12 @@ export function AppointmentsPage() {
                       <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mt-1">
                         {appt.type}
                       </p>
+                      {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
+                        <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
+                          <FileText className="h-3 w-3" />
+                          {appt.type === 'office' ? 'Site Details Required' : 'Site Details Optional'}
+                        </span>
+                      )}
                     </div>
 
                     <div className="pt-3 border-t border-gray-50 space-y-2">
@@ -187,7 +200,7 @@ export function AppointmentsPage() {
                         <Clock className="mr-2 h-3.5 w-3.5 text-gray-400" />
                         <span>
                           {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'} &middot;{' '}
-                          <span className="text-gray-700 font-medium">{appt.slotCode}</span>
+                          <span className="text-gray-700 font-medium">{formatSlotTime(appt.slotCode)}</span>
                         </span>
                       </div>
                       {appt.address && (

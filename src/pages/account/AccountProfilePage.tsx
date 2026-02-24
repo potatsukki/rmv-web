@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Phone, Check, MapPin } from 'lucide-react';
+import { Phone, Check, MapPin, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -15,8 +15,9 @@ import {
   CardTitle,
   CardDescription,
 } from '@/components/ui/card';
+import { SignaturePad } from '@/components/shared/SignaturePad';
 import { useAuthStore } from '@/stores/auth.store';
-import { useUpdateProfile } from '@/hooks/useUsers';
+import { useUpdateProfile, useSignature, useSaveSignature } from '@/hooks/useUsers';
 import { Role } from '@/lib/constants';
 
 // ── Role-aware phone description ──
@@ -42,6 +43,8 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export function AccountProfilePage() {
   const { user } = useAuthStore();
   const updateProfile = useUpdateProfile();
+  const { data: signatureData } = useSignature();
+  const saveSignature = useSaveSignature();
 
   const {
     register,
@@ -84,6 +87,7 @@ export function AccountProfilePage() {
     'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
 
   return (
+    <div className="space-y-6">
     <Card className="border-gray-100 shadow-sm rounded-2xl">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-gray-900">
@@ -179,5 +183,26 @@ export function AccountProfilePage() {
         </form>
       </CardContent>
     </Card>
+
+    {/* E-Signature Section */}
+    <Card className="border-gray-100 shadow-sm rounded-2xl">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
+          <PenTool className="h-5 w-5 text-orange-500" />
+          E-Signature
+        </CardTitle>
+        <CardDescription className="text-gray-500">
+          Draw your signature for use in contracts and official documents.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <SignaturePad
+          existingKey={signatureData?.signatureKey}
+          onSave={(key) => saveSignature.mutate(key)}
+          isSaving={saveSignature.isPending}
+        />
+      </CardContent>
+    </Card>
+    </div>
   );
 }

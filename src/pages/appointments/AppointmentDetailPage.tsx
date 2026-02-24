@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, AlertTriangle, Camera, Image } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,7 @@ import {
 } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, AppointmentStatus } from '@/lib/constants';
+import { SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import type { ApiResponse } from '@/lib/types';
@@ -106,6 +107,13 @@ export function AppointmentDetailPage() {
     }
   };
 
+  const formatSlotTime = (slot: string) => {
+    const [h, m] = slot.split(':').map(Number);
+    const suffix = h >= 12 ? 'PM' : 'AM';
+    const hour12 = h % 12 || 12;
+    return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
+  };
+
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
@@ -147,7 +155,7 @@ export function AppointmentDetailPage() {
             Appointment Details
           </h1>
         </div>
-        {isCustomer && !appt.ocularFeePaid && appt.ocularFeeStatus === 'pending' ? (
+        {isCustomer && appt.type === 'ocular' && !appt.ocularFeePaid && appt.ocularFeeStatus === 'pending' ? (
           <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
             Awaiting Payment
           </span>
@@ -166,7 +174,7 @@ export function AppointmentDetailPage() {
             <InfoRow
               icon={Clock}
               label="Date & Time"
-              value={`${format(new Date(appt.date), 'EEEE, MMMM d, yyyy')} at ${appt.slotCode}`}
+              value={`${format(new Date(appt.date), 'EEEE, MMMM d, yyyy')} at ${formatSlotTime(appt.slotCode)}`}
             />
 
             <InfoRow
@@ -279,6 +287,169 @@ export function AppointmentDetailPage() {
           </CardContent>
         </Card>
 
+      {/* Customer: Site Details CTA (pending) */}
+      {isCustomer && appt.siteDetailsStatus === 'pending' && appt.status === AppointmentStatus.REQUESTED && (
+        <Card className="rounded-xl border-blue-200 bg-blue-50 shadow-sm">
+          <CardContent className="py-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-blue-100 p-2">
+                <FileText className="h-5 w-5 text-blue-600" />
+              </div>
+              <div>
+                <p className="text-sm font-semibold text-blue-900">
+                  {appt.type === 'office' ? 'Site Details Required' : 'Provide Site Details (Optional)'}
+                </p>
+                <p className="text-xs text-blue-700 mt-0.5">
+                  {appt.type === 'office'
+                    ? 'Please provide your site photos and details so the sales staff can prepare for your consultation.'
+                    : 'You may optionally provide site details to help the sales staff prepare for the ocular visit.'}
+                </p>
+              </div>
+            </div>
+            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm">
+              <Link to={`/appointments/${appt._id}/site-details`}>
+                <Camera className="mr-2 h-4 w-4" />
+                {appt.type === 'office' ? 'Complete Site Details' : 'Add Site Details'}
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Customer / Staff: Read-only view of submitted site details */}
+      {appt.siteDetailsStatus === 'submitted' && appt.customerSiteDetails && (
+        <Card className="rounded-xl border-gray-100 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-gray-500" />
+              Customer Site Details
+              <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
+                <CheckCircle2 className="h-3 w-3" /> Submitted
+              </span>
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {appt.customerSiteDetails.serviceType && (
+              <div>
+                <p className="text-[13px] font-medium text-gray-700">Service Type</p>
+                <p className="text-sm text-gray-500">{SERVICE_TYPE_LABELS[appt.customerSiteDetails.serviceType] || appt.customerSiteDetails.serviceType}</p>
+              </div>
+            )}
+
+            {appt.customerSiteDetails.customerRequirements && (
+              <div>
+                <p className="text-[13px] font-medium text-gray-700">Customer Requirements</p>
+                <p className="text-sm text-gray-500 whitespace-pre-wrap">{appt.customerSiteDetails.customerRequirements}</p>
+              </div>
+            )}
+
+            {appt.customerSiteDetails.lineItems && appt.customerSiteDetails.lineItems.length > 0 && (
+              <div>
+                <p className="text-[13px] font-medium text-gray-700 mb-1">Measurements</p>
+                <div className="rounded-lg border border-gray-100 overflow-hidden">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 text-gray-600">
+                      <tr>
+                        <th className="px-3 py-2 text-left text-xs font-medium">Item</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium">L</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium">W</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium">H</th>
+                        <th className="px-3 py-2 text-right text-xs font-medium">Qty</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-50">
+                      {appt.customerSiteDetails.lineItems.map((item, i) => (
+                        <tr key={i}>
+                          <td className="px-3 py-2 text-gray-700">{item.description || `Item ${i + 1}`}</td>
+                          <td className="px-3 py-2 text-right text-gray-500">{item.length ?? '-'}</td>
+                          <td className="px-3 py-2 text-right text-gray-500">{item.width ?? '-'}</td>
+                          <td className="px-3 py-2 text-right text-gray-500">{item.height ?? '-'}</td>
+                          <td className="px-3 py-2 text-right text-gray-500">{item.quantity ?? 1}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+
+            {appt.customerSiteDetails.siteConditions && (
+              <div>
+                <p className="text-[13px] font-medium text-gray-700 mb-1">Site Conditions</p>
+                <div className="grid grid-cols-2 gap-2 text-sm">
+                  {appt.customerSiteDetails.siteConditions.environment && (
+                    <div>
+                      <span className="text-gray-500">Environment:</span>{' '}
+                      <span className="text-gray-700 capitalize">{appt.customerSiteDetails.siteConditions.environment}</span>
+                    </div>
+                  )}
+                  {appt.customerSiteDetails.siteConditions.hasElectricalAccess != null && (
+                    <div>
+                      <span className="text-gray-500">Electrical:</span>{' '}
+                      <span className="text-gray-700">{appt.customerSiteDetails.siteConditions.hasElectricalAccess ? 'Yes' : 'No'}</span>
+                    </div>
+                  )}
+                  {appt.customerSiteDetails.siteConditions.accessNotes && (
+                    <div className="col-span-2">
+                      <span className="text-gray-500">Access Notes:</span>{' '}
+                      <span className="text-gray-700">{appt.customerSiteDetails.siteConditions.accessNotes}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {(appt.customerSiteDetails.materials || appt.customerSiteDetails.finishes || appt.customerSiteDetails.preferredDesign) && (
+              <div>
+                <p className="text-[13px] font-medium text-gray-700 mb-1">Materials & Design</p>
+                <div className="space-y-1 text-sm">
+                  {appt.customerSiteDetails.materials && (
+                    <p><span className="text-gray-500">Materials:</span> <span className="text-gray-700">{appt.customerSiteDetails.materials}</span></p>
+                  )}
+                  {appt.customerSiteDetails.finishes && (
+                    <p><span className="text-gray-500">Finishes:</span> <span className="text-gray-700">{appt.customerSiteDetails.finishes}</span></p>
+                  )}
+                  {appt.customerSiteDetails.preferredDesign && (
+                    <p><span className="text-gray-500">Preferred Design:</span> <span className="text-gray-700">{appt.customerSiteDetails.preferredDesign}</span></p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {appt.customerSiteDetails.notes && (
+              <div>
+                <p className="text-[13px] font-medium text-gray-700">Additional Notes</p>
+                <p className="text-sm text-gray-500 whitespace-pre-wrap">{appt.customerSiteDetails.notes}</p>
+              </div>
+            )}
+
+            {/* Photo / file count summary */}
+            <div className="flex flex-wrap gap-3 pt-1">
+              {appt.customerSiteDetails.photoKeys && appt.customerSiteDetails.photoKeys.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                  <Camera className="h-3.5 w-3.5" /> {appt.customerSiteDetails.photoKeys.length} photo(s)
+                </span>
+              )}
+              {appt.customerSiteDetails.referenceImageKeys && appt.customerSiteDetails.referenceImageKeys.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                  <Image className="h-3.5 w-3.5" /> {appt.customerSiteDetails.referenceImageKeys.length} reference(s)
+                </span>
+              )}
+              {appt.customerSiteDetails.videoKeys && appt.customerSiteDetails.videoKeys.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                  {appt.customerSiteDetails.videoKeys.length} video(s)
+                </span>
+              )}
+              {appt.customerSiteDetails.sketchKeys && appt.customerSiteDetails.sketchKeys.length > 0 && (
+                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                  {appt.customerSiteDetails.sketchKeys.length} sketch(es)
+                </span>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Agent: Assign Sales Staff & Confirm */}
       {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && (
         <Card className="rounded-xl border-gray-100 shadow-sm">
@@ -286,6 +457,13 @@ export function AppointmentDetailPage() {
             <CardTitle className="text-lg text-gray-900">Assign Sales Staff & Confirm</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
+            {/* Warning: office appointment without site details */}
+            {appt.type === 'office' && appt.siteDetailsStatus !== 'submitted' && (
+              <div className="flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
+                <AlertTriangle className="h-4 w-4 shrink-0" />
+                <span>Cannot confirm — customer has not yet submitted their site details.</span>
+              </div>
+            )}
             {salesStaffList.length === 0 ? (
               <div className="flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
                 <Users className="h-4 w-4 shrink-0" />
@@ -313,7 +491,7 @@ export function AppointmentDetailPage() {
             )}
             <Button
               onClick={handleConfirm}
-              disabled={confirmMutation.isPending || !selectedSalesStaff}
+              disabled={confirmMutation.isPending || !selectedSalesStaff || (appt.type === 'office' && appt.siteDetailsStatus !== 'submitted')}
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm"
             >
               Confirm & Assign
@@ -346,7 +524,7 @@ export function AppointmentDetailPage() {
           </>
         )}
 
-        {(isCustomer || isStaff) &&
+        {(isCustomer || isAgent || isAdmin) &&
           [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(
             appt.status as AppointmentStatus,
           ) && (

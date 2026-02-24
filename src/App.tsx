@@ -106,6 +106,11 @@ const OcularFeeQueuePage = lazy(() =>
     default: module.OcularFeeQueuePage,
   })),
 );
+const CustomerSiteDetailsPage = lazy(() =>
+  import('@/pages/appointments/CustomerSiteDetailsPage').then((module) => ({
+    default: module.CustomerSiteDetailsPage,
+  })),
+);
 
 const ProjectsPage = lazy(() =>
   import('@/pages/projects/ProjectsPage').then((module) => ({ default: module.ProjectsPage })),
@@ -255,6 +260,7 @@ export default function App() {
                 <Route path="/appointments/create-for-customer" element={<AgentBookAppointmentPage />} />
               </Route>
               <Route path="/appointments/:id/pay-ocular-fee" element={<PayOcularFeePage />} />
+              <Route path="/appointments/:id/site-details" element={<CustomerSiteDetailsPage />} />
               <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
 
               <Route
@@ -267,8 +273,16 @@ export default function App() {
                 <Route path="/ocular-fee-queue" element={<OcularFeeQueuePage />} />
               </Route>
 
-              <Route path="/projects" element={<ProjectsPage />} />
-              <Route path="/projects/:id" element={<ProjectDetailPage />} />
+              <Route
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN]}
+                  />
+                }
+              >
+                <Route path="/projects" element={<ProjectsPage />} />
+                <Route path="/projects/:id" element={<ProjectDetailPage />} />
+              </Route>
 
               <Route
                 element={
@@ -291,7 +305,15 @@ export default function App() {
                 <Route path="/visit-reports/:id" element={<VisitReportPage />} />
               </Route>
 
-              <Route path="/payments" element={<PaymentsPage />} />
+              <Route
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN]}
+                  />
+                }
+              >
+                <Route path="/payments" element={<PaymentsPage />} />
+              </Route>
 
               <Route
                 element={

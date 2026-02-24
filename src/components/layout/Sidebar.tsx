@@ -108,7 +108,7 @@ const navGroups: NavGroup[] = [
         label: 'Payments',
         path: '/payments',
         icon: CreditCard,
-        roles: [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN],
+        roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN],
       },
       {
         label: 'Payment History',
@@ -120,7 +120,7 @@ const navGroups: NavGroup[] = [
         label: 'Cash Flow',
         path: '/cash',
         icon: DollarSign,
-        roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
+        roles: [Role.CASHIER, Role.ADMIN],
       },
       {
         label: 'Cashier Queue',

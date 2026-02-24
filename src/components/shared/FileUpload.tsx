@@ -1,10 +1,13 @@
-import { useCallback, useId, useRef, useState } from 'react';
-import { Upload, X, FileIcon, Loader2, ImageIcon } from 'lucide-react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import { AxiosError } from 'axios';
+import { Upload, X, FileIcon, Loader2, ImageIcon, Play, ExternalLink } from 'lucide-react';
 import imageCompression from 'browser-image-compression';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
 import { useGetUploadUrl, uploadFileToR2 } from '@/hooks/useUploads';
+import { api } from '@/lib/api';
+import type { ApiResponse } from '@/lib/types';
 
 interface FileUploadProps {
   folder: string;
@@ -21,6 +24,13 @@ interface UploadedFile {
   fileName: string;
   isUploading: boolean;
 }
+
+const COMPRESSIBLE_IMAGE_TYPES = new Set([
+  'image/jpeg',
+  'image/jpg',
+  'image/png',
+  'image/webp',
+]);
 
 export function FileUpload({
   folder,
@@ -45,7 +55,7 @@ export function FileUpload({
   const processFile = useCallback(
     async (file: File): Promise<File> => {
       // Compress images
-      if (file.type.startsWith('image/')) {
+      if (COMPRESSIBLE_IMAGE_TYPES.has(file.type.toLowerCase())) {
         return await imageCompression(file, {
           maxSizeMB: Math.min(maxSizeMB, 2),
           maxWidthOrHeight: 1920,
@@ -105,9 +115,16 @@ export function FileUpload({
           newUploadedFiles.push({ fileKey, fileName: rawFile.name, isUploading: false });
         } catch (err) {
           setFiles((prev) => prev.filter((f) => f.fileKey !== tempId));
-          toast.error(
-            err instanceof Error ? err.message : `Failed to upload ${rawFile.name}`,
-          );
+          if (err instanceof AxiosError) {
+            const apiMessage =
+              (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
+              || err.message;
+            toast.error(apiMessage || `Failed to upload ${rawFile.name}`);
+          } else {
+            toast.error(
+              err instanceof Error ? err.message : `Failed to upload ${rawFile.name}`,
+            );
+          }
         }
       }
 
@@ -130,7 +147,43 @@ export function FileUpload({
     onUploadComplete(remaining);
   };
 
-  const isImage = (name: string) => /\.(jpg|jpeg|png|gif|webp)$/i.test(name);
+  const isImage = (name: string) => /\.(jpg|jpeg|png|gif|webp|heic|heif|bmp|tif|tiff|svg)$/i.test(name);
+  const isVideo = (name: string) => /\.(mp4|mov|m4v|webm|avi|mkv)$/i.test(name);
+
+  // ── Thumbnail URL cache ──
+  const [previewUrls, setPreviewUrls] = useState<Record<string, string>>({});
+  const [lightbox, setLightbox] = useState<string | null>(null);
+
+  // Fetch signed download URLs for completed files so we can show thumbnails
+  useEffect(() => {
+    const keysNeedingUrl = files
+      .filter((f) => !f.isUploading && !previewUrls[f.fileKey])
+      .map((f) => f.fileKey);
+
+    if (keysNeedingUrl.length === 0) return;
+
+    let cancelled = false;
+
+    (async () => {
+      for (const key of keysNeedingUrl) {
+        if (cancelled) break;
+        try {
+          const { data } = await api.post<ApiResponse<{ downloadUrl: string }>>(
+            '/uploads/signed-download-url',
+            { key },
+          );
+          if (!cancelled) {
+            setPreviewUrls((prev) => ({ ...prev, [key]: data.data.downloadUrl }));
+          }
+        } catch {
+          // silently ignore – file will just show the icon
+        }
+      }
+    })();
+
+    return () => { cancelled = true; };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [files.map((f) => f.fileKey).join(',')]);
 
   return (
     <div className="space-y-3">
@@ -173,37 +226,118 @@ export function FileUpload({
         />
       </div>
 
-      {/* File list */}
+      {/* File list with previews */}
       {files.length > 0 && (
-        <ul className="space-y-2">
-          {files.map((file) => (
-            <li
-              key={file.fileKey}
-              className="flex items-center gap-3 rounded-md border border-border bg-card p-2"
-            >
-              {isImage(file.fileName) ? (
-                <ImageIcon className="h-5 w-5 text-blue-500" />
-              ) : (
-                <FileIcon className="h-5 w-5 text-muted-foreground" />
-              )}
-              <span className="flex-1 truncate text-sm">{file.fileName}</span>
-              {file.isUploading ? (
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
-              ) : (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-6 w-6"
-                  onClick={() => removeFile(file.fileKey)}
-                  aria-label={`Remove ${file.fileName}`}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              )}
-            </li>
-          ))}
-        </ul>
+        <div className="grid gap-2">
+          {files.map((file) => {
+            const url = previewUrls[file.fileKey];
+            const imageFile = isImage(file.fileName);
+            const videoFile = isVideo(file.fileName);
+
+            return (
+              <div
+                key={file.fileKey}
+                className="flex items-center gap-3 rounded-lg border border-border bg-card p-2"
+              >
+                {/* Thumbnail / icon */}
+                {file.isUploading ? (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  </div>
+                ) : imageFile && url ? (
+                  <button
+                    type="button"
+                    onClick={() => setLightbox(url)}
+                    className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-gray-200 hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer"
+                    title="Click to view full size"
+                  >
+                    <img
+                      src={url}
+                      alt={file.fileName}
+                      className="h-full w-full object-cover"
+                      loading="lazy"
+                    />
+                  </button>
+                ) : videoFile && url ? (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gray-900 hover:bg-gray-800 transition-colors"
+                    title="Click to play video"
+                  >
+                    <Play className="h-5 w-5 text-white" fill="white" />
+                  </a>
+                ) : imageFile ? (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <ImageIcon className="h-5 w-5 text-blue-500" />
+                  </div>
+                ) : (
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                  </div>
+                )}
+
+                {/* File name + open link */}
+                <div className="flex-1 min-w-0">
+                  <span className="block truncate text-sm text-foreground">
+                    {file.fileName}
+                  </span>
+                  {!file.isUploading && url && (
+                    <a
+                      href={url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5"
+                    >
+                      <ExternalLink className="h-3 w-3" />
+                      {videoFile ? 'Play' : 'View full size'}
+                    </a>
+                  )}
+                </div>
+
+                {/* Remove button */}
+                {!file.isUploading && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7 shrink-0"
+                    onClick={() => removeFile(file.fileKey)}
+                    aria-label={`Remove ${file.fileName}`}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Lightbox overlay */}
+      {lightbox && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightbox(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <button
+            type="button"
+            onClick={() => setLightbox(null)}
+            className="absolute top-4 right-4 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
+            aria-label="Close preview"
+          >
+            <X className="h-6 w-6" />
+          </button>
+          <img
+            src={lightbox}
+            alt="Full-size preview"
+            className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          />
+        </div>
       )}
     </div>
   );

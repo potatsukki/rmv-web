@@ -59,8 +59,9 @@ export function FabricationPage() {
   const addUpdateMutation = useCreateFabricationUpdate();
 
   const canAddUpdate = user?.roles.some((r: string) =>
-    [Role.FABRICATION_STAFF].includes(r as Role),
+    [Role.FABRICATION_STAFF, Role.ADMIN].includes(r as Role),
   );
+  const isCustomer = user?.roles.some((r: string) => r === Role.CUSTOMER);
 
   const allowedStatuses = fabricationStatus?.allowedTransitions || [];
 
@@ -299,7 +300,9 @@ export function FabricationPage() {
                     <User className="h-3 w-3" />
                     {user?._id === update.createdBy
                       ? 'You'
-                      : update.createdByName || 'Team Member'}
+                      : isCustomer
+                        ? 'Team Member'
+                        : (update.createdByName || 'Team Member')}
                   </span>
                 </div>
 

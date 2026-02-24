@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, Appointment, PaginatedResponse } from '@/lib/types';
+import type { ApiResponse, Appointment, PaginatedResponse, CustomerSiteDetails } from '@/lib/types';
 import type { SlotCode } from '@/lib/constants';
 
 // ── Keys ──
@@ -305,6 +305,43 @@ export function useUnpaidOcularFees() {
         { params: { type: 'ocular', ocularFeeStatus: 'pending', limit: '50' } },
       );
       return data.data.items;
+    },
+  });
+}
+
+export function useSubmitSiteDetails() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string;
+    } & CustomerSiteDetails) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/site-details`,
+        body,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useSkipSiteDetails() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/skip-site-details`,
+        {},
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
 }

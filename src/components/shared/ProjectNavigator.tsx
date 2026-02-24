@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Plus,
@@ -17,10 +17,15 @@ import {
   Layers,
   DoorClosed,
   Loader2,
+  Pencil,
+  Trash2,
+  Check,
+  X,
   type LucideIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { cn } from '@/lib/utils';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
   ServiceType,
   SERVICE_TYPE_LABELS,
@@ -30,9 +35,11 @@ import type { VisitReport } from '@/lib/types';
 import {
   useVisitReportsByAppointment,
   useCreateVisitReport,
+  useUpdateVisitReport,
+  useDeleteVisitReport,
 } from '@/hooks/useVisitReports';
 
-/* ── Icon mapping (mirrors ServiceTypePicker) ── */
+/* ── Icon mapping ── */
 const SERVICE_ICONS: Record<string, LucideIcon> = {
   [ServiceType.RAILINGS]: Fence,
   [ServiceType.GRILLS]: Grid3x3,
@@ -52,11 +59,11 @@ const SERVICE_ICONS: Record<string, LucideIcon> = {
   [ServiceType.CUSTOM]: Wrench,
 };
 
-const STATUS_DOT: Record<string, string> = {
-  [VisitReportStatus.DRAFT]: 'bg-gray-400',
-  [VisitReportStatus.SUBMITTED]: 'bg-blue-500',
-  [VisitReportStatus.RETURNED]: 'bg-orange-500',
-  [VisitReportStatus.COMPLETED]: 'bg-emerald-500',
+const STATUS_STYLES: Record<string, { dot: string; bg: string; text: string }> = {
+  [VisitReportStatus.DRAFT]: { dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-500' },
+  [VisitReportStatus.SUBMITTED]: { dot: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-600' },
+  [VisitReportStatus.RETURNED]: { dot: 'bg-orange-500', bg: 'bg-orange-50', text: 'text-orange-600' },
+  [VisitReportStatus.COMPLETED]: { dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-600' },
 };
 
 const STATUS_SHORT: Record<string, string> = {
@@ -66,25 +73,119 @@ const STATUS_SHORT: Record<string, string> = {
   [VisitReportStatus.COMPLETED]: 'Completed',
 };
 
+function getLabel(report: VisitReport): string {
+  return (
+    report.serviceTypeCustom ||
+    SERVICE_TYPE_LABELS[report.serviceType] ||
+    'Untitled Project'
+  );
+}
+
+/* ── Inline rename input ── */
+function InlineRename({
+  reportId,
+  currentLabel,
+  onDone,
+}: {
+  reportId: string;
+  currentLabel: string;
+  onDone: () => void;
+}) {
+  const [value, setValue] = useState(currentLabel);
+  const inputRef = useRef<HTMLInputElement>(null);
+  const updateMutation = useUpdateVisitReport();
+
+  useEffect(() => {
+    // Auto-focus & select on mount
+    inputRef.current?.focus();
+    inputRef.current?.select();
+  }, []);
+
+  const save = useCallback(async () => {
+    const trimmed = value.trim();
+    if (!trimmed || trimmed === currentLabel) {
+      onDone();
+      return;
+    }
+    try {
+      await updateMutation.mutateAsync({
+        id: reportId,
+        serviceType: ServiceType.CUSTOM,
+        serviceTypeCustom: trimmed,
+      });
+      toast.success('Renamed');
+    } catch {
+      toast.error('Failed to rename');
+    }
+    onDone();
+  }, [value, currentLabel, reportId, updateMutation, onDone]);
+
+  return (
+    <div className="flex items-center gap-1 min-w-0 flex-1" onClick={(e) => e.stopPropagation()}>
+      <input
+        ref={inputRef}
+        value={value}
+        onChange={(e) => setValue(e.target.value)}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') save();
+          if (e.key === 'Escape') onDone();
+        }}
+        className="w-full min-w-0 rounded-md border border-orange-300 bg-white px-2 py-0.5 text-[13px] font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-orange-200"
+        maxLength={60}
+      />
+      <button
+        type="button"
+        onClick={save}
+        disabled={updateMutation.isPending}
+        className="shrink-0 rounded-md p-1 text-emerald-600 hover:bg-emerald-50 transition-colors"
+        aria-label="Save name"
+      >
+        {updateMutation.isPending ? (
+          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+        ) : (
+          <Check className="h-3.5 w-3.5" />
+        )}
+      </button>
+      <button
+        type="button"
+        onClick={onDone}
+        className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 transition-colors"
+        aria-label="Cancel"
+      >
+        <X className="h-3.5 w-3.5" />
+      </button>
+    </div>
+  );
+}
+
+/* ── Main component ── */
+
 interface ProjectNavigatorProps {
   appointmentId: string;
   activeReportId: string;
   canAdd?: boolean;
+  canEdit?: boolean;
+  onBeforeNavigate?: (nextReportId: string) => Promise<boolean>;
 }
 
 export function ProjectNavigator({
   appointmentId,
   activeReportId,
   canAdd = false,
+  canEdit = false,
+  onBeforeNavigate,
 }: ProjectNavigatorProps) {
   const navigate = useNavigate();
   const { data: siblings } = useVisitReportsByAppointment(appointmentId);
   const createMutation = useCreateVisitReport();
+  const deleteMutation = useDeleteVisitReport();
   const [adding, setAdding] = useState(false);
+  const [renamingId, setRenamingId] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<VisitReport | null>(null);
 
   const reports: VisitReport[] = siblings ?? [];
 
-  // Don't render the strip when there's only 1 report and the user can't add
+  // Don't render when there's only 1 report and the user can't add more
   if (reports.length <= 1 && !canAdd) return null;
 
   const handleAdd = async () => {
@@ -95,8 +196,10 @@ export function ProjectNavigator({
         appointmentId,
         serviceType: ServiceType.CUSTOM,
       });
-      toast.success('New project added');
+      toast.success('New project added — give it a name!');
       navigate(`/visit-reports/${newReport._id}`);
+      // Auto-open rename for the new card after navigation
+      setTimeout(() => setRenamingId(String(newReport._id)), 300);
     } catch {
       toast.error('Failed to add project');
     } finally {
@@ -104,112 +207,216 @@ export function ProjectNavigator({
     }
   };
 
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+
+    const targetId = String(deleteTarget._id);
+    const currentIndex = reports.findIndex((r) => String(r._id) === targetId);
+    const remaining = reports.filter((r) => String(r._id) !== targetId);
+    const nextReport =
+      remaining[Math.max(0, Math.min(currentIndex, remaining.length - 1))];
+
+    try {
+      await deleteMutation.mutateAsync(targetId);
+      toast.success('Project removed');
+      setDeleteTarget(null);
+
+      if (String(activeReportId) === targetId) {
+        if (nextReport) {
+          navigate(`/visit-reports/${nextReport._id}`);
+        } else {
+          navigate('/visit-reports');
+        }
+      }
+    } catch {
+      toast.error('Failed to remove project');
+    }
+  };
+
+  const handleNavigate = async (nextReportId: string) => {
+    if (nextReportId === String(activeReportId)) return;
+    if (onBeforeNavigate) {
+      const shouldNavigate = await onBeforeNavigate(nextReportId);
+      if (!shouldNavigate) return;
+    }
+    navigate(`/visit-reports/${nextReportId}`);
+  };
+
   return (
-    <div className="w-full">
-      {/* Label */}
-      <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 mb-2 px-0.5">
-        Projects for this appointment ({reports.length})
-      </p>
-
-      {/* Scrollable strip */}
-      <div className="flex gap-2 overflow-x-auto pb-2 -mx-1 px-1 snap-x snap-mandatory no-scrollbar">
-        {reports.map((report, idx) => {
-          const isActive = String(report._id) === String(activeReportId);
-          const Icon = SERVICE_ICONS[report.serviceType] ?? Wrench;
-          const label =
-            report.serviceTypeCustom ||
-            SERVICE_TYPE_LABELS[report.serviceType] ||
-            'Custom';
-
-          return (
-            <button
-              type="button"
-              key={String(report._id)}
-              onClick={() => {
-                if (!isActive) navigate(`/visit-reports/${report._id}`);
-              }}
-              className={cn(
-                'group relative flex items-center gap-2.5 rounded-xl border px-3 py-2.5 text-left transition-all duration-200 snap-start shrink-0',
-                'min-w-[140px] max-w-[200px] sm:min-w-[160px] sm:max-w-[220px]',
-                isActive
-                  ? 'border-orange-300 bg-orange-50 shadow-sm ring-1 ring-orange-200'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm',
-              )}
-            >
-              {/* Icon container */}
-              <div
-                className={cn(
-                  'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg transition-colors',
-                  isActive
-                    ? 'bg-orange-100 text-orange-600'
-                    : 'bg-gray-100 text-gray-500 group-hover:bg-gray-200',
-                )}
-              >
-                <Icon className="h-4 w-4" />
-              </div>
-
-              {/* Text */}
-              <div className="min-w-0 flex-1">
-                <p
-                  className={cn(
-                    'text-[13px] font-semibold leading-tight truncate',
-                    isActive ? 'text-orange-900' : 'text-gray-800',
-                  )}
-                >
-                  {label}
-                </p>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span
-                    className={cn(
-                      'inline-block h-1.5 w-1.5 rounded-full',
-                      STATUS_DOT[report.status] ?? 'bg-gray-300',
-                    )}
-                  />
-                  <span className="text-[11px] text-gray-500 leading-none">
-                    {STATUS_SHORT[report.status] ?? report.status}
-                  </span>
-                </div>
-              </div>
-
-              {/* Index badge */}
-              <span
-                className={cn(
-                  'absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
-                  isActive
-                    ? 'bg-orange-500 text-white'
-                    : 'bg-gray-200 text-gray-600 group-hover:bg-gray-300',
-                )}
-              >
-                {idx + 1}
-              </span>
-            </button>
-          );
-        })}
-
-        {/* Add button */}
+    <div className="w-full rounded-xl border border-gray-100 bg-white p-3 sm:p-4 shadow-sm">
+      {/* Header row */}
+      <div className="flex items-center justify-between mb-3">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+          Projects ({reports.length})
+        </p>
         {canAdd && (
           <button
             type="button"
             disabled={adding}
             onClick={handleAdd}
             className={cn(
-              'flex items-center gap-2 rounded-xl border-2 border-dashed px-4 py-2.5 transition-all snap-start shrink-0',
-              'min-w-[140px] sm:min-w-[160px]',
-              'border-gray-300 text-gray-500 hover:border-orange-400 hover:text-orange-600 hover:bg-orange-50/50',
-              adding && 'opacity-60 pointer-events-none',
+              'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
+              'bg-orange-50 text-orange-600 hover:bg-orange-100 active:scale-[0.97]',
+              adding && 'opacity-50 pointer-events-none',
             )}
           >
             {adding ? (
-              <Loader2 className="h-4 w-4 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
-              <Plus className="h-4 w-4" />
+              <Plus className="h-3.5 w-3.5" />
             )}
-            <span className="text-[13px] font-semibold whitespace-nowrap">
-              Add Project
-            </span>
+            Add Project
           </button>
         )}
       </div>
+
+      {/* Cards strip */}
+      <div className="flex gap-3 overflow-x-auto overflow-y-visible pb-1 -mx-0.5 px-0.5 snap-x snap-mandatory no-scrollbar">
+        {reports.map((report, idx) => {
+          const id = String(report._id);
+          const isActive = id === String(activeReportId);
+          const isRenaming = renamingId === id;
+          const canDeleteThisReport =
+            canEdit
+            && reports.length > 1
+            && [VisitReportStatus.DRAFT, VisitReportStatus.RETURNED].includes(report.status as VisitReportStatus);
+          const Icon = SERVICE_ICONS[report.serviceType] ?? Wrench;
+          const label = getLabel(report);
+          const style = STATUS_STYLES[report.status] ?? { dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-500' };
+
+          return (
+            <div
+              role="button"
+              tabIndex={0}
+              key={id}
+              onClick={async () => {
+                if (isRenaming) return;
+                if (!isActive) await handleNavigate(id);
+              }}
+              onKeyDown={async (event) => {
+                if (event.key === 'Enter' || event.key === ' ') {
+                  event.preventDefault();
+                  if (!isRenaming && !isActive) await handleNavigate(id);
+                }
+              }}
+              className={cn(
+                'group relative flex items-center gap-3 rounded-xl border text-left transition-all duration-200 snap-start shrink-0',
+                'min-w-[180px] max-w-[280px] sm:min-w-[200px] sm:max-w-[300px]',
+                'px-4 py-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300',
+                isActive && canEdit ? 'pb-10' : '',
+                isActive
+                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-white shadow-md ring-1 ring-orange-200/60'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm active:scale-[0.98]',
+              )}
+            >
+              {/* Icon */}
+              <div
+                className={cn(
+                  'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors',
+                  isActive
+                    ? 'bg-orange-100 text-orange-600'
+                    : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100 group-hover:text-gray-500',
+                )}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
+
+              {/* Label + status */}
+              {isRenaming ? (
+                <InlineRename
+                  reportId={id}
+                  currentLabel={label}
+                  onDone={() => setRenamingId(null)}
+                />
+              ) : (
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1">
+                    <p
+                      className={cn(
+                        'text-sm font-semibold leading-tight truncate',
+                        isActive ? 'text-orange-900' : 'text-gray-800',
+                      )}
+                    >
+                      {label}
+                    </p>
+                  </div>
+                  {/* Status pill */}
+                  <div className="flex items-center gap-1.5 mt-1">
+                    <span
+                      className={cn(
+                        'inline-flex items-center gap-1 rounded-full px-1.5 py-0.5',
+                        style.bg,
+                      )}
+                    >
+                      <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
+                      <span className={cn('text-[10px] font-medium leading-none', style.text)}>
+                        {STATUS_SHORT[report.status] ?? report.status}
+                      </span>
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Action buttons — bottom-right, only on active + editable */}
+              {isActive && canEdit && !isRenaming && (
+                <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1">
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRenamingId(id);
+                    }}
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-200 hover:text-orange-700 transition-colors"
+                    aria-label="Rename project"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                  {canDeleteThisReport && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setDeleteTarget(report);
+                      }}
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 transition-colors"
+                      aria-label="Delete project"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Index badge — inside card, top-right */}
+              {reports.length > 1 && (
+                <span
+                  className={cn(
+                    'absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+                    isActive
+                      ? 'bg-orange-500 text-white'
+                      : 'bg-gray-200 text-gray-600',
+                  )}
+                >
+                  {idx + 1}
+                </span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <ConfirmDialog
+        open={!!deleteTarget}
+        onOpenChange={(open) => {
+          if (!open) setDeleteTarget(null);
+        }}
+        title="Delete Project"
+        description="This removes this project report from the appointment. This action cannot be undone."
+        confirmLabel="Delete"
+        variant="destructive"
+        isLoading={deleteMutation.isPending}
+        onConfirm={handleDelete}
+      />
     </div>
   );
 }

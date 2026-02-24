@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Search,
@@ -8,6 +8,7 @@ import {
   Calendar,
   User,
   Layers,
+  FolderOpen,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -20,6 +21,63 @@ import { PageError } from '@/components/shared/PageError';
 import { useVisitReports } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
 import { VisitReportStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import type { VisitReport } from '@/lib/types';
+
+/* ── Helpers ── */
+
+/** Mongoose `.populate()` may return an object — always extract the raw string ID. */
+function rawId(field: unknown): string {
+  if (typeof field === 'string') return field;
+  if (field && typeof field === 'object' && '_id' in (field as Record<string, unknown>))
+    return String((field as Record<string, unknown>)._id);
+  return String(field);
+}
+
+/** Extract a display name from a populated `customerId` field. */
+function customerDisplayName(report: VisitReport): string {
+  const cid = report.customerId as unknown;
+  if (cid && typeof cid === 'object') {
+    const obj = cid as Record<string, unknown>;
+    const first = obj.firstName ?? '';
+    const last = obj.lastName ?? '';
+    const name = `${first} ${last}`.trim();
+    if (name) return name;
+  }
+  if (report.customerName) return report.customerName;
+  return `Customer ${rawId(report.customerId).slice(-6)}`;
+}
+
+/** Derive an aggregate status for a group of reports. Priority: returned > draft > submitted > completed */
+function groupStatus(reports: VisitReport[]): string {
+  const statuses = new Set(reports.map((r) => r.status));
+  if (statuses.has(VisitReportStatus.RETURNED)) return VisitReportStatus.RETURNED;
+  if (statuses.has(VisitReportStatus.DRAFT)) return VisitReportStatus.DRAFT;
+  if (statuses.has(VisitReportStatus.SUBMITTED)) return VisitReportStatus.SUBMITTED;
+  if (statuses.has(VisitReportStatus.COMPLETED)) return VisitReportStatus.COMPLETED;
+  return reports[0]?.status || VisitReportStatus.DRAFT;
+}
+
+/** Get service label for a single report. */
+function serviceLabel(report: VisitReport): string {
+  return (
+    report.serviceTypeCustom ||
+    SERVICE_TYPE_LABELS[report.serviceType] ||
+    report.serviceType ||
+    'General'
+  );
+}
+
+/** Group structure for one appointment's worth of reports. */
+interface AppointmentGroup {
+  appointmentId: string;
+  reports: VisitReport[];
+  customerName: string;
+  visitType: string;
+  status: string;
+  latestUpdate: string;
+}
+
+/* ── Constants ── */
 
 const STATUS_FILTERS = [
   { label: 'All Reports', value: '' },
@@ -43,6 +101,8 @@ const BAR_COLORS: Record<string, string> = {
   [VisitReportStatus.COMPLETED]: 'bg-emerald-500',
 };
 
+/* ── Component ── */
+
 export function VisitReportsListPage() {
   const { user } = useAuthStore();
   const [statusFilter, setStatusFilter] = useState('');
@@ -57,6 +117,31 @@ export function VisitReportsListPage() {
   if (isError) return <PageError onRetry={refetch} />;
 
   const reports = data?.items || [];
+
+  /* ── Group reports by appointment ── */
+  const groups: AppointmentGroup[] = useMemo(() => {
+    const map = new Map<string, VisitReport[]>();
+    for (const r of reports) {
+      const key = rawId(r.appointmentId);
+      const list = map.get(key);
+      if (list) list.push(r);
+      else map.set(key, [r]);
+    }
+
+    return Array.from(map.entries()).map(([apptId, reps]) => {
+      // Sort so the most recently updated report comes first (clicked first)
+      reps.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
+      const first = reps[0]!; // guaranteed at least 1 entry per group
+      return {
+        appointmentId: apptId,
+        reports: reps,
+        customerName: customerDisplayName(first),
+        visitType: first.visitType,
+        status: groupStatus(reps),
+        latestUpdate: first.updatedAt,
+      };
+    });
+  }, [reports]);
 
   const isEngineer = user?.roles.includes(Role.ENGINEER);
   const pageTitle = isEngineer ? 'Visit Report Queue' : 'Visit Reports';
@@ -124,7 +209,7 @@ export function VisitReportsListPage() {
             </Card>
           ))}
         </div>
-      ) : !reports.length ? (
+      ) : !groups.length ? (
         <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
           <div className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
             <ClipboardList className="h-8 w-8 text-gray-300" />
@@ -152,23 +237,24 @@ export function VisitReportsListPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {reports.map((report) => {
-            const serviceLabel = report.serviceTypeCustom
-              || SERVICE_TYPE_LABELS[report.serviceType]
-              || report.serviceType
-              || 'General';
+          {groups.map((group) => {
+            const { reports: reps, status, customerName: custName } = group;
+            const firstReport = reps[0]!;
+            const projectCount = reps.length;
+            const projectLabels = reps.map(serviceLabel);
 
             return (
               <Link
-                key={String(report._id)}
-                to={`/visit-reports/${report._id}`}
+                key={group.appointmentId}
+                to={`/visit-reports/${firstReport._id}`}
                 className="group block h-full"
               >
                 <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
                   <div
-                    className={`h-1.5 w-full ${BAR_COLORS[report.status] || 'bg-gray-200'}`}
+                    className={`h-1.5 w-full ${BAR_COLORS[status] || 'bg-gray-200'}`}
                   />
                   <CardContent className="p-6 flex-1 flex flex-col">
+                    {/* Top row: icon + status */}
                     <div className="flex items-start justify-between mb-4">
                       <div className="h-10 w-10 text-orange-600 bg-orange-50 rounded-xl flex items-center justify-center">
                         <ClipboardList className="h-5 w-5" />
@@ -176,50 +262,69 @@ export function VisitReportsListPage() {
                       <Badge
                         variant="outline"
                         className={`uppercase text-[10px] font-bold tracking-wider rounded-md ${
-                          STATUS_COLORS[report.status] || 'border-gray-200 text-gray-600 bg-gray-50'
+                          STATUS_COLORS[status] || 'border-gray-200 text-gray-600 bg-gray-50'
                         }`}
                       >
-                        {String(report.status || '').replace(/_/g, ' ')}
+                        {String(status || '').replace(/_/g, ' ')}
                       </Badge>
                     </div>
 
-                    <div className="mb-4 flex-1">
+                    {/* Customer name + project count */}
+                    <div className="mb-3 flex-1">
                       <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
-                        {serviceLabel}
+                        {custName}
                       </h3>
-                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                        {report.customerRequirements || report.notes || 'No details yet.'}
+                      <p className="text-sm text-gray-500 mt-1">
+                        {projectCount === 1
+                          ? '1 project'
+                          : `${projectCount} projects`}
                       </p>
                     </div>
 
+                    {/* Service type chips */}
+                    <div className="flex flex-wrap gap-1.5 mb-4">
+                      {projectLabels.map((label, i) => (
+                        <span
+                          key={i}
+                          className="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700 border border-orange-100"
+                        >
+                          {label}
+                        </span>
+                      ))}
+                    </div>
+
+                    {/* Meta info */}
                     <div className="space-y-2 pt-4 border-t border-gray-100">
-                      {/* Service type badge */}
                       <div className="flex items-center text-sm text-gray-600">
                         <Layers className="mr-2 h-3.5 w-3.5 text-gray-400" />
                         <span className="text-xs font-medium text-gray-500">
-                          {report.visitType === 'ocular' ? 'Ocular' : 'Consult'}
+                          {group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}
                         </span>
                       </div>
-                      {report.actualVisitDateTime && (
+                      {firstReport.actualVisitDateTime && (
                         <div className="flex items-center text-sm text-gray-600">
                           <Calendar className="mr-2 h-3.5 w-3.5 text-gray-400" />
                           <span>
-                            {format(new Date(report.actualVisitDateTime), 'MMM d, yyyy')}
+                            {format(new Date(firstReport.actualVisitDateTime), 'MMM d, yyyy')}
                           </span>
                         </div>
                       )}
                       <div className="flex items-center text-sm text-gray-600">
                         <User className="mr-2 h-3.5 w-3.5 text-gray-400" />
-                        <span className="line-clamp-1">
-                          {report.customerName
-                            ? report.customerName
-                            : `Customer ${String(report.customerId).slice(-6)}`}
-                        </span>
+                        <span className="line-clamp-1">{custName}</span>
                       </div>
+                      {projectCount > 1 && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <FolderOpen className="mr-2 h-3.5 w-3.5 text-gray-400" />
+                          <span className="text-xs font-medium text-gray-500">
+                            {projectCount} projects in this visit
+                          </span>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 flex items-center text-sm font-medium text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {report.status === VisitReportStatus.DRAFT
+                      {status === VisitReportStatus.DRAFT
                         ? 'Continue Editing'
                         : 'View Details'}{' '}
                       <ArrowUpRight className="ml-1 h-3.5 w-3.5" />

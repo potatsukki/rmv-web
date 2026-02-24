@@ -29,6 +29,12 @@ const ALL_NOTIF_PREFS = [
     roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
   },
   {
+    key: 'project' as const,
+    label: 'Projects',
+    description: 'New projects from visit reports, engineer assignments, and status updates',
+    roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
+  },
+  {
     key: 'blueprint' as const,
     label: 'Blueprints',
     description: 'Blueprint uploads, approvals, and revision requests',
@@ -58,6 +64,7 @@ export function AccountNotificationsPage() {
         payment: true,
         blueprint: true,
         fabrication: true,
+        project: true,
       };
       const updated = { ...prefs, [key]: val };
       await updateProfile.mutateAsync({ notificationPreferences: updated });

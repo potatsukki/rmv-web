@@ -62,6 +62,11 @@ interface FabricationStatusResponse {
   currentStatus: string;
   latestUpdate: FabricationApiUpdate | null;
   allowedTransitions: string[];
+  paymentGate?: {
+    allPaid: boolean;
+    unpaidCount: number;
+    gatedStatuses: string[];
+  };
 }
 
 export function useFabricationStatus(projectId: string) {
@@ -73,10 +78,12 @@ export function useFabricationStatus(projectId: string) {
       );
 
       return {
-        ...data.data,
+        currentStatus: data.data.currentStatus,
         latestUpdate: data.data.latestUpdate
           ? normalizeUpdate(data.data.latestUpdate)
           : null,
+        allowedTransitions: data.data.allowedTransitions,
+        paymentGate: data.data.paymentGate,
       };
     },
     enabled: !!projectId,

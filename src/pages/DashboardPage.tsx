@@ -14,7 +14,6 @@ import {
   CalendarCheck,
   Package,
   Users,
-  ArrowUpRight,
   CalendarPlus,
   LogIn,
   UserPlus,
@@ -154,7 +153,7 @@ function getRoleGreeting(role: Role): string {
   const greetings: Partial<Record<Role, string>> = {
     [Role.CUSTOMER]: 'Start a new project or track your orders.',
     [Role.APPOINTMENT_AGENT]: 'Manage schedules and ocular visits.',
-    [Role.SALES_STAFF]: 'Track leads and project conversions.',
+    [Role.SALES_STAFF]: 'Manage your appointments and visit reports.',
     [Role.ENGINEER]: 'Review blueprints and technical specs.',
     [Role.CASHIER]: 'Process payments and manage cash flow.',
     [Role.FABRICATION_STAFF]: 'Monitor fabrication stages and output.',
@@ -190,15 +189,13 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     case Role.SALES_STAFF:
       return [
         { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, color: 'text-indigo-600 bg-indigo-50' },
-        activeProjects,
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, trend: 'up', color: 'text-emerald-600 bg-emerald-50' },
-        { label: 'Conversion', value: `${((d?.conversionRate ?? 0) * 100).toFixed(1)}%`, icon: TrendingUp, color: 'text-violet-600 bg-violet-50' },
+        { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', color: 'text-amber-600 bg-amber-50' },
       ];
     case Role.ENGINEER:
       return [
         activeProjects,
         { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'In workshop', color: 'text-orange-600 bg-orange-50' },
-        { label: 'Pending Review', value: 0, icon: FileText, description: 'Blueprints', color: 'text-sky-600 bg-sky-50' },
+        { label: 'Pending Review', value: d?.pendingBlueprints ?? 0, icon: FileText, description: 'Blueprints', color: 'text-sky-600 bg-sky-50' },
       ];
     case Role.CASHIER:
       return [
@@ -210,7 +207,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       return [
         activeProjects,
         { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Active jobs', color: 'text-orange-600 bg-orange-50' },
-        { label: 'Completed Today', value: 0, icon: Activity, description: 'Finished', color: 'text-emerald-600 bg-emerald-50' },
+        { label: 'Completed Today', value: d?.completedToday ?? 0, icon: Activity, description: 'Finished', color: 'text-emerald-600 bg-emerald-50' },
       ];
     case Role.ADMIN:
       return [
@@ -245,8 +242,6 @@ function getRoleActions(role: Role): QuickAction[] {
       actions.push(
         { label: 'Calendar', path: '/appointments', icon: CalendarDays, description: 'View appointments', color: 'from-indigo-500 to-indigo-600' },
         { label: 'Visit Reports', path: '/visit-reports', icon: FileText, description: 'Site inspections', color: 'from-cyan-500 to-cyan-600' },
-        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'All projects', color: 'from-blue-500 to-blue-600' },
-        { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Analytics', color: 'from-violet-500 to-violet-600' },
       );
       break;
     case Role.ENGINEER:
@@ -254,7 +249,7 @@ function getRoleActions(role: Role): QuickAction[] {
         { label: 'Report Queue', path: '/visit-reports', icon: FileText, description: 'Review visit reports', color: 'from-cyan-500 to-cyan-600' },
         { label: 'Blueprints', path: '/blueprints', icon: FileText, description: 'Technical drawings', color: 'from-sky-500 to-sky-600' },
         { label: 'Fabrication', path: '/fabrication', icon: Hammer, description: 'Workshop status', color: 'from-orange-500 to-orange-600' },
-        { label: 'Materials', path: '/projects', icon: Package, description: 'Check inventory', color: 'from-teal-500 to-teal-600' },
+        { label: 'Projects', path: '/projects', icon: Package, description: 'View all projects', color: 'from-teal-500 to-teal-600' },
       );
       break;
     case Role.CASHIER:
@@ -367,12 +362,7 @@ export function DashboardPage() {
                       >
                         <item.icon className={`h-5 w-5 ${textColor}`} />
                       </div>
-                      {item.trend === 'up' && (
-                        <span className="flex items-center gap-0.5 text-[11px] font-semibold text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full">
-                          <ArrowUpRight className="h-3 w-3" />
-                          12%
-                        </span>
-                      )}
+                      {/* Trend indicator — only show when data is available */}
                     </div>
                     <div className="text-2xl font-bold text-gray-900 tracking-tight">
                       {item.value}

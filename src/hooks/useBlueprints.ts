@@ -53,6 +53,15 @@ export function useUploadBlueprint() {
       projectId: string;
       blueprintKey: string;
       costingKey: string;
+      quotation?: {
+        materials: number;
+        labor: number;
+        fees: number;
+        total: number;
+        breakdown?: string;
+        estimatedDuration?: string;
+        engineerNotes?: string;
+      };
     }) => {
       const { data } = await api.post<ApiResponse<Blueprint>>('/blueprints', body);
       return data.data;
@@ -124,6 +133,30 @@ export function useRequestBlueprintRevision() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useAcceptBlueprint() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      paymentType,
+    }: {
+      id: string;
+      paymentType: 'full' | 'installment';
+    }) => {
+      const { data } = await api.post<ApiResponse<{ blueprint: Blueprint; paymentPlan: unknown }>>(
+        `/blueprints/${id}/accept`,
+        { paymentType },
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['payment-plans'] });
     },
   });
 }

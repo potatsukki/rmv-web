@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Search, FolderOpen, Filter, ArrowUpRight, Calendar } from 'lucide-react';
+import { Search, FolderOpen, Filter, ArrowUpRight, Calendar, User, Users, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -10,7 +10,8 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import { PageError } from '@/components/shared/PageError';
 import { useProjects } from '@/hooks/useProjects';
-import { ProjectStatus } from '@/lib/constants';
+import { useAuthStore } from '@/stores/auth.store';
+import { ProjectStatus, Role } from '@/lib/constants';
 
 const STATUS_FILTERS = [
   { label: 'All Projects', value: '' },
@@ -24,6 +25,9 @@ const STATUS_FILTERS = [
 export function ProjectsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
+  const { user } = useAuthStore();
+  const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
+  const isStaff = !isCustomer;
 
   const params: Record<string, string> = { status: statusFilter };
   if (search) params.search = search;
@@ -132,43 +136,94 @@ export function ProjectsPage() {
                     project.status === ProjectStatus.COMPLETED
                       ? 'bg-emerald-500'
                       : project.status === ProjectStatus.FABRICATION
-                        ? 'bg-orange-500'
+                        ? 'bg-violet-500'
                         : project.status === ProjectStatus.PAYMENT_PENDING
-                          ? 'bg-red-500'
-                          : 'bg-gray-200'
+                          ? 'bg-amber-500'
+                          : project.status === ProjectStatus.BLUEPRINT
+                            ? 'bg-blue-500'
+                            : project.status === ProjectStatus.APPROVED
+                              ? 'bg-cyan-500'
+                              : project.status === ProjectStatus.SUBMITTED
+                                ? 'bg-orange-500'
+                                : project.status === ProjectStatus.CANCELLED
+                                  ? 'bg-red-500'
+                                  : 'bg-gray-200'
                   }`}
                 />
                 <CardContent className="p-6 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-start justify-between mb-3">
                     <div className="h-10 w-10 text-orange-600 bg-orange-50 rounded-xl flex items-center justify-center">
                       <FolderOpen className="h-5 w-5" />
                     </div>
                     <Badge
                       variant="outline"
-                      className={`uppercase text-[10px] font-bold tracking-wider rounded-md ${
+                      className={`text-[10px] font-bold tracking-wider rounded-md ${
                         project.status === ProjectStatus.COMPLETED
                           ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
                           : project.status === ProjectStatus.FABRICATION
-                            ? 'border-orange-200 text-orange-700 bg-orange-50'
-                            : 'border-gray-200 text-gray-600 bg-gray-50'
+                            ? 'border-violet-200 text-violet-700 bg-violet-50'
+                            : project.status === ProjectStatus.PAYMENT_PENDING
+                              ? 'border-amber-200 text-amber-700 bg-amber-50'
+                              : project.status === ProjectStatus.BLUEPRINT
+                                ? 'border-blue-200 text-blue-700 bg-blue-50'
+                                : project.status === ProjectStatus.APPROVED
+                                  ? 'border-cyan-200 text-cyan-700 bg-cyan-50'
+                                  : project.status === ProjectStatus.SUBMITTED
+                                    ? 'border-orange-200 text-orange-700 bg-orange-50'
+                                    : project.status === ProjectStatus.CANCELLED
+                                      ? 'border-red-200 text-red-700 bg-red-50'
+                                      : 'border-gray-200 text-gray-600 bg-gray-50'
                       }`}
                     >
-                      {String(project.status || '')?.replace(/_/g, ' ')}
+                      {String(project.status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
                     </Badge>
                   </div>
 
-                  <div className="mb-4 flex-1">
+                  <div className="mb-3 flex-1">
                     <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
                       {String(project.title || '')}
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                    {project.serviceType && (
+                      <span className="inline-block mt-1 text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                        {String(project.serviceType)}
+                      </span>
+                    )}
+                    <p className="text-sm text-gray-500 mt-1.5 line-clamp-2">
                       {String(project.description || 'No description provided.')}
                     </p>
                   </div>
 
-                  <div className="space-y-2 pt-4 border-t border-gray-100">
+                  <div className="space-y-1.5 pt-3 border-t border-gray-100">
+                    {/* Customer (staff-only) */}
+                    {isStaff && project.customerId && typeof project.customerId === 'object' && (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <User className="mr-2 h-3.5 w-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">
+                          {project.customerId.firstName} {project.customerId.lastName}
+                        </span>
+                      </div>
+                    )}
+
+                    {/* Engineers (staff-only) */}
+                    {isStaff && project.engineerIds?.length > 0 && typeof project.engineerIds[0] === 'object' ? (
+                      <div className="flex items-center text-sm text-gray-600">
+                        <Wrench className="mr-2 h-3.5 w-3.5 text-gray-400 shrink-0" />
+                        <span className="truncate">
+                          {(project.engineerIds as { firstName: string; lastName: string }[])
+                            .map((e) => `${e.firstName} ${e.lastName}`)
+                            .join(', ')}
+                        </span>
+                      </div>
+                    ) : isStaff && project.engineerIds?.length === 0 && (
+                      <div className="flex items-center text-sm text-gray-400 italic">
+                        <Wrench className="mr-2 h-3.5 w-3.5 shrink-0" />
+                        <span>No engineer assigned</span>
+                      </div>
+                    )}
+
+                    {/* Date */}
                     <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="mr-2 h-3.5 w-3.5 text-gray-400" />
+                      <Calendar className="mr-2 h-3.5 w-3.5 text-gray-400 shrink-0" />
                       <span>
                         {project.createdAt
                           ? format(new Date(String(project.createdAt)), 'MMM d, yyyy')
@@ -177,7 +232,7 @@ export function ProjectsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-4 flex items-center text-sm font-medium text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="mt-3 flex items-center text-sm font-medium text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
                     View Details <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                   </div>
                 </CardContent>

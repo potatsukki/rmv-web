@@ -122,6 +122,7 @@ interface UpdateProfilePayload {
     payment?: boolean;
     blueprint?: boolean;
     fabrication?: boolean;
+    project?: boolean;
   };
 }
 
@@ -137,6 +138,35 @@ export function useUpdateProfile() {
     },
     onError: () => {
       toast.error('Failed to update profile');
+    },
+  });
+}
+
+// ── E-Signature ──
+
+export function useSignature() {
+  return useQuery({
+    queryKey: ['signature'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<{ signatureKey: string | null }>>('/users/signature');
+      return data.data;
+    },
+  });
+}
+
+export function useSaveSignature() {
+  const qc = useQueryClient();
+  const { fetchMe } = useAuthStore();
+  return useMutation({
+    mutationFn: async (signatureKey: string) => {
+      const { data } = await api.post<ApiResponse<{ signatureKey: string }>>('/users/signature', {
+        signatureKey,
+      });
+      return data.data;
+    },
+    onSuccess: async () => {
+      qc.invalidateQueries({ queryKey: ['signature'] });
+      await fetchMe();
     },
   });
 }

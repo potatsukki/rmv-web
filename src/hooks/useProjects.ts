@@ -121,3 +121,32 @@ export function useTransitionProject() {
     },
   });
 }
+
+export function useGenerateContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      const { data } = await api.post<ApiResponse<{ originalKey: string; copyKey: string }>>(
+        `/projects/${projectId}/generate-contract`,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useContractDownloadUrl(projectId: string, copy: 'original' | 'copy' = 'original') {
+  return useQuery({
+    queryKey: [...KEYS.detail(projectId), 'contract', copy],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<{ url: string; key: string }>>(
+        `/projects/${projectId}/contract-url`,
+        { params: { copy } },
+      );
+      return data.data;
+    },
+    enabled: false, // manual fetch only
+  });
+}

@@ -225,7 +225,10 @@ export function BookAppointmentPage() {
           return;
         }
 
-        toast.success('Appointment booked successfully!');
+        // Redirect to site details page so customer can provide pre-visit info
+        toast.success('Appointment booked! Please provide your site details.');
+        navigate(`/appointments/${result._id}/site-details`);
+        return;
       }
 
       navigate('/appointments');

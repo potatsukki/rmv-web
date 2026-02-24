@@ -2,6 +2,10 @@ import { Camera, Video, PenTool, Image } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/shared/FileUpload';
 
+const IMAGE_ACCEPT = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,.svg';
+const VIDEO_ACCEPT = '.mp4,.mov,.m4v,.webm,.avi,.mkv';
+const IMAGE_OR_PDF_ACCEPT = `${IMAGE_ACCEPT},.pdf`;
+
 interface PhotoUploadGridProps {
   photoKeys: string[];
   videoKeys: string[];
@@ -73,7 +77,7 @@ export function PhotoUploadGrid({
         <CardContent>
           <FileUpload
             folder="visit-photos"
-            accept="image/*"
+            accept={IMAGE_ACCEPT}
             maxSizeMB={10}
             maxFiles={20}
             existingKeys={photoKeys}
@@ -94,7 +98,7 @@ export function PhotoUploadGrid({
         <CardContent>
           <FileUpload
             folder="visit-videos"
-            accept="video/*"
+            accept={VIDEO_ACCEPT}
             maxSizeMB={50}
             maxFiles={5}
             existingKeys={videoKeys}
@@ -115,7 +119,7 @@ export function PhotoUploadGrid({
         <CardContent>
           <FileUpload
             folder="visit-sketches"
-            accept="image/*,.pdf"
+            accept={IMAGE_OR_PDF_ACCEPT}
             maxSizeMB={10}
             maxFiles={10}
             existingKeys={sketchKeys}
@@ -136,7 +140,7 @@ export function PhotoUploadGrid({
         <CardContent>
           <FileUpload
             folder="visit-references"
-            accept="image/*,.pdf"
+            accept={IMAGE_OR_PDF_ACCEPT}
             maxSizeMB={10}
             maxFiles={10}
             existingKeys={referenceImageKeys}

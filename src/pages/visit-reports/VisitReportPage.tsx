@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -11,12 +11,19 @@ import {
   Package,
   StickyNote,
   Camera,
-  Calendar,
+  Calendar as CalendarIcon,
   MapPin,
   Layers,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -49,6 +56,7 @@ import {
   Environment,
 } from '@/lib/constants';
 import type { LineItem, SiteConditions } from '@/lib/types';
+
 
 const DEFAULT_SITE_CONDITIONS: SiteConditions = {
   environment: Environment.INDOOR,
@@ -109,6 +117,11 @@ export function VisitReportPage() {
 
   const [formLoaded, setFormLoaded] = useState(false);
 
+  // Reset form when switching between reports (route :id changes)
+  useEffect(() => {
+    setFormLoaded(false);
+  }, [id]);
+
   const isSalesStaff = user?.roles.includes(Role.SALES_STAFF);
   const isEngineerOrAdmin =
     user?.roles.includes(Role.ENGINEER) || user?.roles.includes(Role.ADMIN);
@@ -116,11 +129,14 @@ export function VisitReportPage() {
   // Pre-fill form when data arrives
   if (report && !formLoaded) {
     setVisitType(report.visitType || '');
-    setActualVisitDateTime(
-      report.actualVisitDateTime
-        ? new Date(report.actualVisitDateTime).toISOString().slice(0, 16)
-        : '',
-    );
+    // Convert UTC ISO string to local "YYYY-MM-DDTHH:mm" for datetime-local input
+    if (report.actualVisitDateTime) {
+      const d = new Date(report.actualVisitDateTime);
+      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
+      setActualVisitDateTime(local.toISOString().slice(0, 16));
+    } else {
+      setActualVisitDateTime('');
+    }
     setServiceType(report.serviceType || ServiceType.CUSTOM);
     setServiceTypeCustom(report.serviceTypeCustom || '');
     setMaterials(report.materials || '');
@@ -179,8 +195,24 @@ export function VisitReportPage() {
       ? serviceTypeCustom || 'Custom'
       : SERVICE_TYPE_LABELS[serviceType] || serviceType;
 
-  const handleSave = async () => {
+  const saveDraft = async ({
+    showSuccessToast = false,
+    showErrorToast = true,
+  }: {
+    showSuccessToast?: boolean;
+    showErrorToast?: boolean;
+  } = {}) => {
     try {
+      let normalizedActualVisitDateTime: string | undefined;
+      if (actualVisitDateTime) {
+        const parsedDate = new Date(actualVisitDateTime);
+        if (Number.isNaN(parsedDate.getTime())) {
+          if (showErrorToast) toast.error('Invalid visit date/time');
+          return false;
+        }
+        normalizedActualVisitDateTime = parsedDate.toISOString();
+      }
+
       // Build legacy measurements only if this is a legacy report
       let measurements: Record<string, unknown> | undefined;
       if (isLegacyReport) {
@@ -196,7 +228,7 @@ export function VisitReportPage() {
       await updateMutation.mutateAsync({
         id: id!,
         visitType: visitType || undefined,
-        actualVisitDateTime: actualVisitDateTime || undefined,
+        actualVisitDateTime: normalizedActualVisitDateTime,
         serviceType: serviceType || undefined,
         serviceTypeCustom: serviceTypeCustom || undefined,
         measurementUnit,
@@ -213,10 +245,21 @@ export function VisitReportPage() {
         sketchKeys,
         referenceImageKeys,
       });
-      toast.success('Report saved');
+      if (showSuccessToast) toast.success('Report saved');
+      return true;
     } catch {
-      toast.error('Failed to save report');
+      if (showErrorToast) toast.error('Failed to save report');
+      return false;
     }
+  };
+
+  const handleSave = async () => {
+    await saveDraft({ showSuccessToast: true, showErrorToast: true });
+  };
+
+  const handleBeforeProjectSwitch = async () => {
+    if (!canEdit) return true;
+    return saveDraft({ showSuccessToast: false, showErrorToast: true });
   };
 
   const handleSubmit = async () => {
@@ -273,7 +316,7 @@ export function VisitReportPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/visit-reports')}
           className="rounded-xl text-gray-500 hover:text-gray-900"
           aria-label="Go back"
         >
@@ -297,6 +340,8 @@ export function VisitReportPage() {
         appointmentId={rawId(report.appointmentId)}
         activeReportId={String(report._id)}
         canAdd={!!isSalesStaff && (isDraft || isReturned)}
+        canEdit={!!isSalesStaff && (isDraft || isReturned)}
+        onBeforeNavigate={handleBeforeProjectSwitch}
       />
 
       {/* ── Return reason banner ── */}
@@ -321,13 +366,13 @@ export function VisitReportPage() {
               <CardContent className="space-y-4">
                 <InfoRow icon={Layers} label="Service Type" value={serviceLabel} />
                 <InfoRow
-                  icon={Calendar}
+                  icon={CalendarIcon}
                   label="Created"
                   value={format(new Date(report.createdAt), 'MMM d, yyyy h:mm a')}
                 />
                 {report.actualVisitDateTime && (
                   <InfoRow
-                    icon={Calendar}
+                    icon={CalendarIcon}
                     label="Visit Date"
                     value={format(new Date(report.actualVisitDateTime), 'MMM d, yyyy h:mm a')}
                   />
@@ -499,15 +544,15 @@ export function VisitReportPage() {
                   <Label className="text-[13px] font-medium text-gray-700">
                     Visit Type
                   </Label>
-                  <select
-                    value={visitType}
-                    onChange={(e) => setVisitType(e.target.value)}
-                    className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-                  >
-                    <option value="">-- Select --</option>
-                    <option value="ocular">Ocular Visit</option>
-                    <option value="consultation">Consultation</option>
-                  </select>
+                  <Select value={visitType} onValueChange={setVisitType}>
+                    <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-orange-200">
+                      <SelectValue placeholder="Select visit type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="ocular">Ocular Visit</SelectItem>
+                      <SelectItem value="consultation">Consultation</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-1.5">
@@ -518,7 +563,7 @@ export function VisitReportPage() {
                     type="datetime-local"
                     value={actualVisitDateTime}
                     onChange={(e) => setActualVisitDateTime(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                    className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-orange-200"
                   />
                 </div>
               </CardContent>

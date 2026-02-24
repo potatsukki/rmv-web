@@ -74,7 +74,7 @@ const quickSearchItems: QuickSearchItem[] = [
     path: '/appointments/book',
     description: 'Create a new appointment',
     keywords: ['new booking', 'ocular', 'office visit'],
-    roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN],
+    roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.ADMIN],
   },
   {
     title: 'Visit Reports',
@@ -88,7 +88,7 @@ const quickSearchItems: QuickSearchItem[] = [
     path: '/projects',
     description: 'Track project progress',
     keywords: ['jobs', 'work orders', 'fabrication'],
-    roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
+    roles: [Role.CUSTOMER, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
   },
   {
     title: 'Blueprints',
@@ -109,14 +109,14 @@ const quickSearchItems: QuickSearchItem[] = [
     path: '/payments',
     description: 'Invoices, proofs, and payment statuses',
     keywords: ['billing', 'invoice', 'proof'],
-    roles: [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN],
+    roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN],
   },
   {
     title: 'Cash Flow',
     path: '/cash',
     description: 'Cash collection management',
     keywords: ['collections', 'finance', 'cash'],
-    roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
+    roles: [Role.CASHIER, Role.ADMIN],
   },
   {
     title: 'Cashier Queue',
@@ -269,6 +269,7 @@ export function AppLayout() {
   }, [searchQuery]);
 
   const isAdmin = user?.roles.includes(Role.ADMIN) ?? false;
+  const isSalesStaffOnly = !!(user?.roles.includes(Role.SALES_STAFF) && !isAdmin);
 
   // ── Live search queries ────────────────────────────────────────────────
   const { data: liveProjects, isFetching: projectsFetching } = useQuery({
@@ -279,7 +280,7 @@ export function AppLayout() {
           params: { search: debouncedQuery, limit: '5' },
         })
         .then((r) => r.data.data.items),
-    enabled: !!debouncedQuery,
+    enabled: !!debouncedQuery && !isSalesStaffOnly,
     staleTime: 30_000,
   });
 

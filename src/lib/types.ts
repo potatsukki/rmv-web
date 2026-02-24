@@ -18,6 +18,7 @@ export interface User {
     payment: boolean;
     blueprint: boolean;
     fabrication: boolean;
+    project: boolean;
   };
   createdAt: string;
 }
@@ -51,6 +52,23 @@ export interface LoginActivity {
   status: 'success' | 'failed';
   failReason?: string;
   createdAt: string;
+}
+
+export interface CustomerSiteDetails {
+  serviceType?: string;
+  serviceTypeCustom?: string;
+  measurementUnit?: string;
+  lineItems?: LineItem[];
+  siteConditions?: SiteConditions;
+  materials?: string;
+  finishes?: string;
+  preferredDesign?: string;
+  customerRequirements?: string;
+  notes?: string;
+  photoKeys?: string[];
+  videoKeys?: string[];
+  sketchKeys?: string[];
+  referenceImageKeys?: string[];
 }
 
 // ── Appointment ──
@@ -93,6 +111,8 @@ export interface Appointment {
   rescheduleCount: number;
   maxReschedules: number;
   internalNotes?: string;
+  customerSiteDetails?: CustomerSiteDetails;
+  siteDetailsStatus?: 'pending' | 'submitted' | 'skipped';
   createdAt: string;
   updatedAt: string;
 }
@@ -101,9 +121,9 @@ export interface Appointment {
 export interface Project {
   _id: string;
   appointmentId: string;
-  customerId: string;
+  customerId: string | { _id: string; firstName: string; lastName: string; email?: string };
   customerName?: string;
-  salesStaffId?: string;
+  salesStaffId?: string | { _id: string; firstName: string; lastName: string };
   salesStaffName?: string;
   title: string;
   serviceType?: string;
@@ -122,10 +142,13 @@ export interface Project {
   quantity?: number;
   notes?: string;
   status: string;
-  engineerIds: string[];
-  fabricationLeadId?: string;
-  fabricationAssistantIds: string[];
+  engineerIds: (string | { _id: string; firstName: string; lastName: string; phone?: string })[];
+  fabricationLeadId?: string | { _id: string; firstName: string; lastName: string };
+  fabricationAssistantIds: (string | { _id: string; firstName: string; lastName: string })[];
+  visitReportId?: string | VisitReport;
   mediaKeys: string[];
+  contractKey?: string;
+  contractGeneratedAt?: string;
   cancelReason?: string;
   createdAt: string;
   updatedAt: string;
@@ -143,6 +166,12 @@ export interface Blueprint {
   status: string;
   revisionNotes?: string;
   revisionRefKeys: string[];
+  uploadedBy?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    phone?: string;
+  };
   quotation?: {
     materials: number;
     labor: number;

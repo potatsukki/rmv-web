@@ -1,17 +1,25 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useProjects } from '@/hooks/useProjects';
-import { usePaymentPlan, usePaymentsByProject, useSubmitPaymentProof } from '@/hooks/usePayments';
+import {
+  usePaymentPlan,
+  usePaymentsByProject,
+  useSubmitPaymentProof,
+  useStageCheckout,
+  useSimulateStagePayment,
+  useRecordCashPayment,
+} from '@/hooks/usePayments';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, PaymentStageStatus, PaymentMethod } from '@/lib/constants';
 import { Label } from '@/components/ui/label';
@@ -45,8 +53,19 @@ export function PaymentsPage() {
   const { data: plan, isLoading: planLoading } = usePaymentPlan(selectedProjectId);
   const { data: payments } = usePaymentsByProject(selectedProjectId);
   const submitProof = useSubmitPaymentProof();
+  const stageCheckout = useStageCheckout();
+  const simulatePayment = useSimulateStagePayment();
+  const recordCash = useRecordCashPayment();
+
+  const [cashDialog, setCashDialog] = useState<{ open: boolean; stageId: string; amount: number }>({
+    open: false,
+    stageId: '',
+    amount: 0,
+  });
+  const [cashAmount, setCashAmount] = useState('');
 
   const isCustomer = user?.roles.includes(Role.CUSTOMER);
+  const isCashier = user?.roles.some((r: string) => [Role.CASHIER, Role.ADMIN].includes(r as Role));
   const { data: unpaidOcularFees } = useUnpaidOcularFees();
 
   const handleSubmitProof = async () => {
@@ -78,6 +97,44 @@ export function PaymentsPage() {
     setAmountPaid('');
     setRefNumber('');
     setProofKey('');
+  };
+
+  const handleQrCheckout = async (stageId: string) => {
+    try {
+      const result = await stageCheckout.mutateAsync(stageId);
+      window.open(result.checkoutUrl, '_blank');
+      toast.success('QR checkout opened — complete payment in the new tab');
+    } catch {
+      toast.error('Failed to create checkout session');
+    }
+  };
+
+  const handleSimulate = async (stageId: string) => {
+    try {
+      const result = await simulatePayment.mutateAsync(stageId);
+      toast.success(`Payment simulated! Receipt: ${result.receiptNumber}`);
+    } catch {
+      toast.error('Simulation failed');
+    }
+  };
+
+  const handleRecordCash = async () => {
+    const amount = parseFloat(cashAmount);
+    if (!amount || amount <= 0) {
+      toast.error('Enter a valid amount');
+      return;
+    }
+    try {
+      const result = await recordCash.mutateAsync({
+        stageId: cashDialog.stageId,
+        amountPaid: amount,
+      });
+      toast.success(`Cash recorded! Receipt: ${result.receiptNumber}`);
+      setCashDialog({ open: false, stageId: '', amount: 0 });
+      setCashAmount('');
+    } catch {
+      toast.error('Failed to record cash payment');
+    }
   };
 
   return (
@@ -192,37 +249,90 @@ export function PaymentsPage() {
                         {String(stage.percentage)}% — {formatCurrency(Number(stage.amount))}
                       </p>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2 flex-wrap">
                       <StatusBadge status={String(stage.status)} />
                       {isCustomer && stage.status === PaymentStageStatus.PENDING && (
-                        <Button
-                          size="sm"
-                          className="bg-gray-900 hover:bg-gray-800 rounded-lg"
-                          onClick={() =>
-                            setProofDialog({
-                              open: true,
-                              stageId: String(stage.stageId),
-                              amount: Number(stage.amount),
-                            })
-                          }
-                        >
-                          Pay
-                        </Button>
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                            onClick={() => handleQrCheckout(String(stage.stageId))}
+                            disabled={stageCheckout.isPending}
+                          >
+                            <QrCode className="mr-1.5 h-3.5 w-3.5" />
+                            Pay via QR
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-gray-200 rounded-lg"
+                            onClick={() =>
+                              setProofDialog({
+                                open: true,
+                                stageId: String(stage.stageId),
+                                amount: Number(stage.amount),
+                              })
+                            }
+                          >
+                            Upload Proof
+                          </Button>
+                          {import.meta.env.DEV && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-orange-600 hover:text-orange-700 rounded-lg"
+                            onClick={() => handleSimulate(String(stage.stageId))}
+                            disabled={simulatePayment.isPending}
+                            title="DEV: Simulate payment"
+                          >
+                            <Zap className="mr-1 h-3.5 w-3.5" />
+                            Simulate
+                          </Button>
+                          )}
+                        </>
                       )}
                       {isCustomer && stage.status === PaymentStageStatus.DECLINED && (
+                        <>
+                          <Button
+                            size="sm"
+                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                            onClick={() => handleQrCheckout(String(stage.stageId))}
+                            disabled={stageCheckout.isPending}
+                          >
+                            <QrCode className="mr-1.5 h-3.5 w-3.5" />
+                            Pay via QR
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="border-gray-200 rounded-lg"
+                            onClick={() =>
+                              setProofDialog({
+                                open: true,
+                                stageId: String(stage.stageId),
+                                amount: Number(stage.amount),
+                              })
+                            }
+                          >
+                            Resubmit Proof
+                          </Button>
+                        </>
+                      )}
+                      {isCashier && (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED) && (
                         <Button
                           size="sm"
                           variant="outline"
-                          className="border-gray-200 rounded-lg"
+                          className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-lg"
                           onClick={() =>
-                            setProofDialog({
+                            setCashDialog({
                               open: true,
                               stageId: String(stage.stageId),
                               amount: Number(stage.amount),
                             })
                           }
                         >
-                          Resubmit
+                          <Banknote className="mr-1.5 h-3.5 w-3.5" />
+                          Record Cash
                         </Button>
                       )}
                     </div>
@@ -264,7 +374,27 @@ export function PaymentsPage() {
                           </p>
                         ) : null}
                       </div>
-                      <StatusBadge status={String(p.status)} />
+                      <div className="flex items-center gap-2">
+                        <StatusBadge status={String(p.status)} />
+                        {p.status === 'verified' && p.receiptKey && (
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            className="text-orange-600 hover:text-orange-700 h-7 px-2"
+                            onClick={async () => {
+                              try {
+                                const { data } = await api.get(`/payments/${p._id}/receipt-url`);
+                                window.open(data.data.url, '_blank');
+                              } catch {
+                                toast.error('Failed to get receipt');
+                              }
+                            }}
+                          >
+                            <Download className="mr-1 h-3.5 w-3.5" />
+                            Receipt
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   ))}
                 </div>
@@ -362,6 +492,61 @@ export function PaymentsPage() {
               disabled={submitProof.isPending}
             >
               Submit Proof
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cash Recording Dialog (Cashier) */}
+      <Dialog
+        open={cashDialog.open}
+        onOpenChange={(open) => {
+          if (!open) {
+            setCashDialog({ open: false, stageId: '', amount: 0 });
+            setCashAmount('');
+          }
+        }}
+      >
+        <DialogContent className="rounded-2xl sm:max-w-sm">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900">Record Cash Payment</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label className="text-gray-700 text-[13px] font-medium">Amount Due</Label>
+              <p className="text-lg font-bold text-emerald-700">
+                {formatCurrency(cashDialog.amount)}
+              </p>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-gray-700 text-[13px] font-medium">Amount Received</Label>
+              <Input
+                type="number"
+                step="0.01"
+                value={cashAmount}
+                onChange={(e) => setCashAmount(e.target.value)}
+                placeholder="0.00"
+                className="h-11 bg-gray-50/50 border-gray-200 focus:border-emerald-300 focus:ring-emerald-200"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              className="border-gray-200 rounded-lg"
+              onClick={() => {
+                setCashDialog({ open: false, stageId: '', amount: 0 });
+                setCashAmount('');
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              onClick={handleRecordCash}
+              disabled={recordCash.isPending}
+            >
+              Record Payment
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Plus, Trash2, Settings, Calendar, Power, RefreshCw, Save } from 'lucide-react';
+import { Plus, Trash2, Settings, Calendar, Power, RefreshCw, Save, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -48,6 +48,12 @@ export function SettingsPage() {
     holiday: null,
   });
 
+  // Payment settings state
+  const [surchargePercent, setSurchargePercent] = useState('10');
+  const [splitValues, setSplitValues] = useState(['30', '40', '30']);
+  const [stageLabels, setStageLabels] = useState(['Down Payment', 'Mid-Project', 'Final Payment']);
+  const [paymentSettingsLoaded, setPaymentSettingsLoaded] = useState(false);
+
   const {
     data: configs,
     isLoading: configsLoading,
@@ -70,6 +76,81 @@ export function SettingsPage() {
   });
 
   const maintenanceEnabled = configs?.find((c) => c.key === 'maintenance_mode')?.value === true;
+
+  // Load payment settings from configs when available
+  useEffect(() => {
+    if (!configs || paymentSettingsLoaded) return;
+    const surchargeConfig = configs.find((c) => c.key === 'installment_surcharge_percent');
+    const splitConfig = configs.find((c) => c.key === 'installment_split');
+    const labelsConfig = configs.find((c) => c.key === 'installment_stage_labels');
+
+    if (surchargeConfig) setSurchargePercent(String(surchargeConfig.value));
+    if (splitConfig && Array.isArray(splitConfig.value)) {
+      setSplitValues(splitConfig.value.map(String));
+    }
+    if (labelsConfig && Array.isArray(labelsConfig.value)) {
+      setStageLabels(labelsConfig.value.map(String));
+    }
+    setPaymentSettingsLoaded(true);
+  }, [configs, paymentSettingsLoaded]);
+
+  const handleSavePaymentSettings = async () => {
+    const splits = splitValues.map(Number);
+    const surcharge = Number(surchargePercent);
+
+    if (isNaN(surcharge) || surcharge < 0 || surcharge > 100) {
+      toast.error('Surcharge must be between 0 and 100');
+      return;
+    }
+    if (splits.some(isNaN) || splits.some((v) => v <= 0)) {
+      toast.error('All split values must be positive numbers');
+      return;
+    }
+    const sum = splits.reduce((a, b) => a + b, 0);
+    if (Math.abs(sum - 100) > 0.01) {
+      toast.error(`Split values must sum to 100 (currently ${sum})`);
+      return;
+    }
+    if (stageLabels.length !== splits.length || stageLabels.some((l) => !l.trim())) {
+      toast.error('Each stage must have a label');
+      return;
+    }
+
+    try {
+      await Promise.all([
+        updateConfig.mutateAsync({
+          key: 'installment_surcharge_percent',
+          value: surcharge,
+          description: 'Surcharge percentage applied to installment payments',
+        }),
+        updateConfig.mutateAsync({
+          key: 'installment_split',
+          value: splits,
+          description: 'Installment split percentages for each stage (must sum to 100)',
+        }),
+        updateConfig.mutateAsync({
+          key: 'installment_stage_labels',
+          value: stageLabels.map((l) => l.trim()),
+          description: 'Labels for each installment stage',
+        }),
+      ]);
+      toast.success('Payment settings saved');
+    } catch {
+      toast.error('Failed to save payment settings');
+    }
+  };
+
+  const addStage = () => {
+    if (splitValues.length >= 6) return;
+    setSplitValues([...splitValues, '0']);
+    setStageLabels([...stageLabels, `Stage ${splitValues.length + 1}`]);
+  };
+
+  const removeStage = (idx: number) => {
+    if (splitValues.length <= 1) return;
+    setSplitValues(splitValues.filter((_, i) => i !== idx));
+    setStageLabels(stageLabels.filter((_, i) => i !== idx));
+  };
 
   const openEditConfig = (cfg: ConfigItem) => {
     setEditConfig(cfg);
@@ -199,6 +280,138 @@ export function SettingsPage() {
           </Card>
         </div>
 
+        {/* Payment Settings */}
+        <div className="md:col-span-2">
+          <Card className="rounded-xl border-gray-100">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-xl text-gray-900">
+                <CreditCard className="h-5 w-5 text-gray-400" />
+                Payment &amp; Installment Settings
+              </CardTitle>
+              <CardDescription className="text-gray-500">
+                Configure installment surcharge and stage split for project payments.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              {/* Surcharge */}
+              <div className="space-y-1.5">
+                <Label className="text-[13px] font-medium text-gray-700">
+                  Installment Surcharge (%)
+                </Label>
+                <div className="flex items-center gap-2 max-w-xs">
+                  <Input
+                    type="number"
+                    value={surchargePercent}
+                    onChange={(e) => setSurchargePercent(e.target.value)}
+                    min={0}
+                    max={100}
+                    step={1}
+                    className={inputClasses}
+                  />
+                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                    % surcharge on total
+                  </span>
+                </div>
+                <p className="text-xs text-gray-400">
+                  Customers paying in installments pay total + this surcharge. Set to 0 for no surcharge.
+                </p>
+              </div>
+
+              {/* Stages */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Installment Stages
+                  </Label>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addStage}
+                    disabled={splitValues.length >= 6}
+                    className="h-7 text-xs border-gray-200 rounded-lg"
+                  >
+                    <Plus className="mr-1 h-3 w-3" />
+                    Add Stage
+                  </Button>
+                </div>
+
+                <div className="space-y-2">
+                  {splitValues.map((val, idx) => (
+                    <div key={idx} className="flex items-center gap-2">
+                      <Input
+                        value={stageLabels[idx] || ''}
+                        onChange={(e) => {
+                          const newLabels = [...stageLabels];
+                          newLabels[idx] = e.target.value;
+                          setStageLabels(newLabels);
+                        }}
+                        placeholder={`Stage ${idx + 1}`}
+                        className={`flex-1 ${inputClasses}`}
+                      />
+                      <Input
+                        type="number"
+                        value={val}
+                        onChange={(e) => {
+                          const newSplits = [...splitValues];
+                          newSplits[idx] = e.target.value;
+                          setSplitValues(newSplits);
+                        }}
+                        min={1}
+                        max={100}
+                        className={`w-20 text-center ${inputClasses}`}
+                      />
+                      <span className="text-sm text-gray-500">%</span>
+                      {splitValues.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeStage(idx)}
+                          className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="flex items-center justify-between pt-2">
+                  <p className="text-xs text-gray-400">
+                    Total:{' '}
+                    <span
+                      className={
+                        Math.abs(
+                          splitValues.map(Number).reduce((a, b) => a + (isNaN(b) ? 0 : b), 0) - 100,
+                        ) < 0.01
+                          ? 'text-emerald-600 font-medium'
+                          : 'text-red-500 font-medium'
+                      }
+                    >
+                      {splitValues.map(Number).reduce((a, b) => a + (isNaN(b) ? 0 : b), 0)}%
+                    </span>{' '}
+                    (must be 100%)
+                  </p>
+                  <Button
+                    onClick={handleSavePaymentSettings}
+                    disabled={updateConfig.isPending}
+                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                    size="sm"
+                  >
+                    {updateConfig.isPending ? (
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    ) : (
+                      <Save className="mr-2 h-4 w-4" />
+                    )}
+                    Save Payment Settings
+                  </Button>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
         {/* Config Values */}
         <Card className="h-full flex flex-col rounded-xl border-gray-100">
           <CardHeader>
@@ -227,7 +440,7 @@ export function SettingsPage() {
             ) : (
               <div className="space-y-4">
                 {configs
-                  .filter((c) => c.key !== 'maintenance_mode')
+                  .filter((c) => c.key !== 'maintenance_mode' && !c.key.startsWith('installment_'))
                   .map((cfg) => (
                     <div
                       key={cfg._id}

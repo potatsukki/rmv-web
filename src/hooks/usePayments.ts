@@ -167,3 +167,54 @@ export function useMyPaymentHistory() {
     },
   });
 }
+
+// ── Create QRPH Checkout for a Stage ──
+export function useStageCheckout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (stageId: string) => {
+      const { data } = await api.post<ApiResponse<{ checkoutUrl: string; sessionId: string; amount: number }>>(
+        `/payments/stages/${stageId}/checkout`,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.plans });
+    },
+  });
+}
+
+// ⚠️ DEV ONLY: Simulate Stage Payment ──
+export function useSimulateStagePayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (stageId: string) => {
+      const { data } = await api.post<ApiResponse<{ payment: Payment; receiptNumber: string }>>(
+        `/payments/stages/${stageId}/simulate`,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.plans });
+    },
+  });
+}
+
+// ── Cashier: Record Cash Payment ──
+export function useRecordCashPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: { stageId: string; amountPaid: number }) => {
+      const { data } = await api.post<ApiResponse<{ payment: Payment; receiptNumber: string }>>(
+        '/payments/record-cash',
+        body,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.plans });
+    },
+  });
+}

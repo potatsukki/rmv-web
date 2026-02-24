@@ -149,3 +149,18 @@ export function useReturnVisitReport() {
     },
   });
 }
+
+export function useDeleteVisitReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.delete<ApiResponse<{ deletedId: string }>>(
+        `/visit-reports/${id}`,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
