@@ -1,6 +1,8 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, User } from '@/lib/types';
+import { useAuthStore } from '@/stores/auth.store';
+import toast from 'react-hot-toast';
 
 const KEYS = {
   all: ['users'] as const,
@@ -105,5 +107,36 @@ export function useCustomerSearch(search: string) {
     },
     enabled: search.length >= 2,
     staleTime: 30_000,
+  });
+}
+
+// ── Self-profile update (any authenticated user) ──
+
+interface UpdateProfilePayload {
+  firstName?: string;
+  lastName?: string;
+  phone?: string;
+  address?: string;
+  notificationPreferences?: {
+    appointment?: boolean;
+    payment?: boolean;
+    blueprint?: boolean;
+    fabrication?: boolean;
+  };
+}
+
+export function useUpdateProfile() {
+  const { fetchMe } = useAuthStore();
+  return useMutation({
+    mutationFn: async (payload: UpdateProfilePayload) => {
+      const { data } = await api.patch<ApiResponse<User>>('/users/profile', payload);
+      return data.data;
+    },
+    onSuccess: async () => {
+      await fetchMe();
+    },
+    onError: () => {
+      toast.error('Failed to update profile');
+    },
   });
 }

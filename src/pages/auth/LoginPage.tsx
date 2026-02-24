@@ -43,14 +43,29 @@ export function LoginPage() {
       setCsrfToken(csrfToken);
 
       const response = await api.post('/auth/login', data);
-      const newCsrfToken = response.data.data.csrfToken;
+      const responseData = response.data.data;
+
+      // 2FA required — redirect to verification page
+      if (responseData.requires2FA) {
+        navigate('/verify-2fa', {
+          state: {
+            tempToken: responseData.tempToken,
+            email: responseData.user.email,
+            firstName: responseData.user.firstName,
+          },
+          replace: true,
+        });
+        return;
+      }
+
+      const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
       
       await fetchMe();
       toast.success('Welcome back!');
 
       // Check if user must change password first
-      const loginUser = response.data.data.user;
+      const loginUser = responseData.user;
       if (loginUser?.mustChangePassword) {
         navigate('/change-password', { replace: true });
         return;

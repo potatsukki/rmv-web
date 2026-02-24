@@ -53,8 +53,9 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Smooth transitions globally */
-*, *::before, *::after {
+/* Smooth colour transitions on interactive elements only */
+a, button, input, select, textarea,
+[role="button"], [role="tab"], [role="menuitem"] {
   @apply transition-colors duration-150;
 }
 
@@ -62,7 +63,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -160,4 +163,40 @@ body {
 /* Prevent map from overlapping fixed header */
 .leaflet-container {
   z-index: 0 !important;
+}
+
+/*
+ * GPU-composited layer hint.
+ * Promotes the element to its own compositor layer using a no-op 3-D
+ * transform so every subsequent repaint is handled on the GPU.
+ */
+.gpu-layer {
+  transform: translateZ(0);
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+/* ─── Decorative float animations (GPU-composited via translate3d) ─── */
+@keyframes float-slow {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, -20px, 0); }
+}
+
+@keyframes float-slower {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50%      { transform: translate3d(0, 30px, 0); }
+}
+
+@utility animate-float-slow {
+  animation: float-slow 4s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+@utility animate-float-slower {
+  animation: float-slower 5s cubic-bezier(0.45, 0, 0.55, 1) 1s infinite;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
 }

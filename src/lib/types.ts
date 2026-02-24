@@ -7,10 +7,12 @@ export interface User {
   lastName: string;
   email: string;
   phone?: string;
+  address?: string;
   roles: Role[];
   isEmailVerified: boolean;
   isActive: boolean;
   mustChangePassword: boolean;
+  twoFactorEnabled?: boolean;
   notificationPreferences?: {
     appointment: boolean;
     payment: boolean;
@@ -25,6 +27,30 @@ export interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
   csrfToken: string | null;
+}
+
+export interface Session {
+  _id: string;
+  browser: string;
+  os: string;
+  device: string;
+  location: string;
+  ipAddress: string;
+  isCurrent: boolean;
+  createdAt: string;
+  expiresAt: string;
+}
+
+export interface LoginActivity {
+  _id: string;
+  browser: string;
+  os: string;
+  device: string;
+  location: string;
+  ipAddress: string;
+  status: 'success' | 'failed';
+  failReason?: string;
+  createdAt: string;
 }
 
 // ── Appointment ──
@@ -188,6 +214,32 @@ export interface Notification {
   referenceId?: string;
   isRead: boolean;
   createdAt: string;
+}
+
+// ── Audit Log ──
+export interface AuditLog {
+  _id: string;
+  action: string;
+  actorId?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  actorEmail?: string;
+  targetType?: string;
+  targetId?: string;
+  details?: Record<string, unknown>;
+  ipAddress?: string;
+  createdAt: string;
+}
+
+export interface AuditLogListResponse {
+  items: AuditLog[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
 }
 
 // ── Cash ──

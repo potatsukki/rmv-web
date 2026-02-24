@@ -175,7 +175,7 @@ export function Sidebar() {
       {/* Content */}
       <div className="relative flex flex-col h-full">
         {/* Logo Header */}
-        <div className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06]">
+        <Link to="/" className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors">
           <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/30 shadow-lg shadow-orange-600/20" />
           <div className="flex flex-col">
             <span className="text-[15px] font-bold tracking-tight text-white">
@@ -185,7 +185,7 @@ export function Sidebar() {
               Management System
             </span>
           </div>
-        </div>
+        </Link>
 
         {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
@@ -255,7 +255,7 @@ export function Sidebar() {
         {/* User Profile Footer */}
         <div className="border-t border-white/[0.06] p-3 space-y-2">
           <Link
-            to="/profile"
+            to="/account/profile"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
           >
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 text-[12px] font-bold text-orange-400 ring-1 ring-white/[0.08]">

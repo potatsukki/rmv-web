@@ -7,7 +7,7 @@ const KEYS = {
   list: (params?: Record<string, unknown>) => [...KEYS.all, 'list', params] as const,
 };
 
-export function useNotifications(params?: Record<string, string>) {
+export function useNotifications(params?: Record<string, string>, enabled = true) {
   return useQuery({
     queryKey: KEYS.list(params),
     queryFn: async () => {
@@ -17,6 +17,7 @@ export function useNotifications(params?: Record<string, string>) {
       );
       return data.data;
     },
+    enabled,
   });
 }
 

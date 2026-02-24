@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse } from '@/lib/types';
+import type { ApiResponse, AuditLogListResponse } from '@/lib/types';
 
 // Dashboard
 interface DashboardSummary {
@@ -197,5 +197,20 @@ export function useConversionReport() {
         rate: (data.data.conversionRate || 0) / 100,
       } as ConversionData;
     },
+  });
+}
+
+// ── Audit Logs (Admin recent activity) ──
+export function useAuditLogs(params?: { limit?: number; page?: number }, enabled = true) {
+  return useQuery({
+    queryKey: ['reports', 'audit-logs', params],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<AuditLogListResponse>>(
+        '/reports/audit-logs',
+        { params },
+      );
+      return data.data;
+    },
+    enabled,
   });
 }

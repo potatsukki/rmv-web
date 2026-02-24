@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { fetchCsrfToken } from '@/lib/api';
@@ -32,6 +32,37 @@ const ChangePasswordPage = lazy(() =>
     default: module.ChangePasswordPage,
   })),
 );
+const VerifyTwoFactorPage = lazy(() =>
+  import('@/pages/auth/VerifyTwoFactorPage').then((module) => ({
+    default: module.VerifyTwoFactorPage,
+  })),
+);
+
+const AccountLayout = lazy(() =>
+  import('@/pages/account/AccountLayout').then((module) => ({
+    default: module.AccountLayout,
+  })),
+);
+const AccountProfilePage = lazy(() =>
+  import('@/pages/account/AccountProfilePage').then((module) => ({
+    default: module.AccountProfilePage,
+  })),
+);
+const AccountSecurityPage = lazy(() =>
+  import('@/pages/account/AccountSecurityPage').then((module) => ({
+    default: module.AccountSecurityPage,
+  })),
+);
+const AccountNotificationsPage = lazy(() =>
+  import('@/pages/account/AccountNotificationsPage').then((module) => ({
+    default: module.AccountNotificationsPage,
+  })),
+);
+const AccountInfoPage = lazy(() =>
+  import('@/pages/account/AccountInfoPage').then((module) => ({
+    default: module.AccountInfoPage,
+  })),
+);
 
 const LandingPage = lazy(() =>
   import('@/pages/LandingPage').then((module) => ({ default: module.LandingPage })),
@@ -43,9 +74,6 @@ const NotificationsPage = lazy(() =>
   import('@/pages/NotificationsPage').then((module) => ({
     default: module.NotificationsPage,
   })),
-);
-const ProfilePage = lazy(() =>
-  import('@/pages/ProfilePage').then((module) => ({ default: module.ProfilePage })),
 );
 
 const AppointmentsPage = lazy(() =>
@@ -164,6 +192,7 @@ export default function App() {
         '/login',
         '/register',
         '/verify-otp',
+        '/verify-2fa',
         '/forgot-password',
         '/reset-password',
       ];
@@ -194,6 +223,7 @@ export default function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-otp" element={<VerifyOTPPage />} />
+          <Route path="/verify-2fa" element={<VerifyTwoFactorPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
 
@@ -201,7 +231,18 @@ export default function App() {
             <Route element={<AppLayout />}>
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/notifications" element={<NotificationsPage />} />
-              <Route path="/profile" element={<ProfilePage />} />
+
+              {/* Account settings (nested tabs) */}
+              <Route path="/account" element={<AccountLayout />}>
+                <Route index element={<Navigate to="/account/profile" replace />} />
+                <Route path="profile" element={<AccountProfilePage />} />
+                <Route path="security" element={<AccountSecurityPage />} />
+                <Route path="notifications" element={<AccountNotificationsPage />} />
+                <Route path="info" element={<AccountInfoPage />} />
+              </Route>
+
+              {/* Legacy redirects */}
+              <Route path="/profile" element={<Navigate to="/account/profile" replace />} />
               <Route path="/change-password" element={<ChangePasswordPage />} />
 
               <Route path="/appointments" element={<AppointmentsPage />} />

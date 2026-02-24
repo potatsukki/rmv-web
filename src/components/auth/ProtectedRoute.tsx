@@ -24,8 +24,8 @@ export function ProtectedRoute({ allowedRoles }: ProtectedRouteProps) {
   }
 
   // Force password change before accessing any other page
-  if (user.mustChangePassword && location.pathname !== '/change-password') {
-    return <Navigate to="/change-password" replace />;
+  if (user.mustChangePassword && location.pathname !== '/account/security' && location.pathname !== '/change-password') {
+    return <Navigate to="/account/security" replace />;
   }
 
   if (allowedRoles && !user.roles.some((r) => allowedRoles.includes(r))) {

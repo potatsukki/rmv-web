@@ -20,9 +20,11 @@ import {
   ArrowUpRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
+import { useAuthStore } from '@/stores/auth.store';
+import { LayoutDashboard } from 'lucide-react';
 import { BrandLogo } from '@/components/shared/BrandLogo';
-import { motion, useScroll, useTransform } from 'framer-motion';
+import { motion, useScroll, useTransform, LazyMotion, domAnimation } from 'framer-motion';
 import { 
   FadeIn, 
   SlideUp, 
@@ -34,12 +36,15 @@ import {
 } from '@/components/shared/MotionWrappers';
 
 export function LandingPage() {
+  const { user } = useAuthStore();
+  const isLoggedIn = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { scrollY } = useScroll();
   
-  // Parallax effects
+  // Parallax effects — all useTransform at top level
   const heroTextY = useTransform(scrollY, [0, 500], [0, 150]);
   const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
+  const bgParallaxY = useTransform(scrollY, [0, 1000], [0, 300]);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
@@ -47,8 +52,7 @@ export function LandingPage() {
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const onKeyDown = (event: any) => {
+    const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setMobileMenuOpen(false);
       }
@@ -62,20 +66,26 @@ export function LandingPage() {
     };
   }, [mobileMenuOpen]);
 
+  const toggleMobileMenu = useCallback(() => setMobileMenuOpen(v => !v), []);
+  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+
   return (
+    <LazyMotion features={domAnimation} strict>
     <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-orange-500/30">
       {/* ─── Navigation ─── */}
       <motion.header 
         initial={{ y: -100 }}
         animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: "easeOut" }}
+        transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }}
+        style={{ willChange: 'transform' }}
         className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100/50"
       >
         <div className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           <Link to="/" className="flex items-center gap-3 group">
             <motion.div 
               whileHover={{ rotate: 90 }}
-              transition={{ duration: 0.5 }}
+              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
+              style={{ willChange: 'transform' }}
             >
               <BrandLogo className="h-10 w-10 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
             </motion.div>
@@ -103,25 +113,36 @@ export function LandingPage() {
           </nav>
 
           <div className="hidden items-center gap-4 md:flex">
-            <Link
-              to="/login"
-              className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
-            >
-              Sign In
-            </Link>
-            <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-xl shadow-gray-900/10 h-10 px-6 text-sm rounded-full transition-all hover:scale-105 hover:shadow-2xl">
-              <Link to="/register">
-                Get Started
-                <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
-              </Link>
-            </Button>
+            {isLoggedIn ? (
+              <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-xl shadow-gray-900/10 h-10 px-6 text-sm rounded-full transition-all hover:scale-105 hover:shadow-2xl">
+                <Link to="/dashboard">
+                  <LayoutDashboard className="mr-1.5 h-4 w-4" />
+                  Go to Dashboard
+                </Link>
+              </Button>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+                >
+                  Sign In
+                </Link>
+                <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-xl shadow-gray-900/10 h-10 px-6 text-sm rounded-full transition-all hover:scale-105 hover:shadow-2xl">
+                  <Link to="/register">
+                    Get Started
+                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  </Link>
+                </Button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Toggle */}
           <button
             type="button"
             className="md:hidden p-2 text-gray-500 hover:text-gray-900 transition-colors"
-            onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            onClick={toggleMobileMenu}
             aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
           >
             {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -142,27 +163,38 @@ export function LandingPage() {
                   key={item}
                   initial={{ x: -20, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: idx * 0.1 }}
+                  transition={{ delay: idx * 0.08, duration: 0.35, ease: [0.25, 0.1, 0.25, 1.0] }}
                   href={`#${item.toLowerCase()}`}
-                  onClick={() => setMobileMenuOpen(false)}
+                  onClick={closeMobileMenu}
                   className="px-4 py-3 rounded-xl text-lg font-medium text-gray-600 hover:bg-gray-50 active:bg-gray-100"
                 >
                   {item}
                 </motion.a>
               ))}
               <div className="pt-4 mt-2 border-t border-gray-100 space-y-3">
-                <Link
-                  to="/login"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="block px-4 py-3 rounded-xl text-lg font-medium text-gray-600 hover:bg-gray-50"
-                >
-                  Sign In
-                </Link>
-                <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-12 rounded-xl text-lg">
-                  <Link to="/register" onClick={() => setMobileMenuOpen(false)}>
-                    Get Started
-                  </Link>
-                </Button>
+                {isLoggedIn ? (
+                  <Button asChild className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold h-12 rounded-xl text-lg">
+                    <Link to="/dashboard" onClick={closeMobileMenu}>
+                      <LayoutDashboard className="mr-2 h-5 w-5" />
+                      Go to Dashboard
+                    </Link>
+                  </Button>
+                ) : (
+                  <>
+                    <Link
+                      to="/login"
+                      onClick={closeMobileMenu}
+                      className="block px-4 py-3 rounded-xl text-lg font-medium text-gray-600 hover:bg-gray-50"
+                    >
+                      Sign In
+                    </Link>
+                    <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-12 rounded-xl text-lg">
+                      <Link to="/register" onClick={closeMobileMenu}>
+                        Get Started
+                      </Link>
+                    </Button>
+                  </>
+                )}
               </div>
             </nav>
           </motion.div>
@@ -173,8 +205,8 @@ export function LandingPage() {
       <section className="relative overflow-hidden bg-gray-950 flex items-center">
         {/* Background Parallax */}
         <motion.div 
-          style={{ y: useTransform(scrollY, [0, 1000], [0, 300]) }}
-          className="absolute inset-0 z-0"
+          style={{ y: bgParallaxY, willChange: 'transform' }}
+          className="absolute inset-0 z-0 gpu-layer"
         >
           <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-20" />
           <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/80 to-transparent" />
@@ -183,7 +215,7 @@ export function LandingPage() {
 
         <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full py-8 sm:py-12 lg:py-16">
           <motion.div 
-            style={{ y: heroTextY, opacity: heroOpacity }}
+            style={{ y: heroTextY, opacity: heroOpacity, willChange: 'transform, opacity' }}
             className="mx-auto max-w-4xl lg:mx-0"
           >
             {/* Animated Badge */}
@@ -208,7 +240,8 @@ export function LandingPage() {
             <motion.div 
               initial={{ opacity: 0, y: 30 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.6 }}
+              transition={{ delay: 0.9, duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }}
+              style={{ willChange: 'transform, opacity' }}
               className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-5 lg:justify-start justify-center"
             >
               <Button
@@ -294,7 +327,9 @@ export function LandingPage() {
                 key={service.title}
                 variants={staggerItem}
                 whileHover={{ y: -10 }}
-                className="group relative rounded-2xl sm:rounded-[2rem] border border-gray-100 bg-white p-6 sm:p-10 shadow-lg shadow-gray-200/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-all duration-300"
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                style={{ willChange: 'transform, opacity' }}
+                className="group relative rounded-2xl sm:rounded-[2rem] border border-gray-100 bg-white p-6 sm:p-10 shadow-lg shadow-gray-200/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-shadow duration-300"
               >
                 <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${service.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
                   <service.icon className="h-7 w-7 text-gray-900" />
@@ -345,7 +380,9 @@ export function LandingPage() {
                     From initial consultation to final delivery — complete transparency at every step of your fabrication journey.
                   </p>
                   <Button asChild size="lg" className="bg-white text-gray-900 hover:bg-gray-200 font-bold rounded-full">
-                     <Link to="/register">Get Started Now</Link>
+                     <Link to={isLoggedIn ? '/dashboard' : '/register'}>
+                       {isLoggedIn ? <><LayoutDashboard className="mr-2 h-5 w-5" />Go to Dashboard</> : 'Get Started Now'}
+                     </Link>
                   </Button>
                 </SlideInLeft>
              </div>
@@ -415,19 +452,16 @@ export function LandingPage() {
                 traditional craftsmanship with cutting-edge technology.
               </p>
 
-              <div className="space-y-4 sm:space-y-6">
+              <StaggerContainer staggerDelay={0.08} className="space-y-4 sm:space-y-6">
                 {[
                   'Real-time project tracking through your online portal',
                   'Transparent pricing with detailed cost breakdowns',
                   'Quality-assured with rigorous inspection protocols',
                   'Professional installation by certified technicians',
                   'On-time delivery with milestone-based updates',
-                ].map((item, i) => (
+                ].map((item) => (
                   <motion.div 
-                    initial={{ opacity: 0, x: -20 }}
-                    whileInView={{ opacity: 1, x: 0 }}
-                    transition={{ delay: i * 0.1 }}
-                    viewport={{ once: true }}
+                    variants={staggerItem}
                     key={item} 
                     className="flex items-start gap-4"
                   >
@@ -437,7 +471,7 @@ export function LandingPage() {
                     <span className="text-sm sm:text-lg text-gray-800 font-medium">{item}</span>
                   </motion.div>
                 ))}
-              </div>
+              </StaggerContainer>
             </SlideInLeft>
 
             {/* Visual card */}
@@ -445,7 +479,8 @@ export function LandingPage() {
               <div className="relative w-full max-w-md">
                 <motion.div 
                   whileHover={{ scale: 1.02 }}
-                  transition={{ type: "spring", stiffness: 300 }}
+                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                  style={{ willChange: 'transform' }}
                   className="relative z-10 rounded-2xl sm:rounded-[2.5rem] bg-gray-900 p-5 sm:p-8 md:p-12 shadow-2xl overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 p-12 bg-orange-500/20 blur-[60px] rounded-full h-64 w-64 -mr-20 -mt-20" />
@@ -486,28 +521,21 @@ export function LandingPage() {
                        </div>
                        <div className="h-3 rounded-full bg-gray-800 overflow-hidden">
                          <motion.div 
-                           initial={{ width: 0 }}
-                           whileInView={{ width: "78%" }}
-                           transition={{ duration: 1.5, ease: "easeOut" }}
+                           initial={{ scaleX: 0 }}
+                           whileInView={{ scaleX: 1 }}
+                           transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1.0] }}
                            viewport={{ once: true }}
-                           className="h-full rounded-full bg-gradient-to-r from-orange-600 to-orange-400" 
+                           style={{ originX: 0, willChange: 'transform' }}
+                           className="h-full w-[78%] rounded-full bg-gradient-to-r from-orange-600 to-orange-400" 
                          />
                        </div>
                     </div>
                   </div>
                 </motion.div>
                 
-                {/* Decorative Elements */}
-                <motion.div 
-                   animate={{ y: [0, -20, 0] }}
-                   transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
-                   className="absolute -top-6 -right-6 sm:-top-12 sm:-right-12 h-24 w-24 sm:h-40 sm:w-40 rounded-full bg-orange-200/50 backdrop-blur-3xl -z-10" 
-                />
-                <motion.div 
-                   animate={{ y: [0, 30, 0] }}
-                   transition={{ duration: 5, repeat: Infinity, ease: "easeInOut", delay: 1 }}
-                   className="absolute -bottom-6 -left-6 sm:-bottom-10 sm:-left-10 h-32 w-32 sm:h-56 sm:w-56 rounded-full bg-blue-200/50 backdrop-blur-3xl -z-10" 
-                />
+                {/* Decorative Elements — CSS animations to avoid JS animation loops */}
+                <div className="absolute -top-6 -right-6 sm:-top-12 sm:-right-12 h-24 w-24 sm:h-40 sm:w-40 rounded-full bg-orange-200/50 backdrop-blur-3xl -z-10 animate-float-slow" />
+                <div className="absolute -bottom-6 -left-6 sm:-bottom-10 sm:-left-10 h-32 w-32 sm:h-56 sm:w-56 rounded-full bg-blue-200/50 backdrop-blur-3xl -z-10 animate-float-slower" />
               </div>
             </SlideInRight>
           </div>
@@ -537,9 +565,12 @@ export function LandingPage() {
                 size="lg"
                 className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-8 sm:px-12 h-12 sm:h-16 text-base sm:text-lg shadow-[0_0_40px_rgba(249,115,22,0.4)] rounded-full hover:scale-105 transition-transform w-full sm:w-auto"
               >
-                <Link to="/register">
-                  Get Started Free
-                  <ArrowRight className="ml-2 h-5 w-5" />
+                <Link to={isLoggedIn ? '/dashboard' : '/register'}>
+                  {isLoggedIn ? (
+                    <><LayoutDashboard className="mr-2 h-5 w-5" />Go to Dashboard</>
+                  ) : (
+                    <>Get Started Free<ArrowRight className="ml-2 h-5 w-5" /></>
+                  )}
                 </Link>
               </Button>
             </div>
@@ -646,5 +677,6 @@ export function LandingPage() {
         </div>
       </footer>
     </div>
+    </LazyMotion>
   );
 }

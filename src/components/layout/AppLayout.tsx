@@ -35,8 +35,7 @@ const pageMeta: Record<string, { title: string; description: string }> = {
   users: { title: 'Team', description: 'User management' },
   settings: { title: 'Settings', description: 'System configuration' },
   notifications: { title: 'Notifications', description: 'Updates and alerts' },
-  profile: { title: 'Profile', description: 'Your account details' },
-  'change-password': { title: 'Change Password', description: 'Update your credentials' },
+  account: { title: 'Account Settings', description: 'Manage your account' },
   'cashier-queue': { title: 'Cashier Queue', description: 'Process pending payments' },
 };
 
@@ -149,16 +148,30 @@ const quickSearchItems: QuickSearchItem[] = [
   },
   {
     title: 'Profile',
-    path: '/profile',
+    path: '/account/profile',
     description: 'Your account information',
     keywords: ['account', 'user', 'me'],
     roles: Object.values(Role),
   },
   {
-    title: 'Change Password',
-    path: '/change-password',
-    description: 'Update your login credentials',
-    keywords: ['security', 'password', 'credentials'],
+    title: 'Security',
+    path: '/account/security',
+    description: 'Change your password',
+    keywords: ['password', 'credentials', 'security'],
+    roles: Object.values(Role),
+  },
+  {
+    title: 'Notification Preferences',
+    path: '/account/notifications',
+    description: 'Manage notification settings',
+    keywords: ['preferences', 'alerts', 'email'],
+    roles: Object.values(Role),
+  },
+  {
+    title: 'Account Info',
+    path: '/account/info',
+    description: 'View account details',
+    keywords: ['info', 'details', 'member'],
     roles: Object.values(Role),
   },
 ];
@@ -679,7 +692,7 @@ export function AppLayout() {
 
               {user && (
                 <Link
-                  to="/profile"
+                  to="/account/profile"
                   className="flex items-center gap-2.5 rounded-lg border border-border bg-white px-2.5 py-1.5 hover:bg-muted transition-colors"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
@@ -698,7 +711,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <div className="p-4 pt-[4.5rem] md:p-8 md:pt-8 pb-24 md:pb-8 animate-page">
+        <div className="p-4 pt-[4.5rem] md:p-8 md:pt-8 pb-28 md:pb-8 animate-page">
           <Outlet />
         </div>
       </main>

@@ -49,6 +49,18 @@ export default defineConfig({
             return 'vendor-charts';
           }
 
+          if (id.includes('framer-motion')) {
+            return 'vendor-motion';
+          }
+
+          if (
+            id.includes('/leaflet/') ||
+            id.includes('\\leaflet\\') ||
+            id.includes('react-leaflet')
+          ) {
+            return 'vendor-maps';
+          }
+
           if (
             id.includes('@radix-ui') ||
             id.includes('lucide-react') ||
