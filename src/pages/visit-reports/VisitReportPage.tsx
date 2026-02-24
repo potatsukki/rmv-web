@@ -54,6 +54,14 @@ const DEFAULT_SITE_CONDITIONS: SiteConditions = {
   environment: Environment.INDOOR,
 };
 
+/** Mongoose populate may return an object with _id; this always gives the raw string ID. */
+function rawId(field: unknown): string {
+  if (typeof field === 'string') return field;
+  if (field && typeof field === 'object' && '_id' in (field as Record<string, unknown>))
+    return String((field as Record<string, unknown>)._id);
+  return String(field);
+}
+
 export function VisitReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -286,7 +294,7 @@ export function VisitReportPage() {
 
       {/* ── Project Navigator (multi-project strip) ── */}
       <ProjectNavigator
-        appointmentId={report.appointmentId}
+        appointmentId={rawId(report.appointmentId)}
         activeReportId={String(report._id)}
         canAdd={!!isSalesStaff && (isDraft || isReturned)}
       />
