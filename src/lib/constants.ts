@@ -104,3 +104,70 @@ export enum VisitReportStatus {
   RETURNED = 'returned',
   COMPLETED = 'completed',
 }
+
+// ── Service Type (fabrication categories) ──
+export enum ServiceType {
+  RAILINGS = 'railings',
+  GRILLS = 'grills',
+  GATES = 'gates',
+  FENCES = 'fences',
+  KITCHEN_COUNTER = 'kitchen_counter',
+  KITCHEN_CABINET = 'kitchen_cabinet',
+  TABLE = 'table',
+  CHAIR = 'chair',
+  SHELVING = 'shelving',
+  DOOR = 'door',
+  WINDOW_FRAME = 'window_frame',
+  CANOPY = 'canopy',
+  STAIRCASE = 'staircase',
+  BALUSTRADE = 'balustrade',
+  SIGNAGE = 'signage',
+  CUSTOM = 'custom',
+}
+
+export const SERVICE_TYPE_LABELS: Record<string, string> = {
+  [ServiceType.RAILINGS]: 'Railings',
+  [ServiceType.GRILLS]: 'Grills',
+  [ServiceType.GATES]: 'Gates',
+  [ServiceType.FENCES]: 'Fences',
+  [ServiceType.KITCHEN_COUNTER]: 'Kitchen Counter',
+  [ServiceType.KITCHEN_CABINET]: 'Kitchen Cabinet',
+  [ServiceType.TABLE]: 'Table',
+  [ServiceType.CHAIR]: 'Chair',
+  [ServiceType.SHELVING]: 'Shelving',
+  [ServiceType.DOOR]: 'Door',
+  [ServiceType.WINDOW_FRAME]: 'Window Frame',
+  [ServiceType.CANOPY]: 'Canopy',
+  [ServiceType.STAIRCASE]: 'Staircase',
+  [ServiceType.BALUSTRADE]: 'Balustrade',
+  [ServiceType.SIGNAGE]: 'Signage',
+  [ServiceType.CUSTOM]: 'Custom',
+};
+
+// ── Measurement Unit ──
+export enum MeasurementUnit {
+  CM = 'cm',
+  INCHES = 'inches',
+  FEET = 'feet',
+  METERS = 'meters',
+}
+
+export const MEASUREMENT_UNIT_LABELS: Record<string, string> = {
+  [MeasurementUnit.CM]: 'cm',
+  [MeasurementUnit.INCHES]: 'in',
+  [MeasurementUnit.FEET]: 'ft',
+  [MeasurementUnit.METERS]: 'm',
+};
+
+// ── Environment / Site Condition ──
+export enum Environment {
+  INDOOR = 'indoor',
+  OUTDOOR = 'outdoor',
+  SEMI_COVERED = 'semi_covered',
+}
+
+export const ENVIRONMENT_LABELS: Record<string, string> = {
+  [Environment.INDOOR]: 'Indoor',
+  [Environment.OUTDOOR]: 'Outdoor',
+  [Environment.SEMI_COVERED]: 'Semi-covered',
+};

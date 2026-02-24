@@ -12,6 +12,8 @@ import {
   StickyNote,
   Camera,
   Calendar,
+  MapPin,
+  Layers,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -24,6 +26,10 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
+import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
+import { SiteConditionsPanel } from '@/components/shared/SiteConditionsPanel';
+import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import {
   useVisitReport,
   useUpdateVisitReport,
@@ -31,7 +37,21 @@ import {
   useReturnVisitReport,
 } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
-import { Role, VisitReportStatus } from '@/lib/constants';
+import {
+  Role,
+  VisitReportStatus,
+  ServiceType,
+  MeasurementUnit,
+  SERVICE_TYPE_LABELS,
+  MEASUREMENT_UNIT_LABELS,
+  ENVIRONMENT_LABELS,
+  Environment,
+} from '@/lib/constants';
+import type { LineItem, SiteConditions } from '@/lib/types';
+
+const DEFAULT_SITE_CONDITIONS: SiteConditions = {
+  environment: Environment.INDOOR,
+};
 
 export function VisitReportPage() {
   const { id } = useParams<{ id: string }>();
@@ -47,9 +67,11 @@ export function VisitReportPage() {
   const [returnOpen, setReturnOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
 
-  // Form state
+  // ── Form state ──
   const [visitType, setVisitType] = useState('');
   const [actualVisitDateTime, setActualVisitDateTime] = useState('');
+  const [serviceType, setServiceType] = useState(ServiceType.CUSTOM as string);
+  const [serviceTypeCustom, setServiceTypeCustom] = useState('');
   const [materials, setMaterials] = useState('');
   const [finishes, setFinishes] = useState('');
   const [preferredDesign, setPreferredDesign] = useState('');
@@ -57,11 +79,24 @@ export function VisitReportPage() {
   const [notes, setNotes] = useState('');
 
   // Measurements
-  const [length, setLength] = useState('');
-  const [width, setWidth] = useState('');
-  const [height, setHeight] = useState('');
-  const [thickness, setThickness] = useState('');
-  const [measurementNotes, setMeasurementNotes] = useState('');
+  const [measurementUnit, setMeasurementUnit] = useState(MeasurementUnit.CM as string);
+  const [lineItems, setLineItems] = useState<LineItem[]>([]);
+
+  // Legacy measurements (for old reports)
+  const [legacyLength, setLegacyLength] = useState('');
+  const [legacyWidth, setLegacyWidth] = useState('');
+  const [legacyHeight, setLegacyHeight] = useState('');
+  const [legacyThickness, setLegacyThickness] = useState('');
+  const [legacyMeasurementNotes, setLegacyMeasurementNotes] = useState('');
+
+  // Site conditions
+  const [siteConditions, setSiteConditions] = useState<SiteConditions>(DEFAULT_SITE_CONDITIONS);
+
+  // File uploads
+  const [photoKeys, setPhotoKeys] = useState<string[]>([]);
+  const [videoKeys, setVideoKeys] = useState<string[]>([]);
+  const [sketchKeys, setSketchKeys] = useState<string[]>([]);
+  const [referenceImageKeys, setReferenceImageKeys] = useState<string[]>([]);
 
   const [formLoaded, setFormLoaded] = useState(false);
 
@@ -77,18 +112,38 @@ export function VisitReportPage() {
         ? new Date(report.actualVisitDateTime).toISOString().slice(0, 16)
         : '',
     );
+    setServiceType(report.serviceType || ServiceType.CUSTOM);
+    setServiceTypeCustom(report.serviceTypeCustom || '');
     setMaterials(report.materials || '');
     setFinishes(report.finishes || '');
     setPreferredDesign(report.preferredDesign || '');
     setCustomerRequirements(report.customerRequirements || '');
     setNotes(report.notes || '');
+
+    // New measurement system
+    setMeasurementUnit(report.measurementUnit || MeasurementUnit.CM);
+    setLineItems(report.lineItems || []);
+
+    // Legacy measurements
     if (report.measurements) {
-      setLength(report.measurements.length?.toString() || '');
-      setWidth(report.measurements.width?.toString() || '');
-      setHeight(report.measurements.height?.toString() || '');
-      setThickness(report.measurements.thickness?.toString() || '');
-      setMeasurementNotes(report.measurements.raw || '');
+      setLegacyLength(report.measurements.length?.toString() || '');
+      setLegacyWidth(report.measurements.width?.toString() || '');
+      setLegacyHeight(report.measurements.height?.toString() || '');
+      setLegacyThickness(report.measurements.thickness?.toString() || '');
+      setLegacyMeasurementNotes(report.measurements.raw || '');
     }
+
+    // Site conditions
+    if (report.siteConditions) {
+      setSiteConditions(report.siteConditions);
+    }
+
+    // File keys
+    setPhotoKeys(report.photoKeys || []);
+    setVideoKeys(report.videoKeys || []);
+    setSketchKeys(report.sketchKeys || []);
+    setReferenceImageKeys(report.referenceImageKeys || []);
+
     setFormLoaded(true);
   }
 
@@ -101,27 +156,53 @@ export function VisitReportPage() {
   const canReturn =
     isEngineerOrAdmin && report.status === VisitReportStatus.SUBMITTED;
 
+  // Detect if this is an old-style report (has legacy measurements but no lineItems)
+  const isLegacyReport = !!(
+    report.measurements &&
+    (report.measurements.length != null ||
+      report.measurements.width != null ||
+      report.measurements.height != null) &&
+    (!report.lineItems || report.lineItems.length === 0)
+  );
+
+  const serviceLabel =
+    serviceType === ServiceType.CUSTOM
+      ? serviceTypeCustom || 'Custom'
+      : SERVICE_TYPE_LABELS[serviceType] || serviceType;
+
   const handleSave = async () => {
     try {
-      const measurements: Record<string, unknown> = {};
-      if (length) measurements.length = parseFloat(length);
-      if (width) measurements.width = parseFloat(width);
-      if (height) measurements.height = parseFloat(height);
-      if (thickness) measurements.thickness = parseFloat(thickness);
-      if (measurementNotes) measurements.raw = measurementNotes;
+      // Build legacy measurements only if this is a legacy report
+      let measurements: Record<string, unknown> | undefined;
+      if (isLegacyReport) {
+        measurements = {};
+        if (legacyLength) measurements.length = parseFloat(legacyLength);
+        if (legacyWidth) measurements.width = parseFloat(legacyWidth);
+        if (legacyHeight) measurements.height = parseFloat(legacyHeight);
+        if (legacyThickness) measurements.thickness = parseFloat(legacyThickness);
+        if (legacyMeasurementNotes) measurements.raw = legacyMeasurementNotes;
+        if (!Object.keys(measurements).length) measurements = undefined;
+      }
 
       await updateMutation.mutateAsync({
         id: id!,
         visitType: visitType || undefined,
         actualVisitDateTime: actualVisitDateTime || undefined,
-        measurements: Object.keys(measurements).length
-          ? measurements
-          : undefined,
+        serviceType: serviceType || undefined,
+        serviceTypeCustom: serviceTypeCustom || undefined,
+        measurementUnit,
+        lineItems,
+        measurements,
+        siteConditions,
         materials: materials || undefined,
         finishes: finishes || undefined,
         preferredDesign: preferredDesign || undefined,
         customerRequirements: customerRequirements || undefined,
         notes: notes || undefined,
+        photoKeys,
+        videoKeys,
+        sketchKeys,
+        referenceImageKeys,
       });
       toast.success('Report saved');
     } catch {
@@ -178,7 +259,7 @@ export function VisitReportPage() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
+      {/* ── Header ── */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
@@ -194,13 +275,15 @@ export function VisitReportPage() {
             {canEdit ? 'Edit Visit Report' : 'Visit Report Details'}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
+            {serviceLabel}{' '}
+            &middot;{' '}
             {report.visitType === 'ocular' ? 'Ocular Visit' : 'Consultation'}
           </p>
         </div>
         <StatusBadge status={report.status} />
       </div>
 
-      {/* Return reason banner */}
+      {/* ── Return reason banner ── */}
       {report.returnReason && isReturned && (
         <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
           <p className="text-sm font-semibold text-orange-800">
@@ -210,172 +293,256 @@ export function VisitReportPage() {
         </div>
       )}
 
-      <div className="grid gap-6 lg:grid-cols-2">
-        {/* Report Info (read-only) */}
-        <Card className="rounded-xl border-gray-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-900">
-              Report Info
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <InfoRow
-              icon={Calendar}
-              label="Created"
-              value={format(new Date(report.createdAt), 'MMM d, yyyy h:mm a')}
-            />
-            {report.actualVisitDateTime && !canEdit && (
-              <InfoRow
-                icon={Calendar}
-                label="Visit Date"
-                value={format(
-                  new Date(report.actualVisitDateTime),
-                  'MMM d, yyyy h:mm a',
+      {/* ── READ-ONLY VIEWS (for non-editors) ── */}
+      {!canEdit && (
+        <div className="space-y-6">
+          <div className="grid gap-6 lg:grid-cols-2">
+            {/* Report Info */}
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Report Info</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <InfoRow icon={Layers} label="Service Type" value={serviceLabel} />
+                <InfoRow
+                  icon={Calendar}
+                  label="Created"
+                  value={format(new Date(report.createdAt), 'MMM d, yyyy h:mm a')}
+                />
+                {report.actualVisitDateTime && (
+                  <InfoRow
+                    icon={Calendar}
+                    label="Visit Date"
+                    value={format(new Date(report.actualVisitDateTime), 'MMM d, yyyy h:mm a')}
+                  />
                 )}
-              />
-            )}
-            {(report.photoKeys?.length ?? 0) > 0 && (
-              <InfoRow
-                icon={Camera}
-                label="Photos"
-                value={`${report.photoKeys!.length} uploaded`}
-              />
-            )}
-          </CardContent>
-        </Card>
+              </CardContent>
+            </Card>
 
-        {/* Summary / Read-only view for non-editors */}
-        {!canEdit && (
-          <Card className="rounded-xl border-gray-100 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {report.materials && (
-                <InfoRow icon={Package} label="Materials" value={report.materials} />
-              )}
-              {report.finishes && (
-                <InfoRow
-                  icon={Paintbrush}
-                  label="Finishes"
-                  value={report.finishes}
-                />
-              )}
-              {report.preferredDesign && (
-                <InfoRow
-                  icon={Paintbrush}
-                  label="Preferred Design"
-                  value={report.preferredDesign}
-                />
-              )}
-              {report.customerRequirements && (
-                <InfoRow
-                  icon={StickyNote}
-                  label="Customer Requirements"
-                  value={report.customerRequirements}
-                />
-              )}
-              {report.notes && (
-                <InfoRow icon={StickyNote} label="Notes" value={report.notes} />
-              )}
-              {report.measurements && (
-                <div className="space-y-1">
-                  <p className="text-[13px] font-medium text-gray-700">
-                    Measurements
-                  </p>
-                  <div className="grid grid-cols-2 gap-2 text-sm text-gray-500">
-                    {report.measurements.length != null && (
-                      <span>Length: {report.measurements.length} cm</span>
-                    )}
-                    {report.measurements.width != null && (
-                      <span>Width: {report.measurements.width} cm</span>
-                    )}
-                    {report.measurements.height != null && (
-                      <span>Height: {report.measurements.height} cm</span>
-                    )}
-                    {report.measurements.thickness != null && (
-                      <span>
-                        Thickness: {report.measurements.thickness} cm
-                      </span>
-                    )}
-                  </div>
-                  {report.measurements.raw && (
-                    <p className="text-sm text-gray-500 mt-1">
-                      {report.measurements.raw}
-                    </p>
+            {/* Details */}
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Details</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {report.materials && (
+                  <InfoRow icon={Package} label="Materials" value={report.materials} />
+                )}
+                {report.finishes && (
+                  <InfoRow icon={Paintbrush} label="Finishes" value={report.finishes} />
+                )}
+                {report.preferredDesign && (
+                  <InfoRow icon={Paintbrush} label="Preferred Design" value={report.preferredDesign} />
+                )}
+                {report.customerRequirements && (
+                  <InfoRow icon={StickyNote} label="Customer Requirements" value={report.customerRequirements} />
+                )}
+                {report.notes && (
+                  <InfoRow icon={StickyNote} label="Notes" value={report.notes} />
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Line Items (read-only) */}
+          {report.lineItems && report.lineItems.length > 0 && (
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <Ruler className="h-5 w-5 text-gray-400" />
+                  Measurements ({MEASUREMENT_UNIT_LABELS[report.measurementUnit || 'cm'] || report.measurementUnit})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {report.lineItems.map((item, i) => (
+                    <div key={i} className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 border border-gray-100">
+                      <div className="bg-white rounded-lg h-8 w-8 flex items-center justify-center text-xs font-bold text-gray-500 border border-gray-200 shrink-0">
+                        {i + 1}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-semibold text-gray-900">{item.label}</p>
+                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-500">
+                          {item.length != null && <span>L: {item.length}</span>}
+                          {item.width != null && <span>W: {item.width}</span>}
+                          {item.height != null && <span>H: {item.height}</span>}
+                          {item.thickness != null && <span>T: {item.thickness}</span>}
+                          {item.area != null && <span>Area: {item.area}</span>}
+                          <span>Qty: {item.quantity}</span>
+                        </div>
+                        {item.notes && (
+                          <p className="text-xs text-gray-400 mt-1">{item.notes}</p>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Legacy measurements (read-only) */}
+          {isLegacyReport && report.measurements && (
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <Ruler className="h-5 w-5 text-gray-400" />
+                  Measurements (Legacy)
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 gap-2 text-sm text-gray-500">
+                  {report.measurements.length != null && (
+                    <span>Length: {report.measurements.length} {report.measurements.unit}</span>
+                  )}
+                  {report.measurements.width != null && (
+                    <span>Width: {report.measurements.width} {report.measurements.unit}</span>
+                  )}
+                  {report.measurements.height != null && (
+                    <span>Height: {report.measurements.height} {report.measurements.unit}</span>
+                  )}
+                  {report.measurements.thickness != null && (
+                    <span>Thickness: {report.measurements.thickness} {report.measurements.unit}</span>
                   )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        )}
-      </div>
+                {report.measurements.raw && (
+                  <p className="text-sm text-gray-500 mt-2">{report.measurements.raw}</p>
+                )}
+              </CardContent>
+            </Card>
+          )}
 
-      {/* Editable form for Sales Staff on DRAFT/RETURNED */}
+          {/* Site Conditions (read-only) */}
+          {report.siteConditions && (
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <MapPin className="h-5 w-5 text-gray-400" />
+                  Site Conditions
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                <InfoRow icon={MapPin} label="Environment" value={ENVIRONMENT_LABELS[report.siteConditions.environment] || report.siteConditions.environment} />
+                {report.siteConditions.floorType && (
+                  <InfoRow icon={Layers} label="Floor Type" value={report.siteConditions.floorType} />
+                )}
+                {report.siteConditions.wallMaterial && (
+                  <InfoRow icon={Layers} label="Wall Material" value={report.siteConditions.wallMaterial} />
+                )}
+                {report.siteConditions.accessNotes && (
+                  <InfoRow icon={StickyNote} label="Access Notes" value={report.siteConditions.accessNotes} />
+                )}
+                {report.siteConditions.obstaclesOrConstraints && (
+                  <InfoRow icon={StickyNote} label="Obstacles" value={report.siteConditions.obstaclesOrConstraints} />
+                )}
+                <div className="flex gap-4 text-sm text-gray-500">
+                  {report.siteConditions.hasElectrical && <span>Electrical nearby</span>}
+                  {report.siteConditions.hasPlumbing && <span>Plumbing nearby</span>}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Photos (read-only summary) */}
+          <PhotoUploadGrid
+            photoKeys={report.photoKeys || []}
+            videoKeys={report.videoKeys || []}
+            sketchKeys={report.sketchKeys || []}
+            referenceImageKeys={report.referenceImageKeys || []}
+            onPhotoKeysChange={() => {}}
+            onVideoKeysChange={() => {}}
+            onSketchKeysChange={() => {}}
+            onReferenceImageKeysChange={() => {}}
+            disabled
+          />
+        </div>
+      )}
+
+      {/* ── EDITABLE FORM (Sales Staff on DRAFT/RETURNED) ── */}
       {canEdit && (
-        <div className="grid gap-6 lg:grid-cols-2">
-          {/* Visit Details */}
-          <Card className="rounded-xl border-gray-100 shadow-sm">
-            <CardHeader>
-              <CardTitle className="text-lg text-gray-900">
-                Visit Details
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
-                  Visit Type
-                </Label>
-                <select
-                  value={visitType}
-                  onChange={(e) => setVisitType(e.target.value)}
-                  className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-                >
-                  <option value="">-- Select --</option>
-                  <option value="ocular">Ocular Visit</option>
-                  <option value="consultation">Consultation</option>
-                </select>
-              </div>
-
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
-                  Actual Visit Date & Time
-                </Label>
-                <Input
-                  type="datetime-local"
-                  value={actualVisitDateTime}
-                  onChange={(e) => setActualVisitDateTime(e.target.value)}
-                  className="h-11 rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+        <div className="space-y-6">
+          {/* Section 1: Service Type + Visit Details */}
+          <div className="grid gap-6 lg:grid-cols-2">
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">
+                  Service & Visit
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <ServiceTypePicker
+                  value={serviceType}
+                  customValue={serviceTypeCustom}
+                  onChange={(type, custom) => {
+                    setServiceType(type);
+                    setServiceTypeCustom(custom || '');
+                  }}
                 />
-              </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Visit Type
+                  </Label>
+                  <select
+                    value={visitType}
+                    onChange={(e) => setVisitType(e.target.value)}
+                    className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                  >
+                    <option value="">-- Select --</option>
+                    <option value="ocular">Ocular Visit</option>
+                    <option value="consultation">Consultation</option>
+                  </select>
+                </div>
+
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Actual Visit Date & Time
+                  </Label>
+                  <Input
+                    type="datetime-local"
+                    value={actualVisitDateTime}
+                    onChange={(e) => setActualVisitDateTime(e.target.value)}
+                    className="h-11 rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">
                   Customer Requirements
-                </Label>
-                <Textarea
-                  value={customerRequirements}
-                  onChange={(e) => setCustomerRequirements(e.target.value)}
-                  placeholder="What the customer needs..."
-                  className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
-                />
-              </div>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Customer Requirements
+                  </Label>
+                  <Textarea
+                    value={customerRequirements}
+                    onChange={(e) => setCustomerRequirements(e.target.value)}
+                    placeholder="What the customer needs..."
+                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                  />
+                </div>
 
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
-                  Notes
-                </Label>
-                <Textarea
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Additional observations..."
-                  className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
-                />
-              </div>
-            </CardContent>
-          </Card>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Notes
+                  </Label>
+                  <Textarea
+                    value={notes}
+                    onChange={(e) => setNotes(e.target.value)}
+                    placeholder="Additional observations..."
+                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </div>
 
-          {/* Measurements */}
+          {/* Section 2: Measurements */}
           <Card className="rounded-xl border-gray-100 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
@@ -383,73 +550,78 @@ export function VisitReportPage() {
                 Measurements
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
-                    Length (cm)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={length}
-                    onChange={(e) => setLength(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200"
-                  />
+            <CardContent>
+              {isLegacyReport ? (
+                /* Legacy flat measurements for old reports */
+                <div className="space-y-4">
+                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
+                    <p className="text-xs text-amber-700">
+                      This report uses the old measurement format. New reports use per-component line items.
+                    </p>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                    {[
+                      { label: 'Length', value: legacyLength, set: setLegacyLength },
+                      { label: 'Width', value: legacyWidth, set: setLegacyWidth },
+                      { label: 'Height', value: legacyHeight, set: setLegacyHeight },
+                      { label: 'Thickness', value: legacyThickness, set: setLegacyThickness },
+                    ].map(({ label, value, set }) => (
+                      <div key={label} className="space-y-1.5">
+                        <Label className="text-[13px] font-medium text-gray-700">
+                          {label} (cm)
+                        </Label>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          value={value}
+                          onChange={(e) => set(e.target.value)}
+                          className="h-11 rounded-xl border-gray-200"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px] font-medium text-gray-700">
+                      Measurement Notes
+                    </Label>
+                    <Textarea
+                      value={legacyMeasurementNotes}
+                      onChange={(e) => setLegacyMeasurementNotes(e.target.value)}
+                      placeholder="Special conditions, non-standard shapes..."
+                      className="min-h-[60px] rounded-xl border-gray-200"
+                    />
+                  </div>
                 </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
-                    Width (cm)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={width}
-                    onChange={(e) => setWidth(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
-                    Height (cm)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={height}
-                    onChange={(e) => setHeight(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200"
-                  />
-                </div>
-                <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
-                    Thickness (cm)
-                  </Label>
-                  <Input
-                    type="number"
-                    step="0.01"
-                    value={thickness}
-                    onChange={(e) => setThickness(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200"
-                  />
-                </div>
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
-                  Measurement Notes
-                </Label>
-                <Textarea
-                  value={measurementNotes}
-                  onChange={(e) => setMeasurementNotes(e.target.value)}
-                  placeholder="Special conditions, non-standard shapes..."
-                  className="min-h-[60px] rounded-xl border-gray-200"
+              ) : (
+                /* New line-item based measurements */
+                <LineItemsEditor
+                  items={lineItems}
+                  unit={measurementUnit}
+                  onItemsChange={setLineItems}
+                  onUnitChange={setMeasurementUnit}
                 />
-              </div>
+              )}
             </CardContent>
           </Card>
 
-          {/* Materials & Design */}
-          <Card className="rounded-xl border-gray-100 shadow-sm lg:col-span-2">
+          {/* Section 3: Site Conditions */}
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                <MapPin className="h-5 w-5 text-gray-400" />
+                Site Conditions
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <SiteConditionsPanel
+                value={siteConditions}
+                onChange={setSiteConditions}
+              />
+            </CardContent>
+          </Card>
+
+          {/* Section 4: Materials & Design */}
+          <Card className="rounded-xl border-gray-100 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
                 <Package className="h-5 w-5 text-gray-400" />
@@ -492,10 +664,32 @@ export function VisitReportPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Section 5: File Uploads */}
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                <Camera className="h-5 w-5 text-gray-400" />
+                Photos & Attachments
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <PhotoUploadGrid
+                photoKeys={photoKeys}
+                videoKeys={videoKeys}
+                sketchKeys={sketchKeys}
+                referenceImageKeys={referenceImageKeys}
+                onPhotoKeysChange={setPhotoKeys}
+                onVideoKeysChange={setVideoKeys}
+                onSketchKeysChange={setSketchKeys}
+                onReferenceImageKeysChange={setReferenceImageKeys}
+              />
+            </CardContent>
+          </Card>
         </div>
       )}
 
-      {/* Actions */}
+      {/* ── Actions ── */}
       <div className="flex flex-wrap gap-3">
         {canEdit && (
           <>
@@ -531,18 +725,18 @@ export function VisitReportPage() {
         )}
       </div>
 
-      {/* Submit Confirmation */}
+      {/* ── Submit Confirmation ── */}
       <ConfirmDialog
         open={submitOpen}
         onOpenChange={setSubmitOpen}
         title="Submit Visit Report"
-        description="This will automatically complete the related appointment and create a new project. Are you sure?"
+        description="This will create a project for this report. If all reports for this appointment are submitted, the appointment will be marked as completed. Are you sure?"
         confirmLabel="Submit"
         isLoading={submitMutation.isPending}
         onConfirm={handleSubmit}
       />
 
-      {/* Return Dialog */}
+      {/* ── Return Dialog ── */}
       <ConfirmDialog
         open={returnOpen}
         onOpenChange={setReturnOpen}

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, PaginatedResponse, VisitReport } from '@/lib/types';
+import type { ApiResponse, PaginatedResponse, VisitReport, LineItem, SiteConditions } from '@/lib/types';
 
 const KEYS = {
   all: ['visit-reports'] as const,
@@ -32,16 +32,52 @@ export function useVisitReport(id: string) {
   });
 }
 
-export function useVisitReportByAppointment(appointmentId: string) {
+/**
+ * Returns an ARRAY of visit reports for an appointment (multiple projects per appointment).
+ */
+export function useVisitReportsByAppointment(appointmentId: string) {
   return useQuery({
     queryKey: KEYS.byAppointment(appointmentId),
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<VisitReport | null>>(
+      const { data } = await api.get<ApiResponse<VisitReport[]>>(
         `/visit-reports/appointment/${appointmentId}`,
       );
       return data.data;
     },
     enabled: !!appointmentId,
+  });
+}
+
+/**
+ * @deprecated Use useVisitReportsByAppointment (plural) — returns array now.
+ * Kept for backward compat; returns first report or null.
+ */
+export function useVisitReportByAppointment(appointmentId: string) {
+  const query = useVisitReportsByAppointment(appointmentId);
+  return {
+    ...query,
+    data: query.data?.[0] ?? null,
+  };
+}
+
+export function useCreateVisitReport() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      appointmentId: string;
+      serviceType: string;
+      serviceTypeCustom?: string;
+      visitType?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<VisitReport>>(
+        '/visit-reports',
+        body,
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
   });
 }
 
@@ -55,7 +91,12 @@ export function useUpdateVisitReport() {
       id: string;
       visitType?: string;
       actualVisitDateTime?: string;
+      serviceType?: string;
+      serviceTypeCustom?: string;
+      measurementUnit?: string;
+      lineItems?: LineItem[];
       measurements?: Record<string, unknown>;
+      siteConditions?: SiteConditions;
       materials?: string;
       finishes?: string;
       preferredDesign?: string;

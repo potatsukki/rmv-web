@@ -279,6 +279,28 @@ export interface PaginatedResponse<T> {
 }
 
 // ── Visit Report ──
+
+export interface LineItem {
+  label: string;
+  length?: number;
+  width?: number;
+  height?: number;
+  area?: number;
+  thickness?: number;
+  quantity: number;
+  notes?: string;
+}
+
+export interface SiteConditions {
+  environment: string;
+  floorType?: string;
+  wallMaterial?: string;
+  hasElectrical?: boolean;
+  hasPlumbing?: boolean;
+  accessNotes?: string;
+  obstaclesOrConstraints?: string;
+}
+
 export interface VisitReport {
   _id: string;
   appointmentId: string;
@@ -289,6 +311,14 @@ export interface VisitReport {
   status: string;
   visitType: string;
   actualVisitDateTime?: string;
+
+  serviceType: string;
+  serviceTypeCustom?: string;
+
+  measurementUnit?: string;
+  lineItems?: LineItem[];
+
+  // Legacy flat measurements (old reports)
   measurements?: {
     length?: number;
     width?: number;
@@ -298,6 +328,9 @@ export interface VisitReport {
     unit: string;
     raw?: string;
   };
+
+  siteConditions?: SiteConditions;
+
   materials?: string;
   finishes?: string;
   preferredDesign?: string;

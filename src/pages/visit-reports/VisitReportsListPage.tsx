@@ -7,6 +7,7 @@ import {
   ArrowUpRight,
   Calendar,
   User,
+  Layers,
 } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -18,7 +19,7 @@ import { Badge } from '@/components/ui/badge';
 import { PageError } from '@/components/shared/PageError';
 import { useVisitReports } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
-import { VisitReportStatus, Role } from '@/lib/constants';
+import { VisitReportStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 
 const STATUS_FILTERS = [
   { label: 'All Reports', value: '' },
@@ -151,69 +152,83 @@ export function VisitReportsListPage() {
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {reports.map((report) => (
-            <Link
-              key={String(report._id)}
-              to={`/visit-reports/${report._id}`}
-              className="group block h-full"
-            >
-              <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
-                <div
-                  className={`h-1.5 w-full ${BAR_COLORS[report.status] || 'bg-gray-200'}`}
-                />
-                <CardContent className="p-6 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="h-10 w-10 text-orange-600 bg-orange-50 rounded-xl flex items-center justify-center">
-                      <ClipboardList className="h-5 w-5" />
+          {reports.map((report) => {
+            const serviceLabel = report.serviceTypeCustom
+              || SERVICE_TYPE_LABELS[report.serviceType]
+              || report.serviceType
+              || 'General';
+
+            return (
+              <Link
+                key={String(report._id)}
+                to={`/visit-reports/${report._id}`}
+                className="group block h-full"
+              >
+                <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
+                  <div
+                    className={`h-1.5 w-full ${BAR_COLORS[report.status] || 'bg-gray-200'}`}
+                  />
+                  <CardContent className="p-6 flex-1 flex flex-col">
+                    <div className="flex items-start justify-between mb-4">
+                      <div className="h-10 w-10 text-orange-600 bg-orange-50 rounded-xl flex items-center justify-center">
+                        <ClipboardList className="h-5 w-5" />
+                      </div>
+                      <Badge
+                        variant="outline"
+                        className={`uppercase text-[10px] font-bold tracking-wider rounded-md ${
+                          STATUS_COLORS[report.status] || 'border-gray-200 text-gray-600 bg-gray-50'
+                        }`}
+                      >
+                        {String(report.status || '').replace(/_/g, ' ')}
+                      </Badge>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={`uppercase text-[10px] font-bold tracking-wider rounded-md ${
-                        STATUS_COLORS[report.status] || 'border-gray-200 text-gray-600 bg-gray-50'
-                      }`}
-                    >
-                      {String(report.status || '').replace(/_/g, ' ')}
-                    </Badge>
-                  </div>
 
-                  <div className="mb-4 flex-1">
-                    <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
-                      {report.visitType === 'ocular' ? 'Ocular Visit' : 'Consultation'} Report
-                    </h3>
-                    <p className="text-sm text-gray-500 mt-1 line-clamp-2">
-                      {report.customerRequirements || report.notes || 'No details yet.'}
-                    </p>
-                  </div>
+                    <div className="mb-4 flex-1">
+                      <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
+                        {serviceLabel}
+                      </h3>
+                      <p className="text-sm text-gray-500 mt-1 line-clamp-2">
+                        {report.customerRequirements || report.notes || 'No details yet.'}
+                      </p>
+                    </div>
 
-                  <div className="space-y-2 pt-4 border-t border-gray-100">
-                    {report.actualVisitDateTime && (
+                    <div className="space-y-2 pt-4 border-t border-gray-100">
+                      {/* Service type badge */}
                       <div className="flex items-center text-sm text-gray-600">
-                        <Calendar className="mr-2 h-3.5 w-3.5 text-gray-400" />
-                        <span>
-                          {format(new Date(report.actualVisitDateTime), 'MMM d, yyyy')}
+                        <Layers className="mr-2 h-3.5 w-3.5 text-gray-400" />
+                        <span className="text-xs font-medium text-gray-500">
+                          {report.visitType === 'ocular' ? 'Ocular' : 'Consult'}
                         </span>
                       </div>
-                    )}
-                    <div className="flex items-center text-sm text-gray-600">
-                      <User className="mr-2 h-3.5 w-3.5 text-gray-400" />
-                      <span className="line-clamp-1">
-                        {report.customerName
-                          ? report.customerName
-                          : `Customer ${String(report.customerId).slice(-6)}`}
-                      </span>
+                      {report.actualVisitDateTime && (
+                        <div className="flex items-center text-sm text-gray-600">
+                          <Calendar className="mr-2 h-3.5 w-3.5 text-gray-400" />
+                          <span>
+                            {format(new Date(report.actualVisitDateTime), 'MMM d, yyyy')}
+                          </span>
+                        </div>
+                      )}
+                      <div className="flex items-center text-sm text-gray-600">
+                        <User className="mr-2 h-3.5 w-3.5 text-gray-400" />
+                        <span className="line-clamp-1">
+                          {report.customerName
+                            ? report.customerName
+                            : `Customer ${String(report.customerId).slice(-6)}`}
+                        </span>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="mt-4 flex items-center text-sm font-medium text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
-                    {report.status === VisitReportStatus.DRAFT
-                      ? 'Continue Editing'
-                      : 'View Details'}{' '}
-                    <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+                    <div className="mt-4 flex items-center text-sm font-medium text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                      {report.status === VisitReportStatus.DRAFT
+                        ? 'Continue Editing'
+                        : 'View Details'}{' '}
+                      <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>
