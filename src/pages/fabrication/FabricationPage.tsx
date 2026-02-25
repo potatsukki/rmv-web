@@ -72,7 +72,7 @@ export function FabricationPage() {
   const addUpdateMutation = useCreateFabricationUpdate();
 
   const canAddUpdate = user?.roles.some((r: string) =>
-    [Role.FABRICATION_STAFF, Role.ADMIN].includes(r as Role),
+    [Role.FABRICATION_STAFF, Role.ENGINEER, Role.ADMIN].includes(r as Role),
   );
   const isCustomer = user?.roles.some((r: string) => r === Role.CUSTOMER);
 

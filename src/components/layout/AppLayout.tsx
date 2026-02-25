@@ -102,7 +102,7 @@ const quickSearchItems: QuickSearchItem[] = [
     path: '/fabrication',
     description: 'Workshop production tracking',
     keywords: ['production', 'shop floor', 'status'],
-    roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.ADMIN],
+    roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.CUSTOMER, Role.ADMIN],
   },
   {
     title: 'Payments',
@@ -228,25 +228,28 @@ export function AppLayout() {
   const queryClient = useQueryClient();
 
   // ── Real-time socket connection ──────────────────────────────────────
+  const addNotificationRef = useRef(addNotification);
+  addNotificationRef.current = addNotification;
+  const queryClientRef = useRef(queryClient);
+  queryClientRef.current = queryClient;
+
   useEffect(() => {
     if (!user) return;
-    connectSocket();
-    const socket = getSocket();
-    if (!socket) return;
+    const sock = connectSocket();
 
     const handleNewNotification = (n: import('@/lib/types').Notification) => {
-      addNotification(n);
-      queryClient.invalidateQueries({ queryKey: ['notifications'] });
+      addNotificationRef.current(n);
+      queryClientRef.current.invalidateQueries({ queryKey: ['notifications'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['dashboard-summary'] });
       toast(n.title + ': ' + n.message);
     };
 
-    socket.on('notification:new', handleNewNotification);
+    sock.on('notification:new', handleNewNotification);
 
     return () => {
-      socket.off('notification:new', handleNewNotification);
-      disconnectSocket();
+      sock.off('notification:new', handleNewNotification);
     };
-  }, [user, addNotification, queryClient]);
+  }, [user]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

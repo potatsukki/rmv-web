@@ -110,7 +110,7 @@ export function ResetPasswordPage() {
                 <Input
                   id="newPassword"
                   type={showPassword ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Enter new password"
                   autoComplete="new-password"
                   className={inputClasses}
                   {...register('newPassword')}
@@ -161,7 +161,7 @@ export function ResetPasswordPage() {
               <Input
                 id="confirmPassword"
                 type={showPassword ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Confirm new password"
                 autoComplete="new-password"
                 className={inputClasses}
                 {...register('confirmPassword')}

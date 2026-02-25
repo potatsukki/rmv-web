@@ -20,6 +20,7 @@ export function useDashboardSummary() {
       const { data } = await api.get<ApiResponse<DashboardSummary>>('/reports/dashboard');
       return data.data;
     },
+    refetchInterval: 30_000,
   });
 }
 

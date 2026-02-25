@@ -119,7 +119,7 @@ export function ChangePasswordPage() {
               <Input
                 id="currentPassword"
                 type={showCurrent ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Enter current password"
                 autoComplete="current-password"
                 className={inputClasses}
                 {...register('currentPassword')}
@@ -147,7 +147,7 @@ export function ChangePasswordPage() {
                 <Input
                   id="newPassword"
                   type={showNew ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Enter new password"
                   autoComplete="new-password"
                   className={inputClasses}
                   {...register('newPassword')}
@@ -200,7 +200,7 @@ export function ChangePasswordPage() {
               <Input
                 id="confirmPassword"
                 type={showConfirm ? 'text' : 'password'}
-                placeholder="••••••••"
+                placeholder="Confirm new password"
                 autoComplete="new-password"
                 className={inputClasses}
                 {...register('confirmPassword')}

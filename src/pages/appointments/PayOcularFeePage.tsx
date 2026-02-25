@@ -314,7 +314,7 @@ export function PayOcularFeePage() {
               )}
             </Button>
             <p className="text-xs text-center text-gray-400">
-              ⚠️ Test button — marks as paid without real payment
+              ⚠ Test button — marks as paid without real payment
             </p>
             {/* ⚠️ END TESTING ONLY */}
           </CardContent>

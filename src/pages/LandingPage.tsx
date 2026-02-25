@@ -650,7 +650,7 @@ export function LandingPage() {
               <ul className="space-y-3 sm:space-y-4">
                 <li className="flex items-start gap-3 text-sm text-gray-500">
                   <MapPin className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <span>BIR Village Novaliches, Quezon City, Quezon City, Philippines, 1118</span>
+                  <span>Malabon City, Metro Manila, Philippines</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-500">
                   <Phone className="h-5 w-5 text-orange-500 flex-shrink-0" />

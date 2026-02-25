@@ -128,8 +128,8 @@ export function useCompleteAppointment() {
 export function useCancelAppointment() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (id: string) => {
-      const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/cancel`, {});
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/cancel`, { reason });
       return data.data;
     },
     onSuccess: () => {

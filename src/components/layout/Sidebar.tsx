@@ -98,7 +98,7 @@ const navGroups: NavGroup[] = [
         label: 'Fabrication',
         path: '/fabrication',
         icon: Hammer,
-        roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.ADMIN],
+        roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.CUSTOMER, Role.ADMIN],
       },
     ],
   },

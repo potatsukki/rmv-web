@@ -12,10 +12,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import {
+  Dialog, DialogContent, DialogHeader, DialogTitle,
+  DialogDescription, DialogFooter,
+} from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
-import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
   useAppointment,
   useConfirmAppointment,
@@ -42,6 +47,7 @@ export function AppointmentDetailPage() {
   const noShowMutation = useMarkNoShow();
 
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [cancelReason, setCancelReason] = useState('');
   const [selectedSalesStaff, setSelectedSalesStaff] = useState('');
   const [salesStaffList, setSalesStaffList] = useState<{ _id: string; firstName: string; lastName: string }[]>([]);
 
@@ -89,10 +95,15 @@ export function AppointmentDetailPage() {
   };
 
   const handleCancel = async () => {
+    if (!cancelReason.trim()) {
+      toast.error('Please provide a reason for cancellation');
+      return;
+    }
     try {
-      await cancelMutation.mutateAsync(id!);
+      await cancelMutation.mutateAsync({ id: id!, reason: cancelReason.trim() });
       toast.success('Appointment cancelled');
       setCancelOpen(false);
+      setCancelReason('');
     } catch {
       toast.error('Failed to cancel');
     }
@@ -553,16 +564,40 @@ export function AppointmentDetailPage() {
           )}
       </div>
 
-      <ConfirmDialog
-        open={cancelOpen}
-        onOpenChange={setCancelOpen}
-        title="Cancel Appointment"
-        description="Are you sure you want to cancel this appointment? This action cannot be undone."
-        variant="destructive"
-        confirmLabel="Yes, Cancel"
-        isLoading={cancelMutation.isPending}
-        onConfirm={handleCancel}
-      />
+      {/* Cancel with reason dialog */}
+      <Dialog open={cancelOpen} onOpenChange={(open) => { setCancelOpen(open); if (!open) setCancelReason(''); }}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900">Cancel Appointment</DialogTitle>
+            <DialogDescription className="text-gray-500">
+              Please provide a reason for cancellation. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="cancel-reason" className="text-sm font-medium text-gray-700">Reason for cancellation</Label>
+            <Textarea
+              id="cancel-reason"
+              placeholder="e.g., Schedule conflict, changed plans..."
+              value={cancelReason}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancelReason(e.target.value)}
+              className="min-h-[80px] bg-gray-50/50 border-gray-200 rounded-xl"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setCancelOpen(false); setCancelReason(''); }} className="rounded-xl border-gray-200">
+              Keep Appointment
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleCancel}
+              disabled={cancelMutation.isPending || !cancelReason.trim()}
+              className="rounded-xl"
+            >
+              {cancelMutation.isPending ? 'Cancelling...' : 'Yes, Cancel'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

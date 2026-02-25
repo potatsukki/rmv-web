@@ -335,7 +335,7 @@ export function AccountSecurityPage() {
                 <Input
                   id="currentPassword"
                   type={showCurrent ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Enter current password"
                   autoComplete="current-password"
                   className={inputClasses}
                   {...register('currentPassword')}
@@ -363,7 +363,7 @@ export function AccountSecurityPage() {
                   <Input
                     id="newPassword"
                     type={showNew ? 'text' : 'password'}
-                    placeholder="••••••••"
+                    placeholder="Enter new password"
                     autoComplete="new-password"
                     className={inputClasses}
                     {...register('newPassword')}
@@ -416,7 +416,7 @@ export function AccountSecurityPage() {
                 <Input
                   id="confirmPassword"
                   type={showConfirm ? 'text' : 'password'}
-                  placeholder="••••••••"
+                  placeholder="Confirm new password"
                   autoComplete="new-password"
                   className={inputClasses}
                   {...register('confirmPassword')}
@@ -583,7 +583,7 @@ export function AccountSecurityPage() {
                     type="password"
                     value={disablePassword}
                     onChange={(e) => setDisablePassword(e.target.value)}
-                    placeholder="••••••••"
+                    placeholder="Enter your password"
                     className={inputClasses}
                   />
                 </div>

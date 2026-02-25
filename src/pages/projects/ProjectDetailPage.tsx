@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import {
   ArrowLeft, FileText, CreditCard, Hammer, Image, ScrollText,
   Download, Loader2, Phone, UserPlus, Upload, Camera, Video,
-  PenTool, ChevronDown, ChevronUp, Users, Eye, Check,
+  PenTool, ChevronDown, ChevronUp, Users, Eye, Check, ExternalLink,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -240,9 +240,12 @@ export function ProjectDetailPage() {
         projectId: id!,
         signatureKey: contractSignatureKey,
       });
-      toast.success('Contract signed successfully! You can now proceed with payments.');
+      toast.success('Contract signed successfully! Redirecting to payments...');
       setContractSignatureKey('');
-      refetch();
+      // Redirect customer to payments page with this project pre-selected
+      setTimeout(() => {
+        navigate('/payments', { state: { projectId: id } });
+      }, 1200);
     } catch {
       toast.error('Failed to sign contract');
     }
@@ -254,8 +257,12 @@ export function ProjectDetailPage() {
         params: { copy },
       });
       window.open(data.data.url, '_blank');
-    } catch {
-      toast.error('Failed to get download link');
+      if (copy === 'original') {
+        refetch(); // refresh project to update originalContractDownloadedAt
+      }
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || 'Failed to get download link';
+      toast.error(msg);
     }
   };
 
@@ -884,13 +891,13 @@ export function ProjectDetailPage() {
                       {visitReport.siteConditions.hasElectrical !== undefined && (
                         <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
                           <p className="text-[10px] uppercase text-gray-400 font-medium">Electrical Access</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.hasElectrical ? '✅ Yes' : '❌ No'}</p>
+                          <p className="text-sm text-gray-700">{visitReport.siteConditions.hasElectrical ? 'Yes' : 'No'}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.hasPlumbing !== undefined && (
                         <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
                           <p className="text-[10px] uppercase text-gray-400 font-medium">Plumbing Access</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.hasPlumbing ? '✅ Yes' : '❌ No'}</p>
+                          <p className="text-sm text-gray-700">{visitReport.siteConditions.hasPlumbing ? 'Yes' : 'No'}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.accessNotes && (
@@ -966,7 +973,7 @@ export function ProjectDetailPage() {
                       <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Blueprint</p>
                         <p className="mt-1 text-sm font-medium">
-                          {blueprint.blueprintApproved ? '✅ Approved' : '⏳ Pending'}
+                          {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
                         </p>
                         <Button
                           size="sm"
@@ -981,7 +988,7 @@ export function ProjectDetailPage() {
                       <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
                         <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Costing</p>
                         <p className="mt-1 text-sm font-medium">
-                          {blueprint.costingApproved ? '✅ Approved' : '⏳ Pending'}
+                          {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
                         </p>
                         <Button
                           size="sm"
@@ -1175,9 +1182,12 @@ export function ProjectDetailPage() {
                         size="sm"
                         className="bg-orange-600 hover:bg-orange-700"
                         onClick={() => handleDownloadContract('original')}
+                        disabled={!!project.originalContractDownloadedAt}
                       >
                         <Download className="mr-1.5 h-4 w-4" />
-                        Download Original
+                        {project.originalContractDownloadedAt
+                          ? 'Original Downloaded'
+                          : 'Download Original'}
                       </Button>
                       <Button
                         size="sm"
@@ -1290,8 +1300,17 @@ export function ProjectDetailPage() {
       {/* ════════════════  BLUEPRINT TAB (non-engineers) ════════════════ */}
       {activeTab === 'blueprint' && !isEngineer && (
         <Card className="rounded-xl border-gray-100">
-          <CardHeader>
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle className="text-lg text-gray-900">Latest Blueprint</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              className="rounded-xl border-gray-200 text-gray-700 gap-2"
+              onClick={() => navigate('/blueprints')}
+            >
+              <ExternalLink className="h-4 w-4" />
+              View All Blueprints
+            </Button>
           </CardHeader>
           <CardContent>
             {blueprint ? (
@@ -1304,13 +1323,13 @@ export function ProjectDetailPage() {
                   <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Blueprint</p>
                     <p className="mt-1 text-sm font-medium">
-                      {blueprint.blueprintApproved ? '✅ Approved' : '⏳ Pending'}
+                      {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
                     </p>
                   </div>
                   <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
                     <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Costing</p>
                     <p className="mt-1 text-sm font-medium">
-                      {blueprint.costingApproved ? '✅ Approved' : '⏳ Pending'}
+                      {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
                     </p>
                   </div>
                 </div>

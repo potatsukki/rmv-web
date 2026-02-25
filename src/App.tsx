@@ -351,6 +351,7 @@ export default function App() {
                     allowedRoles={[
                       Role.FABRICATION_STAFF,
                       Role.ENGINEER,
+                      Role.CUSTOMER,
                       Role.ADMIN,
                     ]}
                   />

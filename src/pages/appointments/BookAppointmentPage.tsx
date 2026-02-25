@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addDays, format } from 'date-fns';
-import { ArrowLeft, CheckCircle, Loader2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, Loader2, MapPin, Calendar, Clock, FileText } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { LocationPicker } from '@/components/maps/LocationPicker';
@@ -82,14 +82,14 @@ export function BookAppointmentPage() {
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       type: 'office',
-      date: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+      date: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
     },
   });
 
   const selectedType = watch('type');
   const selectedDate = watch('date');
   const selectedSlot = watch('slotCode');
-  const minDate = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+  const minDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
 
   const [selectedLocation, setSelectedLocation] = useState<MapPoint | null>(null);
   const [formattedAddress, setFormattedAddress] = useState('');
@@ -252,13 +252,53 @@ export function BookAppointmentPage() {
   const inputClasses =
     'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
 
+  // ── Step Wizard Logic ──
+  const isOcular = selectedType === AppointmentType.OCULAR && !rescheduleId;
+  const steps = rescheduleId
+    ? [
+        { key: 'date', label: 'Date & Time', icon: Calendar },
+        { key: 'reason', label: 'Reason', icon: FileText },
+      ]
+    : isOcular
+      ? [
+          { key: 'type', label: 'Visit Type', icon: Clock },
+          { key: 'date', label: 'Date & Time', icon: Calendar },
+          { key: 'location', label: 'Location', icon: MapPin },
+          { key: 'review', label: 'Review', icon: CheckCircle },
+        ]
+      : [
+          { key: 'type', label: 'Visit Type', icon: Clock },
+          { key: 'date', label: 'Date & Time', icon: Calendar },
+          { key: 'review', label: 'Review', icon: CheckCircle },
+        ];
+
+  const [currentStep, setCurrentStep] = useState(0);
+
+  const canProceed = useMemo(() => {
+    const stepKey = steps[currentStep]?.key;
+    if (stepKey === 'type') return !!selectedType;
+    if (stepKey === 'date') return !!selectedDate && !!selectedSlot;
+    if (stepKey === 'location') return !!selectedLocation && !isFeeLoading && !feeError && !!feePreview;
+    if (stepKey === 'reason') return true;
+    if (stepKey === 'review') return true;
+    return false;
+  }, [currentStep, steps, selectedType, selectedDate, selectedSlot, selectedLocation, isFeeLoading, feeError, feePreview]);
+
+  const handleNext = () => {
+    if (currentStep < steps.length - 1) setCurrentStep((s) => s + 1);
+  };
+  const handleBack = () => {
+    if (currentStep > 0) setCurrentStep((s) => s - 1);
+  };
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
+      {/* Header */}
       <div className="flex items-center gap-4">
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate(-1)}
+          onClick={() => (currentStep > 0 ? handleBack() : navigate(-1))}
           className="rounded-xl text-gray-500 hover:text-gray-900"
           aria-label="Go back"
         >
@@ -276,247 +316,368 @@ export function BookAppointmentPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        <Card className="rounded-xl border-gray-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-900">Visit Type & Date</CardTitle>
-            <CardDescription className="text-gray-500">
-              Choose how and when you&apos;d like to meet
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {!rescheduleId && (
-              <div className="space-y-2">
-                <Label className="text-[13px] font-medium text-gray-700">Visit Type</Label>
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    {
-                      value: AppointmentType.OFFICE,
-                      label: 'Office Visit',
-                      desc: 'Visit our shop',
-                    },
-                    {
-                      value: AppointmentType.OCULAR,
-                      label: 'Ocular Visit',
-                      desc: 'We visit your site',
-                    },
-                  ].map((opt) => (
-                    <button
-                      key={opt.value}
-                      type="button"
-                      onClick={() => setValue('type', opt.value)}
-                      className={cn(
-                        'rounded-xl border-2 p-4 text-left transition-all',
-                        selectedType === opt.value
-                          ? 'border-orange-400 bg-orange-50/50 ring-2 ring-orange-100'
-                          : 'border-gray-200 hover:border-gray-300',
-                      )}
-                    >
-                      <p className="font-medium text-gray-900">{opt.label}</p>
-                      <p className="mt-0.5 text-xs text-gray-500">{opt.desc}</p>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            <div className="space-y-1.5">
-              <Label htmlFor="date" className="text-[13px] font-medium text-gray-700">
-                Date
-              </Label>
-              <Input
-                id="date"
-                type="date"
-                min={minDate}
-                {...register('date')}
-                className={inputClasses}
-              />
-              {errors.date && <p className="text-sm text-red-500">{errors.date.message}</p>}
+      {/* Step Indicator */}
+      <div className="flex items-center gap-1">
+        {steps.map((step, idx) => {
+          const Icon = step.icon;
+          const isActive = idx === currentStep;
+          const isCompleted = idx < currentStep;
+          return (
+            <div key={step.key} className="flex items-center flex-1">
+              <button
+                type="button"
+                onClick={() => idx < currentStep && setCurrentStep(idx)}
+                disabled={idx > currentStep}
+                className={cn(
+                  'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all w-full justify-center',
+                  isActive && 'bg-orange-100 text-orange-700 ring-1 ring-orange-200',
+                  isCompleted && 'bg-emerald-50 text-emerald-700 cursor-pointer hover:bg-emerald-100',
+                  !isActive && !isCompleted && 'text-gray-400',
+                )}
+              >
+                <Icon className="h-3.5 w-3.5 flex-shrink-0" />
+                <span className="hidden sm:inline truncate">{step.label}</span>
+              </button>
+              {idx < steps.length - 1 && (
+                <div className={cn(
+                  'h-px w-4 flex-shrink-0 mx-1',
+                  idx < currentStep ? 'bg-emerald-300' : 'bg-gray-200',
+                )} />
+              )}
             </div>
+          );
+        })}
+      </div>
 
-            {isOcularBooking && (
-              <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50/50 p-4">
-                <div className="space-y-1">
-                  <Label className="text-[13px] font-medium text-gray-700">Site Location</Label>
-                  <p className="text-sm text-gray-500">
-                    Ocular visits are free within Metro Manila. Locations outside NCR have a
-                    transportation fee.
-                  </p>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {/* Step: Visit Type */}
+        {steps[currentStep]?.key === 'type' && (
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-900">How would you like to meet?</CardTitle>
+              <CardDescription className="text-gray-500">
+                Select your preferred consultation type
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {[
+                  {
+                    value: AppointmentType.OFFICE,
+                    label: 'Office Visit',
+                    desc: 'Come to our shop in Malabon City for a face-to-face consultation.',
+                  },
+                  {
+                    value: AppointmentType.OCULAR,
+                    label: 'Ocular Visit',
+                    desc: 'We visit your site to take measurements and assess the work area.',
+                  },
+                ].map((opt) => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setValue('type', opt.value)}
+                    className={cn(
+                      'rounded-xl border-2 p-5 text-left transition-all',
+                      selectedType === opt.value
+                        ? 'border-orange-400 bg-orange-50/50 ring-2 ring-orange-100'
+                        : 'border-gray-200 hover:border-gray-300',
+                    )}
+                  >
+                    <p className="font-semibold text-gray-900">{opt.label}</p>
+                    <p className="mt-1 text-sm text-gray-500 leading-relaxed">{opt.desc}</p>
+                  </button>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step: Date & Time */}
+        {steps[currentStep]?.key === 'date' && (
+          <>
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Pick a Date</CardTitle>
+                <CardDescription className="text-gray-500">
+                  Appointments must be booked at least 3 days in advance
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-1.5">
+                  <Label htmlFor="date" className="text-[13px] font-medium text-gray-700">
+                    Preferred Date
+                  </Label>
+                  <Input
+                    id="date"
+                    type="date"
+                    min={minDate}
+                    {...register('date')}
+                    className={inputClasses}
+                  />
+                  {errors.date && <p className="text-sm text-red-500">{errors.date.message}</p>}
                 </div>
+              </CardContent>
+            </Card>
 
-                <LocationPicker value={selectedLocation} onChange={handleLocationChange} />
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-lg text-gray-900">Select a Time Slot</CardTitle>
+                <CardDescription className="text-gray-500">
+                  {selectedDate
+                    ? `Showing slots for ${format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}`
+                    : 'Select a date first'}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {slotsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
+                    {SLOT_CODES.map((slot) => {
+                      const slotInfo = slotsData?.slots.find((entry) => entry.slotCode === slot);
+                      const available = slotInfo?.available ?? false;
+                      const blocked = (slotInfo as { blocked?: boolean })?.blocked ?? false;
 
-                <div className="rounded-lg border border-gray-200 bg-white p-3">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Resolved Address
+                      return (
+                        <button
+                          key={slot}
+                          type="button"
+                          disabled={!available}
+                          onClick={() => setValue('slotCode', slot)}
+                          className={cn(
+                            'rounded-xl border-2 p-3 text-center transition-all',
+                            selectedSlot === slot
+                              ? 'border-orange-400 bg-orange-50/50 text-orange-700 ring-2 ring-orange-100'
+                              : available
+                                ? 'border-gray-200 hover:border-gray-300'
+                                : 'cursor-not-allowed border-gray-100 bg-gray-50 text-gray-400 opacity-50',
+                          )}
+                        >
+                          <p className="text-sm font-medium">{formatSlotTime(slot)}</p>
+                          {!available && (
+                            <p className="mt-0.5 text-xs text-red-400">
+                              {blocked ? 'Blocked' : 'Unavailable'}
+                            </p>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+                {errors.slotCode && <p className="mt-2 text-sm text-red-500">{errors.slotCode.message}</p>}
+              </CardContent>
+            </Card>
+          </>
+        )}
+
+        {/* Step: Location (ocular only) */}
+        {steps[currentStep]?.key === 'location' && (
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-900">Pin Your Location</CardTitle>
+              <CardDescription className="text-gray-500">
+                Drop a pin on the map where the work will take place. Ocular visits within Metro Manila are free.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <LocationPicker value={selectedLocation} onChange={handleLocationChange} />
+
+              <div className="rounded-lg border border-gray-200 bg-white p-3">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Resolved Address
+                </p>
+                {isAddressLoading ? (
+                  <p className="mt-1 text-sm text-gray-500">Resolving address...</p>
+                ) : (
+                  <p className="mt-1 text-sm text-gray-700">
+                    {formattedAddress || 'Address will appear after you pin a location.'}
                   </p>
-                  {isAddressLoading ? (
-                    <p className="mt-1 text-sm text-gray-500">Resolving address...</p>
-                  ) : (
-                    <p className="mt-1 text-sm text-gray-700">
-                      {formattedAddress || 'Address will appear after you pin a location.'}
-                    </p>
-                  )}
-                </div>
+                )}
+              </div>
 
-                <div className="rounded-lg border border-gray-200 bg-white p-4">
-                  <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Ocular Fee Preview
+              <div className="rounded-lg border border-gray-200 bg-white p-4">
+                <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Ocular Fee Preview
+                </p>
+
+                {!selectedLocation && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Pin your location to calculate distance and fee.
                   </p>
+                )}
 
-                  {!selectedLocation && (
-                    <p className="mt-2 text-sm text-gray-500">
-                      Pin your location to calculate distance and fee.
+                {selectedLocation && isFeeLoading && (
+                  <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Calculating distance and fee...
+                  </div>
+                )}
+
+                {selectedLocation && !isFeeLoading && feeError && (
+                  <p className="mt-2 text-sm text-red-500">{feeError}</p>
+                )}
+
+                {feePreview && !isFeeLoading && !feeError && (
+                  <div className="mt-3 space-y-2 text-sm text-gray-700">
+                    <p>
+                      Distance from shop: <strong>{feePreview.route.distanceKm.toFixed(2)} km</strong>
                     </p>
-                  )}
-
-                  {selectedLocation && isFeeLoading && (
-                    <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Calculating distance and fee...
-                    </div>
-                  )}
-
-                  {selectedLocation && !isFeeLoading && feeError && (
-                    <p className="mt-2 text-sm text-red-500">{feeError}</p>
-                  )}
-
-                  {feePreview && !isFeeLoading && !feeError && (
-                    <div className="mt-3 space-y-2 text-sm text-gray-700">
-                      <p>
-                        Distance from shop: <strong>{feePreview.route.distanceKm.toFixed(2)} km</strong>
+                    {feePreview.fee.isWithinNCR ? (
+                      <p className="rounded-md bg-emerald-50 px-3 py-2 font-medium text-emerald-700">
+                        Ocular Visit Fee: FREE (within Metro Manila)
                       </p>
-
-                      {feePreview.fee.isWithinNCR ? (
-                        <p className="rounded-md bg-emerald-50 px-3 py-2 font-medium text-emerald-700">
-                          Ocular Visit Fee: FREE (within Metro Manila)
+                    ) : (
+                      <div className="space-y-1.5 rounded-md bg-amber-50 px-3 py-2">
+                        <p>Base Fee: <strong>{currency(feePreview.fee.baseFee)}</strong></p>
+                        <p>Additional Distance: {feePreview.fee.additionalDistanceKm.toFixed(2)} km</p>
+                        <p>Additional Fee: <strong>{currency(feePreview.fee.additionalFee)}</strong></p>
+                        <p className="pt-1 font-semibold text-gray-900">
+                          Estimated Ocular Fee: {currency(feePreview.fee.total)}
                         </p>
-                      ) : (
-                        <div className="space-y-1.5 rounded-md bg-amber-50 px-3 py-2">
-                          <p>
-                            Base Fee: <strong>{currency(feePreview.fee.baseFee)}</strong>
-                          </p>
-                          <p>
-                            Additional Distance: {feePreview.fee.additionalDistanceKm.toFixed(2)} km
-                          </p>
-                          <p>
-                            Additional Fee: <strong>{currency(feePreview.fee.additionalFee)}</strong>
-                          </p>
-                          <p className="pt-1 font-semibold text-gray-900">
-                            Estimated Ocular Fee: {currency(feePreview.fee.total)}
-                          </p>
-                        </div>
-                      )}
+                      </div>
+                    )}
 
-                      {!feePreview.fee.isWithinNCR && (
-                        <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                          <p className="text-sm font-semibold text-amber-800">
-                            Ocular fee payment required via QRPH
-                          </p>
-                          <p className="mt-1 text-xs text-amber-700">
-                            Your location is outside Metro Manila. After booking, you will be
-                            redirected to pay the ocular fee of{' '}
-                            <strong>{currency(feePreview.fee.total)}</strong> via QRPH.
-                            A cashier will verify your payment before your appointment is confirmed.
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
+                    {!feePreview.fee.isWithinNCR && (
+                      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
+                        <p className="text-sm font-semibold text-amber-800">
+                          Ocular fee payment required via QRPH
+                        </p>
+                        <p className="mt-1 text-xs text-amber-700">
+                          Your location is outside Metro Manila. After booking, you will be
+                          redirected to pay the ocular fee of{' '}
+                          <strong>{currency(feePreview.fee.total)}</strong> via QRPH.
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step: Reason (reschedule only) */}
+        {steps[currentStep]?.key === 'reason' && (
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-900">Reason for Reschedule</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <textarea
+                {...register('purpose')}
+                placeholder="Why are you rescheduling?"
+                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                rows={3}
+              />
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step: Review & Confirm */}
+        {steps[currentStep]?.key === 'review' && (
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-900">Review Your Booking</CardTitle>
+              <CardDescription className="text-gray-500">
+                Confirm the details below before submitting
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div className="rounded-xl border border-gray-100 bg-gray-50/30 p-4">
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Visit Type</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">
+                    {selectedType === AppointmentType.OFFICE ? 'Office Visit' : 'Ocular Visit'}
+                  </p>
                 </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50/30 p-4">
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Date</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">
+                    {selectedDate ? format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy') : '—'}
+                  </p>
+                </div>
+                <div className="rounded-xl border border-gray-100 bg-gray-50/30 p-4">
+                  <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Time Slot</p>
+                  <p className="mt-1 text-sm font-semibold text-gray-900">
+                    {selectedSlot ? formatSlotTime(selectedSlot) : '—'}
+                  </p>
+                </div>
+                {isOcular && formattedAddress && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50/30 p-4">
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Location</p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900 leading-snug">{formattedAddress}</p>
+                  </div>
+                )}
+                {isOcular && feePreview && (
+                  <div className="rounded-xl border border-gray-100 bg-gray-50/30 p-4 sm:col-span-2">
+                    <p className="text-xs font-medium text-gray-400 uppercase tracking-wider">Ocular Fee</p>
+                    <p className="mt-1 text-sm font-semibold text-gray-900">
+                      {feePreview.fee.isWithinNCR ? 'FREE' : currency(feePreview.fee.total)}
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
-          </CardContent>
-        </Card>
 
-        <Card className="rounded-xl border-gray-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-900">Available Time Slots</CardTitle>
-            <CardDescription className="text-gray-500">
-              {selectedDate
-                ? `Showing slots for ${format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}`
-                : 'Select a date first'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {slotsLoading ? (
-              <div className="flex items-center justify-center py-8">
-                <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+              <div className="space-y-1.5">
+                <Label className="text-[13px] font-medium text-gray-700">Purpose (Optional)</Label>
+                <textarea
+                  {...register('purpose')}
+                  placeholder="Briefly describe what you need (e.g., kitchen countertop fabrication)..."
+                  className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                  rows={3}
+                />
               </div>
-            ) : (
-              <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
-                {SLOT_CODES.map((slot) => {
-                  const slotInfo = slotsData?.slots.find((entry) => entry.slotCode === slot);
-                  const available = slotInfo?.available ?? false;
-                  const blocked = (slotInfo as { blocked?: boolean })?.blocked ?? false;
+            </CardContent>
+          </Card>
+        )}
 
-                  return (
-                    <button
-                      key={slot}
-                      type="button"
-                      disabled={!available}
-                      onClick={() => setValue('slotCode', slot)}
-                      className={cn(
-                        'rounded-xl border-2 p-3 text-center transition-all',
-                        selectedSlot === slot
-                          ? 'border-orange-400 bg-orange-50/50 text-orange-700 ring-2 ring-orange-100'
-                          : available
-                            ? 'border-gray-200 hover:border-gray-300'
-                            : 'cursor-not-allowed border-gray-100 bg-gray-50 text-gray-400 opacity-50',
-                      )}
-                    >
-                      <p className="text-sm font-medium">{formatSlotTime(slot)}</p>
-                      {!available && (
-                        <p className="mt-0.5 text-xs text-red-400">
-                          {blocked ? 'Blocked' : 'Unavailable'}
-                        </p>
-                      )}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
-            {errors.slotCode && <p className="mt-2 text-sm text-red-500">{errors.slotCode.message}</p>}
-          </CardContent>
-        </Card>
-
-        <Card className="rounded-xl border-gray-100 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-gray-900">
-              {rescheduleId ? 'Reason for Reschedule' : 'Purpose (Optional)'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <textarea
-              {...register('purpose')}
-              placeholder={
-                rescheduleId
-                  ? 'Why are you rescheduling?'
-                  : 'Briefly describe what you need (e.g., kitchen countertop fabrication)...'
-              }
-              className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
-              rows={3}
-            />
-          </CardContent>
-        </Card>
-
-        <Button
-          type="submit"
-          className="h-12 w-full rounded-xl bg-gray-900 text-white shadow-sm hover:bg-gray-800"
-          size="lg"
-          disabled={submitDisabled}
-        >
-          {isPending ? (
-            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <CheckCircle className="mr-2 h-4 w-4" />
+        {/* Navigation Buttons */}
+        <div className="flex gap-3">
+          {currentStep > 0 && (
+            <Button
+              type="button"
+              variant="outline"
+              className="flex-1 h-12 rounded-xl"
+              onClick={handleBack}
+            >
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back
+            </Button>
           )}
-          {rescheduleId
-            ? 'Submit Reschedule Request'
-            : isOutsideNcr
-              ? 'Book & Pay Ocular Fee'
-              : 'Book Appointment'}
-        </Button>
+
+          {currentStep < steps.length - 1 ? (
+            <Button
+              type="button"
+              className="flex-1 h-12 rounded-xl bg-gray-900 text-white hover:bg-gray-800"
+              disabled={!canProceed}
+              onClick={handleNext}
+            >
+              Next
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              type="submit"
+              className="flex-1 h-12 rounded-xl bg-orange-600 text-white hover:bg-orange-700 shadow-sm"
+              size="lg"
+              disabled={submitDisabled}
+            >
+              {isPending ? (
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              ) : (
+                <CheckCircle className="mr-2 h-4 w-4" />
+              )}
+              {rescheduleId
+                ? 'Submit Reschedule Request'
+                : isOutsideNcr
+                  ? 'Book & Pay Ocular Fee'
+                  : 'Confirm Booking'}
+            </Button>
+          )}
+        </div>
       </form>
     </div>
   );

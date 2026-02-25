@@ -209,22 +209,43 @@ export function PaymentsPage() {
         </Card>
       )}
 
-      {/* Project Selector */}
+      {/* Project Selector — Card-based */}
       <Card className="rounded-xl border-gray-100">
-        <CardContent className="p-4">
-          <Label className="text-gray-700 text-[13px] font-medium">Select Project</Label>
-          <select
-            value={selectedProjectId}
-            onChange={(e) => setSelectedProjectId(e.target.value)}
-            className="mt-1.5 w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-          >
-            <option value="">Choose a project...</option>
-            {projects?.items.map((p) => (
-              <option key={String(p._id)} value={String(p._id)}>
-                {String(p.title)}
-              </option>
-            ))}
-          </select>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-sm font-medium text-gray-700">Select Project</CardTitle>
+        </CardHeader>
+        <CardContent className="p-4 pt-0">
+          {projects?.items && projects.items.length > 0 ? (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+              {projects.items.map((p) => {
+                const isSelected = String(p._id) === selectedProjectId;
+                return (
+                  <button
+                    key={String(p._id)}
+                    type="button"
+                    onClick={() => setSelectedProjectId(String(p._id))}
+                    className={`w-full rounded-xl border p-3 text-left transition-all ${
+                      isSelected
+                        ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-200'
+                        : 'border-gray-200 bg-gray-50/30 hover:border-gray-300 hover:bg-gray-50'
+                    }`}
+                  >
+                    <p className={`text-sm font-semibold truncate ${isSelected ? 'text-orange-900' : 'text-gray-900'}`}>
+                      {String(p.title)}
+                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">
+                      {String(p.serviceType).replace(/_/g, ' ')}
+                    </p>
+                    <div className="flex items-center gap-2 mt-1.5">
+                      <StatusBadge status={String(p.status)} />
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="text-sm text-gray-500">No projects found.</p>
+          )}
         </CardContent>
       </Card>
 
