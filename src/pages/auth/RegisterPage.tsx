@@ -281,7 +281,7 @@ export function RegisterPage() {
           )}
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
               <div className="space-y-1.5">
                 <Label htmlFor="firstName" className="text-gray-700 text-[13px] font-medium">
                   First Name
@@ -398,7 +398,7 @@ export function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <div className="grid grid-cols-3 gap-x-2 gap-y-1 mt-2">
+                  <div className="grid grid-cols-2 min-[400px]:grid-cols-3 gap-x-2 gap-y-1 mt-2">
                     {passwordRules.map((rule) => {
                       const passed = rule.test(passwordValue);
                       return (

@@ -114,7 +114,7 @@ export function LineItemsEditor({
                 </div>
 
                 {/* Dimensions row */}
-                <div className="grid grid-cols-5 gap-2">
+                <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-5 gap-2">
                   {(['length', 'width', 'height', 'thickness', 'area'] as const).map(
                     (dim) => (
                       <div key={dim} className="space-y-1">

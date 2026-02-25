@@ -384,7 +384,7 @@ export function FabricationPage() {
 
                     {/* Attachments Grid */}
                     {update.photoKeys && update.photoKeys.length > 0 && (
-                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
                         {update.photoKeys.map((key: string, idx: number) => (
                           <a
                             key={idx}

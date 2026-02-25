@@ -167,7 +167,7 @@ export function ChangePasswordPage() {
 
               {passwordValue.length > 0 && (
                 <div className="rounded-lg bg-gray-50 p-3 mt-2">
-                  <div className="grid grid-cols-2 gap-1.5">
+                  <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1.5">
                     {passwordRules.map((rule) => {
                       const passed = rule.test(passwordValue);
                       return (

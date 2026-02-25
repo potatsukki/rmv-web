@@ -95,7 +95,9 @@ export function BookAppointmentPage() {
   const selectedType = watch('type');
   const selectedDate = watch('date');
   const selectedSlot = watch('slotCode');
-  const minDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
+  const watchStreet = watch('street');
+  const watchBarangay = watch('barangay');
+  const watchCity = watch('city');
 
   const [selectedLocation, setSelectedLocation] = useState<MapPoint | null>(null);
   const [formattedAddress, setFormattedAddress] = useState('');
@@ -297,11 +299,11 @@ export function BookAppointmentPage() {
     if (stepKey === 'type') return !!selectedType;
     if (stepKey === 'date') return !!selectedDate && !!selectedSlot;
     if (stepKey === 'location') return !!selectedLocation && !isFeeLoading && !feeError && !!feePreview;
-    if (stepKey === 'address') return true; // optional fields
+    if (stepKey === 'address') return !!(watchStreet?.trim()) && !!(watchBarangay?.trim()) && !!(watchCity?.trim());
     if (stepKey === 'reason') return true;
     if (stepKey === 'review') return true;
     return false;
-  }, [currentStep, steps, selectedType, selectedDate, selectedSlot, selectedLocation, isFeeLoading, feeError, feePreview]);
+  }, [currentStep, steps, selectedType, selectedDate, selectedSlot, selectedLocation, isFeeLoading, feeError, feePreview, watchStreet, watchBarangay, watchCity]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) setCurrentStep((s) => s + 1);
@@ -384,7 +386,7 @@ export function BookAppointmentPage() {
                   {
                     value: AppointmentType.OFFICE,
                     label: 'Office Visit',
-                    desc: 'Come to our shop in Malabon City for a face-to-face consultation.',
+                    desc: 'Come to our shop in Quezon City for a face-to-face consultation.',
                   },
                   {
                     value: AppointmentType.OCULAR,
@@ -596,24 +598,24 @@ export function BookAppointmentPage() {
                 <Label htmlFor="street" className="text-[13px] font-medium text-gray-700">Street / House No.</Label>
                 <Input id="street" {...register('street')} placeholder="e.g. 123 Rizal St." className={inputClasses} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="barangay" className="text-[13px] font-medium text-gray-700">Barangay</Label>
                   <Input id="barangay" {...register('barangay')} placeholder="e.g. Brgy. San Jose" className={inputClasses} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="city" className="text-[13px] font-medium text-gray-700">City / Municipality</Label>
-                  <Input id="city" {...register('city')} placeholder="e.g. Malabon City" className={inputClasses} />
+                  <Input id="city" {...register('city')} placeholder="e.g. Quezon City" className={inputClasses} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="province" className="text-[13px] font-medium text-gray-700">Province</Label>
                   <Input id="province" {...register('province')} placeholder="e.g. Metro Manila" className={inputClasses} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="zip" className="text-[13px] font-medium text-gray-700">Zip Code</Label>
-                  <Input id="zip" {...register('zip')} placeholder="e.g. 1470" className={inputClasses} />
+                  <Input id="zip" {...register('zip')} placeholder="e.g. 1118" className={inputClasses} />
                 </div>
               </div>
             </CardContent>
@@ -632,27 +634,27 @@ export function BookAppointmentPage() {
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="street-office" className="text-[13px] font-medium text-gray-700">Street / House No.</Label>
+                <Label htmlFor="street-office" className="text-[13px] font-medium text-gray-700">Street / House No. <span className="text-red-500">*</span></Label>
                 <Input id="street-office" {...register('street')} placeholder="e.g. 123 Rizal St." className={inputClasses} />
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="barangay-office" className="text-[13px] font-medium text-gray-700">Barangay</Label>
+                  <Label htmlFor="barangay-office" className="text-[13px] font-medium text-gray-700">Barangay <span className="text-red-500">*</span></Label>
                   <Input id="barangay-office" {...register('barangay')} placeholder="e.g. Brgy. San Jose" className={inputClasses} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="city-office" className="text-[13px] font-medium text-gray-700">City / Municipality</Label>
-                  <Input id="city-office" {...register('city')} placeholder="e.g. Malabon City" className={inputClasses} />
+                  <Label htmlFor="city-office" className="text-[13px] font-medium text-gray-700">City / Municipality <span className="text-red-500">*</span></Label>
+                  <Input id="city-office" {...register('city')} placeholder="e.g. Quezon City" className={inputClasses} />
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
                   <Label htmlFor="province-office" className="text-[13px] font-medium text-gray-700">Province</Label>
                   <Input id="province-office" {...register('province')} placeholder="e.g. Metro Manila" className={inputClasses} />
                 </div>
                 <div className="space-y-1.5">
                   <Label htmlFor="zip-office" className="text-[13px] font-medium text-gray-700">Zip Code</Label>
-                  <Input id="zip-office" {...register('zip')} placeholder="e.g. 1470" className={inputClasses} />
+                  <Input id="zip-office" {...register('zip')} placeholder="e.g. 1118" className={inputClasses} />
                 </div>
               </div>
             </CardContent>

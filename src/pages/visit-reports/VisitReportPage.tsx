@@ -452,7 +452,7 @@ export function VisitReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-2 gap-2 text-sm text-gray-500">
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 text-sm text-gray-500">
                   {report.measurements.length != null && (
                     <span>Length: {report.measurements.length} {report.measurements.unit}</span>
                   )}
@@ -620,7 +620,7 @@ export function VisitReportPage() {
                       This report uses the old measurement format. New reports use per-component line items.
                     </p>
                   </div>
-                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+                  <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-4 sm:grid-cols-4">
                     {[
                       { label: 'Length', value: legacyLength, set: setLegacyLength },
                       { label: 'Width', value: legacyWidth, set: setLegacyWidth },

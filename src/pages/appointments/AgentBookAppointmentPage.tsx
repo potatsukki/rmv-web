@@ -413,7 +413,7 @@ export function AgentBookAppointmentPage() {
             <CardContent className="space-y-4">
               <div className="space-y-2">
                 <Label className="text-[13px] font-medium text-gray-700">Visit Type</Label>
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                   {[
                     {
                       value: AppointmentType.OFFICE,

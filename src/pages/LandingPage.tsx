@@ -696,7 +696,7 @@ export function LandingPage() {
               <ul className="space-y-3 sm:space-y-4">
                 <li className="flex items-start gap-3 text-sm text-gray-500">
                   <MapPin className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <span>Malabon City, Metro Manila, Philippines</span>
+                  <span>BIR Village, Novaliches, Quezon City, Philippines 1118</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-500">
                   <Phone className="h-5 w-5 text-orange-500 flex-shrink-0" />
@@ -714,7 +714,7 @@ export function LandingPage() {
           <div className="mb-10 sm:mb-16 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
             <iframe
               title="RMV Location"
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15438.56!2d120.9575!3d14.6625!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397b5e4b22c4b07%3A0x79f3e5c0c1346c1e!2sMalabon%2C%20Metro%20Manila!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+              src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d966.5!2d121.039!3d14.7095!3m2!1i1024!2i768!4f13.1!3m6!1m5!1s!2sNatanawan+Residence,+Dahlia+Ext,+Quezon+City!3m2!1d14.7095!2d121.039!5e0!3m2!1sen!2sph"
               width="100%"
               height="280"
               style={{ border: 0 }}

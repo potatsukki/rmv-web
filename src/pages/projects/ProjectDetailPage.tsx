@@ -1039,7 +1039,7 @@ export function ProjectDetailPage() {
                         {/* Quotation Fields */}
                         <div className="border-t border-gray-100 pt-3 space-y-3">
                           <p className="text-sm font-medium text-gray-700">Quotation Details</p>
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
                             <div>
                               <label className="text-xs text-gray-500 block mb-1">Materials (₱)</label>
                               <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
@@ -1110,7 +1110,7 @@ export function ProjectDetailPage() {
                         {/* Quotation Fields */}
                         <div className="border-t border-gray-100 pt-3 space-y-3">
                           <p className="text-sm font-medium text-gray-700">Quotation Details <span className="text-xs text-red-500">*</span></p>
-                          <div className="grid grid-cols-3 gap-3">
+                          <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
                             <div>
                               <label className="text-xs text-gray-500 block mb-1">Materials (₱) *</label>
                               <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />

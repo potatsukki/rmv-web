@@ -46,7 +46,7 @@ export function SiteConditionsPanel({
       </div>
 
       {/* Floor & Wall */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
             Floor Type

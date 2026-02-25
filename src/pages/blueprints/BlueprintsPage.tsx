@@ -422,7 +422,7 @@ export function BlueprintsPage() {
                     <CardContent className="pt-4">
                       {/* Staff sees full breakdown, customers see total + duration only */}
                       {!canReviewBlueprint ? (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                        <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                           <div className="space-y-1">
                             <p className="text-xs text-gray-500 uppercase tracking-wider font-medium">Materials</p>
                             <p className="text-lg font-semibold text-gray-900">{formatCurrency(bp.quotation.materials)}</p>
@@ -583,7 +583,7 @@ export function BlueprintsPage() {
               {/* Quotation Summary */}
               <div className="bg-gray-50 rounded-xl p-4 space-y-3">
                 <p className="text-sm font-semibold text-gray-700">Quotation Summary</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
                   <span className="text-gray-500">Materials</span>
                   <span className="text-right font-medium">{formatCurrency(acceptDialog.blueprint.quotation.materials)}</span>
                   <span className="text-gray-500">Labor</span>

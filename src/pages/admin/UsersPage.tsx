@@ -363,7 +363,7 @@ export function UsersPage() {
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label
                   htmlFor="firstName"

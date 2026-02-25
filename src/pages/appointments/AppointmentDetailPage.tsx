@@ -396,7 +396,7 @@ export function AppointmentDetailPage() {
             {appt.customerSiteDetails.lineItems && appt.customerSiteDetails.lineItems.length > 0 && (
               <div>
                 <p className="text-[13px] font-medium text-gray-700 mb-1">Measurements</p>
-                <div className="rounded-lg border border-gray-100 overflow-hidden">
+                <div className="rounded-lg border border-gray-100 overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-gray-50 text-gray-600">
                       <tr>
@@ -426,7 +426,7 @@ export function AppointmentDetailPage() {
             {appt.customerSiteDetails.siteConditions && (
               <div>
                 <p className="text-[13px] font-medium text-gray-700 mb-1">Site Conditions</p>
-                <div className="grid grid-cols-2 gap-2 text-sm">
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 text-sm">
                   {appt.customerSiteDetails.siteConditions.environment && (
                     <div>
                       <span className="text-gray-500">Environment:</span>{' '}
