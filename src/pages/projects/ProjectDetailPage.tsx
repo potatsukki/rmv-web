@@ -190,6 +190,12 @@ export function ProjectDetailPage() {
   const [blueprintFile, setBlueprintFile] = useState<File | null>(null);
   const [costingFile, setCostingFile] = useState<File | null>(null);
   const [uploading, setUploading] = useState(false);
+  const [quotMaterials, setQuotMaterials] = useState('');
+  const [quotLabor, setQuotLabor] = useState('');
+  const [quotFees, setQuotFees] = useState('');
+  const [quotBreakdown, setQuotBreakdown] = useState('');
+  const [quotDuration, setQuotDuration] = useState('');
+  const [quotNotes, setQuotNotes] = useState('');
 
   // ── Derived ──
   const visitReport: VisitReport | null = useMemo(() => {
@@ -290,6 +296,22 @@ export function ProjectDetailPage() {
         uploadFileToR2(costUrl.uploadUrl, costingFile),
       ]);
 
+      const materials = Number(quotMaterials) || 0;
+      const labor = Number(quotLabor) || 0;
+      const fees = Number(quotFees) || 0;
+      const total = materials + labor + fees;
+      const quotation = total > 0
+        ? {
+            materials,
+            labor,
+            fees,
+            total,
+            breakdown: quotBreakdown || undefined,
+            estimatedDuration: quotDuration || undefined,
+            engineerNotes: quotNotes || undefined,
+          }
+        : undefined;
+
       if (blueprint) {
         // Revision
         await uploadRevision.mutateAsync({
@@ -304,11 +326,18 @@ export function ProjectDetailPage() {
           projectId: id!,
           blueprintKey: bpUrl.fileKey,
           costingKey: costUrl.fileKey,
+          quotation,
         });
         toast.success('Blueprint uploaded successfully');
       }
       setBlueprintFile(null);
       setCostingFile(null);
+      setQuotMaterials('');
+      setQuotLabor('');
+      setQuotFees('');
+      setQuotBreakdown('');
+      setQuotDuration('');
+      setQuotNotes('');
       refetchBlueprint();
       refetch();
     } catch {
@@ -999,6 +1028,39 @@ export function ProjectDetailPage() {
                             />
                           </div>
                         </div>
+
+                        {/* Quotation Fields */}
+                        <div className="border-t border-gray-100 pt-3 space-y-3">
+                          <p className="text-sm font-medium text-gray-700">Quotation Details</p>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1">Materials (₱)</label>
+                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1">Labor (₱)</label>
+                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1">Other Fees (₱)</label>
+                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            </div>
+                          </div>
+                          {(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)) > 0 && (
+                            <p className="text-sm font-semibold text-emerald-700">
+                              Total: ₱{(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                            </p>
+                          )}
+                          <div>
+                            <label className="text-xs text-gray-500 block mb-1">Estimated Duration</label>
+                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 block mb-1">Engineer Notes</label>
+                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                          </div>
+                        </div>
+
                         <Button
                           size="sm"
                           className="bg-orange-600 hover:bg-orange-700 text-white"
@@ -1037,6 +1099,39 @@ export function ProjectDetailPage() {
                             />
                           </div>
                         </div>
+
+                        {/* Quotation Fields */}
+                        <div className="border-t border-gray-100 pt-3 space-y-3">
+                          <p className="text-sm font-medium text-gray-700">Quotation Details <span className="text-xs text-red-500">*</span></p>
+                          <div className="grid grid-cols-3 gap-3">
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1">Materials (₱) *</label>
+                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1">Labor (₱) *</label>
+                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            </div>
+                            <div>
+                              <label className="text-xs text-gray-500 block mb-1">Other Fees (₱)</label>
+                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            </div>
+                          </div>
+                          {(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)) > 0 && (
+                            <p className="text-sm font-semibold text-emerald-700">
+                              Total: ₱{(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                            </p>
+                          )}
+                          <div>
+                            <label className="text-xs text-gray-500 block mb-1">Estimated Duration</label>
+                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                          </div>
+                          <div>
+                            <label className="text-xs text-gray-500 block mb-1">Engineer Notes</label>
+                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes for the customer..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                          </div>
+                        </div>
+
                         <Button
                           size="sm"
                           className="bg-orange-600 hover:bg-orange-700 text-white"
