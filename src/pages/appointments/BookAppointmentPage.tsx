@@ -22,6 +22,7 @@ import {
   type OcularFeePreview,
 } from '@/lib/maps';
 import { cn } from '@/lib/utils';
+import { useAuthStore } from '@/stores/auth.store';
 
 function formatSlotTime(slotCode: string): string {
   const hour = parseInt(slotCode.split(':')[0] ?? '0');
@@ -77,6 +78,7 @@ export function BookAppointmentPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const rescheduleId = searchParams.get('reschedule');
+  const user = useAuthStore((s) => s.user);
 
   const {
     register,
@@ -89,6 +91,11 @@ export function BookAppointmentPage() {
     defaultValues: {
       type: 'office',
       date: format(addDays(new Date(), 3), 'yyyy-MM-dd'),
+      street: user?.addressData?.street || '',
+      barangay: user?.addressData?.barangay || '',
+      city: user?.addressData?.city || '',
+      province: user?.addressData?.province || '',
+      zip: user?.addressData?.zip || '',
     },
   });
 
@@ -99,8 +106,14 @@ export function BookAppointmentPage() {
   const watchBarangay = watch('barangay');
   const watchCity = watch('city');
 
-  const [selectedLocation, setSelectedLocation] = useState<MapPoint | null>(null);
-  const [formattedAddress, setFormattedAddress] = useState('');
+  const [selectedLocation, setSelectedLocation] = useState<MapPoint | null>(
+    user?.addressData?.lat && user?.addressData?.lng
+      ? { lat: user.addressData.lat, lng: user.addressData.lng }
+      : null,
+  );
+  const [formattedAddress, setFormattedAddress] = useState(
+    user?.addressData?.formattedAddress || '',
+  );
   const [feePreview, setFeePreview] = useState<OcularFeePreview | null>(null);
   const [isFeeLoading, setIsFeeLoading] = useState(false);
   const [isAddressLoading, setIsAddressLoading] = useState(false);

@@ -18,6 +18,16 @@ import {
   CheckCircle2,
   Sparkles,
   ArrowUpRight,
+  Flame,
+  Wind,
+  Quote,
+  Building2,
+  UtensilsCrossed,
+  ShoppingBag,
+  Hotel,
+  Coffee,
+  Warehouse,
+  Heart,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useCallback } from 'react';
@@ -233,8 +243,8 @@ export function LandingPage() {
             </h1>
 
             <SlideUp delay={0.7} className="mt-2 sm:mt-4 text-sm sm:text-base lg:text-lg leading-relaxed text-gray-400 max-w-2xl border-l-2 border-orange-500/50 pl-4 sm:pl-6">
-              From custom residential railings to industrial kitchen systems. 
-              Master craftsmanship meets modern technology for durable, high-quality results.
+              Transforming Kitchens, Exceeding Expectations – Your Vision, Our Expertise.
+              From kitchen stainless steel fabrication to LPG gas pipelines and fire suppression systems.
             </SlideUp>
 
             <motion.div 
@@ -299,28 +309,49 @@ export function LandingPage() {
             </p>
           </SlideUp>
 
-          <StaggerContainer className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <StaggerContainer className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
             {[
               {
-                icon: Shield,
-                title: 'Gates & Railings',
-                desc: 'Custom-designed gates and railings combining security with architectural elegance.',
-                items: ['Residential', 'Commercial', 'Custom Designs'],
-                color: 'bg-blue-50'
-              },
-              {
                 icon: Layers,
-                title: 'Industrial Kitchens',
-                desc: 'Food-grade stainless steel fabrication for restaurants, hotels, and processing plants.',
-                items: ['Food Grade', 'Hygienic', 'Compliant'],
+                title: 'Kitchen Stainless Steel Fabrication',
+                desc: 'Custom food-grade stainless steel counters, sinks, shelving, and equipment for restaurants, hotels, and food courts.',
+                items: ['Food Grade', 'Custom Fit', 'Durable'],
                 color: 'bg-orange-50'
               },
               {
                 icon: PenTool,
-                title: 'Custom Fabrication',
-                desc: 'Bespoke machinery parts, tanks, and structural components built to specifications.',
-                items: ['CNC Cutting', 'Welding', 'Polishing'],
+                title: 'Kitchen Planning & Remodeling',
+                desc: 'End-to-end kitchen layout planning and remodeling designed for optimal workflow and compliance.',
+                items: ['Layout Design', 'Remodeling', 'Compliant'],
+                color: 'bg-blue-50'
+              },
+              {
+                icon: Flame,
+                title: 'LPG Gas Pipeline',
+                desc: 'Professional LPG gas pipeline installation for commercial kitchens with strict safety standards.',
+                items: ['Safety First', 'Commercial', 'Certified'],
+                color: 'bg-red-50'
+              },
+              {
+                icon: Shield,
+                title: 'Fire Suppression System',
+                desc: 'Kitchen fire suppression system installation to keep your commercial establishment safe and up to code.',
+                items: ['Fire Safety', 'Compliant', 'Reliable'],
+                color: 'bg-amber-50'
+              },
+              {
+                icon: Wind,
+                title: 'Exhaust & Fresh Air System',
+                desc: 'Mechanical works for exhaust hoods, ductwork, and fresh air systems for proper kitchen ventilation.',
+                items: ['Ventilation', 'Ductwork', 'Airflow'],
                 color: 'bg-emerald-50'
+              },
+              {
+                icon: PenTool,
+                title: 'Railings & Custom Fabrication',
+                desc: 'Custom-designed stainless steel railings and bespoke fabrication for residential and commercial projects.',
+                items: ['Residential', 'Commercial', 'Custom'],
+                color: 'bg-violet-50'
               },
             ].map((service) => (
               <motion.div
@@ -448,8 +479,9 @@ export function LandingPage() {
                 Delivered with <span className="text-orange-600 decoration-4 decoration-orange-200 underline underline-offset-4">Precision</span>
               </h2>
               <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-600 leading-relaxed mb-6 sm:mb-10">
-                Over 15 years of experience in stainless steel fabrication. We combine
-                traditional craftsmanship with cutting-edge technology.
+                Founded in October 2018, RMV Stainless Steel Fabrication has grown into a 
+                trusted name in commercial kitchen fabrication. We combine traditional 
+                craftsmanship with modern technology to deliver outstanding results.
               </p>
 
               <StaggerContainer staggerDelay={0.08} className="space-y-4 sm:space-y-6">
@@ -566,7 +598,7 @@ export function LandingPage() {
                   <h3 className="text-xl font-bold text-gray-900">Our Mission</h3>
                 </div>
                 <p className="text-gray-600 leading-relaxed">
-                  To deliver high-quality, precision-engineered stainless steel products that exceed client expectations — on time, on budget, and built to last. We are committed to transparency, craftsmanship, and customer satisfaction in every project.
+                  We are committed to delivering quality manufacturing services to our customers, fostering an environment of continuous growth for both our customers and investors.
                 </p>
               </div>
             </SlideInLeft>
@@ -580,11 +612,198 @@ export function LandingPage() {
                   <h3 className="text-xl font-bold text-gray-900">Our Vision</h3>
                 </div>
                 <p className="text-gray-600 leading-relaxed">
-                  To be the most trusted name in stainless steel fabrication in Metro Manila and beyond — known for innovation, reliability, and a digital-first approach that empowers clients with full visibility into their projects from start to finish.
+                  Aspiring to be a world-class manufacturer, we aim to produce quality, custom, precision parts and fabrications that surpass customer expectations. Our success lies in providing on-time or early deliveries, affordable prices, and innovative ideas, services, and solutions that enhance our customers' products and businesses.
                 </p>
               </div>
             </SlideInRight>
           </div>
+        </div>
+      </section>
+
+      {/* ─── Projects Showcase ─── */}
+      <section className="py-16 sm:py-24 lg:py-32 bg-gray-50 overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-20">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-4 sm:mb-6">
+              Featured Projects
+            </h2>
+            <div className="h-1 w-24 bg-orange-500 mx-auto rounded-full mb-6" />
+            <p className="text-base sm:text-xl text-gray-500">
+              A selection of completed works across restaurants, hotels, and food establishments.
+            </p>
+          </SlideUp>
+
+          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+            {[
+              {
+                title: 'Le Grand Prei',
+                location: 'General Santos City',
+                category: 'Full Kitchen Fabrication',
+                image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=800&q=80',
+              },
+              {
+                title: 'Kko Kko Korean Restaurant',
+                location: 'Cubao, Quezon City',
+                category: 'Kitchen Stainless Steel',
+                image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
+              },
+              {
+                title: "Primo's Restaurant",
+                location: 'Ligao, Albay',
+                category: 'Kitchen Equipment & Layout',
+                image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
+              },
+              {
+                title: '8 Danji Korean Resto',
+                location: 'Araneta, Cubao, Quezon City',
+                category: 'Full Kitchen Setup',
+                image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
+              },
+              {
+                title: 'Elkan Hotel',
+                location: 'Ligao, Albay',
+                category: 'Hotel Kitchen Fabrication',
+                image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
+              },
+              {
+                title: 'Food Stall Works – Ayala Fairview Terraces',
+                location: 'Fairview, Quezon City',
+                category: 'Multiple Food Stalls',
+                image: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80',
+              },
+            ].map((project) => (
+              <motion.div
+                key={project.title}
+                variants={staggerItem}
+                whileHover={{ y: -8 }}
+                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
+                style={{ willChange: 'transform, opacity' }}
+                className="group relative rounded-2xl overflow-hidden bg-white shadow-lg shadow-gray-200/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-shadow duration-300"
+              >
+                <div className="aspect-[4/3] overflow-hidden">
+                  <img
+                    src={project.image}
+                    alt={project.title}
+                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+                </div>
+                <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
+                  <span className="inline-block text-xs font-bold uppercase tracking-wider text-orange-400 mb-1">
+                    {project.category}
+                  </span>
+                  <h3 className="text-lg font-bold text-white leading-tight">{project.title}</h3>
+                  <p className="text-sm text-gray-300 mt-1 flex items-center gap-1">
+                    <MapPin className="h-3.5 w-3.5" />
+                    {project.location}
+                  </p>
+                </div>
+              </motion.div>
+            ))}
+          </StaggerContainer>
+        </div>
+      </section>
+
+      {/* ─── Sectors Served ─── */}
+      <section className="py-16 sm:py-24 bg-white overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-16">
+            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">
+              Sectors We Serve
+            </h2>
+            <p className="text-base sm:text-lg text-gray-500">
+              Trusted by businesses across diverse industries in the food and hospitality sector.
+            </p>
+          </SlideUp>
+
+          <StaggerContainer className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
+            {[
+              { icon: UtensilsCrossed, label: 'Restaurants' },
+              { icon: ShoppingBag, label: 'Shopping Malls' },
+              { icon: Warehouse, label: 'Food Courts' },
+              { icon: Coffee, label: 'Bakeries & Cafés' },
+              { icon: Truck, label: 'Fast Food Outlets' },
+              { icon: Heart, label: 'Hospital Food Outlets' },
+              { icon: Building2, label: 'Residentials' },
+              { icon: Hotel, label: 'Hotels & Resorts F&B' },
+            ].map((sector) => (
+              <motion.div
+                key={sector.label}
+                variants={staggerItem}
+                className="flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50/50 p-5 sm:p-8 hover:border-orange-200 hover:bg-orange-50/50 transition-colors duration-300"
+              >
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+                  <sector.icon className="h-6 w-6" />
+                </div>
+                <span className="text-sm font-semibold text-gray-700 text-center">{sector.label}</span>
+              </motion.div>
+            ))}
+          </StaggerContainer>
+        </div>
+      </section>
+
+      {/* ─── Testimonials ─── */}
+      <section className="py-16 sm:py-24 lg:py-32 bg-gray-950 overflow-hidden relative">
+        <div className="absolute inset-0 opacity-[0.03]"
+          style={{
+            backgroundImage: 'linear-gradient(#4b5563 1px, transparent 1px), linear-gradient(90deg, #4b5563 1px, transparent 1px)',
+            backgroundSize: '40px 40px'
+          }}
+        />
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
+          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-20">
+            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-5xl mb-4 sm:mb-6">
+              What Our Clients Say
+            </h2>
+            <div className="h-1 w-24 bg-orange-500 mx-auto rounded-full mb-6" />
+            <p className="text-base sm:text-lg text-gray-400">
+              Hear from business owners who trust RMV for their fabrication needs.
+            </p>
+          </SlideUp>
+
+          <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {[
+              {
+                name: 'Restaurant Owner',
+                business: 'Korean Restaurant, Quezon City',
+                quote: 'RMV delivered our complete kitchen setup ahead of schedule. The stainless steel work is top quality and the team was very professional throughout the entire process.',
+                rating: 5,
+              },
+              {
+                name: 'Hotel Manager',
+                business: 'Hotel F&B, Albay',
+                quote: 'From planning to installation, everything was handled seamlessly. The kitchen layout they designed improved our workflow significantly. Highly recommended!',
+                rating: 5,
+              },
+              {
+                name: 'Food Court Operator',
+                business: 'Food Stalls, Fairview Terraces',
+                quote: 'We had multiple stalls fabricated by RMV and every single one was done with excellent craftsmanship. Affordable pricing and on-time delivery.',
+                rating: 5,
+              },
+            ].map((testimonial) => (
+              <motion.div
+                key={testimonial.name}
+                variants={staggerItem}
+                className="relative rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm hover:bg-white/10 transition-colors duration-300"
+              >
+                <Quote className="h-8 w-8 text-orange-500/30 mb-4" />
+                <p className="text-sm sm:text-base text-gray-300 leading-relaxed mb-6">
+                  &ldquo;{testimonial.quote}&rdquo;
+                </p>
+                <div className="flex items-center gap-1 mb-3">
+                  {Array.from({ length: testimonial.rating }).map((_, i) => (
+                    <Star key={i} className="h-4 w-4 fill-orange-400 text-orange-400" />
+                  ))}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-white">{testimonial.name}</p>
+                  <p className="text-xs text-gray-400">{testimonial.business}</p>
+                </div>
+              </motion.div>
+            ))}
+          </StaggerContainer>
         </div>
       </section>
 
@@ -654,7 +873,7 @@ export function LandingPage() {
                 Services
               </h3>
               <ul className="space-y-4">
-                {['Gates & Railings', 'Structural Steel', 'Kitchen Equipment', 'CNC Cutting'].map(
+                {['Kitchen SS Fabrication', 'Kitchen Remodeling', 'LPG Gas Pipeline', 'Fire Suppression', 'Exhaust Systems', 'Railings'].map(
                   (item) => (
                     <li key={item}>
                       <a
@@ -697,6 +916,10 @@ export function LandingPage() {
                 <li className="flex items-start gap-3 text-sm text-gray-500">
                   <MapPin className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
                   <span>BIR Village, Novaliches, Quezon City, Philippines 1118</span>
+                </li>
+                <li className="flex items-center gap-3 text-sm text-gray-500">
+                  <Phone className="h-5 w-5 text-orange-500 flex-shrink-0" />
+                  <span>02-9506187</span>
                 </li>
                 <li className="flex items-center gap-3 text-sm text-gray-500">
                   <Phone className="h-5 w-5 text-orange-500 flex-shrink-0" />

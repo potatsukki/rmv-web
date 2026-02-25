@@ -8,6 +8,17 @@ export interface User {
   email: string;
   phone?: string;
   address?: string;
+  addressData?: {
+    street?: string;
+    barangay?: string;
+    city?: string;
+    province?: string;
+    zip?: string;
+    country?: string;
+    lat?: number;
+    lng?: number;
+    formattedAddress?: string;
+  };
   roles: Role[];
   isEmailVerified: boolean;
   isActive: boolean;

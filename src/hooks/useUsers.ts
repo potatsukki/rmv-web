@@ -117,6 +117,17 @@ interface UpdateProfilePayload {
   lastName?: string;
   phone?: string;
   address?: string;
+  addressData?: {
+    street?: string;
+    barangay?: string;
+    city?: string;
+    province?: string;
+    zip?: string;
+    country?: string;
+    lat?: number;
+    lng?: number;
+    formattedAddress?: string;
+  };
   notificationPreferences?: {
     appointment?: boolean;
     payment?: boolean;
