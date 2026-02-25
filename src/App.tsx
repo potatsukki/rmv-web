@@ -37,6 +37,11 @@ const VerifyTwoFactorPage = lazy(() =>
     default: module.VerifyTwoFactorPage,
   })),
 );
+const CompleteProfilePage = lazy(() =>
+  import('@/pages/auth/CompleteProfilePage').then((module) => ({
+    default: module.CompleteProfilePage,
+  })),
+);
 
 const AccountLayout = lazy(() =>
   import('@/pages/account/AccountLayout').then((module) => ({
@@ -200,6 +205,7 @@ export default function App() {
         '/verify-2fa',
         '/forgot-password',
         '/reset-password',
+        '/complete-profile',
       ];
       const isPublicPath = publicPaths.includes(window.location.pathname);
 
@@ -231,6 +237,7 @@ export default function App() {
           <Route path="/verify-2fa" element={<VerifyTwoFactorPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route path="/complete-profile" element={<CompleteProfilePage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>

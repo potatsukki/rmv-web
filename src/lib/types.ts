@@ -13,6 +13,8 @@ export interface User {
   isActive: boolean;
   mustChangePassword: boolean;
   twoFactorEnabled?: boolean;
+  provider?: 'local' | 'google';
+  photoURL?: string;
   notificationPreferences?: {
     appointment: boolean;
     payment: boolean;
