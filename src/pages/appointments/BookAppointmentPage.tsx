@@ -499,6 +499,7 @@ export function BookAppointmentPage() {
 
         {/* Step: Location (ocular only) */}
         {steps[currentStep]?.key === 'location' && (
+          <>
           <Card className="rounded-xl border-gray-100 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg text-gray-900">Pin Your Location</CardTitle>
@@ -617,6 +618,7 @@ export function BookAppointmentPage() {
               </div>
             </CardContent>
           </Card>
+          </>
         )}
 
         {/* Step: Address (office visits) */}
