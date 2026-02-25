@@ -15,7 +15,7 @@ import {
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
-import { useProject, useGenerateContract, useAssignEngineers, useAssignFabrication } from '@/hooks/useProjects';
+import { useProject, useGenerateContract, useSignContract, useAssignEngineers, useAssignFabrication } from '@/hooks/useProjects';
 import { useLatestBlueprint, useUploadBlueprint, useUploadRevision } from '@/hooks/useBlueprints';
 import { usePaymentPlan, usePaymentsByProject } from '@/hooks/usePayments';
 import { useFabricationUpdates, useFabricationStatus } from '@/hooks/useFabrication';
@@ -26,6 +26,7 @@ import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type { VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
+import { SignaturePad } from '@/components/shared/SignaturePad';
 
 // ── Types ──
 type TabKey = 'details' | 'blueprint' | 'payments' | 'fabrication';
@@ -159,6 +160,7 @@ export function ProjectDetailPage() {
 
   // ── Mutations ──
   const generateContract = useGenerateContract();
+  const signContractMutation = useSignContract();
   const assignEngineers = useAssignEngineers();
   const assignFabrication = useAssignFabrication();
   const uploadBlueprint = useUploadBlueprint();
@@ -210,6 +212,8 @@ export function ProjectDetailPage() {
   }, [user, project]);
 
   // ── Handlers ──
+  const [contractSignatureKey, setContractSignatureKey] = useState('');
+
   const handleGenerateContract = async () => {
     try {
       await generateContract.mutateAsync(id!);
@@ -217,6 +221,24 @@ export function ProjectDetailPage() {
       refetch();
     } catch {
       toast.error('Failed to generate contract');
+    }
+  };
+
+  const handleSignContract = async () => {
+    if (!contractSignatureKey) {
+      toast.error('Please draw your signature first');
+      return;
+    }
+    try {
+      await signContractMutation.mutateAsync({
+        projectId: id!,
+        signatureKey: contractSignatureKey,
+      });
+      toast.success('Contract signed successfully! You can now proceed with payments.');
+      setContractSignatureKey('');
+      refetch();
+    } catch {
+      toast.error('Failed to sign contract');
     }
   };
 
@@ -1044,44 +1066,102 @@ export function ProjectDetailPage() {
             </CardHeader>
             <CardContent>
               {project.contractKey ? (
-                <div className="space-y-3">
-                  <p className="text-sm text-gray-600">
-                    Contract generated on{' '}
-                    {project.contractGeneratedAt
-                      ? format(new Date(project.contractGeneratedAt), 'MMM d, yyyy h:mm a')
-                      : 'N/A'}
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      className="bg-orange-600 hover:bg-orange-700"
-                      onClick={() => handleDownloadContract('original')}
-                    >
-                      <Download className="mr-1.5 h-4 w-4" />
-                      Download Original
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => handleDownloadContract('copy')}
-                    >
-                      <Download className="mr-1.5 h-4 w-4" />
-                      Download Copy
-                    </Button>
-                    {canGenerate && (
+                <div className="space-y-4">
+                  {/* Contract info + download */}
+                  <div className="space-y-3">
+                    <p className="text-sm text-gray-600">
+                      Contract generated on{' '}
+                      {project.contractGeneratedAt
+                        ? format(new Date(project.contractGeneratedAt), 'MMM d, yyyy h:mm a')
+                        : 'N/A'}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        variant="ghost"
-                        onClick={handleGenerateContract}
-                        disabled={generateContract.isPending}
+                        className="bg-orange-600 hover:bg-orange-700"
+                        onClick={() => handleDownloadContract('original')}
                       >
-                        {generateContract.isPending && (
-                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                        )}
-                        Regenerate
+                        <Download className="mr-1.5 h-4 w-4" />
+                        Download Original
                       </Button>
-                    )}
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => handleDownloadContract('copy')}
+                      >
+                        <Download className="mr-1.5 h-4 w-4" />
+                        Download Copy
+                      </Button>
+                      {canGenerate && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={handleGenerateContract}
+                          disabled={generateContract.isPending}
+                        >
+                          {generateContract.isPending && (
+                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                          )}
+                          Regenerate
+                        </Button>
+                      )}
+                    </div>
                   </div>
+
+                  {/* Signing status */}
+                  {project.contractSignedAt ? (
+                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
+                      <div className="flex items-center gap-2 text-emerald-700">
+                        <Check className="h-5 w-5" />
+                        <span className="text-sm font-semibold">Contract Signed</span>
+                      </div>
+                      <p className="text-xs text-emerald-600 mt-1">
+                        Signed on {format(new Date(project.contractSignedAt), 'MMM d, yyyy h:mm a')}
+                      </p>
+                    </div>
+                  ) : isCustomer ? (
+                    <div className="rounded-xl border-2 border-amber-300 bg-amber-50/50 p-4 space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-amber-800 flex items-center gap-2">
+                          <PenTool className="h-4 w-4" />
+                          E-Sign Your Contract
+                        </p>
+                        <p className="text-xs text-amber-700">
+                          Please review the contract above, then draw your signature below to sign. You must sign before making any payments.
+                        </p>
+                      </div>
+                      <SignaturePad
+                        onSave={(key) => setContractSignatureKey(key)}
+                        existingKey={null}
+                        width={460}
+                        height={160}
+                        hideSaveButton={false}
+                      />
+                      {contractSignatureKey && (
+                        <p className="text-xs text-emerald-600 flex items-center gap-1">
+                          <Check className="h-3.5 w-3.5" /> Signature captured
+                        </p>
+                      )}
+                      <Button
+                        onClick={handleSignContract}
+                        disabled={!contractSignatureKey || signContractMutation.isPending}
+                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                      >
+                        {signContractMutation.isPending ? (
+                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                        ) : (
+                          <PenTool className="mr-1.5 h-4 w-4" />
+                        )}
+                        {signContractMutation.isPending ? 'Signing...' : 'Sign Contract'}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3">
+                      <p className="text-sm text-amber-700">
+                        Awaiting customer signature. The customer must e-sign this contract before payments can proceed.
+                      </p>
+                    </div>
+                  )}
                 </div>
               ) : canGenerate &&
                 ['payment_pending', 'fabrication', 'completed'].includes(project.status) ? (

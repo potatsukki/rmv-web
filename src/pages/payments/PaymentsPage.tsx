@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -79,6 +79,11 @@ export function PaymentsPage() {
       setSelectedProjectId(String(projects.items[0]!._id));
     }
   }, [projects, selectedProjectId, location.state]);
+
+  const selectedProject = projects?.items?.find(
+    (p) => String(p._id) === selectedProjectId,
+  );
+  const contractSigned = !!selectedProject?.contractSignedAt;
 
   const handleSubmitProof = async () => {
     const amount = parseFloat(amountPaid);
@@ -241,6 +246,31 @@ export function PaymentsPage() {
           title="No payment plan"
           description="A payment plan hasn't been created for this project yet."
         />
+      ) : isCustomer && !contractSigned ? (
+        <Card className="rounded-xl border-amber-200 bg-amber-50/50 shadow-sm">
+          <CardContent className="p-6 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-full bg-amber-100 p-3">
+                <PenTool className="h-6 w-6 text-amber-600" />
+              </div>
+              <div>
+                <h3 className="font-semibold text-amber-900">Sign Your Contract First</h3>
+                <p className="text-sm text-amber-700">
+                  You must review and e-sign the project contract before making any payments.
+                </p>
+              </div>
+            </div>
+            <Button
+              asChild
+              className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl"
+            >
+              <Link to={`/projects/${selectedProjectId}`}>
+                <ScrollText className="mr-1.5 h-4 w-4" />
+                Go to Project &amp; Sign Contract
+              </Link>
+            </Button>
+          </CardContent>
+        </Card>
       ) : (
         <>
           {/* Payment Plan */}

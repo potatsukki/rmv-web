@@ -143,15 +143,13 @@ export function useAcceptBlueprint() {
     mutationFn: async ({
       id,
       paymentType,
-      signatureKey,
     }: {
       id: string;
       paymentType: 'full' | 'installment';
-      signatureKey?: string;
     }) => {
       const { data } = await api.post<ApiResponse<{ blueprint: Blueprint; paymentPlan: unknown }>>(
         `/blueprints/${id}/accept`,
-        { paymentType, signatureKey },
+        { paymentType },
       );
       return data.data;
     },

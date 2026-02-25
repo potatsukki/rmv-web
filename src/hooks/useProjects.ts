@@ -137,6 +137,22 @@ export function useGenerateContract() {
   });
 }
 
+export function useSignContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, signatureKey }: { projectId: string; signatureKey: string }) => {
+      const { data } = await api.post<ApiResponse<Project>>(
+        `/projects/${projectId}/sign-contract`,
+        { signatureKey },
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
 export function useContractDownloadUrl(projectId: string, copy: 'original' | 'copy' = 'original') {
   return useQuery({
     queryKey: [...KEYS.detail(projectId), 'contract', copy],

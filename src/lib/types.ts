@@ -151,6 +151,8 @@ export interface Project {
   mediaKeys: string[];
   contractKey?: string;
   contractGeneratedAt?: string;
+  contractSignedAt?: string;
+  contractSignatureKey?: string;
   cancelReason?: string;
   createdAt: string;
   updatedAt: string;
