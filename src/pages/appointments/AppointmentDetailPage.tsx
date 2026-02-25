@@ -27,6 +27,8 @@ import {
   useCompleteAppointment,
   useCancelAppointment,
   useMarkNoShow,
+  useUpdateVisitStatus,
+  useRefundOcularFee,
 } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, AppointmentStatus } from '@/lib/constants';
@@ -45,9 +47,13 @@ export function AppointmentDetailPage() {
   const completeMutation = useCompleteAppointment();
   const cancelMutation = useCancelAppointment();
   const noShowMutation = useMarkNoShow();
+  const visitStatusMutation = useUpdateVisitStatus();
+  const refundMutation = useRefundOcularFee();
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [refundOpen, setRefundOpen] = useState(false);
+  const [refundReason, setRefundReason] = useState('');
   const [selectedSalesStaff, setSelectedSalesStaff] = useState('');
   const [salesStaffList, setSalesStaffList] = useState<{ _id: string; firstName: string; lastName: string }[]>([]);
 
@@ -232,7 +238,27 @@ export function AppointmentDetailPage() {
           <CardContent className="space-y-4">
             {appt.ocularFee != null && appt.ocularFee > 0 && (
               <div>
-                {appt.ocularFeePaid ? (
+                {appt.ocularFeeStatus === 'refunded' ? (
+                  <>
+                    <div className="flex items-center justify-between">
+                      <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-full px-2.5 py-0.5">
+                        Refunded
+                      </span>
+                    </div>
+                    <p className="text-lg font-semibold text-gray-400 line-through mt-1">
+                      {formatCurrency(appt.ocularFee)}
+                    </p>
+                    {appt.ocularFeeRefundReason && (
+                      <p className="text-xs text-red-600 mt-1">Reason: {appt.ocularFeeRefundReason}</p>
+                    )}
+                    {appt.ocularFeeRefundedAt && (
+                      <p className="text-xs text-gray-400 mt-0.5">
+                        Refunded on {format(new Date(appt.ocularFeeRefundedAt), 'MMM d, yyyy h:mm a')}
+                      </p>
+                    )}
+                  </>
+                ) : appt.ocularFeePaid ? (
                   <>
                     <div className="flex items-center justify-between">
                       <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
@@ -243,6 +269,17 @@ export function AppointmentDetailPage() {
                     <p className="text-lg font-semibold text-gray-900 mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
+                    {/* Admin: Refund button */}
+                    {isAdmin && ![AppointmentStatus.ON_THE_WAY, AppointmentStatus.COMPLETED].includes(appt.status as AppointmentStatus) && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setRefundOpen(true)}
+                        className="mt-2 border-red-200 text-red-600 hover:bg-red-50 rounded-xl text-xs h-8"
+                      >
+                        Issue Refund
+                      </Button>
+                    )}
                   </>
                 ) : appt.ocularFeeStatus === 'pending' && isCustomer ? (
                   <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-3">
@@ -517,7 +554,57 @@ export function AppointmentDetailPage() {
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
 
+        {/* Sales staff: CONFIRMED → Preparing */}
         {canCompleteAppointment && appt.status === AppointmentStatus.CONFIRMED && (
+          <>
+            <Button
+              onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'preparing' }).then(() => toast.success('Status updated: Preparing')).catch(() => toast.error('Failed to update'))}
+              disabled={visitStatusMutation.isPending}
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+            >
+              Start Preparing
+            </Button>
+            <Button
+              onClick={handleComplete}
+              disabled={completeMutation.isPending}
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+            >
+              Mark Complete
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleNoShow}
+              disabled={noShowMutation.isPending}
+              className="border-gray-200 text-gray-700 rounded-xl"
+            >
+              Mark No-Show
+            </Button>
+          </>
+        )}
+
+        {/* Sales staff: PREPARING → On The Way */}
+        {canCompleteAppointment && appt.status === AppointmentStatus.PREPARING && (
+          <>
+            <Button
+              onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way')).catch(() => toast.error('Failed to update'))}
+              disabled={visitStatusMutation.isPending}
+              className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl"
+            >
+              On The Way
+            </Button>
+            <Button
+              variant="outline"
+              onClick={handleNoShow}
+              disabled={noShowMutation.isPending}
+              className="border-gray-200 text-gray-700 rounded-xl"
+            >
+              Mark No-Show
+            </Button>
+          </>
+        )}
+
+        {/* Sales staff: ON_THE_WAY → Complete */}
+        {canCompleteAppointment && appt.status === AppointmentStatus.ON_THE_WAY && (
           <>
             <Button
               onClick={handleComplete}
@@ -538,7 +625,7 @@ export function AppointmentDetailPage() {
         )}
 
         {(isCustomer || isAgent || isAdmin) &&
-          [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(
+          [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
             appt.status as AppointmentStatus,
           ) && (
             <>
@@ -594,6 +681,50 @@ export function AppointmentDetailPage() {
               className="rounded-xl"
             >
               {cancelMutation.isPending ? 'Cancelling...' : 'Yes, Cancel'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Refund Ocular Fee dialog (Admin only) */}
+      <Dialog open={refundOpen} onOpenChange={(open) => { setRefundOpen(open); if (!open) setRefundReason(''); }}>
+        <DialogContent className="rounded-2xl max-w-md">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900">Refund Ocular Fee</DialogTitle>
+            <DialogDescription className="text-gray-500">
+              This will mark the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''} as refunded. The customer will be notified.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3 py-2">
+            <Label htmlFor="refund-reason" className="text-sm font-medium text-gray-700">Reason for refund</Label>
+            <Textarea
+              id="refund-reason"
+              placeholder="e.g., Customer cancelled before visit, duplicate payment..."
+              value={refundReason}
+              onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRefundReason(e.target.value)}
+              className="min-h-[80px] bg-gray-50/50 border-gray-200 rounded-xl"
+            />
+          </div>
+          <DialogFooter className="gap-2">
+            <Button variant="outline" onClick={() => { setRefundOpen(false); setRefundReason(''); }} className="rounded-xl border-gray-200">
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={async () => {
+                try {
+                  await refundMutation.mutateAsync({ id: id!, reason: refundReason.trim() });
+                  toast.success('Ocular fee refunded successfully');
+                  setRefundOpen(false);
+                  setRefundReason('');
+                } catch {
+                  toast.error('Failed to process refund');
+                }
+              }}
+              disabled={refundMutation.isPending || !refundReason.trim()}
+              className="rounded-xl"
+            >
+              {refundMutation.isPending ? 'Processing...' : 'Confirm Refund'}
             </Button>
           </DialogFooter>
         </DialogContent>

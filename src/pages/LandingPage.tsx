@@ -542,6 +542,52 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* ─── Mission & Vision ─── */}
+      <section className="py-16 sm:py-24 bg-white overflow-hidden">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <FadeIn>
+            <div className="text-center mb-12 sm:mb-16">
+              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                Our Purpose
+              </h2>
+              <p className="mt-3 text-gray-500 text-base sm:text-lg max-w-2xl mx-auto">
+                What drives us every day in the workshop and on-site.
+              </p>
+            </div>
+          </FadeIn>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
+            <SlideInLeft>
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-8 sm:p-10 h-full">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+                    <Star className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Our Mission</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed">
+                  To deliver high-quality, precision-engineered stainless steel products that exceed client expectations — on time, on budget, and built to last. We are committed to transparency, craftsmanship, and customer satisfaction in every project.
+                </p>
+              </div>
+            </SlideInLeft>
+
+            <SlideInRight>
+              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-8 sm:p-10 h-full">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
+                    <Layers className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-xl font-bold text-gray-900">Our Vision</h3>
+                </div>
+                <p className="text-gray-600 leading-relaxed">
+                  To be the most trusted name in stainless steel fabrication in Metro Manila and beyond — known for innovation, reliability, and a digital-first approach that empowers clients with full visibility into their projects from start to finish.
+                </p>
+              </div>
+            </SlideInRight>
+          </div>
+        </div>
+      </section>
+
       {/* ─── CTA Section ─── */}
       <section className="relative overflow-hidden bg-gray-900 py-16 sm:py-24 lg:py-32">
         <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1531297461136-82lw9b61d69d?q=80&w=2688&auto=format&fit=crop')] bg-cover bg-fixed opacity-10 mix-blend-overlay" />
@@ -662,6 +708,21 @@ export function LandingPage() {
                 </li>
               </ul>
             </div>
+          </div>
+
+          {/* Embedded Map */}
+          <div className="mb-10 sm:mb-16 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
+            <iframe
+              title="RMV Location"
+              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d15438.56!2d120.9575!3d14.6625!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397b5e4b22c4b07%3A0x79f3e5c0c1346c1e!2sMalabon%2C%20Metro%20Manila!5e0!3m2!1sen!2sph!4v1700000000000!5m2!1sen!2sph"
+              width="100%"
+              height="280"
+              style={{ border: 0 }}
+              allowFullScreen
+              loading="lazy"
+              referrerPolicy="no-referrer-when-downgrade"
+              className="w-full grayscale hover:grayscale-0 transition-all duration-500"
+            />
           </div>
 
           <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">

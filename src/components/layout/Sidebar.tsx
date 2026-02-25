@@ -236,22 +236,22 @@ export function Sidebar() {
                         </div>
 
                         <div className="flex items-center gap-2">
-                          {item.label === 'Notifications' && unreadCount > 0 && (
+                          {item.label === 'Notifications' && !isActive && unreadCount > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
                               {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                           )}
-                          {item.label === 'Appointments' && (dashboardSummary?.pendingAppointments ?? 0) > 0 && (
+                          {item.label === 'Appointments' && !isActive && (dashboardSummary?.pendingAppointments ?? 0) > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
                               {(dashboardSummary?.pendingAppointments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingAppointments}
                             </span>
                           )}
-                          {item.label === 'Payments' && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
+                          {item.label === 'Payments' && !isActive && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
                               {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
                             </span>
                           )}
-                          {item.label === 'Cashier Queue' && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
+                          {item.label === 'Cashier Queue' && !isActive && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
                               {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
                             </span>

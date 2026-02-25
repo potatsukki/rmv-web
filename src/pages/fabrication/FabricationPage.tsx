@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
-import { Hammer, Plus, Clock, User, Paperclip } from 'lucide-react';
+import { Hammer, Plus, Clock, User, Paperclip, ArrowLeft, Lock } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -81,10 +82,18 @@ export function FabricationPage() {
   useEffect(() => {
     if (allowedStatuses.length === 0) return;
     setStatus((prev) => {
-      if (allowedStatuses.includes(prev)) return prev;
-      return allowedStatuses[0] ?? prev;
+      if (allowedStatuses.includes(prev)) {
+        // If the currently selected status is blocked, try to find an unblocked one
+        const gate = fabricationStatus?.paymentGate?.stageGates?.[prev];
+        if (!gate?.blocked) return prev;
+      }
+      // Pick the first unblocked status, or fall back to the first one
+      const unblocked = allowedStatuses.find(
+        (s) => !fabricationStatus?.paymentGate?.stageGates?.[s]?.blocked,
+      );
+      return unblocked ?? allowedStatuses[0] ?? prev;
     });
-  }, [allowedStatuses]);
+  }, [allowedStatuses, fabricationStatus]);
 
   const handleAddUpdate = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -140,7 +149,7 @@ export function FabricationPage() {
           {canAddUpdate && selectedProjectId && (
             <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gray-900 hover:bg-gray-800 text-white shrink-0 rounded-xl">
+                <Button className="bg-gray-900 hover:bg-gray-800 text-white shrink-0 rounded-xl" size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   New Update
                 </Button>
@@ -162,18 +171,43 @@ export function FabricationPage() {
                     >
                       Status
                     </Label>
-                    <select
-                      id="status"
-                      value={status}
-                      onChange={(e) => setStatus(e.target.value)}
-                      className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
-                    >
-                      {(allowedStatuses.length > 0 ? allowedStatuses : Object.values(FabricationStatus)).map((value) => (
-                        <option key={value} value={value}>
-                          {formatStatus(value)}
-                        </option>
-                      ))}
-                    </select>
+                    <Select value={status} onValueChange={setStatus}>
+                      <SelectTrigger className="w-full h-11 rounded-xl border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-orange-200 focus:border-orange-300">
+                        <SelectValue placeholder="Select status" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {(allowedStatuses.length > 0 ? allowedStatuses : Object.values(FabricationStatus)).map((value) => {
+                          const gate = fabricationStatus?.paymentGate?.stageGates?.[value];
+                          const isBlocked = gate?.blocked === true;
+                          return (
+                            <SelectItem key={value} value={value} disabled={isBlocked}>
+                              <span className="flex items-center gap-2">
+                                {isBlocked && <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
+                                {formatStatus(value)}
+                                {isBlocked && (
+                                  <span className="text-[11px] text-amber-600 font-normal">
+                                    ({gate.currentPaid}/{gate.requiredPaid} paid)
+                                  </span>
+                                )}
+                              </span>
+                            </SelectItem>
+                          );
+                        })}
+                      </SelectContent>
+                    </Select>
+                    {/* Payment gate warning for selected status */}
+                    {fabricationStatus?.paymentGate?.stageGates?.[status]?.blocked && (
+                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mt-1.5">
+                        <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-xs text-amber-700">
+                          This stage requires {fabricationStatus.paymentGate.stageGates[status].requiredPaid} of {fabricationStatus.paymentGate.totalStages} payment stages to be verified.
+                          Currently {fabricationStatus.paymentGate.stageGates[status].currentPaid} paid.
+                          {fabricationStatus.paymentGate.stageGates[status].nextUnpaidLabel && (
+                            <> Next: <span className="font-medium">{fabricationStatus.paymentGate.stageGates[status].nextUnpaidLabel}</span></>
+                          )}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">
@@ -226,26 +260,10 @@ export function FabricationPage() {
             </Dialog>
           )}
 
-          <div className="w-full md:w-72">
-            <Select
-              value={selectedProjectId}
-              onValueChange={(val: string) => setSelectedProjectId(val)}
-            >
-              <SelectTrigger className="bg-white border-gray-200 shadow-sm rounded-xl h-10">
-                <SelectValue placeholder="Select a project..." />
-              </SelectTrigger>
-              <SelectContent>
-                {projects.map((p: { _id: string; title: string }) => (
-                  <SelectItem key={p._id} value={p._id}>
-                    {p.title}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
         </div>
       </div>
 
+      {/* Card-based project selector */}
       {projects.length === 0 ? (
         <EmptyState
           title="No Active Projects"
@@ -253,12 +271,51 @@ export function FabricationPage() {
           icon={<Hammer className="h-10 w-10 text-gray-300" />}
         />
       ) : !selectedProjectId ? (
-        <EmptyState
-          title="Select a Project"
-          description="Please select a project from the dropdown above to view fabrication updates."
-          icon={<Hammer className="h-10 w-10 text-gray-300" />}
-        />
-      ) : isLoadingUpdates ? (
+        <>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {projects.map((p: { _id: string; title: string; serviceType?: string; status?: string }) => (
+              <button
+                key={p._id}
+                onClick={() => setSelectedProjectId(p._id)}
+                className={cn(
+                  'text-left rounded-xl border p-4 transition-all hover:shadow-md',
+                  selectedProjectId === p._id
+                    ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
+                    : 'border-gray-200 bg-white hover:border-orange-300',
+                )}
+              >
+                <h3 className="font-semibold text-gray-900 truncate">{p.title}</h3>
+                {p.serviceType && (
+                  <p className="text-xs text-gray-500 mt-1 capitalize">{p.serviceType.replace(/_/g, ' ')}</p>
+                )}
+                {p.status && (
+                  <span className="inline-block mt-2 text-[11px] font-medium px-2 py-0.5 rounded-full bg-gray-100 text-gray-600 capitalize">
+                    {p.status.replace(/_/g, ' ')}
+                  </span>
+                )}
+              </button>
+            ))}
+          </div>
+        </>
+      ) : (
+        <>
+          {/* Back button to switch project */}
+          <div className="flex items-center gap-3 mb-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setSelectedProjectId('')}
+              className="border-gray-200 rounded-lg text-xs"
+            >
+              <ArrowLeft className="mr-1.5 h-3.5 w-3.5" />
+              Change Project
+            </Button>
+            <span className="text-sm font-medium text-gray-700">
+              {projects.find((p: { _id: string }) => p._id === selectedProjectId)?.title}
+            </span>
+          </div>
+
+          {isLoadingUpdates ? (
         <div className="space-y-4">
           {[1, 2, 3].map((i) => (
             <Skeleton key={i} className="h-32 w-full rounded-xl" />
@@ -358,6 +415,8 @@ export function FabricationPage() {
             ),
           )}
         </div>
+      )}
+        </>
       )}
     </div>
   );

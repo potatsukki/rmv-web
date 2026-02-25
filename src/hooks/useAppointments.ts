@@ -61,6 +61,7 @@ export function useRequestAppointment() {
       formattedAddress?: string;
       customerLocation?: { lat: number; lng: number };
       lockId?: string;
+      addressStructured?: { street: string; barangay: string; city: string; province: string; zip: string };
     }) => {
       const { data } = await api.post<ApiResponse<Appointment>>('/appointments', body);
       return data.data;
@@ -117,6 +118,19 @@ export function useCompleteAppointment() {
   return useMutation({
     mutationFn: async (id: string) => {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/complete`);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useUpdateVisitStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, status }: { id: string; status: 'preparing' | 'on_the_way' }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/visit-status/${status}`);
       return data.data;
     },
     onSuccess: () => {
@@ -355,6 +369,22 @@ export function useSkipSiteDetails() {
       const { data } = await api.post<ApiResponse<Appointment>>(
         `/appointments/${id}/skip-site-details`,
         {},
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useRefundOcularFee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/refund-ocular-fee`,
+        { reason },
       );
       return data.data;
     },

@@ -87,6 +87,13 @@ export interface Appointment {
   purpose?: string;
   address?: string;
   formattedAddress?: string;
+  addressStructured?: {
+    street: string;
+    barangay: string;
+    city: string;
+    province: string;
+    zip: string;
+  };
   latitude?: number;
   longitude?: number;
   location?: { lat: number; lng: number };
@@ -106,8 +113,10 @@ export interface Appointment {
   ocularFeePaid?: boolean;
   ocularFeeProofKey?: string;
   ocularFeeReferenceNumber?: string;
-  ocularFeeStatus?: 'pending' | 'proof_submitted' | 'verified' | 'declined';
+  ocularFeeStatus?: 'pending' | 'proof_submitted' | 'verified' | 'declined' | 'refunded';
   ocularFeeDeclineReason?: string;
+  ocularFeeRefundReason?: string;
+  ocularFeeRefundedAt?: string;
   paymongoCheckoutSessionId?: string;
   paymongoCheckoutUrl?: string;
   rescheduleCount: number;

@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, Loader2, MapPin, Calendar, Clock, F
 import toast from 'react-hot-toast';
 
 import { LocationPicker } from '@/components/maps/LocationPicker';
+import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -34,6 +35,11 @@ const bookingSchema = z.object({
   date: z.string().min(1, 'Please select a date'),
   slotCode: z.string().min(1, 'Please select a time slot'),
   purpose: z.string().max(500).optional(),
+  street: z.string().max(200).optional(),
+  barangay: z.string().max(100).optional(),
+  city: z.string().max(100).optional(),
+  province: z.string().max(100).optional(),
+  zip: z.string().max(10).optional(),
 });
 
 type BookingForm = z.infer<typeof bookingSchema>;
@@ -205,6 +211,16 @@ export function BookAppointmentPage() {
           }
         }
 
+        const addressStructured = (data.street || data.barangay || data.city)
+          ? {
+              street: data.street || '',
+              barangay: data.barangay || '',
+              city: data.city || '',
+              province: data.province || '',
+              zip: data.zip || '',
+            }
+          : undefined;
+
         const result = await requestMutation.mutateAsync({
           type: data.type,
           date: data.date,
@@ -212,6 +228,7 @@ export function BookAppointmentPage() {
           purpose: data.purpose,
           customerLocation: selectedLocation ?? undefined,
           formattedAddress: formattedAddress || undefined,
+          addressStructured,
         });
 
         // If outside NCR, redirect to ocular fee payment page
@@ -269,6 +286,7 @@ export function BookAppointmentPage() {
       : [
           { key: 'type', label: 'Visit Type', icon: Clock },
           { key: 'date', label: 'Date & Time', icon: Calendar },
+          { key: 'address', label: 'Address', icon: MapPin },
           { key: 'review', label: 'Review', icon: CheckCircle },
         ];
 
@@ -279,6 +297,7 @@ export function BookAppointmentPage() {
     if (stepKey === 'type') return !!selectedType;
     if (stepKey === 'date') return !!selectedDate && !!selectedSlot;
     if (stepKey === 'location') return !!selectedLocation && !isFeeLoading && !feeError && !!feePreview;
+    if (stepKey === 'address') return true; // optional fields
     if (stepKey === 'reason') return true;
     if (stepKey === 'review') return true;
     return false;
@@ -404,19 +423,24 @@ export function BookAppointmentPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-1.5">
-                  <Label htmlFor="date" className="text-[13px] font-medium text-gray-700">
-                    Preferred Date
-                  </Label>
-                  <Input
-                    id="date"
-                    type="date"
-                    min={minDate}
-                    {...register('date')}
-                    className={inputClasses}
+                <div className="flex justify-center">
+                  <CalendarUI
+                    mode="single"
+                    selected={selectedDate ? new Date(`${selectedDate}T00:00:00`) : undefined}
+                    onSelect={(day) => {
+                      if (day) setValue('date', format(day, 'yyyy-MM-dd'));
+                    }}
+                    disabled={(day) => day < addDays(new Date(), 3)}
+                    fromMonth={new Date()}
+                    className="rounded-xl border border-gray-100"
                   />
-                  {errors.date && <p className="text-sm text-red-500">{errors.date.message}</p>}
                 </div>
+                {selectedDate && (
+                  <p className="text-center text-sm text-gray-500 mt-3">
+                    Selected: <span className="font-medium text-gray-900">{format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}</span>
+                  </p>
+                )}
+                {errors.date && <p className="text-sm text-red-500 mt-2">{errors.date.message}</p>}
               </CardContent>
             </Card>
 
@@ -554,6 +578,80 @@ export function BookAppointmentPage() {
                     )}
                   </div>
                 )}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Structured Address Fields */}
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-900">Detailed Address</CardTitle>
+              <CardDescription className="text-gray-500">
+                Provide your complete address so our team can easily find your location.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="street" className="text-[13px] font-medium text-gray-700">Street / House No.</Label>
+                <Input id="street" {...register('street')} placeholder="e.g. 123 Rizal St." className={inputClasses} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="barangay" className="text-[13px] font-medium text-gray-700">Barangay</Label>
+                  <Input id="barangay" {...register('barangay')} placeholder="e.g. Brgy. San Jose" className={inputClasses} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="city" className="text-[13px] font-medium text-gray-700">City / Municipality</Label>
+                  <Input id="city" {...register('city')} placeholder="e.g. Malabon City" className={inputClasses} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="province" className="text-[13px] font-medium text-gray-700">Province</Label>
+                  <Input id="province" {...register('province')} placeholder="e.g. Metro Manila" className={inputClasses} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="zip" className="text-[13px] font-medium text-gray-700">Zip Code</Label>
+                  <Input id="zip" {...register('zip')} placeholder="e.g. 1470" className={inputClasses} />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Step: Address (office visits) */}
+        {steps[currentStep]?.key === 'address' && (
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-900">Your Address</CardTitle>
+              <CardDescription className="text-gray-500">
+                Provide your address so we can plan site visits or deliveries if needed.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="street-office" className="text-[13px] font-medium text-gray-700">Street / House No.</Label>
+                <Input id="street-office" {...register('street')} placeholder="e.g. 123 Rizal St." className={inputClasses} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="barangay-office" className="text-[13px] font-medium text-gray-700">Barangay</Label>
+                  <Input id="barangay-office" {...register('barangay')} placeholder="e.g. Brgy. San Jose" className={inputClasses} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="city-office" className="text-[13px] font-medium text-gray-700">City / Municipality</Label>
+                  <Input id="city-office" {...register('city')} placeholder="e.g. Malabon City" className={inputClasses} />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-1.5">
+                  <Label htmlFor="province-office" className="text-[13px] font-medium text-gray-700">Province</Label>
+                  <Input id="province-office" {...register('province')} placeholder="e.g. Metro Manila" className={inputClasses} />
+                </div>
+                <div className="space-y-1.5">
+                  <Label htmlFor="zip-office" className="text-[13px] font-medium text-gray-700">Zip Code</Label>
+                  <Input id="zip-office" {...register('zip')} placeholder="e.g. 1470" className={inputClasses} />
+                </div>
               </div>
             </CardContent>
           </Card>

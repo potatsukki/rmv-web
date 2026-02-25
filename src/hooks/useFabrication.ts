@@ -65,7 +65,14 @@ interface FabricationStatusResponse {
   paymentGate?: {
     allPaid: boolean;
     unpaidCount: number;
-    gatedStatuses: string[];
+    paidCount: number;
+    totalStages: number;
+    stageGates: Record<string, {
+      requiredPaid: number;
+      currentPaid: number;
+      blocked: boolean;
+      nextUnpaidLabel?: string;
+    }>;
   };
 }
 

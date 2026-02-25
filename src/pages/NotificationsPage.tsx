@@ -51,6 +51,14 @@ export function NotificationsPage() {
     setNotifications(notifications);
   }, [notifications, setNotifications]);
 
+  // Auto-mark all as read when visiting the notifications page
+  useEffect(() => {
+    if (unreadCount > 0 && !markAllAsRead.isPending) {
+      markAllAsRead.mutate();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   const handleCardClick = (n: Notification) => {
     if (!n.isRead) markAsRead.mutate(String(n._id));
     if (n.link) navigate(n.link);

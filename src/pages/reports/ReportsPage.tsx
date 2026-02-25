@@ -22,6 +22,8 @@ import {
   useWorkloadReport,
   useConversionReport,
 } from '@/hooks/useReports';
+import { useAuthStore } from '@/stores/auth.store';
+import { Role } from '@/lib/constants';
 
 const COLORS = [
   '#1e40af',
@@ -44,6 +46,8 @@ const formatCurrency = (v: number) =>
 type GroupBy = 'day' | 'week' | 'month';
 
 export function ReportsPage() {
+  const { user } = useAuthStore();
+  const isAdmin = user?.roles?.includes(Role.ADMIN);
   const [revenueGroupBy, setRevenueGroupBy] = useState<GroupBy>('month');
 
   const { data: revenue, isLoading: revLoading } = useRevenueReport({
@@ -146,8 +150,8 @@ export function ReportsPage() {
       </Card>
 
       <div className="grid gap-6 lg:grid-cols-2">
-        {/* Project Pipeline */}
-        <Card className="rounded-xl border-gray-100">
+        {/* Project Pipeline — admin only */}
+        {isAdmin && <Card className="rounded-xl border-gray-100">
           <CardHeader>
             <CardTitle className="text-lg text-gray-900">Project Pipeline</CardTitle>
           </CardHeader>
@@ -182,7 +186,7 @@ export function ReportsPage() {
               <p className="py-8 text-center text-sm text-gray-400">No pipeline data.</p>
             )}
           </CardContent>
-        </Card>
+        </Card>}
 
         {/* Payment Stages */}
         <Card className="rounded-xl border-gray-100">
@@ -214,8 +218,8 @@ export function ReportsPage() {
         </Card>
       </div>
 
-      {/* Workload */}
-      <Card className="rounded-xl border-gray-100">
+      {/* Workload — admin only */}
+      {isAdmin && <Card className="rounded-xl border-gray-100">
         <CardHeader>
           <CardTitle className="text-lg text-gray-900">Staff Workload</CardTitle>
         </CardHeader>
@@ -258,7 +262,7 @@ export function ReportsPage() {
             <p className="py-8 text-center text-sm text-gray-400">No workload data.</p>
           )}
         </CardContent>
-      </Card>
+      </Card>}
     </div>
   );
 }

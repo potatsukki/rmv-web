@@ -13,6 +13,8 @@ export enum Role {
 export enum AppointmentStatus {
   REQUESTED = 'requested',
   CONFIRMED = 'confirmed',
+  PREPARING = 'preparing',
+  ON_THE_WAY = 'on_the_way',
   COMPLETED = 'completed',
   CANCELLED = 'cancelled',
   NO_SHOW = 'no_show',
