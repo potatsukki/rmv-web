@@ -281,7 +281,6 @@ export function BlueprintsPage() {
                           setAcceptDialog({ open: true, blueprint: bp });
                         }}
                       >
-                        <DollarSign className="mr-2 h-4 w-4" />
                         Accept &amp; Choose Payment
                       </Button>
                     )}

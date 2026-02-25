@@ -226,7 +226,7 @@ export function AccountProfilePage() {
                 </Label>
                 <Input
                   id="street"
-                  placeholder="e.g. 123 Dahlia St., BIR Village"
+                  placeholder="e.g. 123 Sample St., Green Village"
                   {...register('street')}
                   className={inputClasses}
                 />
@@ -239,7 +239,7 @@ export function AccountProfilePage() {
                   </Label>
                   <Input
                     id="barangay"
-                    placeholder="e.g. Barangay Gulod"
+                    placeholder="e.g. Brgy. San Antonio"
                     {...register('barangay')}
                     className={inputClasses}
                   />
@@ -250,7 +250,7 @@ export function AccountProfilePage() {
                   </Label>
                   <Input
                     id="city"
-                    placeholder="e.g. Quezon City"
+                    placeholder="e.g. Your City"
                     {...register('city')}
                     className={inputClasses}
                   />
