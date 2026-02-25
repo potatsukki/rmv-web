@@ -1,12 +1,11 @@
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
-import { FileText, CheckCircle, AlertCircle, Eye, Info, Upload, DollarSign, Clock, MessageSquare, Phone } from 'lucide-react';
+import { FileText, CheckCircle, AlertCircle, Eye, Info, DollarSign, Clock, MessageSquare, Phone, ExternalLink } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
@@ -22,8 +21,6 @@ import {
   useBlueprintsByProject,
   useApproveComponent,
   useRequestBlueprintRevision,
-  useUploadBlueprint,
-  useUploadRevision,
   useAcceptBlueprint,
 } from '@/hooks/useBlueprints';
 import { useProjects } from '@/hooks/useProjects';
@@ -43,8 +40,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/shared/FileUpload';
 import type { Blueprint } from '@/lib/types';
 
+
 export function BlueprintsPage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [revisionDialog, setRevisionDialog] = useState<{ open: boolean; blueprintId: string }>({
     open: false,
@@ -52,18 +51,6 @@ export function BlueprintsPage() {
   });
   const [revisionNotes, setRevisionNotes] = useState('');
   const [revisionRefKeys, setRevisionRefKeys] = useState<string[]>([]);
-
-  // Upload blueprint dialog
-  const [uploadOpen, setUploadOpen] = useState(false);
-  const [uploadRevisionFor, setUploadRevisionFor] = useState<string | null>(null);
-  const [blueprintFileKeys, setBlueprintFileKeys] = useState<string[]>([]);
-  const [costingFileKeys, setCostingFileKeys] = useState<string[]>([]);
-  const [quotMaterials, setQuotMaterials] = useState('');
-  const [quotLabor, setQuotLabor] = useState('');
-  const [quotFees, setQuotFees] = useState('');
-  const [quotBreakdown, setQuotBreakdown] = useState('');
-  const [quotDuration, setQuotDuration] = useState('');
-  const [quotNotes, setQuotNotes] = useState('');
 
   // Accept blueprint dialog
   const [acceptDialog, setAcceptDialog] = useState<{ open: boolean; blueprint: Blueprint | null }>({
@@ -84,8 +71,6 @@ export function BlueprintsPage() {
 
   const approveMutation = useApproveComponent();
   const revisionMutation = useRequestBlueprintRevision();
-  const uploadBlueprintMut = useUploadBlueprint();
-  const uploadRevisionMut = useUploadRevision();
   const acceptMutation = useAcceptBlueprint();
 
   const location = useLocation();
@@ -107,69 +92,12 @@ export function BlueprintsPage() {
     return typeof cfg?.value === 'number' ? cfg.value : 10;
   })();
 
-  const isEngineer = user?.roles.some((r: string) => r === Role.ENGINEER);
   const canReviewBlueprint = user?.roles.some((r: string) =>
     [Role.CUSTOMER].includes(r as Role),
   );
 
   const formatCurrency = (n: number) =>
     `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-
-  const resetUploadForm = () => {
-    setBlueprintFileKeys([]);
-    setCostingFileKeys([]);
-    setQuotMaterials('');
-    setQuotLabor('');
-    setQuotFees('');
-    setQuotBreakdown('');
-    setQuotDuration('');
-    setQuotNotes('');
-  };
-
-  const handleUploadBlueprint = async () => {
-    if (!blueprintFileKeys.length || !costingFileKeys.length) {
-      toast.error('Please upload both a blueprint drawing and costing sheet');
-      return;
-    }
-    const materials = Number(quotMaterials) || 0;
-    const labor = Number(quotLabor) || 0;
-    const fees = Number(quotFees) || 0;
-    const total = materials + labor + fees;
-
-    try {
-      if (uploadRevisionFor) {
-        await uploadRevisionMut.mutateAsync({
-          id: uploadRevisionFor,
-          blueprintKey: blueprintFileKeys[0] ?? '',
-          costingKey: costingFileKeys[0] ?? '',
-        });
-        toast.success('Revision uploaded');
-      } else {
-        await uploadBlueprintMut.mutateAsync({
-          projectId: selectedProjectId,
-          blueprintKey: blueprintFileKeys[0] ?? '',
-          costingKey: costingFileKeys[0] ?? '',
-          quotation: total > 0
-            ? {
-                materials,
-                labor,
-                fees,
-                total,
-                breakdown: quotBreakdown || undefined,
-                estimatedDuration: quotDuration || undefined,
-                engineerNotes: quotNotes || undefined,
-              }
-            : undefined,
-        });
-        toast.success('Blueprint uploaded');
-      }
-      setUploadOpen(false);
-      setUploadRevisionFor(null);
-      resetUploadForm();
-    } catch {
-      toast.error('Upload failed');
-    }
-  };
 
   const handleAcceptBlueprint = async () => {
     if (!acceptDialog.blueprint) return;
@@ -239,7 +167,7 @@ export function BlueprintsPage() {
           </p>
         </div>
 
-        {/* Project Selector */}
+        {/* Project Selector + Go to Project */}
         <div className="flex items-center gap-3">
           <div className="w-full md:w-72">
             <Select
@@ -258,17 +186,13 @@ export function BlueprintsPage() {
               </SelectContent>
             </Select>
           </div>
-          {isEngineer && selectedProjectId && (
+          {selectedProjectId && (
             <Button
-              onClick={() => {
-                resetUploadForm();
-                setUploadRevisionFor(null);
-                setUploadOpen(true);
-              }}
+              onClick={() => navigate(`/projects/${selectedProjectId}`)}
               className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
             >
-              <Upload className="mr-2 h-4 w-4" />
-              Upload Blueprint
+              <ExternalLink className="mr-2 h-4 w-4" />
+              Go to Project
             </Button>
           )}
         </div>
@@ -331,21 +255,6 @@ export function BlueprintsPage() {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    {isEngineer && bp.status === 'revision_requested' && (
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50"
-                        onClick={() => {
-                          resetUploadForm();
-                          setUploadRevisionFor(bp._id);
-                          setUploadOpen(true);
-                        }}
-                      >
-                        <Upload className="mr-2 h-4 w-4" />
-                        Upload Revision
-                      </Button>
-                    )}
                     {canReviewBlueprint && !bp.blueprintApproved && bp.status !== 'revision_requested' && (
                       <Button
                         variant="outline"
@@ -576,148 +485,6 @@ export function BlueprintsPage() {
           )}
         </div>
       )}
-
-      {/* Upload Blueprint Dialog */}
-      <Dialog
-        open={uploadOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setUploadOpen(false);
-            setUploadRevisionFor(null);
-            resetUploadForm();
-          }
-        }}
-      >
-        <DialogContent className="sm:max-w-lg rounded-2xl max-h-[90vh] overflow-y-auto">
-          <DialogHeader>
-            <DialogTitle className="text-gray-900">
-              {uploadRevisionFor ? 'Upload Revision' : 'Upload Blueprint & Costing'}
-            </DialogTitle>
-            <DialogDescription className="text-gray-500">
-              {uploadRevisionFor
-                ? 'Upload revised blueprint drawing and costing sheet.'
-                : 'Upload the technical drawing, costing sheet, and provide a quotation.'}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5 mt-2">
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-gray-700">Blueprint Drawing (PDF)</Label>
-              <FileUpload
-                accept="application/pdf"
-                maxFiles={1}
-                existingKeys={blueprintFileKeys}
-                onUploadComplete={setBlueprintFileKeys}
-                folder="blueprints"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-gray-700">Costing Sheet (PDF)</Label>
-              <FileUpload
-                accept="application/pdf"
-                maxFiles={1}
-                existingKeys={costingFileKeys}
-                onUploadComplete={setCostingFileKeys}
-                folder="costings"
-              />
-            </div>
-
-            {!uploadRevisionFor && (
-              <>
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-sm font-medium text-gray-700 mb-3">Quotation Details</p>
-                  <div className="grid grid-cols-3 gap-3">
-                    <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Materials (₱)</Label>
-                      <Input
-                        type="number"
-                        value={quotMaterials}
-                        onChange={(e) => setQuotMaterials(e.target.value)}
-                        min={0}
-                        step={0.01}
-                        className="h-9 bg-gray-50/50 border-gray-200"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Labor (₱)</Label>
-                      <Input
-                        type="number"
-                        value={quotLabor}
-                        onChange={(e) => setQuotLabor(e.target.value)}
-                        min={0}
-                        step={0.01}
-                        className="h-9 bg-gray-50/50 border-gray-200"
-                      />
-                    </div>
-                    <div className="space-y-1">
-                      <Label className="text-xs text-gray-500">Other Fees (₱)</Label>
-                      <Input
-                        type="number"
-                        value={quotFees}
-                        onChange={(e) => setQuotFees(e.target.value)}
-                        min={0}
-                        step={0.01}
-                        className="h-9 bg-gray-50/50 border-gray-200"
-                      />
-                    </div>
-                  </div>
-                  {(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)) > 0 && (
-                    <p className="text-sm font-semibold text-emerald-700 mt-2">
-                      Total: {formatCurrency(Number(quotMaterials) + Number(quotLabor) + Number(quotFees))}
-                    </p>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Estimated Duration</Label>
-                  <Input
-                    value={quotDuration}
-                    onChange={(e) => setQuotDuration(e.target.value)}
-                    placeholder="e.g. 2-3 weeks"
-                    className="h-9 bg-gray-50/50 border-gray-200"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Cost Breakdown</Label>
-                  <Textarea
-                    value={quotBreakdown}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setQuotBreakdown(e.target.value)}
-                    placeholder="Detailed breakdown of costs..."
-                    className="min-h-[60px] bg-gray-50/50 border-gray-200"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <Label className="text-xs text-gray-500">Engineer Notes</Label>
-                  <Textarea
-                    value={quotNotes}
-                    onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setQuotNotes(e.target.value)}
-                    placeholder="Any additional notes for the customer..."
-                    className="min-h-[60px] bg-gray-50/50 border-gray-200"
-                  />
-                </div>
-              </>
-            )}
-          </div>
-          <DialogFooter className="pt-4">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setUploadOpen(false);
-                setUploadRevisionFor(null);
-                resetUploadForm();
-              }}
-              className="border-gray-200 rounded-lg"
-            >
-              Cancel
-            </Button>
-            <Button
-              onClick={handleUploadBlueprint}
-              disabled={uploadBlueprintMut.isPending || uploadRevisionMut.isPending}
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
-            >
-              {(uploadBlueprintMut.isPending || uploadRevisionMut.isPending) ? 'Uploading...' : 'Upload'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Revision Dialog */}
       <Dialog
