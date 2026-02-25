@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -8,6 +8,7 @@ import {
   CheckCircle2,
   XCircle,
   Loader2,
+  RefreshCw,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -15,7 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageError } from '@/components/shared/PageError';
-import { useAppointment, useCreateOcularFeeCheckout, useSimulateOcularPayment } from '@/hooks/useAppointments'; // ⚠️ useSimulateOcularPayment is TESTING ONLY
+import { useAppointment, useCreateOcularFeeCheckout, useVerifyOcularFeeCheckout, useSimulateOcularPayment } from '@/hooks/useAppointments'; // ⚠️ useSimulateOcularPayment is TESTING ONLY
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
@@ -26,6 +27,7 @@ export function PayOcularFeePage() {
   const [searchParams] = useSearchParams();
   const { data: appt, isLoading, isError, refetch } = useAppointment(id!);
   const checkoutMutation = useCreateOcularFeeCheckout();
+  const verifyMutation = useVerifyOcularFeeCheckout();
   // ⚠️ TESTING ONLY: simulate payment hook. Remove for production.
   const simulateMutation = useSimulateOcularPayment();
   // ⚠️ END TESTING ONLY
@@ -34,20 +36,57 @@ export function PayOcularFeePage() {
   const feeStatus = appt?.ocularFeeStatus;
   const feeAmount = appt?.ocularFee ?? appt?.ocularFeeBreakdown?.total ?? 0;
 
-  // Auto-refetch when returning from PayMongo with success status
-  useEffect(() => {
-    if (paymentStatus === 'success') {
-      const interval = setInterval(() => {
+  const [verifyTimedOut, setVerifyTimedOut] = useState(false);
+
+  const handleManualVerify = useCallback(async () => {
+    if (!id) return;
+    try {
+      const result = await verifyMutation.mutateAsync(id);
+      if (result.verified) {
+        toast.success('Payment confirmed!');
         refetch();
+      } else {
+        toast.error('Payment not yet confirmed. Please wait a moment and try again.');
+      }
+    } catch {
+      toast.error('Failed to verify payment. Please try again.');
+    }
+  }, [id, verifyMutation, refetch]);
+
+  // Auto-verify when returning from PayMongo with success status
+  useEffect(() => {
+    if (paymentStatus === 'success' && feeStatus !== 'verified') {
+      setVerifyTimedOut(false);
+      let attempts = 0;
+
+      const interval = setInterval(async () => {
+        attempts++;
+        // After 20 attempts (~60s), stop and show timeout UI
+        if (attempts >= 20) {
+          clearInterval(interval);
+          setVerifyTimedOut(true);
+          return;
+        }
+
+        // Call the active verify endpoint
+        try {
+          if (id) {
+            const result = await verifyMutation.mutateAsync(id);
+            if (result.verified) {
+              clearInterval(interval);
+              refetch();
+            }
+          }
+        } catch {
+          // Silently continue polling
+        }
       }, 3000);
-      // Stop polling after 30 seconds
-      const timeout = setTimeout(() => clearInterval(interval), 30000);
+
       return () => {
         clearInterval(interval);
-        clearTimeout(timeout);
       };
     }
-  }, [paymentStatus, refetch]);
+  }, [paymentStatus, feeStatus]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const handlePayNow = async () => {
     try {
@@ -161,17 +200,49 @@ export function PayOcularFeePage() {
         </Card>
       )}
 
-      {/* ── Returned from PayMongo but not yet verified (webhook pending) ── */}
+      {/* ── Returned from PayMongo but not yet verified (polling/verifying) ── */}
       {paymentStatus === 'success' && feeStatus !== 'verified' && (
         <Card className="rounded-xl border-blue-200 bg-blue-50">
           <CardContent className="flex items-center gap-3 p-5">
-            <Loader2 className="h-8 w-8 text-blue-600 shrink-0 animate-spin" />
-            <div>
-              <p className="font-semibold text-blue-800">Verifying Payment</p>
-              <p className="text-sm text-blue-700">
-                Please wait while we confirm your payment. Don&apos;t close this page.
-              </p>
-            </div>
+            {verifyTimedOut ? (
+              <>
+                <RefreshCw className="h-8 w-8 text-amber-600 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-semibold text-amber-800">Verification Taking Longer Than Expected</p>
+                  <p className="text-sm text-amber-700">
+                    Your payment may still be processing. Click below to check again.
+                  </p>
+                  <Button
+                    className="mt-3 bg-blue-600 hover:bg-blue-700 rounded-lg"
+                    size="sm"
+                    onClick={handleManualVerify}
+                    disabled={verifyMutation.isPending}
+                  >
+                    {verifyMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Checking…
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="mr-2 h-4 w-4" />
+                        Check Payment Status
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <>
+                <Loader2 className="h-8 w-8 text-blue-600 shrink-0 animate-spin" />
+                <div>
+                  <p className="font-semibold text-blue-800">Verifying Payment</p>
+                  <p className="text-sm text-blue-700">
+                    Please wait while we confirm your payment. Don&apos;t close this page.
+                  </p>
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
       )}

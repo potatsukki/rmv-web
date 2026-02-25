@@ -209,6 +209,24 @@ export function useCreateOcularFeeCheckout() {
   });
 }
 
+export function useVerifyOcularFeeCheckout() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<ApiResponse<{ verified: boolean }>>(
+        `/appointments/${id}/ocular-fee-verify-checkout`,
+        {},
+      );
+      return data.data;
+    },
+    onSuccess: (result) => {
+      if (result.verified) {
+        qc.invalidateQueries({ queryKey: ['appointments'] });
+      }
+    },
+  });
+}
+
 // ⚠️ TESTING ONLY: Simulate payment without PayMongo. Remove for production.
 export function useSimulateOcularPayment() {
   const qc = useQueryClient();

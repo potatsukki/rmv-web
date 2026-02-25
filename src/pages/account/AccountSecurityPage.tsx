@@ -470,8 +470,8 @@ export function AccountSecurityPage() {
       </Card>
       )}
 
-      {/* Two-Factor Authentication (Customers only, not for Google-only users) */}
-      {isCustomer && user?.provider !== 'google' && (
+      {/* Two-Factor Authentication (Customers only) */}
+      {isCustomer && (
         <Card className="border-gray-100 shadow-sm rounded-2xl">
           <CardHeader className="pb-3">
             <div className="flex items-start gap-3">

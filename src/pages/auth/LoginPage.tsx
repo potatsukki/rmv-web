@@ -66,6 +66,19 @@ export function LoginPage() {
         return;
       }
 
+      // 2FA required — redirect to verification page
+      if (responseData.requires2FA) {
+        navigate('/verify-2fa', {
+          state: {
+            tempToken: responseData.tempToken,
+            email: responseData.user.email,
+            firstName: responseData.user.firstName,
+          },
+          replace: true,
+        });
+        return;
+      }
+
       // Existing user — logged in
       const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
