@@ -153,6 +153,7 @@ export interface Project {
   contractGeneratedAt?: string;
   contractSignedAt?: string;
   contractSignatureKey?: string;
+  originalContractDownloadedAt?: string;
   cancelReason?: string;
   createdAt: string;
   updatedAt: string;

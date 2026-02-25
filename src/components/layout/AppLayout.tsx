@@ -17,7 +17,7 @@ import {
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useNotifications } from '@/hooks/useNotifications';
-import { connectSocket, disconnectSocket, getSocket } from '@/lib/socket';
+import { connectSocket } from '@/lib/socket';
 import { Role } from '@/lib/constants';
 import { api } from '@/lib/api';
 import toast from 'react-hot-toast';
