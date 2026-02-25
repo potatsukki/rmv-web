@@ -1,4 +1,5 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { FileText, CheckCircle, AlertCircle, Eye, Info, Upload, DollarSign, Clock, MessageSquare, Phone } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -40,6 +41,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/shared/FileUpload';
+import { SignaturePad } from '@/components/shared/SignaturePad';
+import { useSaveSignature } from '@/hooks/useUsers';
 import type { Blueprint } from '@/lib/types';
 
 export function BlueprintsPage() {
@@ -70,6 +73,8 @@ export function BlueprintsPage() {
     blueprint: null,
   });
   const [paymentType, setPaymentType] = useState<'full' | 'installment'>('full');
+  const [signatureKey, setSignatureKey] = useState<string>('');
+  const saveSignature = useSaveSignature();
 
   const { data: projectsData, isLoading: isLoadingProjects } = useProjects({ status: 'active' });
   const projects = projectsData?.items || [];
@@ -86,6 +91,19 @@ export function BlueprintsPage() {
   const uploadBlueprintMut = useUploadBlueprint();
   const uploadRevisionMut = useUploadRevision();
   const acceptMutation = useAcceptBlueprint();
+
+  const location = useLocation();
+
+  // Auto-select project: from navigation state or first project in list
+  useEffect(() => {
+    if (selectedProjectId) return;
+    const stateProjectId = (location.state as { projectId?: string })?.projectId;
+    if (stateProjectId) {
+      setSelectedProjectId(stateProjectId);
+    } else if (projects.length > 0) {
+      setSelectedProjectId(String(projects[0]!._id));
+    }
+  }, [projects, selectedProjectId, location.state]);
 
   const { data: configs } = useConfigs();
   const surchargePercent = (() => {
@@ -159,14 +177,22 @@ export function BlueprintsPage() {
 
   const handleAcceptBlueprint = async () => {
     if (!acceptDialog.blueprint) return;
+    if (!signatureKey) {
+      toast.error('Please draw your signature first');
+      return;
+    }
     try {
+      // Save signature to user profile first
+      await saveSignature.mutateAsync(signatureKey);
       await acceptMutation.mutateAsync({
         id: acceptDialog.blueprint._id,
         paymentType,
+        signatureKey,
       });
-      toast.success('Blueprint accepted! Payment plan created.');
+      toast.success('Blueprint accepted! Contract generated & payment plan created.');
       setAcceptDialog({ open: false, blueprint: null });
       setPaymentType('full');
+      setSignatureKey('');
     } catch {
       toast.error('Failed to accept blueprint');
     }
@@ -883,12 +909,34 @@ export function BlueprintsPage() {
             </div>
           )}
 
+          {/* E-Signature */}
+          {acceptDialog.blueprint?.quotation && (
+            <div className="space-y-3 border-t border-gray-100 pt-4">
+              <p className="text-sm font-semibold text-gray-700">Sign the Contract</p>
+              <p className="text-xs text-gray-500">
+                Draw your signature below. This will be embedded into the project contract.
+              </p>
+              <SignaturePad
+                onSave={(key) => setSignatureKey(key)}
+                existingKey={null}
+                width={460}
+                height={160}
+              />
+              {signatureKey && (
+                <p className="text-xs text-emerald-600 flex items-center gap-1">
+                  <CheckCircle className="h-3.5 w-3.5" /> Signature captured
+                </p>
+              )}
+            </div>
+          )}
+
           <DialogFooter className="pt-4">
             <Button
               variant="outline"
               onClick={() => {
                 setAcceptDialog({ open: false, blueprint: null });
                 setPaymentType('full');
+                setSignatureKey('');
               }}
               className="border-gray-200 rounded-lg"
             >
@@ -896,10 +944,10 @@ export function BlueprintsPage() {
             </Button>
             <Button
               onClick={handleAcceptBlueprint}
-              disabled={acceptMutation.isPending}
+              disabled={acceptMutation.isPending || saveSignature.isPending || !signatureKey}
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
             >
-              {acceptMutation.isPending ? 'Processing...' : 'Confirm & Accept'}
+              {(acceptMutation.isPending || saveSignature.isPending) ? 'Processing...' : 'Confirm & Accept'}
             </Button>
           </DialogFooter>
         </DialogContent>

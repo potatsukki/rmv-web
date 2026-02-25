@@ -16,6 +16,8 @@ interface SignaturePadProps {
   width?: number;
   /** Height of the canvas */
   height?: number;
+  /** Hide the Save button (parent will handle saving via ref) */
+  hideSaveButton?: boolean;
 }
 
 export function SignaturePad({
@@ -24,12 +26,14 @@ export function SignaturePad({
   isSaving = false,
   width = 500,
   height = 200,
+  hideSaveButton = false,
 }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const getUploadUrl = useGetUploadUrl();
+  const isDrawingRef = useRef(false);
 
   // Existing signature preview URL
   const previewUrl = existingKey
@@ -59,7 +63,7 @@ export function SignaturePad({
     ctx.lineJoin = 'round';
   }, [getCtx, width, height]);
 
-  const getPos = (e: React.MouseEvent | React.TouchEvent) => {
+  const getPos = (e: MouseEvent | TouchEvent) => {
     const canvas = canvasRef.current!;
     const rect = canvas.getBoundingClientRect();
     const scaleX = canvas.width / rect.width;
@@ -73,35 +77,79 @@ export function SignaturePad({
       };
     }
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: ((e as MouseEvent).clientX - rect.left) * scaleX,
+      y: ((e as MouseEvent).clientY - rect.top) * scaleY,
     };
   };
 
   const startDrawing = (e: React.MouseEvent | React.TouchEvent) => {
-    e.preventDefault();
     const ctx = getCtx();
     if (!ctx) return;
-    const pos = getPos(e);
+    const pos = getPos(e.nativeEvent);
     ctx.beginPath();
     ctx.moveTo(pos.x, pos.y);
     setIsDrawing(true);
+    isDrawingRef.current = true;
     setHasDrawn(true);
   };
 
   const draw = (e: React.MouseEvent | React.TouchEvent) => {
     if (!isDrawing) return;
-    e.preventDefault();
     const ctx = getCtx();
     if (!ctx) return;
-    const pos = getPos(e);
+    const pos = getPos(e.nativeEvent);
     ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
   };
 
   const stopDrawing = () => {
     setIsDrawing(false);
+    isDrawingRef.current = false;
   };
+
+  // Native touch event listeners with { passive: false } to avoid
+  // "Unable to preventDefault inside passive event listener" warning
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const handleTouchStart = (e: TouchEvent) => {
+      e.preventDefault();
+      const ctx = getCtx();
+      if (!ctx) return;
+      const pos = getPos(e);
+      ctx.beginPath();
+      ctx.moveTo(pos.x, pos.y);
+      setIsDrawing(true);
+      isDrawingRef.current = true;
+      setHasDrawn(true);
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      e.preventDefault();
+      if (!isDrawingRef.current) return;
+      const ctx = getCtx();
+      if (!ctx) return;
+      const pos = getPos(e);
+      ctx.lineTo(pos.x, pos.y);
+      ctx.stroke();
+    };
+
+    const handleTouchEnd = () => {
+      setIsDrawing(false);
+      isDrawingRef.current = false;
+    };
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      canvas.removeEventListener('touchstart', handleTouchStart);
+      canvas.removeEventListener('touchmove', handleTouchMove);
+      canvas.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, [getCtx]);
 
   const clearCanvas = () => {
     const ctx = getCtx();
@@ -186,9 +234,6 @@ export function SignaturePad({
             onMouseMove={draw}
             onMouseUp={stopDrawing}
             onMouseLeave={stopDrawing}
-            onTouchStart={startDrawing}
-            onTouchMove={draw}
-            onTouchEnd={stopDrawing}
           />
         </div>
         <p className="text-xs text-gray-400 text-center">
@@ -209,6 +254,7 @@ export function SignaturePad({
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           Clear
         </Button>
+        {!hideSaveButton && (
         <Button
           type="button"
           size="sm"
@@ -223,6 +269,7 @@ export function SignaturePad({
           )}
           {busy ? 'Saving...' : 'Save Signature'}
         </Button>
+        )}
       </div>
     </div>
   );

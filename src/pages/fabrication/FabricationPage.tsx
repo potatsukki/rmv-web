@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Hammer, Plus, Clock, User, Paperclip } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -45,8 +46,20 @@ export function FabricationPage() {
   const [status, setStatus] = useState<string>(FabricationStatus.MATERIAL_PREP);
   const [photoKeys, setPhotoKeys] = useState<string[]>([]);
 
+  const location = useLocation();
   const { data: projectsData, isLoading: isLoadingProjects } = useProjects({ status: 'active' });
   const projects = projectsData?.items || [];
+
+  // Auto-select project: from navigation state or first project in list
+  useEffect(() => {
+    if (selectedProjectId) return;
+    const stateProjectId = (location.state as { projectId?: string })?.projectId;
+    if (stateProjectId) {
+      setSelectedProjectId(stateProjectId);
+    } else if (projects.length > 0) {
+      setSelectedProjectId(String(projects[0]!._id));
+    }
+  }, [projects, selectedProjectId, location.state]);
 
   const {
     data: updates,

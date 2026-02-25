@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   ArrowLeft, FileText, CreditCard, Hammer, Image, ScrollText,
@@ -136,7 +136,18 @@ function CollapsibleSection({
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState<TabKey>('details');
+  const location = useLocation();
+
+  // Determine initial tab from URL path segment (e.g., /projects/:id/blueprint)
+  const initialTab = useMemo<TabKey>(() => {
+    const path = location.pathname;
+    if (path.endsWith('/blueprint')) return 'blueprint';
+    if (path.endsWith('/payments')) return 'payments';
+    if (path.endsWith('/fabrication')) return 'fabrication';
+    return 'details';
+  }, [location.pathname]);
+
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
 
   // ── Data queries ──
   const { data: project, isLoading, isError, refetch } = useProject(id!);

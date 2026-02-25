@@ -1,6 +1,7 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
+import { useDashboardSummary } from '@/hooks/useReports';
 import { Role } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import {
@@ -155,6 +156,7 @@ const navGroups: NavGroup[] = [
 export function Sidebar() {
   const { user, logout } = useAuthStore();
   const { unreadCount } = useNotificationStore();
+  const { data: dashboardSummary } = useDashboardSummary();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -237,6 +239,21 @@ export function Sidebar() {
                           {item.label === 'Notifications' && unreadCount > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
                               {unreadCount > 9 ? '9+' : unreadCount}
+                            </span>
+                          )}
+                          {item.label === 'Appointments' && (dashboardSummary?.pendingAppointments ?? 0) > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                              {(dashboardSummary?.pendingAppointments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingAppointments}
+                            </span>
+                          )}
+                          {item.label === 'Payments' && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                              {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
+                            </span>
+                          )}
+                          {item.label === 'Cashier Queue' && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                              {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
                             </span>
                           )}
                           {isActive && (

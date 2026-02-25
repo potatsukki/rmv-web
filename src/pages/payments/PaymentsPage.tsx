@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -64,9 +64,21 @@ export function PaymentsPage() {
   });
   const [cashAmount, setCashAmount] = useState('');
 
+  const location = useLocation();
   const isCustomer = user?.roles.includes(Role.CUSTOMER);
   const isCashier = user?.roles.some((r: string) => [Role.CASHIER, Role.ADMIN].includes(r as Role));
   const { data: unpaidOcularFees } = useUnpaidOcularFees();
+
+  // Auto-select project: from navigation state or first project in list
+  useEffect(() => {
+    if (selectedProjectId) return;
+    const stateProjectId = (location.state as { projectId?: string })?.projectId;
+    if (stateProjectId) {
+      setSelectedProjectId(stateProjectId);
+    } else if (projects?.items && projects.items.length > 0) {
+      setSelectedProjectId(String(projects.items[0]!._id));
+    }
+  }, [projects, selectedProjectId, location.state]);
 
   const handleSubmitProof = async () => {
     const amount = parseFloat(amountPaid);
