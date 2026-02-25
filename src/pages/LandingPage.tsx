@@ -937,7 +937,7 @@ export function LandingPage() {
           <div className="mb-10 sm:mb-16 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
             <iframe
               title="RMV Location"
-              src="https://www.google.com/maps/embed?pb=!1m14!1m8!1m3!1d966.5!2d121.039!3d14.7095!3m2!1i1024!2i768!4f13.1!3m6!1m5!1s!2sNatanawan+Residence,+Dahlia+Ext,+Quezon+City!3m2!1d14.7095!2d121.039!5e0!3m2!1sen!2sph"
+              src="https://maps.google.com/maps?q=BIR+Village,+Novaliches,+Quezon+City,+Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed"
               width="100%"
               height="280"
               style={{ border: 0 }}
