@@ -225,13 +225,14 @@ export function BookAppointmentPage() {
         if (cancelled) break;
         // Stagger requests to avoid 429 rate-limit errors
         if (i > 0) await new Promise((r) => setTimeout(r, 350));
+        const fileKey = keysNeedingUrl[i]!;
         try {
           const { data } = await api.post<ApiResponse<{ downloadUrl: string }>>(
             '/uploads/signed-download-url',
-            { key: keysNeedingUrl[i] },
+            { key: fileKey },
           );
           if (!cancelled) {
-            setPreviewUrls((prev) => ({ ...prev, [keysNeedingUrl[i]]: data.data.downloadUrl }));
+            setPreviewUrls((prev) => ({ ...prev, [fileKey]: data.data.downloadUrl }));
           }
         } catch {
           // silently ignore – Review will just show icon
