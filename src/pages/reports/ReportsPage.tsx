@@ -85,7 +85,7 @@ export function ReportsPage() {
             {
               label: 'Conversion Rate',
               value: `${(conversion.rate * 100).toFixed(1)}%`,
-              color: 'text-orange-600 bg-orange-50',
+              color: 'text-[#1d1d1f] bg-[#f0f0f5]',
             },
           ].map((kpi) => (
             <Card key={kpi.label} className="rounded-xl border-gray-100">

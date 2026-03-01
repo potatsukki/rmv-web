@@ -172,18 +172,18 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col md:flex">
       {/* Background with subtle gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-gray-900 to-gray-950 border-r border-gray-800/50" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1c] via-[#111113] to-[#0d0d0f] border-r border-white/[0.06]" />
 
       {/* Content */}
       <div className="relative flex flex-col h-full">
         {/* Logo Header */}
         <Link to="/" className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors">
-          <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/30 shadow-lg shadow-orange-600/20" />
+          <BrandLogo className="h-9 w-9 ring-2 ring-[#b8b8bd]/40 shadow-lg shadow-black/20" />
           <div className="flex flex-col">
-            <span className="text-[15px] font-bold tracking-tight text-white">
-              RMV Stainless
+            <span className="text-[13px] font-bold tracking-tight text-white leading-tight">
+              RMV Stainless Steel<br/>Fabrication
             </span>
-            <span className="text-[10px] font-semibold text-gray-500 uppercase tracking-[0.15em]">
+            <span className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.15em]">
               Management System
             </span>
           </div>
@@ -200,7 +200,7 @@ export function Sidebar() {
 
             return (
               <div key={group.title}>
-                <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-gray-500">
+                <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6e6e73]">
                   {group.title}
                 </h3>
                 <div className="space-y-0.5">
@@ -215,12 +215,12 @@ export function Sidebar() {
                           'group relative flex items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200',
                           isActive
                             ? 'bg-white/[0.08] text-white'
-                            : 'text-gray-400 hover:bg-white/[0.04] hover:text-gray-200',
+                            : 'text-[#86868b] hover:bg-white/[0.04] hover:text-[#d2d2d7]',
                         )}
                       >
                         {/* Active indicator bar */}
                         {isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-orange-500" />
+                          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-white" />
                         )}
 
                         <div className="flex items-center gap-3">
@@ -228,8 +228,8 @@ export function Sidebar() {
                             className={cn(
                               'h-[18px] w-[18px] transition-colors',
                               isActive
-                                ? 'text-orange-400'
-                                : 'text-gray-500 group-hover:text-gray-400',
+                                ? 'text-white'
+                                : 'text-[#6e6e73] group-hover:text-[#86868b]',
                             )}
                           />
                           <span>{item.label}</span>
@@ -237,27 +237,27 @@ export function Sidebar() {
 
                         <div className="flex items-center gap-2">
                           {item.label === 'Notifications' && !isActive && unreadCount > 0 && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
                               {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                           )}
                           {item.label === 'Appointments' && !isActive && (dashboardSummary?.pendingAppointments ?? 0) > 0 && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
                               {(dashboardSummary?.pendingAppointments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingAppointments}
                             </span>
                           )}
                           {item.label === 'Payments' && !isActive && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
                               {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
                             </span>
                           )}
                           {item.label === 'Cashier Queue' && !isActive && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
-                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-orange-500 px-1.5 text-[10px] font-bold text-white">
+                            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
                               {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
                             </span>
                           )}
                           {isActive && (
-                            <ChevronRight className="h-3 w-3 text-gray-500" />
+                            <ChevronRight className="h-3 w-3 text-[#6e6e73]" />
                           )}
                         </div>
                       </Link>
@@ -275,7 +275,7 @@ export function Sidebar() {
             to="/account/profile"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-gray-700 to-gray-800 text-[12px] font-bold text-orange-400 ring-1 ring-white/[0.08]">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#2a2a2e] to-[#1a1a1c] text-[12px] font-bold text-[#d2d2d7] ring-1 ring-white/[0.08]">
               {user.firstName[0]}
               {user.lastName[0]}
             </div>
@@ -283,17 +283,17 @@ export function Sidebar() {
               <p className="truncate text-[13px] font-medium text-white leading-tight">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="truncate text-[10px] text-gray-500 uppercase font-semibold tracking-wide mt-0.5">
+              <p className="truncate text-[10px] text-[#6e6e73] uppercase font-semibold tracking-wide mt-0.5">
                 {user.roles[0]?.replace(/_/g, ' ')}
               </p>
             </div>
-            <ChevronRight className="h-4 w-4 text-gray-600" />
+            <ChevronRight className="h-4 w-4 text-[#6e6e73]" />
           </Link>
 
           <Button
             variant="ghost"
             onClick={() => setShowLogoutModal(true)}
-            className="w-full justify-start gap-3 px-3 h-10 rounded-lg text-gray-400 hover:bg-white/[0.06] hover:text-red-400"
+            className="w-full justify-start gap-3 px-3 h-10 rounded-lg text-[#86868b] hover:bg-white/[0.06] hover:text-red-400"
           >
             <LogOut className="h-4 w-4" />
             <span className="text-[13px] font-medium">Sign Out</span>

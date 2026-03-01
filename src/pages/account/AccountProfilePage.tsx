@@ -122,7 +122,7 @@ export function AccountProfilePage() {
           city: data.city || '',
           province: data.province || '',
           zip: data.zip || '',
-          country: data.country || 'Philippines',
+          country: 'Philippines',
           lat: pinnedLocation?.lat,
           lng: pinnedLocation?.lng,
           formattedAddress: formattedAddress || '',
@@ -141,16 +141,16 @@ export function AccountProfilePage() {
     : DEFAULT_PHONE_DESC;
 
   const inputClasses =
-    'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
+    'h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl transition-colors';
 
   return (
     <div className="space-y-6">
-    <Card className="border-gray-100 shadow-sm rounded-2xl">
+    <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-gray-900">
+        <CardTitle className="text-lg font-semibold text-[#1d1d1f]">
           Personal Information
         </CardTitle>
-        <CardDescription className="text-gray-500">
+        <CardDescription className="text-[#86868b]">
           Update your contact details and public profile.
         </CardDescription>
       </CardHeader>
@@ -158,7 +158,7 @@ export function AccountProfilePage() {
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           <div className="grid gap-6 sm:grid-cols-2">
             <div className="space-y-1.5">
-              <Label htmlFor="firstName" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="firstName" className="text-[#3a3a3e] text-[13px] font-medium">
                 First Name
               </Label>
               <Input id="firstName" {...register('firstName')} className={inputClasses} />
@@ -167,7 +167,7 @@ export function AccountProfilePage() {
               )}
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="lastName" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="lastName" className="text-[#3a3a3e] text-[13px] font-medium">
                 Last Name
               </Label>
               <Input id="lastName" {...register('lastName')} className={inputClasses} />
@@ -178,11 +178,11 @@ export function AccountProfilePage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="phone" className="text-gray-700 text-[13px] font-medium">
+            <Label htmlFor="phone" className="text-[#3a3a3e] text-[13px] font-medium">
               Phone Number
             </Label>
             <div className="relative">
-              <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+              <Phone className="absolute left-3 top-3 h-4 w-4 text-[#86868b]" />
               <Input
                 id="phone"
                 placeholder="+63 9XX XXX XXXX"
@@ -190,19 +190,19 @@ export function AccountProfilePage() {
                 className={`pl-10 ${inputClasses}`}
               />
             </div>
-            <p className="text-xs text-gray-400">{phoneDescription}</p>
+            <p className="text-xs text-[#86868b]">{phoneDescription}</p>
             {errors.phone && (
               <p className="text-xs text-red-500">{errors.phone.message}</p>
             )}
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="address" className="text-gray-700 text-[13px] font-medium">
+            <Label htmlFor="address" className="text-[#3a3a3e] text-[13px] font-medium">
               Address
             </Label>
 
             {/* ── Pinned Location Map ── */}
-            <div className="rounded-xl border border-gray-200 overflow-hidden">
+            <div className="rounded-xl border border-[#d2d2d7]">
               <LocationPicker value={pinnedLocation} onChange={handleLocationPick} />
             </div>
             {pinnedLocation && (
@@ -221,12 +221,12 @@ export function AccountProfilePage() {
             {/* ── Structured Address Fields ── */}
             <div className="pt-3 space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="street" className="text-gray-700 text-[13px] font-medium">
-                  Street Address <span className="text-gray-400 text-[11px]">(House No., Street Name, Subdivision)</span>
+                <Label htmlFor="street" className="text-[#3a3a3e] text-[13px] font-medium">
+                  Street Address <span className="text-[#86868b] text-[11px]">(House No., Street Name, Subdivision)</span>
                 </Label>
                 <Input
                   id="street"
-                  placeholder="e.g. 123 Sample St., Green Village"
+                  placeholder="Enter your street address"
                   {...register('street')}
                   className={inputClasses}
                 />
@@ -234,23 +234,23 @@ export function AccountProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="barangay" className="text-gray-700 text-[13px] font-medium">
+                  <Label htmlFor="barangay" className="text-[#3a3a3e] text-[13px] font-medium">
                     Barangay
                   </Label>
                   <Input
                     id="barangay"
-                    placeholder="e.g. Brgy. San Antonio"
+                    placeholder="Enter your barangay"
                     {...register('barangay')}
                     className={inputClasses}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="city" className="text-gray-700 text-[13px] font-medium">
+                  <Label htmlFor="city" className="text-[#3a3a3e] text-[13px] font-medium">
                     City / Municipality
                   </Label>
                   <Input
                     id="city"
-                    placeholder="e.g. Your City"
+                    placeholder="Enter your city"
                     {...register('city')}
                     className={inputClasses}
                   />
@@ -259,54 +259,55 @@ export function AccountProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="province" className="text-gray-700 text-[13px] font-medium">
+                  <Label htmlFor="province" className="text-[#3a3a3e] text-[13px] font-medium">
                     Province
                   </Label>
                   <Input
                     id="province"
-                    placeholder="Auto-fills for NCR"
+                    placeholder="Enter your province"
                     {...register('province')}
                     className={inputClasses}
                   />
-                  <p className="text-[10px] text-gray-400">Auto-fills &quot;Metro Manila&quot; for NCR cities</p>
+                  <p className="text-[10px] text-[#86868b]">Auto-fills &quot;Metro Manila&quot; for NCR cities</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="zip" className="text-gray-700 text-[13px] font-medium">
+                  <Label htmlFor="zip" className="text-[#3a3a3e] text-[13px] font-medium">
                     Postal Code
                   </Label>
                   <Input
                     id="zip"
-                    placeholder="e.g. 1118"
+                    placeholder="Enter your postal code"
                     {...register('zip')}
                     className={inputClasses}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="country" className="text-gray-700 text-[13px] font-medium">
+                  <Label htmlFor="country" className="text-[#3a3a3e] text-[13px] font-medium">
                     Country
                   </Label>
                   <Input
                     id="country"
-                    placeholder="Philippines"
-                    {...register('country')}
-                    className={inputClasses}
+                    value="Philippines"
+                    readOnly
+                    disabled
+                    className={inputClasses + ' cursor-not-allowed opacity-70'}
                   />
                 </div>
               </div>
             </div>
 
-            <p className="text-xs text-gray-400">
+            <p className="text-xs text-[#86868b]">
               Your pinned location and address are saved for ocular appointments.
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-gray-100 mt-6">
+          <div className="flex items-center justify-end gap-4 pt-4 border-t border-[#d2d2d7]/50 mt-6">
             {isDirty && (
-              <p className="text-sm text-gray-500 mr-auto">You have unsaved changes</p>
+              <p className="text-sm text-[#86868b] mr-auto">You have unsaved changes</p>
             )}
             <Button
               type="submit"
-              className="bg-gray-900 hover:bg-gray-800 text-white min-w-[140px] h-11 font-semibold"
+              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white min-w-[140px] h-11 font-semibold rounded-xl shadow-sm transition-all duration-200"
               disabled={isSubmitting || !isDirty}
             >
               {isSubmitting ? (
@@ -324,13 +325,13 @@ export function AccountProfilePage() {
     </Card>
 
     {/* E-Signature Section */}
-    <Card className="border-gray-100 shadow-sm rounded-2xl">
+    <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-gray-900">
-          <PenTool className="h-5 w-5 text-orange-500" />
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-[#1d1d1f]">
+          <PenTool className="h-5 w-5 text-[#6e6e73]" />
           E-Signature
         </CardTitle>
-        <CardDescription className="text-gray-500">
+        <CardDescription className="text-[#86868b]">
           Draw your signature for use in contracts and official documents.
         </CardDescription>
       </CardHeader>

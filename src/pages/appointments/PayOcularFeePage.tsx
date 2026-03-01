@@ -136,28 +136,28 @@ export function PayOcularFeePage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
             Pay Ocular Fee
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[#6e6e73]">
             Appointment on {format(new Date(appt.date), 'MMMM d, yyyy')}
           </p>
         </div>
       </div>
 
       {/* Fee Summary */}
-      <Card className="rounded-xl border-gray-100">
+      <Card className="rounded-xl border-[#c8c8cd]/50">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-gray-700">Fee Details</CardTitle>
+          <CardTitle className="text-base text-[#3a3a3e]">Fee Details</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
           <div className="flex justify-between">
-            <span className="text-gray-500">Type</span>
+            <span className="text-[#6e6e73]">Type</span>
             <span className="font-medium capitalize">{appt.type} visit</span>
           </div>
           {appt.formattedAddress && (
             <div className="flex justify-between">
-              <span className="text-gray-500">Location</span>
+              <span className="text-[#6e6e73]">Location</span>
               <span className="font-medium text-right max-w-[60%]">
                 {appt.formattedAddress}
               </span>
@@ -165,13 +165,13 @@ export function PayOcularFeePage() {
           )}
           {appt.distanceKm != null && (
             <div className="flex justify-between">
-              <span className="text-gray-500">Distance</span>
+              <span className="text-[#6e6e73]">Distance</span>
               <span className="font-medium">{appt.distanceKm.toFixed(1)} km</span>
             </div>
           )}
           <div className="flex justify-between border-t pt-2">
-            <span className="font-semibold text-gray-900">Total Ocular Fee</span>
-            <span className="font-bold text-lg text-orange-600">
+            <span className="font-semibold text-[#1d1d1f]">Total Ocular Fee</span>
+            <span className="font-bold text-lg text-[#1d1d1f]">
               {formatCurrency(feeAmount)}
             </span>
           </div>
@@ -264,20 +264,20 @@ export function PayOcularFeePage() {
 
       {/* ── Pending: show pay button ── */}
       {feeStatus === 'pending' && paymentStatus !== 'success' && (
-        <Card className="rounded-xl border-gray-100">
+        <Card className="rounded-xl border-[#c8c8cd]/50">
           <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-gray-700">
-              <QrCode className="h-5 w-5 text-orange-500" />
+            <CardTitle className="flex items-center gap-2 text-base text-[#3a3a3e]">
+              <QrCode className="h-5 w-5 text-[#6e6e73]" />
               Pay via QR Code
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-gray-500">
+            <p className="text-sm text-[#6e6e73]">
               Scan the QR code with your banking app to complete your payment.
             </p>
 
             <Button
-              className="w-full h-12 bg-orange-600 hover:bg-orange-700 rounded-lg text-white text-base font-semibold"
+              className="w-full h-12 bg-[#1d1d1f] hover:bg-[#2d2d2f] rounded-lg text-white text-base font-semibold"
               onClick={handlePayNow}
               disabled={checkoutMutation.isPending}
             >
@@ -313,7 +313,7 @@ export function PayOcularFeePage() {
                 </>
               )}
             </Button>
-            <p className="text-xs text-center text-gray-400">
+            <p className="text-xs text-center text-[#86868b]">
               ⚠ Test button — marks as paid without real payment
             </p>
             {/* ⚠️ END TESTING ONLY */}

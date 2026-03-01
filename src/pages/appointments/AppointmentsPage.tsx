@@ -51,15 +51,15 @@ export function AppointmentsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Appointments</h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Appointments</h1>
+          <p className="text-[#6e6e73] mt-1 text-sm">
             {isCustomer
               ? 'Schedule and manage your site visits.'
               : 'Manage customer booking requests.'}
           </p>
         </div>
         {isCustomer && (
-          <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm h-10">
+          <Button asChild className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white shadow-sm h-10">
             <Link to="/appointments/book">
               <Plus className="mr-2 h-4 w-4" />
               Book Appointment
@@ -69,18 +69,18 @@ export function AppointmentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
           <Input
             placeholder="Search bookings..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-gray-200 focus-visible:ring-orange-500"
+            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
           />
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          <Filter className="h-4 w-4 text-gray-400 hidden md:block mr-1 flex-shrink-0" />
+          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
           {STATUS_FILTERS.map((f) => (
             <button
               type="button"
@@ -91,8 +91,8 @@ export function AppointmentsPage() {
                 whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
                 ${
                   statusFilter === f.value
-                    ? 'bg-gray-900 text-white shadow-sm'
-                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100 hover:text-gray-700'
+                    ? 'bg-[#1d1d1f] text-white shadow-sm'
+                    : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
                 }
               `}
             >
@@ -106,7 +106,7 @@ export function AppointmentsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="border-gray-100 overflow-hidden">
+            <Card key={i} className="border-[#c8c8cd]/50 overflow-hidden">
               <CardContent className="p-5 space-y-4">
                 <div className="flex justify-between">
                   <Skeleton className="h-10 w-10 rounded-xl" />
@@ -119,18 +119,18 @@ export function AppointmentsPage() {
           ))}
         </div>
       ) : !appointments.length ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+        <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50">
           <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
-            <Calendar className="h-6 w-6 text-gray-300" />
+            <Calendar className="h-6 w-6 text-[#c8c8cd]" />
           </div>
-          <h3 className="text-base font-semibold text-gray-900">No appointments found</h3>
-          <p className="text-sm text-gray-400 max-w-sm mt-1.5 mb-6">
+          <h3 className="text-base font-semibold text-[#1d1d1f]">No appointments found</h3>
+          <p className="text-sm text-[#86868b] max-w-sm mt-1.5 mb-6">
             {isCustomer
               ? 'Book your first appointment to get started with your project.'
               : 'No appointments match your current filters.'}
           </p>
           {isCustomer && (
-            <Button asChild variant="outline" className="border-gray-200 text-orange-600 hover:bg-orange-50">
+            <Button asChild variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7]">
               <Link to="/appointments/book">
                 Book First Appointment
               </Link>
@@ -143,7 +143,7 @@ export function AppointmentsPage() {
             const awaitingPayment = appt.type === 'ocular' && appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
             return (
             <Link key={appt._id} to={`/appointments/${appt._id}`} className="group block h-full">
-              <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-100 hover:shadow-lg hover:-translate-y-0.5 overflow-hidden flex flex-col">
+              <Card className="h-full border-[#c8c8cd]/50 transition-all duration-200 hover:border-[#b8b8bd] hover:shadow-lg hover:-translate-y-0.5 overflow-hidden flex flex-col">
                 {/* Top color bar */}
                 <div
                   className={`h-1 w-full ${
@@ -160,7 +160,7 @@ export function AppointmentsPage() {
                 />
                 <CardContent className="p-5 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50 text-orange-600">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f0f5] text-[#1d1d1f]">
                       <Calendar className="h-5 w-5" />
                     </div>
                     <Badge
@@ -183,10 +183,10 @@ export function AppointmentsPage() {
 
                   <div className="space-y-3 flex-1">
                     <div>
-                      <h3 className="font-semibold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
+                      <h3 className="font-semibold text-[#1d1d1f] group-hover:text-[#6e6e73] transition-colors line-clamp-1">
                         {appt.customerName || 'Appointment'}
                       </h3>
-                      <p className="text-[11px] font-semibold text-gray-400 uppercase tracking-wide mt-1">
+                      <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wide mt-1">
                         {appt.type}
                       </p>
                       {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
@@ -197,17 +197,17 @@ export function AppointmentsPage() {
                       )}
                     </div>
 
-                    <div className="pt-3 border-t border-gray-50 space-y-2">
-                      <div className="flex items-center text-sm text-gray-500">
-                        <Clock className="mr-2 h-3.5 w-3.5 text-gray-400" />
+                    <div className="pt-3 border-t border-[#f0f0f5] space-y-2">
+                      <div className="flex items-center text-sm text-[#6e6e73]">
+                        <Clock className="mr-2 h-3.5 w-3.5 text-[#86868b]" />
                         <span>
                           {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'} &middot;{' '}
-                          <span className="text-gray-700 font-medium">{formatSlotTime(appt.slotCode)}</span>
+                          <span className="text-[#3a3a3e] font-medium">{formatSlotTime(appt.slotCode)}</span>
                         </span>
                       </div>
                       {appt.address && (
-                        <div className="flex items-start text-sm text-gray-500">
-                          <MapPin className="mr-2 h-3.5 w-3.5 text-gray-400 mt-0.5" />
+                        <div className="flex items-start text-sm text-[#6e6e73]">
+                          <MapPin className="mr-2 h-3.5 w-3.5 text-[#86868b] mt-0.5" />
                           <span className="line-clamp-1">{appt.address}</span>
                         </div>
                       )}

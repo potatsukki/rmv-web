@@ -40,7 +40,7 @@ const passwordRules = [
 ];
 
 const inputClasses =
-  'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
+  'h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl';
 
 export function ChangePasswordPage() {
   const [showCurrent, setShowCurrent] = useState(false);
@@ -81,7 +81,7 @@ export function ChangePasswordPage() {
       {!user?.mustChangePassword && (
         <button
           onClick={() => navigate('/profile')}
-          className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-4 group"
+          className="flex items-center gap-1.5 text-sm text-[#86868b] hover:text-[#1d1d1f] transition-colors mb-4 group"
         >
           <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
           Back to Profile
@@ -99,20 +99,20 @@ export function ChangePasswordPage() {
           </div>
         </div>
       )}
-      <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm">
+      <div className="rounded-2xl border border-[#c8c8cd]/50 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-black/5">
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50">
-            <Lock className="h-5 w-5 text-orange-500" />
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1d1d1f]">
+            <Lock className="h-5 w-5 text-white" />
           </div>
           <div>
-            <h1 className="text-lg font-bold text-gray-900">Change Password</h1>
-            <p className="text-sm text-gray-500">Update your account password.</p>
+            <h1 className="text-lg font-bold text-[#1d1d1f]">Change Password</h1>
+            <p className="text-sm text-[#6e6e73]">Update your account password.</p>
           </div>
         </div>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
           <div className="space-y-1.5">
-            <Label htmlFor="currentPassword" className="text-gray-700 text-[13px] font-medium">
+            <Label htmlFor="currentPassword" className="text-[#3a3a3e] text-[13px] font-medium">
               Current Password
             </Label>
             <div className="relative">
@@ -126,7 +126,7 @@ export function ChangePasswordPage() {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
                 onClick={() => setShowCurrent(!showCurrent)}
                 aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
               >
@@ -138,9 +138,9 @@ export function ChangePasswordPage() {
             )}
           </div>
 
-          <div className="border-t border-gray-100 pt-5">
+          <div className="border-t border-[#c8c8cd]/50 pt-5">
             <div className="space-y-1.5">
-              <Label htmlFor="newPassword" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="newPassword" className="text-[#3a3a3e] text-[13px] font-medium">
                 New Password
               </Label>
               <div className="relative">
@@ -154,7 +154,7 @@ export function ChangePasswordPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
                   onClick={() => setShowNew(!showNew)}
                   aria-label={showNew ? 'Hide new password' : 'Show new password'}
                 >
@@ -166,7 +166,7 @@ export function ChangePasswordPage() {
               )}
 
               {passwordValue.length > 0 && (
-                <div className="rounded-lg bg-gray-50 p-3 mt-2">
+                <div className="rounded-xl bg-[#f0f0f5] p-3 mt-2">
                   <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1.5">
                     {passwordRules.map((rule) => {
                       const passed = rule.test(passwordValue);
@@ -174,7 +174,7 @@ export function ChangePasswordPage() {
                         <div
                           key={rule.label}
                           className={`flex items-center gap-1.5 text-xs ${
-                            passed ? 'text-emerald-600' : 'text-gray-400'
+                            passed ? 'text-emerald-600' : 'text-[#86868b]'
                           }`}
                         >
                           {passed ? (
@@ -193,7 +193,7 @@ export function ChangePasswordPage() {
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="confirmPassword" className="text-gray-700 text-[13px] font-medium">
+            <Label htmlFor="confirmPassword" className="text-[#3a3a3e] text-[13px] font-medium">
               Confirm New Password
             </Label>
             <div className="relative">
@@ -207,7 +207,7 @@ export function ChangePasswordPage() {
               />
               <button
                 type="button"
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
                 onClick={() => setShowConfirm(!showConfirm)}
                 aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
               >
@@ -221,7 +221,7 @@ export function ChangePasswordPage() {
 
           <Button
             type="submit"
-            className="w-full bg-gray-900 hover:bg-gray-800 text-white h-11 font-semibold"
+            className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white h-11 font-semibold shadow-lg shadow-black/20 rounded-xl"
             disabled={isSubmitting}
           >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

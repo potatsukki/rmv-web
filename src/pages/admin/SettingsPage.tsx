@@ -218,7 +218,7 @@ export function SettingsPage() {
   if (configsError) return <PageError message="Failed to load settings" onRetry={refetchConfigs} />;
 
   const inputClasses =
-    'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
+    'h-11 bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20';
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
@@ -532,7 +532,7 @@ export function SettingsPage() {
                 {holidays.map((h) => (
                   <div
                     key={h._id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-orange-200 hover:bg-orange-50/30 transition-colors group"
+                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-[#c8c8cd] hover:bg-[#f0f0f5]/30 transition-colors group"
                   >
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg h-10 w-10 text-gray-600 font-bold text-xs uppercase">

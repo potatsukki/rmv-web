@@ -169,7 +169,7 @@ export function VisitReportsListPage() {
             placeholder="Search by customer name or report ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+            className="pl-10 h-10 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
@@ -225,7 +225,7 @@ export function VisitReportsListPage() {
           {(search || statusFilter) && (
             <Button
               variant="outline"
-              className="mt-4 border-gray-200 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg"
+              className="mt-4 border-gray-200 text-[#1d1d1f] hover:text-[#6e6e73] hover:bg-[#f0f0f5] rounded-lg"
               onClick={() => {
                 setSearch('');
                 setStatusFilter('');
@@ -249,14 +249,14 @@ export function VisitReportsListPage() {
                 to={`/visit-reports/${firstReport._id}`}
                 className="group block h-full"
               >
-                <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
+                <Card className="h-full border-gray-100 transition-all duration-200 hover:border-[#c8c8cd] hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
                   <div
                     className={`h-1.5 w-full ${BAR_COLORS[status] || 'bg-gray-200'}`}
                   />
                   <CardContent className="p-6 flex-1 flex flex-col">
                     {/* Top row: icon + status */}
                     <div className="flex items-start justify-between mb-4">
-                      <div className="h-10 w-10 text-orange-600 bg-orange-50 rounded-xl flex items-center justify-center">
+                      <div className="h-10 w-10 text-[#1d1d1f] bg-[#f0f0f5] rounded-xl flex items-center justify-center">
                         <ClipboardList className="h-5 w-5" />
                       </div>
                       <Badge
@@ -271,7 +271,7 @@ export function VisitReportsListPage() {
 
                     {/* Customer name + project count */}
                     <div className="mb-3 flex-1">
-                      <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
+                      <h3 className="font-bold text-gray-900 group-hover:text-[#6e6e73] transition-colors line-clamp-1">
                         {custName}
                       </h3>
                       <p className="text-sm text-gray-500 mt-1">
@@ -286,7 +286,7 @@ export function VisitReportsListPage() {
                       {projectLabels.map((label, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center rounded-full bg-orange-50 px-2 py-0.5 text-[11px] font-medium text-orange-700 border border-orange-100"
+                          className="inline-flex items-center rounded-full bg-[#f0f0f5] px-2 py-0.5 text-[11px] font-medium text-[#1d1d1f] border border-[#c8c8cd]"
                         >
                           {label}
                         </span>
@@ -323,7 +323,7 @@ export function VisitReportsListPage() {
                       )}
                     </div>
 
-                    <div className="mt-4 flex items-center text-sm font-medium text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="mt-4 flex items-center text-sm font-medium text-[#1d1d1f] opacity-0 group-hover:opacity-100 transition-opacity">
                       {status === VisitReportStatus.DRAFT
                         ? 'Continue Editing'
                         : 'View Details'}{' '}

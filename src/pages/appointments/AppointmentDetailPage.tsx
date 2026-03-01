@@ -146,12 +146,12 @@ export function AppointmentDetailPage() {
     value: string;
   }) => (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 rounded-lg bg-gray-100 p-2">
-        <Icon className="h-4 w-4 text-gray-500" />
+      <div className="mt-0.5 rounded-lg bg-[#f0f0f5] p-2">
+        <Icon className="h-4 w-4 text-[#6e6e73]" />
       </div>
       <div>
-        <p className="text-[13px] font-medium text-gray-700">{label}</p>
-        <p className="text-sm text-gray-500">{value}</p>
+        <p className="text-[13px] font-medium text-[#3a3a3e]">{label}</p>
+        <p className="text-sm text-[#6e6e73]">{value}</p>
       </div>
     </div>
   );
@@ -164,13 +164,13 @@ export function AppointmentDetailPage() {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/appointments')}
-          className="rounded-xl text-gray-500 hover:text-gray-900"
+          className="rounded-xl text-[#6e6e73] hover:text-[#1d1d1f]"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
             Appointment Details
           </h1>
         </div>
@@ -185,9 +185,9 @@ export function AppointmentDetailPage() {
 
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Info */}
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-gray-900">Appointment Info</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f]">Appointment Info</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <InfoRow
@@ -204,8 +204,8 @@ export function AppointmentDetailPage() {
 
             {appt.purpose && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700">Purpose</p>
-                <p className="text-sm text-gray-500 mt-1">{appt.purpose}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e]">Purpose</p>
+                <p className="text-sm text-[#6e6e73] mt-1">{appt.purpose}</p>
               </div>
             )}
 
@@ -223,17 +223,17 @@ export function AppointmentDetailPage() {
 
             {appt.distanceKm != null && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700">Distance</p>
-                <p className="text-sm text-gray-500">{appt.distanceKm.toFixed(1)} km</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e]">Distance</p>
+                <p className="text-sm text-[#6e6e73]">{appt.distanceKm.toFixed(1)} km</p>
               </div>
             )}
           </CardContent>
         </Card>
 
         {/* Ocular Fee & Reschedules */}
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-gray-900">Additional Info</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f]">Additional Info</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {appt.ocularFee != null && appt.ocularFee > 0 && (
@@ -241,19 +241,19 @@ export function AppointmentDetailPage() {
                 {appt.ocularFeeStatus === 'refunded' ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
-                      <span className="inline-flex items-center gap-1 text-xs font-medium text-red-700 bg-red-50 border border-red-200 rounded-full px-2.5 py-0.5">
+                      <p className="text-[13px] font-medium text-[#3a3a3e]">Ocular Fee</p>
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-full px-2.5 py-0.5">
                         Refunded
                       </span>
                     </div>
-                    <p className="text-lg font-semibold text-gray-400 line-through mt-1">
+                    <p className="text-lg font-semibold text-[#86868b] line-through mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
                     {appt.ocularFeeRefundReason && (
                       <p className="text-xs text-red-600 mt-1">Reason: {appt.ocularFeeRefundReason}</p>
                     )}
                     {appt.ocularFeeRefundedAt && (
-                      <p className="text-xs text-gray-400 mt-0.5">
+                      <p className="text-xs text-[#86868b] mt-0.5">
                         Refunded on {format(new Date(appt.ocularFeeRefundedAt), 'MMM d, yyyy h:mm a')}
                       </p>
                     )}
@@ -261,12 +261,12 @@ export function AppointmentDetailPage() {
                 ) : appt.ocularFeePaid ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
+                      <p className="text-[13px] font-medium text-[#3a3a3e]">Ocular Fee</p>
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
                         <CheckCircle2 className="h-3 w-3" /> Paid
                       </span>
                     </div>
-                    <p className="text-lg font-semibold text-gray-900 mt-1">
+                    <p className="text-lg font-semibold text-[#1d1d1f] mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
                     {/* Admin: Refund button */}
@@ -282,15 +282,15 @@ export function AppointmentDetailPage() {
                     )}
                   </>
                 ) : appt.ocularFeeStatus === 'pending' && isCustomer ? (
-                  <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 space-y-3">
+                  <div className="rounded-xl border border-[#c8c8cd] bg-[#f0f0f5] p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-orange-800">Ocular Fee Required</p>
-                      <p className="text-lg font-bold text-orange-600">{formatCurrency(appt.ocularFee)}</p>
+                      <p className="text-sm font-semibold text-[#1d1d1f]">Ocular Fee Required</p>
+                      <p className="text-lg font-bold text-[#1d1d1f]">{formatCurrency(appt.ocularFee)}</p>
                     </div>
-                    <p className="text-xs text-orange-600">Pay before your appointment can be confirmed.</p>
+                    <p className="text-xs text-[#6e6e73]">Pay before your appointment can be confirmed.</p>
                     <Button
                       asChild
-                      className="w-full bg-orange-600 hover:bg-orange-700 text-white rounded-xl h-10"
+                      className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl h-10"
                     >
                       <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
                         <CreditCard className="mr-2 h-4 w-4" />
@@ -300,14 +300,14 @@ export function AppointmentDetailPage() {
                   </div>
                 ) : (
                   <>
-                    <p className="text-[13px] font-medium text-gray-700">Ocular Fee</p>
-                    <p className="text-lg font-semibold text-orange-600 mt-1">
+                    <p className="text-[13px] font-medium text-[#3a3a3e]">Ocular Fee</p>
+                    <p className="text-lg font-semibold text-[#1d1d1f] mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
                   </>
                 )}
                 {appt.ocularFeeMethod && (
-                  <p className="text-xs text-gray-500 capitalize mt-1">
+                  <p className="text-xs text-[#6e6e73] capitalize mt-1">
                     via {appt.ocularFeeMethod.replace('_', ' ')}
                   </p>
                 )}
@@ -315,22 +315,22 @@ export function AppointmentDetailPage() {
             )}
 
             <div>
-              <p className="text-[13px] font-medium text-gray-700">Reschedules</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-[13px] font-medium text-[#3a3a3e]">Reschedules</p>
+              <p className="text-sm text-[#6e6e73]">
                 {appt.rescheduleCount} / {appt.maxReschedules} used
               </p>
             </div>
 
             {appt.internalNotes && isStaff && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700">Internal Notes</p>
-                <p className="text-sm text-gray-500">{appt.internalNotes}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e]">Internal Notes</p>
+                <p className="text-sm text-[#6e6e73]">{appt.internalNotes}</p>
               </div>
             )}
 
             <div>
-              <p className="text-[13px] font-medium text-gray-700">Created</p>
-              <p className="text-sm text-gray-500">
+              <p className="text-[13px] font-medium text-[#3a3a3e]">Created</p>
+              <p className="text-sm text-[#6e6e73]">
                 {format(new Date(appt.createdAt), 'MMM d, yyyy h:mm a')}
               </p>
             </div>
@@ -368,10 +368,10 @@ export function AppointmentDetailPage() {
 
       {/* Customer / Staff: Read-only view of submitted site details */}
       {appt.siteDetailsStatus === 'submitted' && appt.customerSiteDetails && (
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-gray-900 flex items-center gap-2">
-              <FileText className="h-5 w-5 text-gray-500" />
+            <CardTitle className="text-lg text-[#1d1d1f] flex items-center gap-2">
+              <FileText className="h-5 w-5 text-[#6e6e73]" />
               Customer Site Details
               <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
                 <CheckCircle2 className="h-3 w-3" /> Submitted
@@ -381,24 +381,24 @@ export function AppointmentDetailPage() {
           <CardContent className="space-y-4">
             {appt.customerSiteDetails.serviceType && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700">Service Type</p>
-                <p className="text-sm text-gray-500">{SERVICE_TYPE_LABELS[appt.customerSiteDetails.serviceType] || appt.customerSiteDetails.serviceType}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e]">Service Type</p>
+                <p className="text-sm text-[#6e6e73]">{SERVICE_TYPE_LABELS[appt.customerSiteDetails.serviceType] || appt.customerSiteDetails.serviceType}</p>
               </div>
             )}
 
             {appt.customerSiteDetails.customerRequirements && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700">Customer Requirements</p>
-                <p className="text-sm text-gray-500 whitespace-pre-wrap">{appt.customerSiteDetails.customerRequirements}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e]">Customer Requirements</p>
+                <p className="text-sm text-[#6e6e73] whitespace-pre-wrap">{appt.customerSiteDetails.customerRequirements}</p>
               </div>
             )}
 
             {appt.customerSiteDetails.lineItems && appt.customerSiteDetails.lineItems.length > 0 && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700 mb-1">Measurements</p>
-                <div className="rounded-lg border border-gray-100 overflow-x-auto">
+                <p className="text-[13px] font-medium text-[#3a3a3e] mb-1">Measurements</p>
+                <div className="rounded-lg border border-[#c8c8cd]/50 overflow-x-auto">
                   <table className="w-full text-sm">
-                    <thead className="bg-gray-50 text-gray-600">
+                    <thead className="bg-[#f5f5f7] text-[#6e6e73]">
                       <tr>
                         <th className="px-3 py-2 text-left text-xs font-medium">Item</th>
                         <th className="px-3 py-2 text-right text-xs font-medium">L</th>
@@ -407,14 +407,14 @@ export function AppointmentDetailPage() {
                         <th className="px-3 py-2 text-right text-xs font-medium">Qty</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-50">
+                    <tbody className="divide-y divide-[#f0f0f5]">
                       {appt.customerSiteDetails.lineItems.map((item, i) => (
                         <tr key={i}>
-                          <td className="px-3 py-2 text-gray-700">{item.label || `Item ${i + 1}`}</td>
-                          <td className="px-3 py-2 text-right text-gray-500">{item.length ?? '-'}</td>
-                          <td className="px-3 py-2 text-right text-gray-500">{item.width ?? '-'}</td>
-                          <td className="px-3 py-2 text-right text-gray-500">{item.height ?? '-'}</td>
-                          <td className="px-3 py-2 text-right text-gray-500">{item.quantity ?? 1}</td>
+                          <td className="px-3 py-2 text-[#3a3a3e]">{item.label || `Item ${i + 1}`}</td>
+                          <td className="px-3 py-2 text-right text-[#6e6e73]">{item.length ?? '-'}</td>
+                          <td className="px-3 py-2 text-right text-[#6e6e73]">{item.width ?? '-'}</td>
+                          <td className="px-3 py-2 text-right text-[#6e6e73]">{item.height ?? '-'}</td>
+                          <td className="px-3 py-2 text-right text-[#6e6e73]">{item.quantity ?? 1}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -425,24 +425,24 @@ export function AppointmentDetailPage() {
 
             {appt.customerSiteDetails.siteConditions && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700 mb-1">Site Conditions</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] mb-1">Site Conditions</p>
                 <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 text-sm">
                   {appt.customerSiteDetails.siteConditions.environment && (
                     <div>
-                      <span className="text-gray-500">Environment:</span>{' '}
-                      <span className="text-gray-700 capitalize">{appt.customerSiteDetails.siteConditions.environment}</span>
+                      <span className="text-[#6e6e73]">Environment:</span>{' '}
+                      <span className="text-[#3a3a3e] capitalize">{appt.customerSiteDetails.siteConditions.environment}</span>
                     </div>
                   )}
                   {appt.customerSiteDetails.siteConditions.hasElectrical != null && (
                     <div>
-                      <span className="text-gray-500">Electrical:</span>{' '}
-                      <span className="text-gray-700">{appt.customerSiteDetails.siteConditions.hasElectrical ? 'Yes' : 'No'}</span>
+                      <span className="text-[#6e6e73]">Electrical:</span>{' '}
+                      <span className="text-[#3a3a3e]">{appt.customerSiteDetails.siteConditions.hasElectrical ? 'Yes' : 'No'}</span>
                     </div>
                   )}
                   {appt.customerSiteDetails.siteConditions.accessNotes && (
                     <div className="col-span-2">
-                      <span className="text-gray-500">Access Notes:</span>{' '}
-                      <span className="text-gray-700">{appt.customerSiteDetails.siteConditions.accessNotes}</span>
+                      <span className="text-[#6e6e73]">Access Notes:</span>{' '}
+                      <span className="text-[#3a3a3e]">{appt.customerSiteDetails.siteConditions.accessNotes}</span>
                     </div>
                   )}
                 </div>
@@ -451,16 +451,16 @@ export function AppointmentDetailPage() {
 
             {(appt.customerSiteDetails.materials || appt.customerSiteDetails.finishes || appt.customerSiteDetails.preferredDesign) && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700 mb-1">Materials & Design</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] mb-1">Materials & Design</p>
                 <div className="space-y-1 text-sm">
                   {appt.customerSiteDetails.materials && (
-                    <p><span className="text-gray-500">Materials:</span> <span className="text-gray-700">{appt.customerSiteDetails.materials}</span></p>
+                    <p><span className="text-[#6e6e73]">Materials:</span> <span className="text-[#3a3a3e]">{appt.customerSiteDetails.materials}</span></p>
                   )}
                   {appt.customerSiteDetails.finishes && (
-                    <p><span className="text-gray-500">Finishes:</span> <span className="text-gray-700">{appt.customerSiteDetails.finishes}</span></p>
+                    <p><span className="text-[#6e6e73]">Finishes:</span> <span className="text-[#3a3a3e]">{appt.customerSiteDetails.finishes}</span></p>
                   )}
                   {appt.customerSiteDetails.preferredDesign && (
-                    <p><span className="text-gray-500">Preferred Design:</span> <span className="text-gray-700">{appt.customerSiteDetails.preferredDesign}</span></p>
+                    <p><span className="text-[#6e6e73]">Preferred Design:</span> <span className="text-[#3a3a3e]">{appt.customerSiteDetails.preferredDesign}</span></p>
                   )}
                 </div>
               </div>
@@ -468,30 +468,30 @@ export function AppointmentDetailPage() {
 
             {appt.customerSiteDetails.notes && (
               <div>
-                <p className="text-[13px] font-medium text-gray-700">Additional Notes</p>
-                <p className="text-sm text-gray-500 whitespace-pre-wrap">{appt.customerSiteDetails.notes}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e]">Additional Notes</p>
+                <p className="text-sm text-[#6e6e73] whitespace-pre-wrap">{appt.customerSiteDetails.notes}</p>
               </div>
             )}
 
             {/* Photo / file count summary */}
             <div className="flex flex-wrap gap-3 pt-1">
               {appt.customerSiteDetails.photoKeys && appt.customerSiteDetails.photoKeys.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                <span className="inline-flex items-center gap-1.5 text-xs text-[#6e6e73] bg-[#f0f0f5] rounded-full px-3 py-1">
                   <Camera className="h-3.5 w-3.5" /> {appt.customerSiteDetails.photoKeys.length} photo(s)
                 </span>
               )}
               {appt.customerSiteDetails.referenceImageKeys && appt.customerSiteDetails.referenceImageKeys.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                <span className="inline-flex items-center gap-1.5 text-xs text-[#6e6e73] bg-[#f0f0f5] rounded-full px-3 py-1">
                   <Image className="h-3.5 w-3.5" /> {appt.customerSiteDetails.referenceImageKeys.length} reference(s)
                 </span>
               )}
               {appt.customerSiteDetails.videoKeys && appt.customerSiteDetails.videoKeys.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                <span className="inline-flex items-center gap-1.5 text-xs text-[#6e6e73] bg-[#f0f0f5] rounded-full px-3 py-1">
                   {appt.customerSiteDetails.videoKeys.length} video(s)
                 </span>
               )}
               {appt.customerSiteDetails.sketchKeys && appt.customerSiteDetails.sketchKeys.length > 0 && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-gray-600 bg-gray-100 rounded-full px-3 py-1">
+                <span className="inline-flex items-center gap-1.5 text-xs text-[#6e6e73] bg-[#f0f0f5] rounded-full px-3 py-1">
                   {appt.customerSiteDetails.sketchKeys.length} sketch(es)
                 </span>
               )}
@@ -502,9 +502,9 @@ export function AppointmentDetailPage() {
 
       {/* Agent: Assign Sales Staff & Confirm */}
       {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && (
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-gray-900">Assign Sales Staff & Confirm</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f]">Assign Sales Staff & Confirm</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
             {/* Warning: office appointment without site details */}
@@ -521,17 +521,17 @@ export function AppointmentDetailPage() {
               </div>
             ) : (
               <div>
-                <label className="block text-[13px] font-medium text-gray-700 mb-2.5">Sales Staff</label>
+                <label className="block text-[13px] font-medium text-[#3a3a3e] mb-2.5">Sales Staff</label>
                 <Select
                   value={selectedSalesStaff}
                   onValueChange={(val) => setSelectedSalesStaff(val)}
                 >
-                  <SelectTrigger className="h-12 rounded-xl border-gray-200 bg-white px-4 text-base text-gray-900 focus:ring-1 focus:ring-gray-100 focus:ring-offset-0 focus:border-gray-300 w-full">
+                  <SelectTrigger className="h-12 rounded-xl border-[#d2d2d7] bg-white px-4 text-base text-[#1d1d1f] focus:ring-1 focus:ring-[#e8e8ed] focus:ring-offset-0 focus:border-[#c8c8cd] w-full">
                     <SelectValue placeholder="Choose a sales staff member..." />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-gray-200 bg-white shadow-lg max-w-[calc(100vw-3rem)]">
+                  <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg max-w-[calc(100vw-3rem)]">
                     {salesStaffList.map((s) => (
-                      <SelectItem key={s._id} value={s._id} className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-gray-100 focus:text-gray-900 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900">
+                      <SelectItem key={s._id} value={s._id} className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-[#f0f0f5] focus:text-[#1d1d1f] data-[highlighted]:bg-[#f0f0f5] data-[highlighted]:text-[#1d1d1f]">
                         {s.firstName} {s.lastName}
                       </SelectItem>
                     ))}
@@ -567,7 +567,7 @@ export function AppointmentDetailPage() {
             <Button
               onClick={handleComplete}
               disabled={completeMutation.isPending}
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
             >
               Mark Complete
             </Button>
@@ -575,7 +575,7 @@ export function AppointmentDetailPage() {
               variant="outline"
               onClick={handleNoShow}
               disabled={noShowMutation.isPending}
-              className="border-gray-200 text-gray-700 rounded-xl"
+              className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
             >
               Mark No-Show
             </Button>
@@ -588,7 +588,7 @@ export function AppointmentDetailPage() {
             <Button
               onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way')).catch(() => toast.error('Failed to update'))}
               disabled={visitStatusMutation.isPending}
-              className="bg-orange-600 hover:bg-orange-700 text-white rounded-xl"
+              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
             >
               On The Way
             </Button>
@@ -596,7 +596,7 @@ export function AppointmentDetailPage() {
               variant="outline"
               onClick={handleNoShow}
               disabled={noShowMutation.isPending}
-              className="border-gray-200 text-gray-700 rounded-xl"
+              className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
             >
               Mark No-Show
             </Button>
@@ -633,7 +633,7 @@ export function AppointmentDetailPage() {
                 <Button
                   asChild
                   variant="outline"
-                  className="border-gray-200 text-gray-700 rounded-xl"
+                  className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
                 >
                   <Link to={`/appointments/book?reschedule=${appt._id}`}>
                     Reschedule
@@ -655,23 +655,23 @@ export function AppointmentDetailPage() {
       <Dialog open={cancelOpen} onOpenChange={(open) => { setCancelOpen(open); if (!open) setCancelReason(''); }}>
         <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Cancel Appointment</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className="text-[#1d1d1f]">Cancel Appointment</DialogTitle>
+            <DialogDescription className="text-[#6e6e73]">
               Please provide a reason for cancellation. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Label htmlFor="cancel-reason" className="text-sm font-medium text-gray-700">Reason for cancellation</Label>
+            <Label htmlFor="cancel-reason" className="text-sm font-medium text-[#3a3a3e]">Reason for cancellation</Label>
             <Textarea
               id="cancel-reason"
               placeholder="e.g., Schedule conflict, changed plans..."
               value={cancelReason}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancelReason(e.target.value)}
-              className="min-h-[80px] bg-gray-50/50 border-gray-200 rounded-xl"
+              className="min-h-[80px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setCancelOpen(false); setCancelReason(''); }} className="rounded-xl border-gray-200">
+            <Button variant="outline" onClick={() => { setCancelOpen(false); setCancelReason(''); }} className="rounded-xl border-[#d2d2d7]">
               Keep Appointment
             </Button>
             <Button
@@ -690,23 +690,23 @@ export function AppointmentDetailPage() {
       <Dialog open={refundOpen} onOpenChange={(open) => { setRefundOpen(open); if (!open) setRefundReason(''); }}>
         <DialogContent className="rounded-2xl max-w-md">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Refund Ocular Fee</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className="text-[#1d1d1f]">Refund Ocular Fee</DialogTitle>
+            <DialogDescription className="text-[#6e6e73]">
               This will mark the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''} as refunded. The customer will be notified.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Label htmlFor="refund-reason" className="text-sm font-medium text-gray-700">Reason for refund</Label>
+            <Label htmlFor="refund-reason" className="text-sm font-medium text-[#3a3a3e]">Reason for refund</Label>
             <Textarea
               id="refund-reason"
               placeholder="e.g., Customer cancelled before visit, duplicate payment..."
               value={refundReason}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRefundReason(e.target.value)}
-              className="min-h-[80px] bg-gray-50/50 border-gray-200 rounded-xl"
+              className="min-h-[80px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setRefundOpen(false); setRefundReason(''); }} className="rounded-xl border-gray-200">
+            <Button variant="outline" onClick={() => { setRefundOpen(false); setRefundReason(''); }} className="rounded-xl border-[#d2d2d7]">
               Cancel
             </Button>
             <Button

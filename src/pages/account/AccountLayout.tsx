@@ -54,7 +54,7 @@ export function AccountLayout() {
                 cn(
                   'flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-colors shrink-0',
                   isActive
-                    ? 'bg-orange-50 text-orange-700 shadow-sm'
+                    ? 'bg-[#f0f0f5] text-[#1d1d1f] shadow-sm'
                     : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
                 )
               }
@@ -77,11 +77,11 @@ export function AccountLayout() {
         {/* Left Column: User Profile Card (desktop only) */}
         <div className="hidden lg:block lg:col-span-1">
           <Card className="border-gray-100 shadow-sm overflow-hidden rounded-2xl sticky top-24">
-            <div className="h-28 bg-gradient-to-r from-gray-900 via-gray-800 to-gray-900" />
+            <div className="h-28 bg-gradient-to-r from-[#1a1a1c] via-[#111113] to-[#1a1a1c]" />
             <div className="px-6 relative">
               <div className="absolute -top-12 left-6">
                 <Avatar className="h-24 w-24 border-4 border-white shadow-lg bg-white">
-                  <AvatarFallback className="bg-orange-50 text-orange-600 text-2xl font-bold">
+                  <AvatarFallback className="bg-[#f0f0f5] text-[#1d1d1f] text-2xl font-bold">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -134,7 +134,7 @@ export function AccountLayout() {
                       cn(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
                         isActive
-                          ? 'bg-orange-50 text-orange-700'
+                          ? 'bg-[#f0f0f5] text-[#1d1d1f]'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
                       )
                     }

@@ -199,7 +199,7 @@ export function UsersPage() {
   if (error) return <PageError message="Failed to load users" onRetry={refetch} />;
 
   const inputClasses =
-    'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
+    'h-11 bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20';
 
   return (
     <div className="space-y-8">
@@ -228,14 +228,14 @@ export function UsersPage() {
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+            className="pl-10 h-10 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
           />
         </div>
         <div className="w-full md:w-48">
           <select
             value={roleFilter}
             onChange={(e) => setRoleFilter(e.target.value)}
-            className="w-full h-10 rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+            className="w-full h-10 rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6e6e73]/20 focus:border-[#6e6e73]"
           >
             <option value="all">All Roles</option>
             {ROLES.map((r) => (
@@ -428,7 +428,7 @@ export function UsersPage() {
               <select
                 id="role"
                 {...form.register('role')}
-                className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300 cursor-pointer"
+                className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#6e6e73]/20 focus:border-[#6e6e73] cursor-pointer"
               >
                 {ROLES.map((r) => (
                   <option key={r.value} value={r.value}>

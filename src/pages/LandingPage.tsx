@@ -1,966 +1,972 @@
 import { Link } from 'react-router-dom';
 import {
   ArrowRight,
-  Shield,
-  Wrench,
-  Truck,
-  Phone,
-  Mail,
-  MapPin,
   Menu,
   X,
-  ChevronRight,
-  Star,
+  LayoutDashboard,
+  CheckCircle,
+  Clock,
+  Settings,
   PenTool,
-  Layers,
-  Calendar,
-  FileText,
-  CheckCircle2,
-  Sparkles,
-  ArrowUpRight,
   Flame,
+  ShieldCheck,
   Wind,
-  Quote,
-  Building2,
-  UtensilsCrossed,
+  Utensils,
+
   ShoppingBag,
-  Hotel,
+  Store,
   Coffee,
-  Warehouse,
-  Heart,
+  Truck,
+  HeartPulse,
+  Home,
+  Hotel,
+  MapPin,
+  Phone,
+  Mail,
+  Quote,
+  Maximize,
+  Layers,
+  Star,
+  Eye,
+  ChevronRight
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
-import { LayoutDashboard } from 'lucide-react';
 import { BrandLogo } from '@/components/shared/BrandLogo';
-import { motion, useScroll, useTransform, LazyMotion, domAnimation } from 'framer-motion';
-import { 
-  FadeIn, 
-  SlideUp, 
-  SlideInLeft, 
-  SlideInRight, 
-  StaggerContainer, 
-  staggerItem,
-  ScaleIn
-} from '@/components/shared/MotionWrappers';
+import { motion, LazyMotion, domAnimation, AnimatePresence } from 'framer-motion';
+
+// Ultra-smooth 240Hz-optimized ease — gentle acceleration, long organic deceleration
+const SMOOTH_240: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+interface ProjectData {
+  title: string;
+  loc: string;
+  tag: string;
+  img: string;
+  description: string;
+  highlights: string[];
+}
+
+const PROJECTS: ProjectData[] = [
+  {
+    title: "Le Grand Prei",
+    loc: "General Santos City",
+    tag: "Full Kitchen Fabrication",
+    img: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2932&auto=format&fit=crop",
+    description: "Complete commercial kitchen fabrication for Le Grand Prei, featuring custom stainless steel countertops, exhaust hoods, and full kitchen equipment layout designed for high-volume restaurant operations.",
+    highlights: ["Custom SS Countertops", "Exhaust Hood System", "Full Equipment Layout", "High-Volume Design"]
+  },
+  {
+    title: "Kko Kko Korean Restaurant",
+    loc: "Cubao, Quezon City",
+    tag: "Kitchen Stainless Steel",
+    img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2940&auto=format&fit=crop",
+    description: "Full stainless steel kitchen fit-out for Kko Kko Korean Restaurant. Includes grilling stations, prep tables, cold storage units, and ventilation systems specifically designed for Korean BBQ operations.",
+    highlights: ["Grilling Stations", "Prep Tables", "Cold Storage Units", "Ventilation Systems"]
+  },
+  {
+    title: "Primo's Restaurant",
+    loc: "Ligao, Albay",
+    tag: "Kitchen Equipment & Layout",
+    img: "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=2874&auto=format&fit=crop",
+    description: "End-to-end kitchen design and stainless steel fabrication for Primo's Restaurant. The space-optimized layout maximizes workflow efficiency while maintaining premium build quality throughout the kitchen.",
+    highlights: ["Space-Optimized Layout", "Workflow Efficiency", "Premium Build Quality", "End-to-End Design"]
+  },
+  {
+    title: "8 Danji Korean Resto",
+    loc: "Araneta, Cubao",
+    tag: "Full Kitchen Setup",
+    img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2940&auto=format&fit=crop",
+    description: "Complete kitchen setup for 8 Danji Korean Resto at Araneta, Cubao. Custom fabrication includes specialized kimchi prep stations, dual-purpose cooking areas, and integrated drainage systems.",
+    highlights: ["Specialized Prep Stations", "Dual-Purpose Cooking", "Integrated Drainage", "Custom Fabrication"]
+  },
+  {
+    title: "Elkan Hotel",
+    loc: "Ligao, Albay",
+    tag: "Hotel Kitchen Fabrication",
+    img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940&auto=format&fit=crop",
+    description: "Large-scale hotel kitchen fabrication for Elkan Hotel. Designed to handle banquet-level food production with separate prep, cooking, plating, and wash zones all built in premium stainless steel.",
+    highlights: ["Banquet-Level Production", "Zone Separation", "Premium Stainless Steel", "Large-Scale Build"]
+  },
+  {
+    title: "Food Stall Works",
+    loc: "Fairview, Quezon City",
+    tag: "Multiple Food Stalls",
+    img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=2874&auto=format&fit=crop",
+    description: "Multiple food stall fabrication projects across Fairview, Quezon City. Each stall features compact yet highly functional SS setups with serving counters, storage, and cooking stations.",
+    highlights: ["Compact Functional Design", "Serving Counters", "Storage Solutions", "Cooking Stations"]
+  }
+];
 
 export function LandingPage() {
   const { user } = useAuthStore();
   const isLoggedIn = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const { scrollY } = useScroll();
-  
-  // Parallax effects — all useTransform at top level
-  const heroTextY = useTransform(scrollY, [0, 500], [0, 150]);
-  const heroOpacity = useTransform(scrollY, [0, 400], [1, 0]);
-  const bgParallaxY = useTransform(scrollY, [0, 1000], [0, 300]);
+  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
 
   useEffect(() => {
     if (!mobileMenuOpen) return;
-
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
-    
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setMobileMenuOpen(false);
-      }
+      if (event.key === 'Escape') setMobileMenuOpen(false);
     };
-
     window.addEventListener('keydown', onKeyDown);
-
     return () => {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
   }, [mobileMenuOpen]);
 
-  const toggleMobileMenu = useCallback(() => setMobileMenuOpen(v => !v), []);
-  const closeMobileMenu = useCallback(() => setMobileMenuOpen(false), []);
+  // Lock body scroll & handle Escape for project modal
+  useEffect(() => {
+    if (!selectedProject) return;
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedProject(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', onKeyDown);
+    };
+  }, [selectedProject]);
 
   return (
     <LazyMotion features={domAnimation} strict>
-    <div className="min-h-screen bg-white font-sans text-gray-900 selection:bg-orange-500/30">
-      {/* ─── Navigation ─── */}
-      <motion.header 
-        initial={{ y: -100 }}
-        animate={{ y: 0 }}
-        transition={{ duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }}
-        style={{ willChange: 'transform' }}
-        className="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-xl border-b border-gray-100/50"
-      >
-        <div className="mx-auto flex h-16 sm:h-20 max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
-          <Link to="/" className="flex items-center gap-3 group">
-            <motion.div 
-              whileHover={{ rotate: 90 }}
-              transition={{ type: 'spring', stiffness: 200, damping: 15 }}
-              style={{ willChange: 'transform' }}
-            >
-              <BrandLogo className="h-10 w-10 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
-            </motion.div>
-            <div className="flex flex-col leading-none">
-              <span className="text-lg font-bold tracking-tight text-gray-900 group-hover:text-orange-600 transition-colors">
-                RMV
+      <div className="min-h-screen bg-[#e0e0e5] font-sans text-[#1d1d1f] selection:bg-[#1d1d1f] selection:text-white">
+        
+        {/* Navigation */}
+        <motion.header
+          initial={{ y: -100, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 1, ease: SMOOTH_240 }}
+          className="fixed top-0 z-50 w-full bg-gradient-to-b from-[#ececf0]/92 to-[#dcdce0]/85 backdrop-blur-2xl border-b border-[#b0b0b6]/40 shadow-[0_1px_6px_rgba(0,0,0,0.06)] gpu-reveal"
+        >
+          <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+            <Link to="/" className="flex items-center gap-2 group">
+              <BrandLogo className="h-6 w-6 text-[#1d1d1f] transition-transform duration-500 group-hover:scale-110" />
+              <span className="text-sm font-bold tracking-tight text-[#1d1d1f]">
+                RMV Stainless Steel Fabrication
               </span>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-gray-400">
-                Stainless
-              </span>
-            </div>
-          </Link>
+            </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden gap-10 md:flex">
-            {['Services', 'Process', 'About', 'Contact'].map((item) => (
-              <a
-                key={item}
-                href={`#${item.toLowerCase()}`}
-                className="text-sm font-medium text-gray-500 transition-colors hover:text-gray-900 hover:scale-105 transform duration-200"
-              >
-                {item}
-              </a>
-            ))}
-          </nav>
-
-          <div className="hidden items-center gap-4 md:flex">
-            {isLoggedIn ? (
-              <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-xl shadow-gray-900/10 h-10 px-6 text-sm rounded-full transition-all hover:scale-105 hover:shadow-2xl">
-                <Link to="/dashboard">
-                  <LayoutDashboard className="mr-1.5 h-4 w-4" />
-                  Go to Dashboard
-                </Link>
-              </Button>
-            ) : (
-              <>
-                <Link
-                  to="/login"
-                  className="text-sm font-medium text-gray-600 transition-colors hover:text-gray-900"
+            <nav className="hidden lg:flex gap-7">
+              {[
+                { label: 'Home', href: '#hero' },
+                { label: 'About', href: '#about' },
+                { label: 'Services', href: '#capabilities' },
+                { label: 'Projects', href: '#projects' },
+                { label: 'Contact', href: '#contact' },
+              ].map((item) => (
+                <a
+                  key={item.label}
+                  href={item.href}
+                  className="text-[13px] font-medium text-[#6e6e73] transition-colors hover:text-[#1d1d1f] relative after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-[#1d1d1f] after:transition-all after:duration-300"
                 >
-                  Sign In
-                </Link>
-                <Button asChild className="bg-gray-900 hover:bg-gray-800 text-white font-semibold shadow-xl shadow-gray-900/10 h-10 px-6 text-sm rounded-full transition-all hover:scale-105 hover:shadow-2xl">
-                  <Link to="/register">
-                    Get Started
-                    <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+                  {item.label}
+                </a>
+              ))}
+            </nav>
+
+            <div className="hidden lg:flex items-center gap-3">
+              {isLoggedIn ? (
+                <Button asChild variant="ghost" className="text-[13px] font-medium text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-full px-5 h-9">
+                  <Link to="/dashboard">
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    Dashboard
                   </Link>
                 </Button>
-              </>
-            )}
-          </div>
+              ) : (
+                <>
+                  <Link to="/login" className="text-[13px] font-medium text-[#6e6e73] transition-colors hover:text-[#1d1d1f] px-3 py-2">
+                    Sign In
+                  </Link>
+                  <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-[13px] font-semibold rounded-full px-6 h-9 transition-all hover:scale-105 active:scale-95 duration-300 shadow-md shadow-black/10">
+                    <Link to="/register">Get Started</Link>
+                  </Button>
+                </>
+              )}
+            </div>
 
-          {/* Mobile Menu Toggle */}
-          <button
-            type="button"
-            className="md:hidden p-2 text-gray-500 hover:text-gray-900 transition-colors"
-            onClick={toggleMobileMenu}
-            aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
-          >
-            {mobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
+            <button
+              type="button"
+              className="lg:hidden p-2.5 -mr-1 text-[#1d1d1f] rounded-xl hover:bg-black/5 transition-colors"
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+            >
+              {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+            </button>
+          </div>
+        </motion.header>
 
         {/* Mobile Menu */}
         {mobileMenuOpen && (
           <motion.div
-            initial={{ opacity: 0, height: 0 }}
-            animate={{ opacity: 1, height: "auto" }}
-            exit={{ opacity: 0, height: 0 }}
-            className="border-t border-gray-100 bg-white px-4 py-6 md:hidden shadow-2xl"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-40 bg-gradient-to-b from-white via-[#f0f0f3] to-[#e8e8ed] pt-20 px-6 lg:hidden overflow-y-auto"
           >
-            <nav className="flex flex-col space-y-2">
-              {['Services', 'Process', 'About', 'Contact'].map((item, idx) => (
-                <motion.a
-                  key={item}
-                  initial={{ x: -20, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: idx * 0.08, duration: 0.35, ease: [0.25, 0.1, 0.25, 1.0] }}
-                  href={`#${item.toLowerCase()}`}
-                  onClick={closeMobileMenu}
-                  className="px-4 py-3 rounded-xl text-lg font-medium text-gray-600 hover:bg-gray-50 active:bg-gray-100"
-                >
-                  {item}
-                </motion.a>
-              ))}
-              <div className="pt-4 mt-2 border-t border-gray-100 space-y-3">
-                {isLoggedIn ? (
-                  <Button asChild className="w-full bg-gray-900 hover:bg-gray-800 text-white font-bold h-12 rounded-xl text-lg">
-                    <Link to="/dashboard" onClick={closeMobileMenu}>
-                      <LayoutDashboard className="mr-2 h-5 w-5" />
-                      Go to Dashboard
-                    </Link>
-                  </Button>
-                ) : (
-                  <>
-                    <Link
-                      to="/login"
-                      onClick={closeMobileMenu}
-                      className="block px-4 py-3 rounded-xl text-lg font-medium text-gray-600 hover:bg-gray-50"
-                    >
-                      Sign In
-                    </Link>
-                    <Button asChild className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold h-12 rounded-xl text-lg">
-                      <Link to="/register" onClick={closeMobileMenu}>
-                        Get Started
-                      </Link>
-                    </Button>
-                  </>
-                )}
-              </div>
+            <nav className="flex flex-col gap-1 mt-4">
+               {[
+                 { label: 'Home', href: '#hero' },
+                 { label: 'About', href: '#about' },
+                 { label: 'Services', href: '#capabilities' },
+                 { label: 'Projects', href: '#projects' },
+                 { label: 'Contact', href: '#contact' },
+               ].map((item) => (
+                 <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="text-2xl font-semibold tracking-tight text-[#1d1d1f] py-4 border-b border-[#d2d2d7]/50 hover:pl-2 transition-all">
+                   {item.label}
+                 </a>
+               ))}
+               <div className="pt-8 flex flex-col gap-4">
+                 {isLoggedIn ? (
+                   <Button asChild className="bg-[#1d1d1f] text-white text-base font-semibold rounded-2xl h-14 w-full">
+                     <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
+                   </Button>
+                 ) : (
+                   <>
+                     <Button asChild className="bg-[#1d1d1f] text-white text-base font-semibold rounded-2xl h-14 w-full">
+                       <Link to="/register" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                     </Button>
+                     <Button asChild variant="outline" className="text-[#1d1d1f] border-[#c8c8cc] text-base font-semibold rounded-2xl h-14 w-full">
+                       <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+                     </Button>
+                   </>
+                 )}
+               </div>
             </nav>
           </motion.div>
         )}
-      </motion.header>
 
-      {/* ─── Hero Section ─── */}
-      <section className="relative overflow-hidden bg-gray-950 flex items-center">
-        {/* Background Parallax */}
-        <motion.div 
-          style={{ y: bgParallaxY, willChange: 'transform' }}
-          className="absolute inset-0 z-0 gpu-layer"
-        >
-          <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1504917595217-d4dc5ebe6122?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80')] bg-cover bg-center opacity-20" />
-          <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-gray-950/80 to-transparent" />
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-950 via-gray-950/50 to-transparent" />
-        </motion.div>
-
-        <div className="relative z-10 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 w-full py-8 sm:py-12 lg:py-16">
-          <motion.div 
-            style={{ y: heroTextY, opacity: heroOpacity, willChange: 'transform, opacity' }}
-            className="mx-auto max-w-4xl lg:mx-0"
-          >
-            {/* Animated Badge */}
-            <FadeIn delay={0.2} className="inline-flex items-center gap-1.5 sm:gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-3 sm:px-4 py-1 sm:py-1.5 text-xs sm:text-sm font-medium text-orange-400 mb-3 sm:mb-4 backdrop-blur-md shadow-[0_0_15px_rgba(249,115,22,0.3)]">
-              <Star className="h-3.5 w-3.5 fill-orange-400 animate-pulse" />
-              <span>Trusted Stainless Steel Fabricator</span>
-            </FadeIn>
-
-            <h1 className="text-4xl font-extrabold tracking-tight text-white sm:text-5xl lg:text-7xl leading-[1.05] mb-2 sm:mb-4">
-              <SlideInLeft delay={0.3} duration={0.8}>Precision.</SlideInLeft>
-              <SlideInLeft delay={0.4} duration={0.8}>Durability.</SlideInLeft>
-              <SlideInLeft delay={0.5} duration={0.8} className="bg-gradient-to-r from-orange-400 via-orange-500 to-orange-600 bg-clip-text text-transparent pb-2">
-                Excellence.
-              </SlideInLeft>
-            </h1>
-
-            <SlideUp delay={0.7} className="mt-2 sm:mt-4 text-sm sm:text-base lg:text-lg leading-relaxed text-gray-400 max-w-2xl border-l-2 border-orange-500/50 pl-4 sm:pl-6">
-              Transforming Kitchens, Exceeding Expectations – Your Vision, Our Expertise.
-              From kitchen stainless steel fabrication to LPG gas pipelines and fire suppression systems.
-            </SlideUp>
-
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.9, duration: 0.6, ease: [0.25, 0.1, 0.25, 1.0] }}
-              style={{ willChange: 'transform, opacity' }}
-              className="mt-4 sm:mt-6 flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-5 lg:justify-start justify-center"
+        {/* Hero Section */}
+        <section id="hero" className="relative min-h-[85vh] md:min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden bg-gradient-to-br from-[#e8e8ed] via-[#d4d4d8] to-[#c0c0c6]">
+          {/* Brushed-metal noise texture overlay */}
+          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          {/* Metallic dot grid */}
+          <div className="absolute inset-0 bg-[radial-gradient(#9a9a9e_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_50%_50%_at_50%_50%,#000_10%,transparent_100%)] opacity-20" />
+          {/* Silver radial accent */}
+          <div className="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] md:w-[1000px] md:h-[1000px] bg-[radial-gradient(circle,rgba(255,255,255,0.5)_0%,transparent_60%)] pointer-events-none" />
+          {/* Bottom edge highlight */}
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
+          
+          <div className="relative z-10 px-4 sm:px-6 text-center max-w-5xl mx-auto flex flex-col items-center mt-8 md:mt-0">
+            <motion.h1
+              initial={{ opacity: 0, y: 80, scale: 0.96 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 1.4, ease: SMOOTH_240 }}
+              className="text-[2.75rem] sm:text-6xl md:text-8xl lg:text-[140px] font-bold tracking-tighter leading-[0.9] text-center mb-4 md:mb-6 gpu-reveal"
             >
-              <Button
-                asChild
-                size="lg"
-                className="bg-orange-600 hover:bg-orange-500 text-white font-bold h-11 sm:h-12 px-6 sm:px-10 text-sm sm:text-base shadow-[0_0_30px_rgba(249,115,22,0.3)] w-full sm:w-auto rounded-full hover:scale-105 transition-all duration-300 ring-2 ring-orange-500 ring-offset-2 ring-offset-gray-950"
-              >
+              <span className="bg-gradient-to-b from-[#1d1d1f] via-[#3a3a3e] to-[#1d1d1f] bg-clip-text text-transparent">Precision</span><br />
+              <span className="bg-gradient-to-r from-[#8e8e93] via-[#c8c8cd] to-[#8e8e93] bg-clip-text text-transparent drop-shadow-sm">Engineering.</span>
+            </motion.h1>
+            
+            <motion.p
+              initial={{ opacity: 0, y: 60 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.25, ease: SMOOTH_240 }}
+              className="text-base sm:text-xl md:text-2xl lg:text-3xl font-medium tracking-tight text-[#6e6e73] max-w-2xl mb-8 md:mb-12 px-2 gpu-reveal"
+            >
+              Uncompromising quality in every weld. Designed for longevity, built for the standards of tomorrow.
+            </motion.p>
+            
+            <motion.div
+              initial={{ opacity: 0, y: 60 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.45, ease: SMOOTH_240 }}
+              className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto gpu-reveal"
+            >
+              <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300 shadow-xl shadow-black/15 w-full sm:w-auto">
                 <Link to="/register">
-                  Start Your Project
+                  Commission a Project
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <a
-                href="#services"
-                className="group flex items-center justify-center sm:justify-start gap-2 text-sm sm:text-base font-medium text-white hover:text-orange-400 transition-colors"
-              >
-                <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/10 group-hover:bg-white/20 transition-all border border-white/10 group-hover:scale-110">
-                   <ChevronRight className="h-4 w-4" />
-                </div>
-                View Capabilities
-              </a>
+              <Button asChild className="bg-gradient-to-b from-white/80 to-[#e0e0e4]/80 hover:from-white hover:to-[#e8e8ed] text-[#1d1d1f] border border-[#b0b0b6] text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300 shadow-md shadow-black/8 backdrop-blur-sm w-full sm:w-auto">
+                <a href="#capabilities">Explore Services</a>
+              </Button>
             </motion.div>
+          </div>
+        </section>
 
-            {/* Stats */}
-            <div className="mt-5 sm:mt-8 grid grid-cols-3 gap-4 sm:gap-12 border-t border-white/10 pt-5 sm:pt-6 max-w-2xl">
-              {[
-                { value: '7+', label: 'Years Experience' },
-                { value: '200+', label: 'Projects Delivered' },
-                { value: '100%', label: 'Quality' },
-              ].map((stat, idx) => (
-                <FadeIn key={stat.label} delay={1 + (idx * 0.1)}>
-                  <div className="text-xl sm:text-3xl lg:text-4xl font-black text-white tracking-tight">
-                    {stat.value}
-                  </div>
-                  <div className="text-[10px] sm:text-sm font-medium text-gray-500 mt-1 uppercase tracking-wider">
-                    {stat.label}
-                  </div>
-                </FadeIn>
-              ))}
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* ─── Services Section ─── */}
-      <section id="services" className="py-16 sm:py-24 lg:py-32 bg-white relative">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-24">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-4 sm:mb-6">
-              Fabrication Capabilities
-            </h2>
-            <div className="h-1 w-24 bg-orange-500 mx-auto rounded-full mb-6" />
-            <p className="text-base sm:text-xl text-gray-500">
-              Complete stainless steel fabrication services from design to installation.
-            </p>
-          </SlideUp>
-
-          <StaggerContainer className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
-            {[
-              {
-                icon: Layers,
-                title: 'Kitchen Stainless Steel Fabrication',
-                desc: 'Custom food-grade stainless steel counters, sinks, shelving, and equipment for restaurants, hotels, and food courts.',
-                items: ['Food Grade', 'Custom Fit', 'Durable'],
-                color: 'bg-orange-50'
-              },
-              {
-                icon: PenTool,
-                title: 'Kitchen Planning & Remodeling',
-                desc: 'End-to-end kitchen layout planning and remodeling designed for optimal workflow and compliance.',
-                items: ['Layout Design', 'Remodeling', 'Compliant'],
-                color: 'bg-blue-50'
-              },
-              {
-                icon: Flame,
-                title: 'LPG Gas Pipeline',
-                desc: 'Professional LPG gas pipeline installation for commercial kitchens with strict safety standards.',
-                items: ['Safety First', 'Commercial', 'Certified'],
-                color: 'bg-red-50'
-              },
-              {
-                icon: Shield,
-                title: 'Fire Suppression System',
-                desc: 'Kitchen fire suppression system installation to keep your commercial establishment safe and up to code.',
-                items: ['Fire Safety', 'Compliant', 'Reliable'],
-                color: 'bg-amber-50'
-              },
-              {
-                icon: Wind,
-                title: 'Exhaust & Fresh Air System',
-                desc: 'Mechanical works for exhaust hoods, ductwork, and fresh air systems for proper kitchen ventilation.',
-                items: ['Ventilation', 'Ductwork', 'Airflow'],
-                color: 'bg-emerald-50'
-              },
-              {
-                icon: PenTool,
-                title: 'Railings & Custom Fabrication',
-                desc: 'Custom-designed stainless steel railings and bespoke fabrication for residential and commercial projects.',
-                items: ['Residential', 'Commercial', 'Custom'],
-                color: 'bg-violet-50'
-              },
-            ].map((service) => (
+        {/* Built on Trust Section */}
+        <section id="about" className="relative py-16 md:py-32 bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d4d4d9] overflow-hidden">
+          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+              
               <motion.div
-                key={service.title}
-                variants={staggerItem}
-                whileHover={{ y: -10 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                style={{ willChange: 'transform, opacity' }}
-                className="group relative rounded-2xl sm:rounded-[2rem] border border-gray-100 bg-white p-6 sm:p-10 shadow-lg shadow-gray-200/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-shadow duration-300"
+                initial={{ opacity: 0, y: 70 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{ duration: 1.1, ease: SMOOTH_240 }}
+                className="gpu-reveal"
               >
-                <div className={`flex h-14 w-14 items-center justify-center rounded-2xl ${service.color} mb-6 group-hover:scale-110 transition-transform duration-300`}>
-                  <service.icon className="h-7 w-7 text-gray-900" />
-                </div>
-                <h3 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2 sm:mb-3">{service.title}</h3>
-                <p className="text-sm sm:text-base text-gray-500 leading-relaxed mb-5 sm:mb-8">
-                  {service.desc}
+                <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter text-[#1d1d1f] leading-tight mb-6">
+                  Built on Trust,<br/>
+                  Delivered with <span className="bg-gradient-to-r from-[#8e8e93] via-[#c5c5ca] to-[#8e8e93] bg-clip-text text-transparent">Precision.</span>
+                </h2>
+                <p className="text-base md:text-xl text-[#6e6e73] font-medium mb-8 md:mb-10 leading-relaxed max-w-lg">
+                  Founded in October 2018, RMV Stainless Steel Fabrication has grown into a trusted name in commercial kitchen fabrication. We combine traditional craftsmanship with modern technology to deliver outstanding results.
                 </p>
-                <div className="flex flex-wrap gap-2">
-                  {service.items.map((item) => (
-                     <span key={item} className="text-xs font-bold uppercase tracking-wider text-gray-400 bg-gray-50 px-3 py-1.5 rounded-full border border-gray-100">
-                       {item}
-                     </span>
+                
+                <ul className="space-y-6">
+                  {[
+                    'Real-time project tracking through your online portal',
+                    'Transparent pricing with detailed cost breakdowns',
+                    'Quality-assured with rigorous inspection protocols',
+                    'Professional installation by certified technicians',
+                    'On-time delivery with milestone-based updates'
+                  ].map((text, i) => (
+                     <li key={i} className="flex items-start gap-3 md:gap-4">
+                       <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-[#d2d2d7] to-white flex items-center justify-center border border-[#c0c0c4] shadow-sm">
+                         <CheckCircle className="h-4 w-4 text-[#1d1d1f]" />
+                       </div>
+                       <span className="text-[#1d1d1f] font-medium text-base md:text-lg tracking-tight">{text}</span>
+                     </li>
                   ))}
-                </div>
-                <div className="absolute top-10 right-10 opacity-0 group-hover:opacity-100 transition-opacity -translate-y-2 group-hover:translate-y-0 duration-300">
-                    <ArrowUpRight className="text-orange-500 h-6 w-6" />
+                </ul>
+              </motion.div>
+
+              {/* Portal UI Mockup inside minimalist card */}
+              <motion.div
+                initial={{ opacity: 0, y: 70 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{ duration: 1.1, delay: 0.2, ease: SMOOTH_240 }}
+                className="relative mx-auto w-full max-w-[500px] gpu-reveal"
+              >
+                {/* Decorative radial gradients replacing the original orange blobs */}
+                <div className="absolute -top-10 -right-10 w-64 h-64 bg-[#d2d2d7] rounded-full blur-3xl opacity-50 mix-blend-multiply" />
+                <div className="absolute -bottom-10 -left-10 w-64 h-64 bg-white rounded-full blur-3xl opacity-80 mix-blend-multiply" />
+                
+                <div className="relative bg-gradient-to-br from-[#2c2c2e] via-[#1d1d1f] to-[#0a0a0a] rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl border border-white/10">
+                  <div className="flex items-center gap-4 mb-8">
+                    <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
+                      <Settings className="h-6 w-6 text-white" />
+                    </div>
+                    <div>
+                      <h4 className="text-white font-semibold text-lg">RMV Portal</h4>
+                      <p className="text-[#86868b] text-sm">Client Dashboard</p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex justify-between items-center">
+                      <span className="text-[#a1a1a6] text-sm font-medium">Project Status</span>
+                      <span className="bg-white text-black px-3 py-1 rounded-full text-xs font-bold">Fabrication</span>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex justify-between items-center">
+                      <span className="text-[#a1a1a6] text-sm font-medium">Completion</span>
+                      <span className="text-white font-bold">78%</span>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 rounded-2xl p-5 flex justify-between items-center">
+                      <span className="text-[#a1a1a6] text-sm font-medium">Next Milestone</span>
+                      <span className="text-white text-sm font-bold">Quality Check</span>
+                    </div>
+                  </div>
+
+                  <div className="mt-8 pt-6 border-t border-white/10">
+                     <div className="flex justify-between text-xs font-medium text-[#86868b] mb-3">
+                       <span>Overall Progress</span>
+                       <span>78%</span>
+                     </div>
+                     <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+                       <div className="h-full bg-white w-[78%] rounded-full" />
+                     </div>
+                  </div>
                 </div>
               </motion.div>
-            ))}
-          </StaggerContainer>
-        </div>
-      </section>
 
-      {/* ─── Process Section ─── */}
-      <section id="process" className="bg-gray-950 py-16 sm:py-24 lg:py-32 relative overflow-hidden">
-        {/* Background Grids */}
-        <div className="absolute inset-0 opacity-[0.05]" 
-          style={{ 
-            backgroundImage: 'linear-gradient(#4b5563 1px, transparent 1px), linear-gradient(90deg, #4b5563 1px, transparent 1px)', 
-            backgroundSize: '40px 40px' 
-          }} 
-        />
-        
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 sm:gap-16 items-start">
-             <div className="lg:sticky lg:top-32">
-                <SlideInLeft>
-                  <div className="inline-flex items-center gap-2 rounded-full border border-gray-800 bg-gray-900 px-4 py-1.5 text-sm font-semibold text-gray-300 mb-6">
-                    <Wrench className="h-3.5 w-3.5" />
-                    How It Works
+            </div>
+          </div>
+        </section>
+
+        {/* Streamlined Workflow */}
+        <section id="workflow" className="relative py-16 md:py-32 bg-gradient-to-br from-[#1a1a1c] via-[#0f0f11] to-[#1d1d1f] text-white overflow-hidden">
+          {/* Subtle silver light leak on dark bg */}
+          <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(180,180,190,0.06)_0%,transparent_70%)] pointer-events-none" />
+          <div className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(200,200,210,0.05)_0%,transparent_70%)] pointer-events-none" />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="grid lg:grid-cols-3 gap-10 md:gap-16">
+              
+              <div className="lg:col-span-1">
+                <motion.div
+                  initial={{ opacity: 0, y: 70 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.15 }}
+                  transition={{ duration: 1.1, ease: SMOOTH_240 }}
+                  className="sticky top-32 gpu-reveal"
+                >
+                  <div className="inline-flex items-center gap-2 border border-white/20 bg-white/5 rounded-full px-4 py-1.5 mb-8">
+                    <Clock className="h-4 w-4 text-[#a1a1a6]" />
+                    <span className="text-sm font-medium text-[#a1a1a6]">How It Works</span>
                   </div>
-                  <h2 className="text-3xl sm:text-5xl font-bold tracking-tight text-white mb-4 sm:mb-6">
-                    Streamlined <br/>
-                    <span className="text-orange-500">Workflow.</span>
+                  <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter leading-none mb-6">
+                    Streamlined<br />
+                    <span className="bg-gradient-to-r from-[#7a7a80] via-[#d0d0d6] to-[#7a7a80] bg-clip-text text-transparent">Workflow.</span>
                   </h2>
-                  <p className="text-base sm:text-lg text-gray-400 mb-6 sm:mb-10 max-w-md">
+                  <p className="text-[#a1a1a6] text-lg font-medium mb-10 max-w-md leading-relaxed">
                     From initial consultation to final delivery — complete transparency at every step of your fabrication journey.
                   </p>
-                  <Button asChild size="lg" className="bg-white text-gray-900 hover:bg-gray-200 font-bold rounded-full">
-                     <Link to={isLoggedIn ? '/dashboard' : '/register'}>
-                       {isLoggedIn ? <><LayoutDashboard className="mr-2 h-5 w-5" />Go to Dashboard</> : 'Get Started Now'}
-                     </Link>
+                  <Button asChild className="bg-white hover:bg-[#e8e8ed] text-black text-base font-semibold rounded-full px-8 h-14 transition-all hover:scale-105 active:scale-95 duration-300">
+                    <Link to="/register">Get Started Now</Link>
                   </Button>
-                </SlideInLeft>
-             </div>
+                </motion.div>
+              </div>
 
-             <StaggerContainer className="flex flex-col gap-4 sm:gap-8">
+              <div className="lg:col-span-2 space-y-6">
                 {[
-                  {
-                    step: '01',
-                    name: 'Consultation',
-                    icon: Calendar,
-                    desc: 'Book online. We visit for measurements or meet to discuss your vision.',
-                  },
-                  {
-                    step: '02',
-                    name: 'Design & Costing',
-                    icon: FileText,
-                    desc: 'Receive CAD blueprints and transparent cost breakdowns for approval.',
-                  },
-                  {
-                    step: '03',
-                    name: 'Fabrication',
-                    icon: Wrench,
-                    desc: 'Watch your project come to life with real-time progress updates.',
-                  },
-                  {
-                    step: '04',
-                    name: 'Delivery',
-                    icon: Truck,
-                    desc: 'Professional installation with final quality check and handover.',
-                  },
+                  { step: "01", title: "Consultation", desc: "Book online. We visit for measurements or meet to discuss your vision." },
+                  { step: "02", title: "Design & Costing", desc: "Receive CAD blueprints and transparent cost breakdowns for approval." },
+                  { step: "03", title: "Fabrication", desc: "Watch your project come to life with real-time progress updates." },
+                  { step: "04", title: "Delivery", desc: "Professional installation with final quality check and handover." }
                 ].map((item, idx) => (
                   <motion.div
-                    key={item.name}
-                    variants={staggerItem}
-                    className="flex gap-4 sm:gap-6 p-4 sm:p-6 rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 hover:bg-white/10 transition-colors backdrop-blur-sm"
+                    key={item.step}
+                    initial={{ opacity: 0, y: 70 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, amount: 0.1 }}
+                    transition={{ duration: 1, delay: 0.15 * idx, ease: SMOOTH_240 }}
+                    className="group gpu-reveal"
                   >
-                    <div className="flex flex-col items-center gap-2">
-                       <div className="flex h-10 w-10 sm:h-12 sm:w-12 items-center justify-center rounded-lg sm:rounded-xl bg-orange-600 text-white font-bold text-sm sm:text-lg shadow-lg shadow-orange-600/20">
-                         {item.step}
-                       </div>
-                       {idx !== 3 && <div className="w-px h-full bg-white/10 min-h-[40px] grow" />}
-                    </div>
-                    <div className="pb-4">
-                      <h3 className="text-base sm:text-xl font-bold text-white mb-1 sm:mb-2">{item.name}</h3>
-                      <p className="text-sm sm:text-base text-gray-400 leading-relaxed">
-                        {item.desc}
-                      </p>
-                    </div>
-                  </motion.div>
-                ))}
-             </StaggerContainer>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Why Choose Us ─── */}
-      <section id="about" className="py-16 sm:py-24 lg:py-32 bg-gray-50 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-            <SlideInLeft>
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-4 sm:mb-6">
-                Built on Trust,<br/>
-                Delivered with <span className="text-orange-600 decoration-4 decoration-orange-200 underline underline-offset-4">Precision</span>
-              </h2>
-              <p className="mt-4 sm:mt-6 text-base sm:text-xl text-gray-600 leading-relaxed mb-6 sm:mb-10">
-                Founded in October 2018, RMV Stainless Steel Fabrication has grown into a 
-                trusted name in commercial kitchen fabrication. We combine traditional 
-                craftsmanship with modern technology to deliver outstanding results.
-              </p>
-
-              <StaggerContainer staggerDelay={0.08} className="space-y-4 sm:space-y-6">
-                {[
-                  'Real-time project tracking through your online portal',
-                  'Transparent pricing with detailed cost breakdowns',
-                  'Quality-assured with rigorous inspection protocols',
-                  'Professional installation by certified technicians',
-                  'On-time delivery with milestone-based updates',
-                ].map((item) => (
-                  <motion.div 
-                    variants={staggerItem}
-                    key={item} 
-                    className="flex items-start gap-4"
-                  >
-                    <div className="flex-shrink-0 mt-1">
-                      <CheckCircle2 className="h-6 w-6 text-orange-600" />
-                    </div>
-                    <span className="text-sm sm:text-lg text-gray-800 font-medium">{item}</span>
-                  </motion.div>
-                ))}
-              </StaggerContainer>
-            </SlideInLeft>
-
-            {/* Visual card */}
-            <SlideInRight className="relative flex items-center justify-center">
-              <div className="relative w-full max-w-md">
-                <motion.div 
-                  whileHover={{ scale: 1.02 }}
-                  transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                  style={{ willChange: 'transform' }}
-                  className="relative z-10 rounded-2xl sm:rounded-[2.5rem] bg-gray-900 p-5 sm:p-8 md:p-12 shadow-2xl overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 p-12 bg-orange-500/20 blur-[60px] rounded-full h-64 w-64 -mr-20 -mt-20" />
-                  
-                  <div className="relative z-10">
-                    <div className="flex items-center gap-3 sm:gap-4 mb-6 sm:mb-10">
-                      <div className="flex h-10 w-10 sm:h-14 sm:w-14 items-center justify-center rounded-xl sm:rounded-2xl bg-orange-500 text-white shadow-lg shadow-orange-500/30">
-                        <Wrench className="h-5 w-5 sm:h-7 sm:w-7" />
+                    <div className="bg-gradient-to-r from-white/[0.06] to-white/[0.02] border border-white/10 hover:border-white/25 rounded-2xl md:rounded-3xl p-6 md:p-10 transition-all duration-500 flex flex-col md:flex-row gap-5 md:gap-10 hover:shadow-[0_8px_32px_rgba(255,255,255,0.03)]">
+                      <div className="flex-shrink-0">
+                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-white via-[#e0e0e4] to-[#c8c8cc] text-black flex items-center justify-center text-xl font-bold tracking-tight shadow-lg shadow-white/10">
+                          {item.step}
+                        </div>
                       </div>
                       <div>
-                        <span className="block text-white font-bold text-lg sm:text-2xl">RMV Portal</span>
-                        <span className="text-gray-400 text-xs sm:text-sm">Client Dashboard</span>
+                        <h3 className="text-2xl font-semibold tracking-tight mb-3 text-white group-hover:text-white transition-colors">{item.title}</h3>
+                        <p className="text-[#86868b] text-base md:text-lg font-medium leading-relaxed">
+                          {item.desc}
+                        </p>
                       </div>
                     </div>
-                    
-                    <div className="space-y-3 sm:space-y-4">
-                      {[
-                        { label: 'Project Status', value: 'Fabrication', color: 'bg-orange-500' },
-                        { label: 'Completion', value: '78%', color: 'bg-emerald-500' },
-                        { label: 'Next Milestone', value: 'Quality Check', color: 'bg-blue-500' },
-                      ].map((row) => (
-                        <div
-                          key={row.label}
-                          className="flex items-center justify-between rounded-xl sm:rounded-2xl bg-white/5 border border-white/10 px-3 sm:px-6 py-3 sm:py-5 hover:bg-white/10 transition-colors cursor-pointer gap-2"
-                        >
-                          <span className="text-xs sm:text-base text-gray-300 font-medium">{row.label}</span>
-                          <span className={`text-xs sm:text-sm font-bold text-white px-2 sm:px-4 py-1 sm:py-1.5 rounded-full ${row.color}/20 text-center whitespace-nowrap`}>
-                            {row.value}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                    
-                    <div className="mt-6 sm:mt-10">
-                       <div className="flex justify-between text-xs sm:text-sm text-gray-400 mb-2">
-                          <span>Overall Progress</span>
-                          <span>78%</span>
-                       </div>
-                       <div className="h-3 rounded-full bg-gray-800 overflow-hidden">
-                         <motion.div 
-                           initial={{ scaleX: 0 }}
-                           whileInView={{ scaleX: 1 }}
-                           transition={{ duration: 1.5, ease: [0.25, 0.1, 0.25, 1.0] }}
-                           viewport={{ once: true }}
-                           style={{ originX: 0, willChange: 'transform' }}
-                           className="h-full w-[78%] rounded-full bg-gradient-to-r from-orange-600 to-orange-400" 
-                         />
-                       </div>
-                    </div>
+                  </motion.div>
+                ))}
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* Fabrication Capabilities (Bento) */}
+        <section id="capabilities" className="relative py-16 md:py-32 bg-gradient-to-br from-[#e4e4e9] via-[#eeeef2] to-[#d8d8de]">
+          <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#b0b0b6] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#b0b0b6] to-transparent" />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 1.1, ease: SMOOTH_240 }}
+              className="text-center mb-20 gpu-reveal"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter text-[#1d1d1f] mb-4">Fabrication Capabilities</h2>
+              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#6e6e73]">Complete stainless steel fabrication services from design to installation.</p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {[
+                { icon: Layers, title: "Kitchen Stainless Steel Fabrication", desc: "Custom food-grade stainless steel counters, sinks, shelving, and equipment for restaurants, hotels, and food courts.", tags: ["Food Grade", "Custom Fit", "Durable"] },
+                { icon: PenTool, title: "Kitchen Planning & Remodeling", desc: "End-to-end kitchen layout planning and remodeling designed for optimal workflow and compliance.", tags: ["Layout Design", "Remodeling", "Compliant"] },
+                { icon: Flame, title: "LPG Gas Pipeline", desc: "Professional LPG gas pipeline installation for commercial kitchens with strict safety standards.", tags: ["Safety First", "Commercial", "Certified"] },
+                { icon: ShieldCheck, title: "Fire Suppression System", desc: "Kitchen fire suppression system installation to keep your commercial establishment safe and up to code.", tags: ["Fire Safety", "Compliant", "Reliable"] },
+                { icon: Wind, title: "Exhaust & Fresh Air System", desc: "Mechanical works for exhaust hoods, ductwork, and fresh air systems for proper kitchen ventilation.", tags: ["Ventilation", "Ductwork", "Airflow"] },
+                { icon: Maximize, title: "Railings & Custom Fabrication", desc: "Custom-designed stainless steel railings and bespoke fabrication for residential and commercial projects.", tags: ["Residential", "Commercial", "Custom"] }
+              ].map((cap, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 70 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 1, delay: 0.12 * i, ease: SMOOTH_240 }}
+                  className="gpu-reveal bg-gradient-to-br from-[#f0f0f4] via-[#e6e6eb] to-[#d8d8dd] border border-[#bbbbc0]/70 rounded-2xl md:rounded-[2rem] p-6 md:p-8 hover:from-[#eaeaef] hover:via-[#e0e0e5] hover:to-[#d2d2d7] transition-all duration-500 group flex flex-col hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] hover:-translate-y-1 shadow-sm shadow-black/5"
+                >
+                  <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] border border-[#b0b0b5] rounded-full flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-500 shadow-md shadow-black/8">
+                    <cap.icon className="h-5 w-5 md:h-6 md:w-6 text-[#1d1d1f]" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f] mb-3 md:mb-4 leading-tight">{cap.title}</h3>
+                  <p className="text-[#6e6e73] font-medium leading-relaxed mb-6 md:mb-8 flex-grow text-sm md:text-base">{cap.desc}</p>
+                  <div className="flex flex-wrap gap-2 mt-auto">
+                    {cap.tags.map(tag => (
+                      <span key={tag} className="text-[10px] font-bold uppercase tracking-widest text-[#555558] bg-gradient-to-r from-white/90 to-[#e0e0e4] border border-[#b8b8bd] px-3 py-1.5 rounded-full shadow-sm">
+                        {tag}
+                      </span>
+                    ))}
                   </div>
                 </motion.div>
-                
-                {/* Decorative Elements — CSS animations to avoid JS animation loops */}
-                <div className="absolute -top-6 -right-6 sm:-top-12 sm:-right-12 h-24 w-24 sm:h-40 sm:w-40 rounded-full bg-orange-200/50 backdrop-blur-3xl -z-10 animate-float-slow" />
-                <div className="absolute -bottom-6 -left-6 sm:-bottom-10 sm:-left-10 h-32 w-32 sm:h-56 sm:w-56 rounded-full bg-blue-200/50 backdrop-blur-3xl -z-10 animate-float-slower" />
-              </div>
-            </SlideInRight>
-          </div>
-        </div>
-      </section>
-
-      {/* ─── Mission & Vision ─── */}
-      <section className="py-16 sm:py-24 bg-white overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <FadeIn>
-            <div className="text-center mb-12 sm:mb-16">
-              <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                Our Purpose
-              </h2>
-              <p className="mt-3 text-gray-500 text-base sm:text-lg max-w-2xl mx-auto">
-                What drives us every day in the workshop and on-site.
-              </p>
+              ))}
             </div>
-          </FadeIn>
+          </div>
+        </section>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 lg:gap-12">
-            <SlideInLeft>
-              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-8 sm:p-10 h-full">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
-                    <Star className="h-5 w-5" />
+        {/* Sectors We Serve */}
+        <section className="relative py-16 md:py-24 bg-gradient-to-br from-[#d0d0d6] via-[#dcdce2] to-[#c8c8ce]">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 1.1, ease: SMOOTH_240 }}
+              className="mb-16 gpu-reveal"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter text-[#1d1d1f] mb-4">Sectors We Serve</h2>
+              <p className="text-base md:text-xl font-medium text-[#6e6e73]">Trusted by businesses across diverse industries in the food and hospitality sector.</p>
+            </motion.div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[
+                { icon: Utensils, label: "Restaurants" },
+                { icon: ShoppingBag, label: "Shopping Malls" },
+                { icon: Store, label: "Food Courts" },
+                { icon: Coffee, label: "Bakeries & Cafés" },
+                { icon: Truck, label: "Fast Food Outlets" },
+                { icon: HeartPulse, label: "Hospital Food Outlets" },
+                { icon: Home, label: "Residentials" },
+                { icon: Hotel, label: "Hotels & Resorts F&B" },
+              ].map((sector, i) => (
+                <motion.div
+                  key={sector.label}
+                  initial={{ opacity: 0, y: 50 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 0.9, delay: 0.08 * i, ease: SMOOTH_240 }}
+                  className="gpu-reveal bg-gradient-to-br from-white/90 via-[#ececf0] to-[#d8d8de] border border-[#b4b4ba]/60 rounded-2xl md:rounded-3xl p-5 md:p-8 flex flex-col items-center justify-center gap-3 md:gap-4 hover:shadow-lg hover:shadow-black/8 transition-all duration-300 group hover:-translate-y-0.5 shadow-sm"
+                >
+                  <div className="w-11 h-11 md:w-12 md:h-12 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] rounded-xl md:rounded-2xl flex items-center justify-center text-[#1d1d1f] group-hover:bg-[#1d1d1f] group-hover:text-white transition-all duration-300 shadow-md shadow-black/6 border border-[#b8b8bd]/50">
+                    <sector.icon className="h-6 w-6" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Our Mission</h3>
+                  <span className="font-semibold text-sm tracking-tight text-[#1d1d1f] text-center">{sector.label}</span>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Featured Projects */}
+        <section id="projects" className="relative py-16 md:py-32 bg-gradient-to-br from-[#e0e0e6] via-[#ebebf0] to-[#d6d6dc]">
+          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 1.1, ease: SMOOTH_240 }}
+              className="text-center mb-20 gpu-reveal"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter text-[#1d1d1f] mb-4">Featured Projects</h2>
+              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#6e6e73]">A selection of completed works across restaurants, hotels, and food establishments.</p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {PROJECTS.map((proj, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 70 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 1, delay: 0.12 * i, ease: SMOOTH_240 }}
+                  className="gpu-reveal group relative h-64 sm:h-80 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-xl shadow-black/10 border border-[#b8b8bd]/30 cursor-pointer"
+                  onClick={() => setSelectedProject(proj)}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedProject(proj); } }}
+                >
+                  <img src={proj.img} alt={proj.title} className="absolute inset-0 w-full h-full object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[50%] group-hover:grayscale-0" />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1d1d1f] via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500" />
+                  
+                  {/* Expand hint */}
+                  <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-100 scale-75">
+                    <Eye className="h-4 w-4 text-white" />
+                  </div>
+
+                  <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
+                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#d2d2d7] mb-1.5 sm:mb-2">{proj.tag}</p>
+                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-1.5 sm:mb-2">{proj.title}</h3>
+                    <p className="text-[#a1a1a6] text-sm font-medium flex items-center gap-1.5">
+                      <MapPin className="h-3.5 w-3.5" />
+                      {proj.loc}
+                    </p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ===== PROJECT MODAL ===== */}
+        <AnimatePresence>
+          {selectedProject && (
+            <motion.div
+              key="project-modal-backdrop"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-12"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.35, ease: SMOOTH_240 }}
+              onClick={() => setSelectedProject(null)}
+            >
+              {/* Backdrop */}
+              <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
+
+              {/* Modal Content */}
+              <motion.div
+                key="project-modal-content"
+                className="gpu-reveal relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-[#1a1a1c] via-[#111113] to-[#0d0d0f] border border-[#3a3a3e]/60 shadow-2xl shadow-black/60"
+                initial={{ opacity: 0, y: 80, scale: 0.92 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 60, scale: 0.95 }}
+                transition={{ duration: 0.5, ease: SMOOTH_240 }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {/* Close button */}
+                <button
+                  onClick={() => setSelectedProject(null)}
+                  className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 hover:scale-110 active:scale-95"
+                  aria-label="Close modal"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                {/* Hero Image */}
+                <div className="relative w-full h-56 sm:h-72 md:h-96 overflow-hidden rounded-t-2xl md:rounded-t-[2rem]">
+                  <motion.img
+                    src={selectedProject.img}
+                    alt={selectedProject.title}
+                    className="w-full h-full object-cover"
+                    initial={{ scale: 1.15 }}
+                    animate={{ scale: 1 }}
+                    transition={{ duration: 0.8, ease: SMOOTH_240 }}
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1c] via-transparent to-transparent" />
+                  
+                  {/* Floating tag */}
+                  <motion.div
+                    className="absolute bottom-6 left-6 sm:left-8"
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2, ease: SMOOTH_240 }}
+                  >
+                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold uppercase tracking-widest text-[#d2d2d7]">
+                      <Layers className="h-3 w-3" />
+                      {selectedProject.tag}
+                    </span>
+                  </motion.div>
                 </div>
-                <p className="text-gray-600 leading-relaxed">
+
+                {/* Content */}
+                <div className="p-6 sm:p-8 md:p-10 space-y-6 md:space-y-8">
+                  {/* Title & Location */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 30 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.15, ease: SMOOTH_240 }}
+                  >
+                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter text-white mb-3">
+                      {selectedProject.title}
+                    </h2>
+                    <p className="text-[#86868b] font-medium flex items-center gap-2 text-sm sm:text-base">
+                      <MapPin className="h-4 w-4 text-[#6e6e73]" />
+                      {selectedProject.loc}
+                    </p>
+                  </motion.div>
+
+                  {/* Divider */}
+                  <motion.div
+                    className="h-px bg-gradient-to-r from-transparent via-[#3a3a3e] to-transparent"
+                    initial={{ scaleX: 0 }}
+                    animate={{ scaleX: 1 }}
+                    transition={{ duration: 0.7, delay: 0.3, ease: SMOOTH_240 }}
+                  />
+
+                  {/* Description */}
+                  <motion.p
+                    className="text-[#a1a1a6] text-sm sm:text-base md:text-lg leading-relaxed font-medium"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.25, ease: SMOOTH_240 }}
+                  >
+                    {selectedProject.description}
+                  </motion.p>
+
+                  {/* Highlights */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.35, ease: SMOOTH_240 }}
+                  >
+                    <h3 className="text-xs font-bold uppercase tracking-widest text-[#6e6e73] mb-4">Project Highlights</h3>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {selectedProject.highlights.map((h, idx) => (
+                        <motion.div
+                          key={idx}
+                          className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-white/[0.03] border border-[#2a2a2e]/80 hover:border-[#4a4a4e]/60 transition-colors duration-300"
+                          initial={{ opacity: 0, x: -15 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ duration: 0.4, delay: 0.4 + idx * 0.08, ease: SMOOTH_240 }}
+                        >
+                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2a2a2e] to-[#1d1d1f] border border-[#3a3a3e]/60 flex items-center justify-center flex-shrink-0">
+                            <ChevronRight className="h-3.5 w-3.5 text-[#86868b]" />
+                          </div>
+                          <span className="text-sm font-semibold text-[#d2d2d7] tracking-tight">{h}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </motion.div>
+
+                  {/* Footer CTA */}
+                  <motion.div
+                    className="flex flex-col sm:flex-row items-center gap-3 pt-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.5, ease: SMOOTH_240 }}
+                  >
+                    <a
+                      href="#contact"
+                      onClick={() => setSelectedProject(null)}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white text-[#1d1d1f] font-semibold text-sm tracking-tight hover:bg-[#e8e8ed] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10"
+                    >
+                      Inquire About This Project
+                      <ArrowRight className="h-4 w-4" />
+                    </a>
+                    <button
+                      onClick={() => setSelectedProject(null)}
+                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-transparent border border-[#3a3a3e] text-[#86868b] font-medium text-sm tracking-tight hover:text-white hover:border-[#5a5a5e] transition-all duration-300"
+                    >
+                      Close
+                    </button>
+                  </motion.div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
+        {/* Testimonials */}
+        <section id="testimonials" className="relative py-16 md:py-32 bg-gradient-to-br from-[#1a1a1c] via-[#0d0d0f] to-[#1d1d1f] text-white overflow-hidden">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(180,180,190,0.04)_0%,transparent_60%)] pointer-events-none" />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 1.1, ease: SMOOTH_240 }}
+              className="text-center mb-20 gpu-reveal"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter mb-4 text-white">What Our Clients Say</h2>
+              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#86868b]">Hear from business owners who trust RMV for their fabrication needs.</p>
+            </motion.div>
+
+            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+              {[
+                { 
+                  text: "RMV delivered our complete kitchen setup ahead of schedule. The stainless steel work is top quality and the team was very professional throughout the entire process.",
+                  author: "Restaurant Owner",
+                  biz: "Korean Restaurant, Quezon City"
+                },
+                { 
+                  text: "From planning to installation, everything was handled seamlessly. The kitchen layout they designed improved our workflow significantly. Highly recommended!",
+                  author: "Hotel Manager",
+                  biz: "Hotel F&B, Albay"
+                },
+                { 
+                  text: "We had multiple stalls fabricated by RMV and every single one was done with excellent craftsmanship. Affordable pricing and on-time delivery.",
+                  author: "Food Court Operator",
+                  biz: "Food Stalls, Fairview Terraces"
+                }
+              ].map((testimonial, i) => (
+                <motion.div
+                  key={i}
+                  initial={{ opacity: 0, y: 70 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ duration: 1, delay: 0.15 * i, ease: SMOOTH_240 }}
+                  className="gpu-reveal bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-white/10 rounded-2xl md:rounded-[2rem] p-6 md:p-10 flex flex-col justify-between hover:border-white/20 transition-colors duration-500"
+                >
+                  <div>
+                    <Quote className="h-8 w-8 md:h-10 md:w-10 text-[#86868b] mb-4 md:mb-6 opacity-30 fill-current" />
+                    <p className="text-base md:text-lg text-white/90 leading-relaxed font-medium mb-8 md:mb-10">"{testimonial.text}"</p>
+                  </div>
+                  <div>
+                    <div className="flex gap-1 mb-4">
+                      {[1,2,3,4,5].map(star => <Star key={star} className="h-4 w-4 fill-white text-white" />)}
+                    </div>
+                    <p className="font-semibold text-white tracking-tight mb-1">{testimonial.author}</p>
+                    <p className="text-[#86868b] text-sm">{testimonial.biz}</p>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Our Purpose */}
+        <section className="relative py-16 md:py-24 bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d0d0d6]">
+          <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 1.1, ease: SMOOTH_240 }}
+              className="mb-16 gpu-reveal"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter text-[#1d1d1f] mb-4">Our Purpose</h2>
+              <p className="text-base md:text-xl font-medium text-[#6e6e73]">What drives us every day in the workshop and on-site.</p>
+            </motion.div>
+
+            <div className="grid md:grid-cols-2 gap-6 text-left">
+              <motion.div
+                initial={{ opacity: 0, y: 70 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{ duration: 1, ease: SMOOTH_240 }}
+                className="gpu-reveal bg-gradient-to-br from-[#f0f0f4] via-[#e6e6eb] to-[#d4d4da] border border-[#b8b8be]/60 rounded-2xl md:rounded-[2rem] p-7 md:p-10 hover:from-[#eaeaef] hover:via-[#e0e0e5] hover:to-[#cecece] transition-all duration-300 hover:shadow-lg hover:shadow-black/8 shadow-sm"
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] rounded-full border border-[#b0b0b5] flex items-center justify-center shadow-md shadow-black/6">
+                    <Star className="h-5 w-5 text-[#1d1d1f]" />
+                  </div>
+                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f]">Our Mission</h3>
+                </div>
+                <p className="text-[#6e6e73] text-base md:text-lg font-medium leading-relaxed">
                   We are committed to delivering quality manufacturing services to our customers, fostering an environment of continuous growth for both our customers and investors.
                 </p>
-              </div>
-            </SlideInLeft>
+              </motion.div>
 
-            <SlideInRight>
-              <div className="rounded-2xl border border-gray-100 bg-gray-50 p-8 sm:p-10 h-full">
-                <div className="flex items-center gap-3 mb-5">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
-                    <Layers className="h-5 w-5" />
+              <motion.div
+                initial={{ opacity: 0, y: 70 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.15 }}
+                transition={{ duration: 1, delay: 0.2, ease: SMOOTH_240 }}
+                className="gpu-reveal bg-gradient-to-br from-[#f0f0f4] via-[#e6e6eb] to-[#d4d4da] border border-[#b8b8be]/60 rounded-2xl md:rounded-[2rem] p-7 md:p-10 hover:from-[#eaeaef] hover:via-[#e0e0e5] hover:to-[#cecece] transition-all duration-300 hover:shadow-lg hover:shadow-black/8 shadow-sm"
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-12 h-12 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] rounded-full border border-[#b0b0b5] flex items-center justify-center shadow-md shadow-black/6">
+                    <Layers className="h-5 w-5 text-[#1d1d1f]" />
                   </div>
-                  <h3 className="text-xl font-bold text-gray-900">Our Vision</h3>
+                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f]">Our Vision</h3>
                 </div>
-                <p className="text-gray-600 leading-relaxed">
+                <p className="text-[#6e6e73] text-base md:text-lg font-medium leading-relaxed">
                   Aspiring to be a world-class manufacturer, we aim to produce quality, custom, precision parts and fabrications that surpass customer expectations. Our success lies in providing on-time or early deliveries, affordable prices, and innovative ideas, services, and solutions that enhance our customers' products and businesses.
                 </p>
-              </div>
-            </SlideInRight>
+              </motion.div>
+            </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* ─── Projects Showcase ─── */}
-      <section className="py-16 sm:py-24 lg:py-32 bg-gray-50 overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-20">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl mb-4 sm:mb-6">
-              Featured Projects
-            </h2>
-            <div className="h-1 w-24 bg-orange-500 mx-auto rounded-full mb-6" />
-            <p className="text-base sm:text-xl text-gray-500">
-              A selection of completed works across restaurants, hotels, and food establishments.
-            </p>
-          </SlideUp>
+        {/* Call to Action */}
+        <section className="relative py-20 md:py-32 bg-gradient-to-br from-[#d4d4da] via-[#e0e0e6] to-[#c8c8ce]">
+          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
+          <div className="max-w-4xl mx-auto px-6 text-center">
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 1.1, ease: SMOOTH_240 }}
+              className="gpu-reveal"
+            >
+              <h2 className="text-3xl sm:text-4xl md:text-7xl font-bold tracking-tighter text-[#1d1d1f] mb-4 md:mb-6">Start your build.</h2>
+              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#6e6e73] mb-8 md:mb-10 max-w-2xl mx-auto">Access the portal to manage quotes, track projects, and communicate directly with the workshop.</p>
+              <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300">
+                  <Link to="/register">Create Account</Link>
+                </Button>
+                <Button asChild className="bg-white hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#d2d2d7] text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300 shadow-sm">
+                  <a href="mailto:rmvstainless@gmail.com">Contact Sales</a>
+                </Button>
+              </div>
+            </motion.div>
+          </div>
+        </section>
 
-          <StaggerContainer className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {[
-              {
-                title: 'Le Grand Prei',
-                location: 'General Santos City',
-                category: 'Full Kitchen Fabrication',
-                image: 'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?auto=format&fit=crop&w=800&q=80',
-              },
-              {
-                title: 'Kko Kko Korean Restaurant',
-                location: 'Cubao, Quezon City',
-                category: 'Kitchen Stainless Steel',
-                image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?auto=format&fit=crop&w=800&q=80',
-              },
-              {
-                title: "Primo's Restaurant",
-                location: 'Ligao, Albay',
-                category: 'Kitchen Equipment & Layout',
-                image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?auto=format&fit=crop&w=800&q=80',
-              },
-              {
-                title: '8 Danji Korean Resto',
-                location: 'Araneta, Cubao, Quezon City',
-                category: 'Full Kitchen Setup',
-                image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?auto=format&fit=crop&w=800&q=80',
-              },
-              {
-                title: 'Elkan Hotel',
-                location: 'Ligao, Albay',
-                category: 'Hotel Kitchen Fabrication',
-                image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?auto=format&fit=crop&w=800&q=80',
-              },
-              {
-                title: 'Food Stall Works – Ayala Fairview Terraces',
-                location: 'Fairview, Quezon City',
-                category: 'Multiple Food Stalls',
-                image: 'https://images.unsplash.com/photo-1567521464027-f127ff144326?auto=format&fit=crop&w=800&q=80',
-              },
-            ].map((project) => (
-              <motion.div
-                key={project.title}
-                variants={staggerItem}
-                whileHover={{ y: -8 }}
-                transition={{ type: 'spring', stiffness: 300, damping: 20 }}
-                style={{ willChange: 'transform, opacity' }}
-                className="group relative rounded-2xl overflow-hidden bg-white shadow-lg shadow-gray-200/50 hover:shadow-2xl hover:shadow-orange-500/10 transition-shadow duration-300"
-              >
-                <div className="aspect-[4/3] overflow-hidden">
-                  <img
-                    src={project.image}
-                    alt={project.title}
-                    className="h-full w-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
+        {/* Global Footer based on exact details */}
+        <footer id="contact" className="relative bg-gradient-to-br from-[#e8e8ed] via-[#f0f0f4] to-[#dcdce2] border-t border-[#b0b0b6]/40 pt-16 md:pt-20 pb-10 md:pb-12">
+          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-12 md:mb-16">
+              
+              <div className="space-y-4 md:space-y-6 col-span-2 md:col-span-1">
+                <div className="flex items-center gap-2">
+                  <BrandLogo className="h-7 w-7 md:h-8 md:w-8 text-[#1d1d1f]" />
+                  <span className="text-base md:text-lg font-bold tracking-tight text-[#1d1d1f]">RMV Stainless Steel Fabrication</span>
                 </div>
-                <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-6">
-                  <span className="inline-block text-xs font-bold uppercase tracking-wider text-orange-400 mb-1">
-                    {project.category}
-                  </span>
-                  <h3 className="text-lg font-bold text-white leading-tight">{project.title}</h3>
-                  <p className="text-sm text-gray-300 mt-1 flex items-center gap-1">
-                    <MapPin className="h-3.5 w-3.5" />
-                    {project.location}
-                  </p>
-                </div>
-              </motion.div>
-            ))}
-          </StaggerContainer>
-        </div>
-      </section>
-
-      {/* ─── Sectors Served ─── */}
-      <section className="py-16 sm:py-24 bg-white overflow-hidden">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-16">
-            <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl mb-4">
-              Sectors We Serve
-            </h2>
-            <p className="text-base sm:text-lg text-gray-500">
-              Trusted by businesses across diverse industries in the food and hospitality sector.
-            </p>
-          </SlideUp>
-
-          <StaggerContainer className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 sm:gap-6">
-            {[
-              { icon: UtensilsCrossed, label: 'Restaurants' },
-              { icon: ShoppingBag, label: 'Shopping Malls' },
-              { icon: Warehouse, label: 'Food Courts' },
-              { icon: Coffee, label: 'Bakeries & Cafés' },
-              { icon: Truck, label: 'Fast Food Outlets' },
-              { icon: Heart, label: 'Hospital Food Outlets' },
-              { icon: Building2, label: 'Residentials' },
-              { icon: Hotel, label: 'Hotels & Resorts F&B' },
-            ].map((sector) => (
-              <motion.div
-                key={sector.label}
-                variants={staggerItem}
-                className="flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-gray-50/50 p-5 sm:p-8 hover:border-orange-200 hover:bg-orange-50/50 transition-colors duration-300"
-              >
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-orange-600">
-                  <sector.icon className="h-6 w-6" />
-                </div>
-                <span className="text-sm font-semibold text-gray-700 text-center">{sector.label}</span>
-              </motion.div>
-            ))}
-          </StaggerContainer>
-        </div>
-      </section>
-
-      {/* ─── Testimonials ─── */}
-      <section className="py-16 sm:py-24 lg:py-32 bg-gray-950 overflow-hidden relative">
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: 'linear-gradient(#4b5563 1px, transparent 1px), linear-gradient(90deg, #4b5563 1px, transparent 1px)',
-            backgroundSize: '40px 40px'
-          }}
-        />
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 relative z-10">
-          <SlideUp className="mx-auto max-w-2xl text-center mb-12 sm:mb-20">
-            <h2 className="text-3xl font-bold tracking-tight text-white sm:text-5xl mb-4 sm:mb-6">
-              What Our Clients Say
-            </h2>
-            <div className="h-1 w-24 bg-orange-500 mx-auto rounded-full mb-6" />
-            <p className="text-base sm:text-lg text-gray-400">
-              Hear from business owners who trust RMV for their fabrication needs.
-            </p>
-          </SlideUp>
-
-          <StaggerContainer className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {[
-              {
-                name: 'Restaurant Owner',
-                business: 'Korean Restaurant, Quezon City',
-                quote: 'RMV delivered our complete kitchen setup ahead of schedule. The stainless steel work is top quality and the team was very professional throughout the entire process.',
-                rating: 5,
-              },
-              {
-                name: 'Hotel Manager',
-                business: 'Hotel F&B, Albay',
-                quote: 'From planning to installation, everything was handled seamlessly. The kitchen layout they designed improved our workflow significantly. Highly recommended!',
-                rating: 5,
-              },
-              {
-                name: 'Food Court Operator',
-                business: 'Food Stalls, Fairview Terraces',
-                quote: 'We had multiple stalls fabricated by RMV and every single one was done with excellent craftsmanship. Affordable pricing and on-time delivery.',
-                rating: 5,
-              },
-            ].map((testimonial) => (
-              <motion.div
-                key={testimonial.name}
-                variants={staggerItem}
-                className="relative rounded-2xl border border-white/10 bg-white/5 p-6 sm:p-8 backdrop-blur-sm hover:bg-white/10 transition-colors duration-300"
-              >
-                <Quote className="h-8 w-8 text-orange-500/30 mb-4" />
-                <p className="text-sm sm:text-base text-gray-300 leading-relaxed mb-6">
-                  &ldquo;{testimonial.quote}&rdquo;
+                <p className="text-[#6e6e73] font-medium leading-relaxed pr-4 text-sm">
+                  Precision stainless steel fabrication for residential and commercial industries.<br/>
+                  Quality you can trust.
                 </p>
-                <div className="flex items-center gap-1 mb-3">
-                  {Array.from({ length: testimonial.rating }).map((_, i) => (
-                    <Star key={i} className="h-4 w-4 fill-orange-400 text-orange-400" />
+              </div>
+
+              <div>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Services</h4>
+                <ul className="space-y-3 md:space-y-4">
+                  {['Kitchen SS Fabrication', 'Kitchen Remodeling', 'LPG Gas Pipeline', 'Fire Suppression', 'Exhaust Systems', 'Railings'].map(link => (
+                    <li key={link}><a href="#" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">{link}</a></li>
                   ))}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-white">{testimonial.name}</p>
-                  <p className="text-xs text-gray-400">{testimonial.business}</p>
-                </div>
-              </motion.div>
-            ))}
-          </StaggerContainer>
-        </div>
-      </section>
-
-      {/* ─── CTA Section ─── */}
-      <section className="relative overflow-hidden bg-gray-900 py-16 sm:py-24 lg:py-32">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1531297461136-82lw9b61d69d?q=80&w=2688&auto=format&fit=crop')] bg-cover bg-fixed opacity-10 mix-blend-overlay" />
-        <div className="absolute inset-0 bg-gradient-to-b from-gray-900 via-transparent to-gray-900" />
-        
-        <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
-          <ScaleIn>
-            <h2 className="text-2xl font-bold tracking-tight text-white sm:text-4xl lg:text-6xl max-w-3xl mx-auto mb-6 sm:mb-8">
-              Ready to build something{' '}
-              <span className="bg-gradient-to-r from-orange-400 to-orange-500 bg-clip-text text-transparent">
-                extraordinary?
-              </span>
-            </h2>
-            <p className="text-base sm:text-xl text-gray-400 max-w-2xl mx-auto mb-8 sm:mb-12 px-2">
-              Create a free account to schedule your consultation. Let&apos;s bring your
-              vision to life with precision engineering.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center gap-6">
-              <Button
-                asChild
-                size="lg"
-                className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-8 sm:px-12 h-12 sm:h-16 text-base sm:text-lg shadow-[0_0_40px_rgba(249,115,22,0.4)] rounded-full hover:scale-105 transition-transform w-full sm:w-auto"
-              >
-                <Link to={isLoggedIn ? '/dashboard' : '/register'}>
-                  {isLoggedIn ? (
-                    <><LayoutDashboard className="mr-2 h-5 w-5" />Go to Dashboard</>
-                  ) : (
-                    <>Get Started Free<ArrowRight className="ml-2 h-5 w-5" /></>
-                  )}
-                </Link>
-              </Button>
-            </div>
-          </ScaleIn>
-        </div>
-      </section>
-
-      {/* ─── Footer ─── */}
-      <footer id="contact" className="bg-white border-t border-gray-100 pt-12 sm:pt-24 pb-8 sm:pb-12">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-12 mb-10 sm:mb-16">
-            {/* Brand */}
-            <div className="space-y-4 sm:space-y-6 col-span-2 md:col-span-1">
-              <div className="flex items-center gap-3">
-                <BrandLogo className="h-8 w-8 sm:h-10 sm:w-10 ring-2 ring-orange-500/20 shadow-sm" />
-                <span className="text-lg sm:text-xl font-bold text-gray-900">RMV Stainless</span>
+                </ul>
               </div>
-              <p className="text-sm leading-6 text-gray-500">
-                Precision stainless steel fabrication for residential and commercial
-                industries. Quality you can trust.
-              </p>
-              <div className="flex gap-4">
-                 {/* Social placeholders */}
-                 {[1,2,3].map(i => (
-                    <div key={i} className="h-8 w-8 rounded-full bg-gray-100 hover:bg-orange-100 hover:text-orange-600 flex items-center justify-center transition-colors cursor-pointer">
-                       <Sparkles className="h-4 w-4" />
-                    </div>
-                 ))}
+
+              <div>
+                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Company</h4>
+                <ul className="space-y-3 md:space-y-4">
+                  {['About Us', 'Projects', 'Careers', 'Privacy Policy'].map(link => (
+                    <li key={link}><a href="#" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">{link}</a></li>
+                  ))}
+                </ul>
               </div>
-            </div>
 
-            {/* Services */}
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4 sm:mb-6">
-                Services
-              </h3>
-              <ul className="space-y-4">
-                {['Kitchen SS Fabrication', 'Kitchen Remodeling', 'LPG Gas Pipeline', 'Fire Suppression', 'Exhaust Systems', 'Railings'].map(
-                  (item) => (
-                    <li key={item}>
-                      <a
-                        href="#services"
-                        className="text-sm text-gray-500 hover:text-orange-600 transition-colors"
-                      >
-                        {item}
-                      </a>
-                    </li>
-                  ),
-                )}
-              </ul>
-            </div>
-
-            {/* Company */}
-            <div>
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4 sm:mb-6">
-                Company
-              </h3>
-              <ul className="space-y-4">
-                {['About Us', 'Projects', 'Careers', 'Privacy Policy'].map((item) => (
-                  <li key={item}>
-                    <a
-                      href="#about"
-                      className="text-sm text-gray-500 hover:text-orange-600 transition-colors"
-                    >
-                      {item}
-                    </a>
+              <div className="col-span-2 md:col-span-1">
+                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Contact</h4>
+                <ul className="space-y-3 md:space-y-4">
+                  <li className="flex items-start gap-3">
+                    <MapPin className="h-5 w-5 text-[#6e6e73] shrink-0" />
+                    <span className="text-[#6e6e73] text-sm font-medium">BIR Village, Novaliches, Quezon City, Philippines 1118</span>
                   </li>
-                ))}
-              </ul>
+                  <li className="flex items-start gap-3">
+                    <Phone className="h-5 w-5 text-[#6e6e73] shrink-0" />
+                    <span className="text-[#6e6e73] text-sm font-medium">02-9506187<br/>0945 285 2974</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Mail className="h-5 w-5 text-[#6e6e73] shrink-0" />
+                    <span className="text-[#6e6e73] text-sm font-medium">rmvstainless@gmail.com</span>
+                  </li>
+                </ul>
+              </div>
             </div>
 
-            {/* Contact */}
-            <div className="col-span-2 md:col-span-1">
-              <h3 className="text-sm font-bold uppercase tracking-wider text-gray-900 mb-4 sm:mb-6">
-                Contact
-              </h3>
-              <ul className="space-y-3 sm:space-y-4">
-                <li className="flex items-start gap-3 text-sm text-gray-500">
-                  <MapPin className="h-5 w-5 text-orange-500 flex-shrink-0 mt-0.5" />
-                  <span>BIR Village, Novaliches, Quezon City, Philippines 1118</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <Phone className="h-5 w-5 text-orange-500 flex-shrink-0" />
-                  <span>02-9506187</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <Phone className="h-5 w-5 text-orange-500 flex-shrink-0" />
-                  <span>0945 285 2974</span>
-                </li>
-                <li className="flex items-center gap-3 text-sm text-gray-500">
-                  <Mail className="h-5 w-5 text-orange-500 flex-shrink-0" />
-                  <span>rmvstainless@gmail.com</span>
-                </li>
-              </ul>
+            {/* Interactive Google Map */}
+            <div className="w-full h-[250px] md:h-[300px] border border-[#c8c8cc]/60 rounded-2xl md:rounded-3xl overflow-hidden mb-10 md:mb-12 grayscale hover:grayscale-0 transition-all duration-700 shadow-sm">
+              <iframe
+                title="RMV Stainless Steel Fabrication Location"
+                src="https://maps.google.com/maps?q=Natanawan+Residence,+Dahlia+Ext,+Quezon+City,+Metro+Manila&z=17&output=embed"
+                width="100%"
+                height="100%"
+                style={{ border: 0 }}
+                allowFullScreen
+                loading="lazy"
+                referrerPolicy="no-referrer-when-downgrade"
+              />
+            </div>
+
+            <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-[#c8c8cc]/40">
+              <p className="text-sm font-medium text-[#6e6e73]">
+                &copy; {new Date().getFullYear()} RMV Stainless Steel Fabrication. All rights reserved.
+              </p>
+              <div className="flex items-center gap-2 text-sm font-medium text-[#6e6e73]">
+                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                All Systems Operational
+              </div>
             </div>
           </div>
+        </footer>
 
-          {/* Embedded Map */}
-          <div className="mb-10 sm:mb-16 rounded-2xl overflow-hidden border border-gray-100 shadow-sm">
-            <iframe
-              title="RMV Location"
-              src="https://maps.google.com/maps?q=BIR+Village,+Novaliches,+Quezon+City,+Philippines&t=&z=16&ie=UTF8&iwloc=&output=embed"
-              width="100%"
-              height="280"
-              style={{ border: 0 }}
-              allowFullScreen
-              loading="lazy"
-              referrerPolicy="no-referrer-when-downgrade"
-              className="w-full grayscale hover:grayscale-0 transition-all duration-500"
-            />
-          </div>
-
-          <div className="border-t border-gray-100 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
-            <p className="text-xs text-gray-500 font-medium">
-              &copy; {new Date().getFullYear()} RMV Stainless Steel Fabrication. All
-              rights reserved.
-            </p>
-            <div className="flex items-center gap-2">
-               <span className="h-1 w-1 rounded-full bg-green-500"></span>
-               <p className="text-xs text-gray-500 font-medium">All Systems Operational</p>
-            </div>
-          </div>
-        </div>
-      </footer>
-    </div>
+      </div>
     </LazyMotion>
   );
 }

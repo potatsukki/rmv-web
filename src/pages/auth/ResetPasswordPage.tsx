@@ -39,7 +39,7 @@ const passwordRules = [
 ];
 
 const inputClasses =
-  'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
+  'h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl';
 
 export function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -85,25 +85,26 @@ export function ResetPasswordPage() {
   if (!email || !otp) return null;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
-      <div className="w-full max-w-md">
+    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-[#e0e0e6] via-[#d6d6dc] to-[#cbcbd0] px-4">
+      <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+      <div className="relative w-full max-w-md">
         {/* Brand */}
         <div className="flex items-center justify-center gap-2.5 mb-8">
-          <BrandLogo className="h-10 w-10 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
+          <BrandLogo className="h-10 w-10 ring-2 ring-[#b8b8bd]/50 shadow-lg shadow-black/10" />
         </div>
 
-        <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-xl shadow-gray-100/50">
+        <div className="rounded-2xl border border-[#c8c8cd]/50 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-black/5">
           <div className="text-center mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-50 mx-auto mb-4">
-              <ShieldCheck className="h-6 w-6 text-orange-500" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1d1d1f] mx-auto mb-4">
+              <ShieldCheck className="h-6 w-6 text-white" />
             </div>
-            <h1 className="text-xl font-bold text-gray-900">Reset password</h1>
-            <p className="mt-2 text-sm text-gray-500">Choose a new password for your account.</p>
+            <h1 className="text-xl font-bold text-[#1d1d1f]">Reset password</h1>
+            <p className="mt-2 text-sm text-[#6e6e73]">Choose a new password for your account.</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="newPassword" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="newPassword" className="text-[#3a3a3e] text-[13px] font-medium">
                 New Password
               </Label>
               <div className="relative">
@@ -117,7 +118,7 @@ export function ResetPasswordPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
@@ -129,7 +130,7 @@ export function ResetPasswordPage() {
               )}
 
               {passwordValue.length > 0 && (
-                <div className="rounded-lg bg-gray-50 p-3 mt-2">
+                <div className="rounded-xl bg-[#f0f0f5] p-3 mt-2">
                   <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1.5">
                     {passwordRules.map((rule) => {
                       const passed = rule.test(passwordValue);
@@ -137,7 +138,7 @@ export function ResetPasswordPage() {
                         <div
                           key={rule.label}
                           className={`flex items-center gap-1.5 text-xs ${
-                            passed ? 'text-emerald-600' : 'text-gray-400'
+                            passed ? 'text-emerald-600' : 'text-[#86868b]'
                           }`}
                         >
                           {passed ? (
@@ -155,7 +156,7 @@ export function ResetPasswordPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="confirmPassword" className="text-[#3a3a3e] text-[13px] font-medium">
                 Confirm Password
               </Label>
               <Input
@@ -173,7 +174,7 @@ export function ResetPasswordPage() {
 
             <Button
               type="submit"
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white h-11 font-semibold"
+              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white h-11 font-semibold shadow-lg shadow-black/20 rounded-xl"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -182,8 +183,8 @@ export function ResetPasswordPage() {
           </form>
         </div>
 
-        <p className="text-center mt-6 text-sm text-gray-400">
-          <Link to="/login" className="hover:text-gray-600 transition-colors">
+        <p className="text-center mt-6 text-sm text-[#86868b]">
+          <Link to="/login" className="hover:text-[#1d1d1f] transition-colors underline underline-offset-4">
             Back to sign in
           </Link>
         </p>

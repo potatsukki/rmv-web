@@ -130,7 +130,7 @@ function InlineRename({
           if (e.key === 'Enter') save();
           if (e.key === 'Escape') onDone();
         }}
-        className="w-full min-w-0 rounded-md border border-orange-300 bg-white px-2 py-0.5 text-[13px] font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-orange-200"
+        className="w-full min-w-0 rounded-md border border-[#c8c8cd] bg-white px-2 py-0.5 text-[13px] font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-[#6e6e73]/20"
         maxLength={60}
       />
       <button
@@ -256,7 +256,7 @@ export function ProjectNavigator({
             onClick={handleAdd}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
-              'bg-orange-50 text-orange-600 hover:bg-orange-100 active:scale-[0.97]',
+              'bg-[#f0f0f5] text-[#1d1d1f] hover:bg-[#e4e4e9] active:scale-[0.97]',
               adding && 'opacity-50 pointer-events-none',
             )}
           >
@@ -302,10 +302,10 @@ export function ProjectNavigator({
               className={cn(
                 'group relative flex items-center gap-3 rounded-xl border text-left transition-all duration-200 snap-start shrink-0',
                 'min-w-[180px] max-w-[280px] sm:min-w-[200px] sm:max-w-[300px]',
-                'px-4 py-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300',
+                'px-4 py-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e6e73]/30',
                 isActive && canEdit ? 'pb-10' : '',
                 isActive
-                  ? 'border-orange-300 bg-gradient-to-br from-orange-50 to-white shadow-md ring-1 ring-orange-200/60'
+                  ? 'border-[#1d1d1f]/30 bg-gradient-to-br from-[#f0f0f5] to-white shadow-md ring-1 ring-[#c8c8cd]/60'
                   : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm active:scale-[0.98]',
               )}
             >
@@ -314,7 +314,7 @@ export function ProjectNavigator({
                 className={cn(
                   'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors',
                   isActive
-                    ? 'bg-orange-100 text-orange-600'
+                    ? 'bg-[#1d1d1f] text-white'
                     : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100 group-hover:text-gray-500',
                 )}
               >
@@ -334,7 +334,7 @@ export function ProjectNavigator({
                     <p
                       className={cn(
                         'text-sm font-semibold leading-tight truncate',
-                        isActive ? 'text-orange-900' : 'text-gray-800',
+                        isActive ? 'text-[#1d1d1f]' : 'text-gray-800',
                       )}
                     >
                       {label}
@@ -366,7 +366,7 @@ export function ProjectNavigator({
                       e.stopPropagation();
                       setRenamingId(id);
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-orange-100 text-orange-600 hover:bg-orange-200 hover:text-orange-700 transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f0f5] text-[#1d1d1f] hover:bg-[#e4e4e9] hover:text-[#1d1d1f] transition-colors"
                     aria-label="Rename project"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -393,7 +393,7 @@ export function ProjectNavigator({
                   className={cn(
                     'absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
                     isActive
-                      ? 'bg-orange-500 text-white'
+                      ? 'bg-[#1d1d1f] text-white'
                       : 'bg-gray-200 text-gray-600',
                   )}
                 >

@@ -71,7 +71,7 @@ export function PaymentHistoryPage() {
       {/* Loading */}
       {isLoading && (
         <Card>
-          <CardContent className="p-0 divide-y divide-gray-100">
+          <CardContent className="p-0 divide-y divide-[#e8e8ed]">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="p-4">
                 <Skeleton className="h-12 w-full rounded-lg" />
@@ -97,7 +97,7 @@ export function PaymentHistoryPage() {
       {/* Payment list */}
       {!isLoading && filteredHistory.length > 0 && (
         <Card className="overflow-hidden shadow-sm">
-          <div className="divide-y divide-gray-100">
+            <div className="divide-y divide-[#e8e8ed]">
             {filteredHistory.map((item) => {
               const cfg = statusConfig[item.status] ?? {
                 label: item.status,
@@ -109,7 +109,7 @@ export function PaymentHistoryPage() {
                 <div 
                   key={item._id} 
                   onClick={() => setSelectedPayment(item)}
-                  className="p-4 sm:p-5 transition-colors hover:bg-gray-50/80 cursor-pointer group"
+                  className="p-4 sm:p-5 transition-colors hover:bg-[#f5f5f7]/80 cursor-pointer group"
                 >
                   <div className="flex items-center justify-between gap-4">
                     {/* Left: icon + info */}
@@ -130,7 +130,7 @@ export function PaymentHistoryPage() {
                       </div>
 
                       <div className="min-w-0 flex-1">
-                        <p className="font-medium text-gray-900 text-sm truncate">{item.description}</p>
+                        <p className="font-medium text-[#1d1d1f] text-sm truncate">{item.description}</p>
                         <p className="text-xs text-muted-foreground mt-0.5">
                           {format(new Date(item.date), 'MMM d, yyyy')}
                         </p>
@@ -139,7 +139,7 @@ export function PaymentHistoryPage() {
 
                     {/* Right: amount + status */}
                     <div className="flex flex-col sm:flex-row sm:items-center items-end gap-1.5 sm:gap-4 shrink-0">
-                      <span className="font-semibold text-gray-900 text-sm">
+                      <span className="font-semibold text-[#1d1d1f] text-sm">
                         {formatCurrency(item.amount)}
                       </span>
                       <span
@@ -169,9 +169,9 @@ export function PaymentHistoryPage() {
           {selectedPayment && (
             <div className="space-y-6 mt-2">
               {/* Amount & Status Header */}
-              <div className="flex flex-col items-center justify-center p-6 bg-gray-50 rounded-xl border border-gray-100">
+              <div className="flex flex-col items-center justify-center p-6 bg-[#f5f5f7] rounded-xl border border-[#c8c8cd]/50">
                 <span className="text-sm text-muted-foreground font-medium mb-1">Amount</span>
-                <span className="text-3xl font-bold text-gray-900 mb-3">
+                <span className="text-3xl font-bold text-[#1d1d1f] mb-3">
                   {formatCurrency(selectedPayment.amount)}
                 </span>
                 <span
@@ -190,7 +190,7 @@ export function PaymentHistoryPage() {
                   <Tag className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-xs text-muted-foreground font-medium">Description</p>
-                    <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedPayment.description}</p>
+                    <p className="text-sm font-medium text-[#1d1d1f] mt-0.5">{selectedPayment.description}</p>
                   </div>
                 </div>
 
@@ -198,7 +198,7 @@ export function PaymentHistoryPage() {
                   <Calendar className="h-4 w-4 text-muted-foreground mt-0.5" />
                   <div>
                     <p className="text-xs text-muted-foreground font-medium">Date & Time</p>
-                    <p className="text-sm font-medium text-gray-900 mt-0.5">
+                    <p className="text-sm font-medium text-[#1d1d1f] mt-0.5">
                       {format(new Date(selectedPayment.date), 'MMMM d, yyyy')} at {format(new Date(selectedPayment.date), 'h:mm a')}
                     </p>
                   </div>
@@ -209,7 +209,7 @@ export function PaymentHistoryPage() {
                     <CreditCard className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="text-xs text-muted-foreground font-medium">Payment Method</p>
-                      <p className="text-sm font-medium text-gray-900 mt-0.5 capitalize">
+                      <p className="text-sm font-medium text-[#1d1d1f] mt-0.5 capitalize">
                         {selectedPayment.method.replace(/_/g, ' ')}
                       </p>
                     </div>
@@ -221,7 +221,7 @@ export function PaymentHistoryPage() {
                     <Hash className="h-4 w-4 text-muted-foreground mt-0.5" />
                     <div>
                       <p className="text-xs text-muted-foreground font-medium">Receipt Number</p>
-                      <p className="text-sm font-medium text-gray-900 mt-0.5">{selectedPayment.receiptNumber}</p>
+                      <p className="text-sm font-medium text-[#1d1d1f] mt-0.5">{selectedPayment.receiptNumber}</p>
                     </div>
                   </div>
                 )}

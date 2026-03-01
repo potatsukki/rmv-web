@@ -106,7 +106,7 @@ export function TimePicker({ date, setDate }: TimePickerProps) {
         </Label>
         <button
           id="tp-period"
-          className="h-9 w-14 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-orange-300 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+          className="h-9 w-14 rounded-lg border border-gray-200 bg-gray-50 text-sm font-medium text-gray-700 hover:bg-gray-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e6e73]/30 disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
           onClick={togglePeriod}
           disabled={!date}
           type="button"

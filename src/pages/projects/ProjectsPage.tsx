@@ -43,26 +43,26 @@ export function ProjectsPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Projects</h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Projects</h1>
+          <p className="text-[#6e6e73] mt-1 text-sm">
             Track fabrication progress and project milestones.
           </p>
         </div>
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <div className="flex flex-col gap-4 md:flex-row md:items-center bg-white p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
           <Input
             placeholder="Search by project name or ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+            className="pl-10 h-10 border-[#d2d2d7] focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
           />
         </div>
         <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-          <Filter className="h-4 w-4 text-gray-400 hidden md:block mr-1" />
+          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1" />
           {STATUS_FILTERS.map((f) => (
             <button
               type="button"
@@ -71,8 +71,8 @@ export function ProjectsPage() {
               aria-pressed={statusFilter === f.value}
               className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 statusFilter === f.value
-                  ? 'bg-gray-900 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
+                  ? 'bg-[#1d1d1f] text-white shadow-md'
+                  : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-gray-200 hover:text-[#1d1d1f]'
               }`}
             >
               {f.label}
@@ -85,8 +85,8 @@ export function ProjectsPage() {
       {isLoading ? (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="border-gray-100 overflow-hidden rounded-xl">
-              <div className="h-1.5 bg-gray-100 w-full" />
+            <Card key={i} className="border-[#c8c8cd]/50 overflow-hidden rounded-xl">
+              <div className="h-1.5 bg-[#f0f0f5] w-full" />
               <CardContent className="p-6">
                 <div className="flex justify-between items-start mb-4">
                   <Skeleton className="h-10 w-10 rounded-xl" />
@@ -99,12 +99,12 @@ export function ProjectsPage() {
           ))}
         </div>
       ) : !projects.length ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
+        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50">
           <div className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-            <FolderOpen className="h-8 w-8 text-gray-300" />
+            <FolderOpen className="h-8 w-8 text-[#c8c8cd]" />
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">No projects found</h3>
-          <p className="text-gray-500 max-w-sm mt-1 text-sm">
+          <h3 className="text-lg font-semibold text-[#1d1d1f]">No projects found</h3>
+          <p className="text-[#6e6e73] max-w-sm mt-1 text-sm">
             {search || statusFilter
               ? 'Try adjusting your search or filters.'
               : 'New projects will appear here once appointed.'}
@@ -112,7 +112,7 @@ export function ProjectsPage() {
           {(search || statusFilter) && (
             <Button
               variant="outline"
-              className="mt-4 border-gray-200 text-orange-600 hover:text-orange-700 hover:bg-orange-50 rounded-lg"
+              className="mt-4 border-[#d2d2d7] text-[#1d1d1f] hover:text-[#3a3a3e] hover:bg-[#f5f5f7] rounded-lg"
               onClick={() => {
                 setSearch('');
                 setStatusFilter('');
@@ -130,7 +130,7 @@ export function ProjectsPage() {
               to={`/projects/${project._id}`}
               className="group block h-full"
             >
-              <Card className="h-full border-gray-100 transition-all duration-200 hover:border-orange-200 hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
+              <Card className="h-full border-[#c8c8cd]/50 transition-all duration-200 hover:border-[#b8b8bd] hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
                 <div
                   className={`h-1.5 w-full ${
                     project.status === ProjectStatus.COMPLETED
@@ -152,7 +152,7 @@ export function ProjectsPage() {
                 />
                 <CardContent className="p-6 flex-1 flex flex-col">
                   <div className="flex items-start justify-between mb-3">
-                    <div className="h-10 w-10 text-orange-600 bg-orange-50 rounded-xl flex items-center justify-center">
+                    <div className="h-10 w-10 text-[#1d1d1f] bg-[#f0f0f5] rounded-xl flex items-center justify-center">
                       <FolderOpen className="h-5 w-5" />
                     </div>
                     <Badge
@@ -180,24 +180,24 @@ export function ProjectsPage() {
                   </div>
 
                   <div className="mb-3 flex-1">
-                    <h3 className="font-bold text-gray-900 group-hover:text-orange-600 transition-colors line-clamp-1">
+                    <h3 className="font-bold text-[#1d1d1f] group-hover:text-[#6e6e73] transition-colors line-clamp-1">
                       {String(project.title || '')}
                     </h3>
                     {project.serviceType && (
-                      <span className="inline-block mt-1 text-[11px] font-medium text-gray-500 bg-gray-100 px-2 py-0.5 rounded-md">
+                      <span className="inline-block mt-1 text-[11px] font-medium text-[#6e6e73] bg-[#f0f0f5] px-2 py-0.5 rounded-md">
                         {String(project.serviceType)}
                       </span>
                     )}
-                    <p className="text-sm text-gray-500 mt-1.5 line-clamp-2">
+                    <p className="text-sm text-[#6e6e73] mt-1.5 line-clamp-2">
                       {String(project.description || 'No description provided.')}
                     </p>
                   </div>
 
-                  <div className="space-y-1.5 pt-3 border-t border-gray-100">
+                  <div className="space-y-1.5 pt-3 border-t border-[#c8c8cd]/50">
                     {/* Customer (staff-only) */}
                     {isStaff && project.customerId && typeof project.customerId === 'object' && (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <User className="mr-2 h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <div className="flex items-center text-sm text-[#6e6e73]">
+                        <User className="mr-2 h-3.5 w-3.5 text-[#86868b] shrink-0" />
                         <span className="truncate">
                           {project.customerId.firstName} {project.customerId.lastName}
                         </span>
@@ -206,8 +206,8 @@ export function ProjectsPage() {
 
                     {/* Engineers (staff-only) */}
                     {isStaff && project.engineerIds?.length > 0 && typeof project.engineerIds[0] === 'object' ? (
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Wrench className="mr-2 h-3.5 w-3.5 text-gray-400 shrink-0" />
+                      <div className="flex items-center text-sm text-[#6e6e73]">
+                        <Wrench className="mr-2 h-3.5 w-3.5 text-[#86868b] shrink-0" />
                         <span className="truncate">
                           {(project.engineerIds as { firstName: string; lastName: string }[])
                             .map((e) => `${e.firstName} ${e.lastName}`)
@@ -215,15 +215,15 @@ export function ProjectsPage() {
                         </span>
                       </div>
                     ) : isStaff && project.engineerIds?.length === 0 && (
-                      <div className="flex items-center text-sm text-gray-400 italic">
+                      <div className="flex items-center text-sm text-[#86868b] italic">
                         <Wrench className="mr-2 h-3.5 w-3.5 shrink-0" />
                         <span>No engineer assigned</span>
                       </div>
                     )}
 
                     {/* Date */}
-                    <div className="flex items-center text-sm text-gray-600">
-                      <Calendar className="mr-2 h-3.5 w-3.5 text-gray-400 shrink-0" />
+                    <div className="flex items-center text-sm text-[#6e6e73]">
+                      <Calendar className="mr-2 h-3.5 w-3.5 text-[#86868b] shrink-0" />
                       <span>
                         {project.createdAt
                           ? format(new Date(String(project.createdAt)), 'MMM d, yyyy')
@@ -232,7 +232,7 @@ export function ProjectsPage() {
                     </div>
                   </div>
 
-                  <div className="mt-3 flex items-center text-sm font-medium text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div className="mt-3 flex items-center text-sm font-medium text-[#1d1d1f] opacity-0 group-hover:opacity-100 transition-opacity">
                     View Details <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
                   </div>
                 </CardContent>

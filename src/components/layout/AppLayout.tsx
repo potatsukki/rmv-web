@@ -197,7 +197,7 @@ interface FlatResult {
 const RECENT_KEY = 'rmv_recent';
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-600',
+  draft: 'bg-[#f0f0f5] text-[#6e6e73]',
   submitted: 'bg-blue-100 text-blue-700',
   blueprint: 'bg-purple-100 text-purple-700',
   approved: 'bg-green-100 text-green-700',
@@ -655,7 +655,7 @@ export function AppLayout() {
                                     {result.badge && (
                                       <span
                                         className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
-                                          STATUS_COLORS[result.badge] ?? 'bg-gray-100 text-gray-600'
+                                          STATUS_COLORS[result.badge] ?? 'bg-[#f0f0f5] text-[#6e6e73]'
                                         }`}
                                       >
                                         {result.badge.replace(/_/g, ' ')}
@@ -688,7 +688,7 @@ export function AppLayout() {
               >
                 <Bell className="h-4 w-4" />
                 {unreadCount > 0 && (
-                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-accent px-1 text-[10px] font-bold text-white">
+                  <span className="absolute -top-1 -right-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}

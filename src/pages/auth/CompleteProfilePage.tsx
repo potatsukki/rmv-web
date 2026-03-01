@@ -87,17 +87,18 @@ export function CompleteProfilePage() {
   };
 
   const inputClasses =
-    'h-10 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200 text-sm';
+    'h-10 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 text-sm rounded-xl';
 
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Form */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:flex-none lg:px-20 xl:px-28 bg-white z-10 w-full lg:w-[48%]">
-        <div className="mx-auto w-full max-w-[420px]">
+      <div className="relative flex flex-1 flex-col justify-center px-6 py-12 lg:flex-none lg:px-20 xl:px-28 bg-gradient-to-br from-[#eaeaef] via-[#e0e0e6] to-[#d8d8de] z-10 w-full lg:w-[48%]">
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+        <div className="relative mx-auto w-full max-w-[420px]">
           {/* Back link */}
           <button
             onClick={() => navigate('/register')}
-            className="inline-flex items-center gap-2 mb-8 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors group"
+            className="inline-flex items-center gap-2 mb-8 text-sm font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors group"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Register
@@ -105,19 +106,19 @@ export function CompleteProfilePage() {
 
           {/* Brand */}
           <div className="flex items-center gap-2.5 mb-6">
-            <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
-            <span className="font-bold text-gray-900 tracking-tight">RMV Stainless</span>
+            <BrandLogo className="h-9 w-9 ring-2 ring-[#b8b8bd]/50 shadow-lg shadow-black/10" />
+            <span className="font-bold text-[#1d1d1f] tracking-tight">RMV Stainless</span>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
             Complete your profile
           </h2>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-[#6e6e73]">
             Just a few more details to set up your account.
           </p>
 
           {/* Google account info */}
-          <div className="mt-6 flex items-center gap-3 rounded-xl bg-gray-50 p-4 border border-gray-100">
+          <div className="mt-6 flex items-center gap-3 rounded-xl bg-white/50 p-4 border border-[#c8c8cd]/50 backdrop-blur-sm">
             {state.googlePhoto ? (
               <img
                 src={state.googlePhoto}
@@ -126,22 +127,22 @@ export function CompleteProfilePage() {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-orange-100 flex items-center justify-center">
-                <span className="text-orange-600 font-bold text-sm">
+              <div className="h-10 w-10 rounded-full bg-[#1d1d1f] flex items-center justify-center">
+                <span className="text-white font-bold text-sm">
                   {defaultFirstName.charAt(0).toUpperCase()}
                 </span>
               </div>
             )}
             <div>
-              <p className="text-sm font-medium text-gray-900">{state.googleName}</p>
-              <p className="text-xs text-gray-500">{state.email}</p>
+              <p className="text-sm font-medium text-[#1d1d1f]">{state.googleName}</p>
+              <p className="text-xs text-[#6e6e73]">{state.email}</p>
             </div>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
             <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
               <div className="space-y-1.5">
-                <Label htmlFor="firstName" className="text-gray-700 text-[13px] font-medium">
+                <Label htmlFor="firstName" className="text-[#3a3a3e] text-[13px] font-medium">
                   First Name
                 </Label>
                 <Input
@@ -155,7 +156,7 @@ export function CompleteProfilePage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="lastName" className="text-gray-700 text-[13px] font-medium">
+                <Label htmlFor="lastName" className="text-[#3a3a3e] text-[13px] font-medium">
                   Last Name
                 </Label>
                 <Input
@@ -171,7 +172,7 @@ export function CompleteProfilePage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="phone" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="phone" className="text-[#3a3a3e] text-[13px] font-medium">
                 Mobile Number
               </Label>
               <Input
@@ -188,7 +189,7 @@ export function CompleteProfilePage() {
 
             <Button
               type="submit"
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold h-11 transition-all active:scale-[0.98] shadow-sm mt-2"
+              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white font-semibold h-11 transition-all active:scale-[0.98] shadow-lg shadow-black/20 rounded-xl mt-2"
               disabled={submitting}
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -200,31 +201,33 @@ export function CompleteProfilePage() {
 
       {/* Right Side - Visual */}
       <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1c] via-[#111113] to-[#0d0d0f]" />
         <img
           className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-overlay"
           src="https://images.unsplash.com/photo-1531834685032-c34bf0d84c77?ixlib=rb-4.0.3&auto=format&fit=crop&w=1997&q=80"
           alt="Stainless steel fabrication"
         />
-        <div className="absolute inset-0 bg-gradient-to-t from-gray-950 via-transparent to-gray-950/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0f] via-transparent to-[#0d0d0f]/60" />
 
         <div
-          className="absolute inset-0 opacity-[0.04]"
+          className="absolute inset-0 opacity-[0.03]"
           style={{
-            backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
+            backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")',
           }}
         />
 
+        {/* Silver light leak */}
+        <div className="absolute inset-0 opacity-[0.07]" style={{ background: 'radial-gradient(ellipse at 30% 50%, #c8c8cd, transparent 70%)' }} />
+
         <div className="absolute bottom-0 left-0 right-0 p-12 lg:p-16">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/20 backdrop-blur-sm border border-orange-500/20 mb-6">
-            <UserPlus className="h-6 w-6 text-orange-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 mb-6">
+            <UserPlus className="h-6 w-6 text-[#d2d2d7]" />
           </div>
           <blockquote>
-            <p className="text-lg font-medium text-gray-200 leading-relaxed max-w-md">
+            <p className="text-lg font-medium text-[#d2d2d7] leading-relaxed max-w-md">
               &ldquo;Almost there! Complete your profile to start managing your fabrication projects.&rdquo;
             </p>
-            <footer className="mt-4 text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">
+            <footer className="mt-4 text-xs font-bold text-[#6e6e73] uppercase tracking-[0.2em]">
               RMV Stainless Steel
             </footer>
           </blockquote>

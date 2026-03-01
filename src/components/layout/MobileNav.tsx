@@ -207,7 +207,7 @@ export function MobileNav() {
       {/* Top bar */}
       <header className="md:hidden fixed top-0 left-0 right-0 z-40 h-14 bg-white/90 backdrop-blur-xl border-b border-border flex items-center px-4">
         <Link to="/dashboard" className="flex items-center gap-2.5">
-          <BrandLogo className="h-8 w-8 ring-2 ring-orange-500/20 shadow-sm" />
+          <BrandLogo className="h-8 w-8 ring-2 ring-[#b8b8bd]/30 shadow-sm" />
           <span className="font-bold tracking-tight text-foreground text-[15px]">RMV</span>
         </Link>
         <div className="flex-1" />
@@ -218,7 +218,7 @@ export function MobileNav() {
         >
           <Bell className="h-5 w-5" />
           {unreadCount > 0 && (
-            <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-orange-500 px-1 text-[9px] font-bold text-white">
+            <span className="absolute top-0.5 right-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>
           )}
@@ -256,18 +256,18 @@ export function MobileNav() {
             onClick={(e) => e.stopPropagation()}
           >
             {/* Menu Header - User Info */}
-            <div className="bg-gradient-to-br from-gray-900 to-gray-950 px-6 pt-14 pb-6 text-white">
+            <div className="bg-gradient-to-br from-[#1a1a1c] to-[#0d0d0f] px-6 pt-14 pb-6 text-white">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-gray-700 to-gray-800 ring-2 ring-orange-500/50 shadow-lg">
-                  <User className="h-6 w-6 text-gray-300" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-[#2a2a2e] to-[#1a1a1c] ring-2 ring-white/20 shadow-lg">
+                  <User className="h-6 w-6 text-[#d2d2d7]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <h3 className="font-bold text-base truncate">
                     {user.firstName} {user.lastName}
                   </h3>
                   <div className="flex items-center gap-1.5 mt-1">
-                    <Shield className="w-3 h-3 text-orange-400" />
-                    <span className="text-[10px] text-gray-400 font-semibold uppercase tracking-wider">
+                    <Shield className="w-3 h-3 text-[#d2d2d7]" />
+                    <span className="text-[10px] text-[#6e6e73] font-semibold uppercase tracking-wider">
                       {user.roles[0]?.replace(/_/g, ' ')}
                     </span>
                   </div>
@@ -285,24 +285,24 @@ export function MobileNav() {
                   className={cn(
                     'flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                     location.pathname === '/profile'
-                      ? 'bg-orange-50 text-orange-700'
-                      : 'text-gray-600 hover:bg-gray-50',
+                      ? 'bg-[#f0f0f5] text-[#1d1d1f]'
+                      : 'text-[#6e6e73] hover:bg-[#f5f5f7]',
                   )}
                 >
                   <div className="flex items-center gap-3">
                     <User
                       className={cn(
                         'h-[18px] w-[18px]',
-                        location.pathname === '/profile' ? 'text-orange-500' : 'text-gray-400',
+                        location.pathname === '/profile' ? 'text-[#1d1d1f]' : 'text-[#86868b]',
                       )}
                     />
                     <span>My Profile</span>
                   </div>
-                  <ChevronRight className="h-4 w-4 text-gray-300" />
+                  <ChevronRight className="h-4 w-4 text-[#c8c8cd]" />
                 </Link>
 
                 {/* Separator */}
-                <div className="my-2 mx-3 h-px bg-gray-100" />
+                <div className="my-2 mx-3 h-px bg-[#e8e8ed]" />
 
                 {/* Menu items */}
                 {filteredMenu.map((item) => {
@@ -315,20 +315,20 @@ export function MobileNav() {
                       className={cn(
                         'flex items-center justify-between px-3 py-2.5 rounded-lg text-sm font-medium transition-colors',
                         isActive
-                          ? 'bg-orange-50 text-orange-700'
-                          : 'text-gray-600 hover:bg-gray-50',
+                          ? 'bg-[#f0f0f5] text-[#1d1d1f]'
+                          : 'text-[#6e6e73] hover:bg-[#f5f5f7]',
                       )}
                     >
                       <div className="flex items-center gap-3">
                         <item.icon
                           className={cn(
                             'h-[18px] w-[18px]',
-                            isActive ? 'text-orange-500' : 'text-gray-400',
+                            isActive ? 'text-[#1d1d1f]' : 'text-[#86868b]',
                           )}
                         />
                         <span>{item.label}</span>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-gray-300" />
+                      <ChevronRight className="h-4 w-4 text-[#c8c8cd]" />
                     </Link>
                   );
                 })}
@@ -336,10 +336,10 @@ export function MobileNav() {
             </div>
 
             {/* Logout Footer */}
-            <div className="p-4 border-t border-gray-100">
+            <div className="p-4 border-t border-[#e8e8ed]">
               <Button
                 variant="outline"
-                className="w-full justify-center gap-2 h-11 border-gray-200 text-gray-600 hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-medium"
+                className="w-full justify-center gap-2 h-11 border-[#c8c8cd] text-[#6e6e73] hover:bg-red-50 hover:text-red-600 hover:border-red-200 font-medium"
                 onClick={() => { setMenuOpen(false); setShowLogoutModal(true); }}
               >
                 <LogOut className="h-4 w-4" />
@@ -371,11 +371,11 @@ export function MobileNav() {
                 to={item.path}
                 className={cn(
                   'flex-1 flex flex-col items-center justify-center py-2.5 text-[10px] font-semibold transition-all relative',
-                  isActive ? 'text-orange-600' : 'text-gray-400 active:text-gray-600',
+                  isActive ? 'text-[#1d1d1f]' : 'text-[#86868b] active:text-[#6e6e73]',
                 )}
               >
                 {isActive && (
-                  <div className="absolute top-0 inset-x-4 h-0.5 bg-orange-500 rounded-b-full" />
+                  <div className="absolute top-0 inset-x-4 h-0.5 bg-[#1d1d1f] rounded-b-full" />
                 )}
                 <item.icon
                   className={cn(

@@ -53,7 +53,7 @@ function Calendar({
         day_selected:
           "bg-gray-900 text-white hover:bg-gray-900 hover:text-white focus:bg-gray-900 focus:text-white",
         day_today:
-          "bg-orange-50 text-orange-700 font-semibold",
+          "bg-[#f0f0f5] text-[#1d1d1f] font-semibold",
         day_outside:
           "day-outside text-gray-400 opacity-50 aria-selected:bg-gray-100/50 aria-selected:text-gray-500 aria-selected:opacity-30",
         day_disabled: "text-gray-300 opacity-50",

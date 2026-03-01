@@ -308,7 +308,7 @@ export function SlotManagementPage() {
                   onClick={() => handleTypeChange(t)}
                   className={cn(
                     'capitalize',
-                    activeType === t && 'bg-orange-500 hover:bg-orange-600',
+                    activeType === t && 'bg-[#1d1d1f] hover:bg-[#2d2d2f]',
                   )}
                 >
                   {t === 'office' ? 'Office Visit' : 'Ocular Visit'}
@@ -348,7 +348,7 @@ export function SlotManagementPage() {
               size="sm"
               onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
               className={cn(
-                selectMode && 'bg-orange-500 hover:bg-orange-600',
+                selectMode && 'bg-[#1d1d1f] hover:bg-[#2d2d2f]',
               )}
             >
               <ListChecks className="mr-1.5 h-4 w-4" />
@@ -427,15 +427,15 @@ export function SlotManagementPage() {
                           ? 'border-green-400 bg-green-50 text-red-700 ring-2 ring-green-300'
                           : 'border-red-300 bg-red-50 text-red-700 hover:border-red-400'
                         : isSelectedAvailable
-                          ? 'border-orange-400 bg-orange-50 text-gray-700 ring-2 ring-orange-300'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-orange-300 hover:bg-orange-50/30',
+                          ? 'border-[#1d1d1f] bg-[#f0f0f5] text-gray-700 ring-2 ring-[#c8c8cd]'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-[#c8c8cd] hover:bg-[#f0f0f5]/30',
                     )}
                   >
                     {/* Checkbox indicator in select mode */}
                     {selectMode && (
                       <span className="absolute right-1.5 top-1.5">
                         {isSelectedAvailable || isSelectedBlocked ? (
-                          <CheckSquare className="h-4 w-4 text-orange-500" />
+                          <CheckSquare className="h-4 w-4 text-[#1d1d1f]" />
                         ) : (
                           <Square className="h-4 w-4 text-gray-300" />
                         )}
@@ -661,7 +661,7 @@ export function SlotManagementPage() {
                     onClick={() => setBlockDayType(t)}
                     className={cn(
                       'capitalize',
-                      blockDayType === t && 'bg-orange-500 hover:bg-orange-600',
+                      blockDayType === t && 'bg-[#1d1d1f] hover:bg-[#2d2d2f]',
                     )}
                   >
                     {t === 'office'

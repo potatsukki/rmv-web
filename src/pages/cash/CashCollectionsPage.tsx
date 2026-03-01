@@ -217,7 +217,7 @@ export function CashCollectionsPage() {
               value={receiveDialog.amount}
               onChange={(e) => setReceiveDialog({ ...receiveDialog, amount: e.target.value })}
               placeholder="Enter actual amount received"
-              className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+              className="h-11 bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
             />
           </div>
           <DialogFooter>
@@ -257,7 +257,7 @@ export function CashCollectionsPage() {
               value={resolution}
               onChange={(e) => setResolution(e.target.value)}
               placeholder="How was this discrepancy resolved?"
-              className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+              className="h-11 bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
             />
           </div>
           <DialogFooter>

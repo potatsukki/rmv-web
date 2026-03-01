@@ -25,26 +25,26 @@ export function AccountInfoPage() {
   return (
     <div className="space-y-6">
       {/* Account Information */}
-      <Card className="border-gray-100 shadow-sm rounded-2xl">
+      <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
         <CardHeader>
-          <CardTitle className="text-lg font-semibold text-gray-900 flex items-center gap-2">
-            <UserCircle className="h-5 w-5 text-orange-500" />
+          <CardTitle className="text-lg font-semibold text-[#1d1d1f] flex items-center gap-2">
+            <UserCircle className="h-5 w-5 text-[#6e6e73]" />
             Account Information
           </CardTitle>
-          <CardDescription className="text-gray-500">
+          <CardDescription className="text-[#86868b]">
             Your account details and membership information.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           {/* Email */}
-          <div className="flex items-center justify-between gap-3 p-4 border border-gray-100 rounded-xl bg-white">
+          <div className="flex items-center justify-between gap-3 p-4 border border-[#d2d2d7]/50 rounded-xl bg-white/60">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 bg-gray-50 rounded-lg shrink-0">
-                <Mail className="h-4 w-4 text-gray-500" />
+              <div className="p-2 bg-[#f0f0f5] rounded-lg shrink-0">
+                <Mail className="h-4 w-4 text-[#6e6e73]" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-400 font-medium">Email Address</p>
-                <p className="text-sm font-medium text-gray-900 truncate">{user?.email}</p>
+                <p className="text-xs text-[#86868b] font-medium">Email Address</p>
+                <p className="text-sm font-medium text-[#1d1d1f] truncate">{user?.email}</p>
               </div>
             </div>
             {user?.isEmailVerified && (
@@ -55,14 +55,14 @@ export function AccountInfoPage() {
           </div>
 
           {/* User ID */}
-          <div className="flex items-center justify-between gap-3 p-4 border border-gray-100 rounded-xl bg-white">
+          <div className="flex items-center justify-between gap-3 p-4 border border-[#d2d2d7]/50 rounded-xl bg-white/60">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 bg-gray-50 rounded-lg shrink-0">
-                <Shield className="h-4 w-4 text-gray-500" />
+              <div className="p-2 bg-[#f0f0f5] rounded-lg shrink-0">
+                <Shield className="h-4 w-4 text-[#6e6e73]" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-400 font-medium">User ID</p>
-                <p className="text-sm font-mono text-gray-600 truncate">
+                <p className="text-xs text-[#86868b] font-medium">User ID</p>
+                <p className="text-sm font-mono text-[#6e6e73] truncate">
                   #{user?._id?.substring(0, 8)}...
                 </p>
               </div>
@@ -70,7 +70,7 @@ export function AccountInfoPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="text-gray-400 hover:text-orange-600 shrink-0"
+              className="text-gray-400 hover:text-[#1d1d1f] shrink-0"
               onClick={handleCopyId}
             >
               <Copy className="h-4 w-4" />
@@ -78,14 +78,14 @@ export function AccountInfoPage() {
           </div>
 
           {/* Member Since */}
-          <div className="flex items-center justify-between gap-3 p-4 border border-gray-100 rounded-xl bg-white">
+          <div className="flex items-center justify-between gap-3 p-4 border border-[#d2d2d7]/50 rounded-xl bg-white/60">
             <div className="flex items-center gap-3 min-w-0">
-              <div className="p-2 bg-gray-50 rounded-lg shrink-0">
-                <CalendarDays className="h-4 w-4 text-gray-500" />
+              <div className="p-2 bg-[#f0f0f5] rounded-lg shrink-0">
+                <CalendarDays className="h-4 w-4 text-[#6e6e73]" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-gray-400 font-medium">Member Since</p>
-                <p className="text-sm font-medium text-gray-900">
+                <p className="text-xs text-[#86868b] font-medium">Member Since</p>
+                <p className="text-sm font-medium text-[#1d1d1f]">
                   {user?.createdAt ? format(new Date(user.createdAt), 'MMMM d, yyyy') : '—'}
                 </p>
               </div>
@@ -93,14 +93,14 @@ export function AccountInfoPage() {
           </div>
 
           {/* Roles */}
-          <div className="p-4 border border-gray-100 rounded-xl bg-white">
-            <p className="text-xs text-gray-400 font-medium mb-2">Roles</p>
+          <div className="p-4 border border-[#d2d2d7]/50 rounded-xl bg-white/60">
+            <p className="text-xs text-[#86868b] font-medium mb-2">Roles</p>
             <div className="flex flex-wrap gap-2">
               {user?.roles?.map((role) => (
                 <Badge
                   key={role}
                   variant="secondary"
-                  className="px-2.5 py-1 bg-gray-100 text-gray-600 border border-gray-200 uppercase text-[10px] tracking-wider font-semibold rounded-md"
+                  className="px-2.5 py-1 bg-[#f0f0f5] text-[#3a3a3e] border border-[#d2d2d7]/50 uppercase text-[10px] tracking-wider font-semibold rounded-md"
                 >
                   {role.replace(/_/g, ' ')}
                 </Badge>

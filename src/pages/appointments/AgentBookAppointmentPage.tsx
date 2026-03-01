@@ -249,7 +249,7 @@ export function AgentBookAppointmentPage() {
   ]);
 
   const inputClasses =
-    'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
+    'h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73]';
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -259,26 +259,26 @@ export function AgentBookAppointmentPage() {
           variant="ghost"
           size="icon"
           onClick={() => navigate(-1)}
-          className="rounded-xl text-gray-500 hover:text-gray-900"
+          className="rounded-xl text-[#6e6e73] hover:text-[#1d1d1f]"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
             Create Appointment
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-[#6e6e73] text-sm">
             Book an appointment on behalf of a customer
           </p>
         </div>
       </div>
 
       {/* Step 1: Customer Search */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
         <CardHeader>
-          <CardTitle className="text-lg text-gray-900">Select Customer</CardTitle>
-          <CardDescription className="text-gray-500">
+          <CardTitle className="text-lg text-[#1d1d1f]">Select Customer</CardTitle>
+          <CardDescription className="text-[#6e6e73]">
             Search by name, email, or phone number
           </CardDescription>
         </CardHeader>
@@ -291,10 +291,10 @@ export function AgentBookAppointmentPage() {
                   {selectedCustomer.lastName[0]}
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900">
+                  <p className="font-medium text-[#1d1d1f]">
                     {selectedCustomer.firstName} {selectedCustomer.lastName}
                   </p>
-                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                  <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-[#6e6e73]">
                     <span className="inline-flex items-center gap-1">
                       <Mail className="h-3 w-3" />
                       {selectedCustomer.email}
@@ -315,7 +315,7 @@ export function AgentBookAppointmentPage() {
                   setSelectedCustomer(null);
                   setSearchTerm('');
                 }}
-                className="rounded-lg text-gray-400 hover:text-gray-600"
+                className="rounded-lg text-[#86868b] hover:text-[#6e6e73]"
               >
                 <X className="h-4 w-4" />
               </Button>
@@ -323,36 +323,36 @@ export function AgentBookAppointmentPage() {
           ) : (
             <>
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b]" />
                 <Input
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Type a name, email, or phone..."
-                  className="h-11 pl-10 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                  className="h-11 pl-10 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73]"
                   autoFocus
                 />
               </div>
 
               {isSearching && debouncedSearch.length >= 2 && (
                 <div className="flex items-center justify-center py-6">
-                  <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+                  <Loader2 className="h-5 w-5 animate-spin text-[#86868b]" />
                 </div>
               )}
 
               {!isSearching && customers && customers.length === 0 && debouncedSearch.length >= 2 && (
-                <div className="rounded-xl border border-gray-100 bg-gray-50/50 py-8 text-center">
-                  <User className="mx-auto h-8 w-8 text-gray-300" />
-                  <p className="mt-2 text-sm text-gray-500">
+                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/50 py-8 text-center">
+                  <User className="mx-auto h-8 w-8 text-[#c8c8cd]" />
+                  <p className="mt-2 text-sm text-[#6e6e73]">
                     No customers found for &ldquo;{debouncedSearch}&rdquo;
                   </p>
-                  <p className="text-xs text-gray-400 mt-1">
+                  <p className="text-xs text-[#86868b] mt-1">
                     Make sure the customer has created an account first
                   </p>
                 </div>
               )}
 
               {!isSearching && customers && customers.length > 0 && (
-                <div className="divide-y divide-gray-100 rounded-xl border border-gray-100 overflow-hidden">
+                <div className="divide-y divide-[#e8e8ed] rounded-xl border border-[#c8c8cd]/50 overflow-hidden">
                   {customers.map((c) => (
                     <button
                       key={c._id}
@@ -361,17 +361,17 @@ export function AgentBookAppointmentPage() {
                         setSelectedCustomer(c);
                         setSearchTerm('');
                       }}
-                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-gray-50"
+                      className="flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-[#f5f5f7]"
                     >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gray-100 text-gray-600 font-medium text-xs">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#f0f0f5] text-[#6e6e73] font-medium text-xs">
                         {c.firstName[0]}
                         {c.lastName[0]}
                       </div>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-[#1d1d1f] truncate">
                           {c.firstName} {c.lastName}
                         </p>
-                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0 text-xs text-gray-500">
+                        <div className="flex flex-wrap items-center gap-x-3 gap-y-0 text-xs text-[#6e6e73]">
                           <span className="inline-flex items-center gap-1 truncate">
                             <Mail className="h-3 w-3 shrink-0" />
                             {c.email}
@@ -390,7 +390,7 @@ export function AgentBookAppointmentPage() {
               )}
 
               {debouncedSearch.length < 2 && !customers && (
-                <p className="text-center text-sm text-gray-400 py-4">
+                <p className="text-center text-sm text-[#86868b] py-4">
                   Type at least 2 characters to search
                 </p>
               )}
@@ -403,16 +403,16 @@ export function AgentBookAppointmentPage() {
       {selectedCustomer && (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
           {/* Visit Type & Date */}
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Visit Type & Date</CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardTitle className="text-lg text-[#1d1d1f]">Visit Type & Date</CardTitle>
+              <CardDescription className="text-[#6e6e73]">
                 Choose the appointment type and schedule
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label className="text-[13px] font-medium text-gray-700">Visit Type</Label>
+                <Label className="text-[13px] font-medium text-[#3a3a3e]">Visit Type</Label>
                 <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
                   {[
                     {
@@ -433,19 +433,19 @@ export function AgentBookAppointmentPage() {
                       className={cn(
                         'rounded-xl border-2 p-4 text-left transition-all',
                         selectedType === opt.value
-                          ? 'border-orange-400 bg-orange-50/50 ring-2 ring-orange-100'
-                          : 'border-gray-200 hover:border-gray-300',
+                          ? 'border-[#86868b] bg-[#f5f5f7]/50 ring-2 ring-[#d2d2d7]'
+                          : 'border-[#d2d2d7] hover:border-[#c8c8cd]',
                       )}
                     >
-                      <p className="font-medium text-gray-900">{opt.label}</p>
-                      <p className="mt-0.5 text-xs text-gray-500">{opt.desc}</p>
+                      <p className="font-medium text-[#1d1d1f]">{opt.label}</p>
+                      <p className="mt-0.5 text-xs text-[#6e6e73]">{opt.desc}</p>
                     </button>
                   ))}
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="date" className="text-[13px] font-medium text-gray-700">
+                <Label htmlFor="date" className="text-[13px] font-medium text-[#3a3a3e]">
                   Date
                 </Label>
                 <Input
@@ -460,10 +460,10 @@ export function AgentBookAppointmentPage() {
 
               {/* Ocular location picker */}
               {isOcularBooking && (
-                <div className="space-y-4 rounded-xl border border-gray-200 bg-gray-50/50 p-4">
+                <div className="space-y-4 rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 p-4">
                   <div className="space-y-1">
-                    <Label className="text-[13px] font-medium text-gray-700">Customer&apos;s Site Location</Label>
-                    <p className="text-sm text-gray-500">
+                    <Label className="text-[13px] font-medium text-[#3a3a3e]">Customer&apos;s Site Location</Label>
+                    <p className="text-sm text-[#6e6e73]">
                       Ocular visits are free within Metro Manila. Locations outside NCR have a
                       transportation fee.
                     </p>
@@ -471,32 +471,32 @@ export function AgentBookAppointmentPage() {
 
                   <LocationPicker value={selectedLocation} onChange={handleLocationChange} />
 
-                  <div className="rounded-lg border border-gray-200 bg-white p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <div className="rounded-lg border border-[#d2d2d7] bg-white p-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#6e6e73]">
                       Resolved Address
                     </p>
                     {isAddressLoading ? (
-                      <p className="mt-1 text-sm text-gray-500">Resolving address...</p>
+                      <p className="mt-1 text-sm text-[#6e6e73]">Resolving address...</p>
                     ) : (
-                      <p className="mt-1 text-sm text-gray-700">
+                      <p className="mt-1 text-sm text-[#3a3a3e]">
                         {formattedAddress || 'Address will appear after you pin a location.'}
                       </p>
                     )}
                   </div>
 
-                  <div className="rounded-lg border border-gray-200 bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  <div className="rounded-lg border border-[#d2d2d7] bg-white p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-[#6e6e73]">
                       Ocular Fee Preview
                     </p>
 
                     {!selectedLocation && (
-                      <p className="mt-2 text-sm text-gray-500">
+                      <p className="mt-2 text-sm text-[#6e6e73]">
                         Pin the location to calculate distance and fee.
                       </p>
                     )}
 
                     {selectedLocation && isFeeLoading && (
-                      <div className="mt-2 flex items-center gap-2 text-sm text-gray-500">
+                      <div className="mt-2 flex items-center gap-2 text-sm text-[#6e6e73]">
                         <Loader2 className="h-4 w-4 animate-spin" />
                         Calculating distance and fee...
                       </div>
@@ -507,7 +507,7 @@ export function AgentBookAppointmentPage() {
                     )}
 
                     {feePreview && !isFeeLoading && !feeError && (
-                      <div className="mt-3 space-y-2 text-sm text-gray-700">
+                      <div className="mt-3 space-y-2 text-sm text-[#3a3a3e]">
                         <p>
                           Distance from shop:{' '}
                           <strong>{feePreview.route.distanceKm.toFixed(2)} km</strong>
@@ -530,7 +530,7 @@ export function AgentBookAppointmentPage() {
                               Additional Fee:{' '}
                               <strong>{currency(feePreview.fee.additionalFee)}</strong>
                             </p>
-                            <p className="pt-1 font-semibold text-gray-900">
+                            <p className="pt-1 font-semibold text-[#1d1d1f]">
                               Estimated Ocular Fee: {currency(feePreview.fee.total)}
                             </p>
                           </div>
@@ -544,10 +544,10 @@ export function AgentBookAppointmentPage() {
           </Card>
 
           {/* Time Slots */}
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Available Time Slots</CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardTitle className="text-lg text-[#1d1d1f]">Available Time Slots</CardTitle>
+              <CardDescription className="text-[#6e6e73]">
                 {selectedDate
                   ? `Showing slots for ${format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}`
                   : 'Select a date first'}
@@ -556,7 +556,7 @@ export function AgentBookAppointmentPage() {
             <CardContent>
               {slotsLoading ? (
                 <div className="flex items-center justify-center py-8">
-                  <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+                  <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73]" />
                 </div>
               ) : (
                 <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
@@ -574,10 +574,10 @@ export function AgentBookAppointmentPage() {
                         className={cn(
                           'rounded-xl border-2 p-3 text-center transition-all',
                           selectedSlot === slot
-                            ? 'border-orange-400 bg-orange-50/50 text-orange-700 ring-2 ring-orange-100'
+                            ? 'border-[#86868b] bg-[#f5f5f7]/50 text-[#1d1d1f] ring-2 ring-[#d2d2d7]'
                             : available
-                              ? 'border-gray-200 hover:border-gray-300'
-                              : 'cursor-not-allowed border-gray-100 bg-gray-50 text-gray-400 opacity-50',
+                              ? 'border-[#d2d2d7] hover:border-[#c8c8cd]'
+                              : 'cursor-not-allowed border-[#c8c8cd]/50 bg-[#f5f5f7] text-[#86868b] opacity-50',
                         )}
                       >
                         <p className="text-sm font-medium">{formatSlotTime(slot)}</p>
@@ -598,15 +598,15 @@ export function AgentBookAppointmentPage() {
           </Card>
 
           {/* Purpose */}
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Purpose (Optional)</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f]">Purpose (Optional)</CardTitle>
             </CardHeader>
             <CardContent>
               <textarea
                 {...register('purpose')}
                 placeholder="Briefly describe what the customer needs (e.g., kitchen countertop fabrication)..."
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-4 py-3 text-sm placeholder:text-gray-400 focus:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200"
+                className="w-full rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 px-4 py-3 text-sm placeholder:text-[#86868b] focus:border-[#c8c8cd] focus:outline-none focus:ring-2 focus:ring-[#6e6e73]"
                 rows={3}
               />
             </CardContent>
@@ -615,7 +615,7 @@ export function AgentBookAppointmentPage() {
           {/* Submit */}
           <Button
             type="submit"
-            className="h-12 w-full rounded-xl bg-gray-900 text-white shadow-sm hover:bg-gray-800"
+            className="h-12 w-full rounded-xl bg-[#1d1d1f] text-white shadow-sm hover:bg-[#2d2d2f]"
             size="lg"
             disabled={submitDisabled}
           >

@@ -545,7 +545,7 @@ export function VisitReportPage() {
                     Visit Type
                   </Label>
                   <Select value={visitType} onValueChange={setVisitType}>
-                    <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-orange-200">
+                    <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-[#6e6e73]/20">
                       <SelectValue placeholder="Select visit type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -563,7 +563,7 @@ export function VisitReportPage() {
                     type="datetime-local"
                     value={actualVisitDateTime}
                     onChange={(e) => setActualVisitDateTime(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-orange-200"
+                    className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-[#6e6e73]/20"
                   />
                 </div>
               </CardContent>
@@ -584,7 +584,7 @@ export function VisitReportPage() {
                     value={customerRequirements}
                     onChange={(e) => setCustomerRequirements(e.target.value)}
                     placeholder="What the customer needs..."
-                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
                   />
                 </div>
 
@@ -596,7 +596,7 @@ export function VisitReportPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Additional observations..."
-                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
                   />
                 </div>
               </CardContent>
@@ -778,7 +778,7 @@ export function VisitReportPage() {
             onClick={() => setReturnOpen(true)}
             disabled={returnMutation.isPending}
             variant="outline"
-            className="border-orange-200 text-orange-700 hover:bg-orange-50 rounded-xl"
+            className="border-[#c8c8cd] text-[#1d1d1f] hover:bg-[#f0f0f5] rounded-xl"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Return for Revision

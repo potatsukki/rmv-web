@@ -242,7 +242,7 @@ export function BlueprintsPage() {
                     {!canReviewBlueprint && bp.uploadedBy?.phone && (
                       <a
                         href={`tel:${bp.uploadedBy.phone}`}
-                        className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
+                        className="inline-flex items-center gap-1 text-xs text-[#1d1d1f] hover:text-[#6e6e73]"
                       >
                         <Phone className="h-3 w-3" />
                         {bp.uploadedBy.phone}
@@ -347,7 +347,7 @@ export function BlueprintsPage() {
                   <Card className="border-gray-100 shadow-sm transition-all hover:shadow-md rounded-xl">
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2 bg-gray-50/50 border-b border-gray-100 rounded-t-xl">
                       <div className="flex items-center gap-2">
-                        <Info className="h-5 w-5 text-orange-600" />
+                        <Info className="h-5 w-5 text-[#6e6e73]" />
                         <h3 className="font-semibold text-gray-900">Costing Sheet</h3>
                       </div>
                       {bp.costingApproved ? (
@@ -513,7 +513,7 @@ export function BlueprintsPage() {
               <Textarea
                 id="notes"
                 placeholder="Describe the changes needed..."
-                className="col-span-3 min-h-[100px] bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                className="col-span-3 min-h-[100px] bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
                 value={revisionNotes}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                   setRevisionNotes(e.target.value)

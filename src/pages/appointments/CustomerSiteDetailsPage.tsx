@@ -209,16 +209,16 @@ export function CustomerSiteDetailsPage() {
           variant="ghost"
           size="icon"
           onClick={() => navigate(`/appointments/${appt._id}`)}
-          className="rounded-xl text-gray-500 hover:text-gray-900"
+          className="rounded-xl text-[#6e6e73] hover:text-[#1d1d1f]"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
             Provide Site Details
           </h1>
-          <p className="text-gray-500 text-sm">
+          <p className="text-[#6e6e73] text-sm">
             Help our sales team prepare by describing your site. Photos & reference images are required.
           </p>
         </div>
@@ -240,12 +240,12 @@ export function CustomerSiteDetailsPage() {
       <div className="space-y-6">
         {/* Section 1: Service Type + Customer Requirements */}
         <div className="grid gap-6 lg:grid-cols-2">
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">
+              <CardTitle className="text-lg text-[#1d1d1f]">
                 Service Type
               </CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-[#6e6e73]">
                 What type of fabrication do you need?
               </CardDescription>
             </CardHeader>
@@ -261,37 +261,37 @@ export function CustomerSiteDetailsPage() {
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">
+              <CardTitle className="text-lg text-[#1d1d1f]">
                 Your Requirements
               </CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-[#6e6e73]">
                 Describe what you need and any special notes
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
+                <Label className="text-[13px] font-medium text-[#3a3a3e]">
                   What do you need?
                 </Label>
                 <Textarea
                   value={customerRequirements}
                   onChange={(e) => setCustomerRequirements(e.target.value)}
                   placeholder="Describe what you're looking for (e.g., kitchen countertop with L-shape, stainless steel railings for 2nd floor balcony)..."
-                  className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                  className="min-h-[80px] rounded-xl border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73]"
                 />
               </div>
 
               <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
+                <Label className="text-[13px] font-medium text-[#3a3a3e]">
                   Additional Notes
                 </Label>
                 <Textarea
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   placeholder="Any other details you'd like to share..."
-                  className="min-h-[80px] rounded-xl border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                  className="min-h-[80px] rounded-xl border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73]"
                 />
               </div>
             </CardContent>
@@ -299,13 +299,13 @@ export function CustomerSiteDetailsPage() {
         </div>
 
         {/* Section 2: Measurements */}
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-              <Ruler className="h-5 w-5 text-gray-400" />
+            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+              <Ruler className="h-5 w-5 text-[#86868b]" />
               Measurements
             </CardTitle>
-            <CardDescription className="text-gray-500">
+            <CardDescription className="text-[#6e6e73]">
               If you have approximate measurements, add them here — the sales staff will verify during the consultation.
             </CardDescription>
           </CardHeader>
@@ -320,13 +320,13 @@ export function CustomerSiteDetailsPage() {
         </Card>
 
         {/* Section 3: Site Conditions */}
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-              <MapPin className="h-5 w-5 text-gray-400" />
+            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+              <MapPin className="h-5 w-5 text-[#86868b]" />
               Site Conditions
             </CardTitle>
-            <CardDescription className="text-gray-500">
+            <CardDescription className="text-[#6e6e73]">
               Describe the conditions at your installation site
             </CardDescription>
           </CardHeader>
@@ -339,31 +339,31 @@ export function CustomerSiteDetailsPage() {
         </Card>
 
         {/* Section 4: Materials & Design */}
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-              <Package className="h-5 w-5 text-gray-400" />
+            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+              <Package className="h-5 w-5 text-[#86868b]" />
               Materials & Design Preference
             </CardTitle>
-            <CardDescription className="text-gray-500">
+            <CardDescription className="text-[#6e6e73]">
               Tell us your preferred materials and design style
             </CardDescription>
           </CardHeader>
           <CardContent className="grid gap-4 sm:grid-cols-3">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-gray-700">
+              <Label className="text-[13px] font-medium text-[#3a3a3e]">
                 Materials
               </Label>
               <Select value={materials} onValueChange={setMaterials}>
-                <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-white px-4 text-sm text-gray-900 focus:ring-1 focus:ring-gray-100 focus:ring-offset-0 focus:border-gray-300 w-full">
+                <SelectTrigger className="h-11 rounded-xl border-[#d2d2d7] bg-white px-4 text-sm text-[#1d1d1f] focus:ring-1 focus:ring-[#f0f0f5] focus:ring-offset-0 focus:border-[#c8c8cd] w-full">
                   <SelectValue placeholder="Select material..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-gray-200 bg-white shadow-lg">
+                <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg">
                   {MATERIAL_OPTIONS.map((opt) => (
                     <SelectItem
                       key={opt.value}
                       value={opt.value}
-                      className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-gray-100 focus:text-gray-900 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900"
+                      className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-[#f0f0f5] focus:text-[#1d1d1f] data-[highlighted]:bg-[#f0f0f5] data-[highlighted]:text-[#1d1d1f]"
                     >
                       {opt.label}
                     </SelectItem>
@@ -372,19 +372,19 @@ export function CustomerSiteDetailsPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-gray-700">
+              <Label className="text-[13px] font-medium text-[#3a3a3e]">
                 Finishes
               </Label>
               <Select value={finishes} onValueChange={setFinishes}>
-                <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-white px-4 text-sm text-gray-900 focus:ring-1 focus:ring-gray-100 focus:ring-offset-0 focus:border-gray-300 w-full">
+                <SelectTrigger className="h-11 rounded-xl border-[#d2d2d7] bg-white px-4 text-sm text-[#1d1d1f] focus:ring-1 focus:ring-[#f0f0f5] focus:ring-offset-0 focus:border-[#c8c8cd] w-full">
                   <SelectValue placeholder="Select finish..." />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl border-gray-200 bg-white shadow-lg">
+                <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg">
                   {FINISH_OPTIONS.map((opt) => (
                     <SelectItem
                       key={opt.value}
                       value={opt.value}
-                      className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-gray-100 focus:text-gray-900 data-[highlighted]:bg-gray-100 data-[highlighted]:text-gray-900"
+                      className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-[#f0f0f5] focus:text-[#1d1d1f] data-[highlighted]:bg-[#f0f0f5] data-[highlighted]:text-[#1d1d1f]"
                     >
                       {opt.label}
                     </SelectItem>
@@ -393,36 +393,36 @@ export function CustomerSiteDetailsPage() {
               </Select>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-gray-700">
+              <Label className="text-[13px] font-medium text-[#3a3a3e]">
                 Preferred Design
               </Label>
               <Input
                 value={preferredDesign}
                 onChange={(e) => setPreferredDesign(e.target.value)}
                 placeholder="e.g., Modern minimalist"
-                className="h-11 rounded-xl border-gray-200"
+                className="h-11 rounded-xl border-[#d2d2d7]"
               />
             </div>
           </CardContent>
         </Card>
 
         {/* Section 5: File Uploads */}
-        <Card className="rounded-xl border-gray-100 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-              <Camera className="h-5 w-5 text-gray-400" />
+            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+              <Camera className="h-5 w-5 text-[#86868b]" />
               Photos & Attachments
             </CardTitle>
-            <CardDescription className="text-gray-500">
+            <CardDescription className="text-[#6e6e73]">
               Site photos and reference images are required. Videos and sketches help the sales staff prepare.
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isOffice && (
-              <div className="mb-4 rounded-lg border border-orange-200 bg-orange-50/50 p-3">
+              <div className="mb-4 rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 p-3">
                 <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-orange-500" />
-                  <p className="text-xs font-medium text-orange-700">
+                  <AlertCircle className="h-4 w-4 text-[#6e6e73]" />
+                  <p className="text-xs font-medium text-[#3a3a3e]">
                     <span className="text-red-600">*</span> Site Photos and Reference Images are required
                   </p>
                 </div>
@@ -458,7 +458,7 @@ export function CustomerSiteDetailsPage() {
             variant="outline"
             onClick={() => setSkipOpen(true)}
             disabled={skipMutation.isPending}
-            className="border-gray-200 text-gray-700 rounded-xl"
+            className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
           >
             <SkipForward className="mr-2 h-4 w-4" />
             Skip for Now

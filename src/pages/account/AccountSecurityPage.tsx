@@ -68,7 +68,7 @@ const passwordRules = [
 ];
 
 const inputClasses =
-  'h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200';
+  'h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl transition-colors';
 
 export function AccountSecurityPage() {
   const [showCurrent, setShowCurrent] = useState(false);
@@ -292,14 +292,14 @@ export function AccountSecurityPage() {
 
       {/* Password status card */}
       {user?.provider !== 'google' && (
-      <Card className="border-gray-100 shadow-sm rounded-2xl">
+      <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
         <CardContent className="flex items-center gap-4 p-5">
           <div className="p-2.5 bg-emerald-50 rounded-xl">
             <ShieldCheck className="h-5 w-5 text-emerald-600" />
           </div>
           <div>
-            <p className="font-semibold text-gray-900 text-sm">Password Protection</p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="font-semibold text-[#1d1d1f] text-sm">Password Protection</p>
+            <p className="text-xs text-[#86868b] mt-0.5">
               Your account is protected with a password. Update it regularly for better security.
             </p>
           </div>
@@ -309,17 +309,17 @@ export function AccountSecurityPage() {
 
       {/* Change Password form */}
       {user?.provider !== 'google' && (
-      <Card className="border-gray-100 shadow-sm rounded-2xl">
+      <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-orange-50">
-              <Lock className="h-5 w-5 text-orange-500" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f0f5]">
+              <Lock className="h-5 w-5 text-[#1d1d1f]" />
             </div>
             <div>
-              <CardTitle className="text-lg font-semibold text-gray-900">
+              <CardTitle className="text-lg font-semibold text-[#1d1d1f]">
                 Change Password
               </CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-[#86868b]">
                 Update your account password.
               </CardDescription>
             </div>
@@ -328,7 +328,7 @@ export function AccountSecurityPage() {
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="currentPassword" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="currentPassword" className="text-[#3a3a3e] text-[13px] font-medium">
                 Current Password
               </Label>
               <div className="relative">
@@ -342,7 +342,7 @@ export function AccountSecurityPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#3a3a3e]"
                   onClick={() => setShowCurrent(!showCurrent)}
                   aria-label={showCurrent ? 'Hide current password' : 'Show current password'}
                 >
@@ -354,9 +354,9 @@ export function AccountSecurityPage() {
               )}
             </div>
 
-            <div className="border-t border-gray-100 pt-5">
+            <div className="border-t border-[#d2d2d7]/50 pt-5">
               <div className="space-y-1.5">
-                <Label htmlFor="newPassword" className="text-gray-700 text-[13px] font-medium">
+                <Label htmlFor="newPassword" className="text-[#3a3a3e] text-[13px] font-medium">
                   New Password
                 </Label>
                 <div className="relative">
@@ -370,7 +370,7 @@ export function AccountSecurityPage() {
                   />
                   <button
                     type="button"
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#3a3a3e]"
                     onClick={() => setShowNew(!showNew)}
                     aria-label={showNew ? 'Hide new password' : 'Show new password'}
                   >
@@ -382,7 +382,7 @@ export function AccountSecurityPage() {
                 )}
 
                 {passwordValue.length > 0 && (
-                  <div className="rounded-lg bg-gray-50 p-3 mt-2">
+                  <div className="rounded-lg bg-[#f0f0f5]/50 p-3 mt-2">
                     <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1.5">
                       {passwordRules.map((rule) => {
                         const passed = rule.test(passwordValue);
@@ -390,7 +390,7 @@ export function AccountSecurityPage() {
                           <div
                             key={rule.label}
                             className={`flex items-center gap-1.5 text-xs ${
-                              passed ? 'text-emerald-600' : 'text-gray-400'
+                              passed ? 'text-emerald-600' : 'text-[#86868b]'
                             }`}
                           >
                             {passed ? (
@@ -409,7 +409,7 @@ export function AccountSecurityPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="confirmPassword" className="text-[#3a3a3e] text-[13px] font-medium">
                 Confirm New Password
               </Label>
               <div className="relative">
@@ -423,7 +423,7 @@ export function AccountSecurityPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#3a3a3e]"
                   onClick={() => setShowConfirm(!showConfirm)}
                   aria-label={showConfirm ? 'Hide confirm password' : 'Show confirm password'}
                 >
@@ -437,7 +437,7 @@ export function AccountSecurityPage() {
 
             <Button
               type="submit"
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white h-11 font-semibold"
+              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white h-11 font-semibold rounded-xl shadow-sm transition-all duration-200"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -450,7 +450,7 @@ export function AccountSecurityPage() {
 
       {/* Google account info */}
       {user?.provider === 'google' && (
-      <Card className="border-gray-100 shadow-sm rounded-2xl">
+      <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
         <CardContent className="flex items-center gap-4 p-5">
           <div className="p-2.5 bg-blue-50 rounded-xl">
             <svg className="h-5 w-5" viewBox="0 0 24 24">
@@ -461,8 +461,8 @@ export function AccountSecurityPage() {
             </svg>
           </div>
           <div>
-            <p className="font-semibold text-gray-900 text-sm">Google Account</p>
-            <p className="text-xs text-gray-500 mt-0.5">
+            <p className="font-semibold text-[#1d1d1f] text-sm">Google Account</p>
+            <p className="text-xs text-[#86868b] mt-0.5">
               Your account is linked with Google. Password management is handled by Google.
             </p>
           </div>
@@ -472,27 +472,27 @@ export function AccountSecurityPage() {
 
       {/* Two-Factor Authentication (Customers only) */}
       {isCustomer && (
-        <Card className="border-gray-100 shadow-sm rounded-2xl">
+        <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <div className="flex items-start gap-3">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${user?.twoFactorEnabled ? 'bg-emerald-50' : 'bg-gray-100'}`}>
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${user?.twoFactorEnabled ? 'bg-emerald-50' : 'bg-[#f0f0f5]'}`}>
                 {user?.twoFactorEnabled ? (
                   <Shield className="h-5 w-5 text-emerald-600" />
                 ) : (
-                  <ShieldOff className="h-5 w-5 text-gray-400" />
+                  <ShieldOff className="h-5 w-5 text-[#86868b]" />
                 )}
               </div>
               <div className="flex-1 min-w-0">
-                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">
+                <CardTitle className="text-base sm:text-lg font-semibold text-[#1d1d1f]">
                   Two-Factor Auth
                 </CardTitle>
-                <CardDescription className="text-gray-500 mt-0.5 text-xs sm:text-sm">
+                <CardDescription className="text-[#86868b] mt-0.5 text-xs sm:text-sm">
                   Extra security via email verification.
                 </CardDescription>
               </div>
               {!showOtpInput && !showDisableForm && (
-                <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${user?.twoFactorEnabled ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-gray-100 text-gray-500 ring-1 ring-gray-200'}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${user?.twoFactorEnabled ? 'bg-emerald-500' : 'bg-gray-400'}`} />
+                <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${user?.twoFactorEnabled ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-[#f0f0f5] text-[#86868b] ring-1 ring-[#d2d2d7]'}`}>
+                  <span className={`h-1.5 w-1.5 rounded-full ${user?.twoFactorEnabled ? 'bg-emerald-500' : 'bg-[#86868b]'}`} />
                   {user?.twoFactorEnabled ? 'On' : 'Off'}
                 </span>
               )}
@@ -501,13 +501,13 @@ export function AccountSecurityPage() {
           <CardContent>
             {!user?.twoFactorEnabled && !showOtpInput && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-[#86868b]">
                   Receive a 6-digit code via email each time you sign in.
                 </p>
                 <Button
                   onClick={handleEnable2FA}
                   disabled={enabling2FA}
-                  className="w-full sm:w-auto bg-gray-900 hover:bg-gray-800 text-white"
+                  className="w-full sm:w-auto bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
                 >
                   {enabling2FA && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                   Enable Two-Factor
@@ -517,8 +517,8 @@ export function AccountSecurityPage() {
 
             {showOtpInput && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">
-                  Enter the 6-digit code sent to <strong className="text-gray-700 break-all">{user?.email}</strong>.
+                <p className="text-sm text-[#86868b]">
+                  Enter the 6-digit code sent to <strong className="text-[#3a3a3e] break-all">{user?.email}</strong>.
                 </p>
                 <div className="flex justify-center gap-1.5 min-[360px]:gap-2" onPaste={handleOtpPaste}>
                   {otp2fa.map((digit, index) => (
@@ -531,7 +531,7 @@ export function AccountSecurityPage() {
                       value={digit}
                       onChange={(e) => handleOtpChange(index, e.target.value)}
                       onKeyDown={(e) => handleOtpKeyDown(index, e)}
-                      className="h-11 w-9 min-[360px]:h-12 min-[360px]:w-10 text-center text-lg font-bold border-gray-200 focus:border-orange-400 focus:ring-orange-200 rounded-lg sm:rounded-xl transition-colors"
+                      className="h-11 w-9 min-[360px]:h-12 min-[360px]:w-10 text-center text-lg font-bold border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-lg sm:rounded-xl transition-colors"
                       disabled={otpSubmitting}
                     />
                   ))}
@@ -540,7 +540,7 @@ export function AccountSecurityPage() {
                   <Button
                     onClick={confirmEnable2FA}
                     disabled={otpSubmitting || otp2fa.some((d) => d === '')}
-                    className="flex-1 bg-gray-900 hover:bg-gray-800 text-white"
+                    className="flex-1 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
                   >
                     {otpSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                     Confirm
@@ -576,9 +576,9 @@ export function AccountSecurityPage() {
 
             {showDisableForm && (
               <div className="space-y-4">
-                <p className="text-sm text-gray-500">Enter your password to disable two-factor authentication.</p>
+                <p className="text-sm text-[#86868b]">Enter your password to disable two-factor authentication.</p>
                 <div className="space-y-1.5">
-                  <Label className="text-gray-700 text-[13px] font-medium">Password</Label>
+                  <Label className="text-[#3a3a3e] text-[13px] font-medium">Password</Label>
                   <Input
                     type="password"
                     value={disablePassword}
@@ -610,7 +610,7 @@ export function AccountSecurityPage() {
       )}
 
       {/* Active Sessions */}
-      <Card className="border-gray-100 shadow-sm rounded-2xl">
+      <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
         <CardHeader>
           <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
             <div className="flex items-center gap-3">
@@ -618,8 +618,8 @@ export function AccountSecurityPage() {
                 <Globe className="h-5 w-5 text-blue-500" />
               </div>
               <div>
-                <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Active Sessions</CardTitle>
-                <CardDescription className="text-gray-500">
+                <CardTitle className="text-base sm:text-lg font-semibold text-[#1d1d1f]">Active Sessions</CardTitle>
+                <CardDescription className="text-[#86868b]">
                   Devices currently signed in.
                 </CardDescription>
               </div>
@@ -641,24 +641,24 @@ export function AccountSecurityPage() {
         <CardContent>
           {sessionsLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              <Loader2 className="h-5 w-5 animate-spin text-[#86868b]" />
             </div>
           ) : sessions.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">No active sessions found.</p>
+            <p className="text-sm text-[#86868b] text-center py-4">No active sessions found.</p>
           ) : (
             <div className="space-y-3">
               {sessions.map((session) => (
                 <div
                   key={session._id}
-                  className={`p-3 rounded-xl border ${session.isCurrent ? 'border-emerald-200 bg-emerald-50/50' : 'border-gray-100 bg-gray-50/50'}`}
+                  className={`p-3 rounded-xl border ${session.isCurrent ? 'border-emerald-200 bg-emerald-50/50' : 'border-[#d2d2d7]/50 bg-white/60'}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg shrink-0 ${session.isCurrent ? 'bg-emerald-100 text-emerald-600' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className={`p-2 rounded-lg shrink-0 ${session.isCurrent ? 'bg-emerald-100 text-emerald-600' : 'bg-[#f0f0f5] text-[#6e6e73]'}`}>
                       {getDeviceIcon(session.device)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-[#1d1d1f] truncate">
                           {session.browser} on {session.os}
                         </p>
                         {session.isCurrent && (
@@ -667,7 +667,7 @@ export function AccountSecurityPage() {
                           </span>
                         )}
                       </div>
-                      <div className="mt-1 flex flex-col min-[400px]:flex-row min-[400px]:flex-wrap gap-x-1 text-xs text-gray-500">
+                      <div className="mt-1 flex flex-col min-[400px]:flex-row min-[400px]:flex-wrap gap-x-1 text-xs text-[#86868b]">
                         {displayLocation(session.location) && (
                           <>
                             <span>{displayLocation(session.location)}</span>
@@ -676,7 +676,7 @@ export function AccountSecurityPage() {
                         )}
                         {displayIp(session.ipAddress) && (
                           <>
-                            <span className="text-gray-400">{displayIp(session.ipAddress)}</span>
+                            <span className="text-[#86868b]">{displayIp(session.ipAddress)}</span>
                             <span className="hidden min-[400px]:inline">&middot;</span>
                           </>
                         )}
@@ -703,15 +703,15 @@ export function AccountSecurityPage() {
       </Card>
 
       {/* Login History */}
-      <Card className="border-gray-100 shadow-sm rounded-2xl">
+      <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center gap-3">
             <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50">
               <History className="h-5 w-5 text-purple-500" />
             </div>
             <div>
-              <CardTitle className="text-base sm:text-lg font-semibold text-gray-900">Login History</CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardTitle className="text-base sm:text-lg font-semibold text-[#1d1d1f]">Login History</CardTitle>
+              <CardDescription className="text-[#86868b]">
                 Recent login attempts on your account.
               </CardDescription>
             </div>
@@ -720,24 +720,24 @@ export function AccountSecurityPage() {
         <CardContent>
           {historyLoading ? (
             <div className="flex items-center justify-center py-8">
-              <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+              <Loader2 className="h-5 w-5 animate-spin text-[#86868b]" />
             </div>
           ) : loginHistory.length === 0 ? (
-            <p className="text-sm text-gray-400 text-center py-4">No login history yet.</p>
+            <p className="text-sm text-[#86868b] text-center py-4">No login history yet.</p>
           ) : (
             <div className="space-y-2">
               {loginHistory.map((entry) => (
                 <div
                   key={entry._id}
-                  className={`p-3 rounded-xl border ${entry.status === 'failed' ? 'border-red-100 bg-red-50/30' : 'border-gray-100 bg-gray-50/50'}`}
+                  className={`p-3 rounded-xl border ${entry.status === 'failed' ? 'border-red-100 bg-red-50/30' : 'border-[#d2d2d7]/50 bg-white/60'}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg shrink-0 ${entry.status === 'failed' ? 'bg-red-100 text-red-500' : 'bg-gray-100 text-gray-500'}`}>
+                    <div className={`p-2 rounded-lg shrink-0 ${entry.status === 'failed' ? 'bg-red-100 text-red-500' : 'bg-[#f0f0f5] text-[#6e6e73]'}`}>
                       {getDeviceIcon(entry.device)}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <p className="text-sm font-medium text-gray-900 truncate">
+                        <p className="text-sm font-medium text-[#1d1d1f] truncate">
                           {entry.browser} on {entry.os}
                         </p>
                         <span
@@ -750,7 +750,7 @@ export function AccountSecurityPage() {
                           {entry.status === 'success' ? 'SUCCESS' : 'FAILED'}
                         </span>
                       </div>
-                      <div className="mt-1 flex flex-col min-[400px]:flex-row min-[400px]:flex-wrap gap-x-1 text-xs text-gray-500">
+                      <div className="mt-1 flex flex-col min-[400px]:flex-row min-[400px]:flex-wrap gap-x-1 text-xs text-[#86868b]">
                         <div className="flex items-center gap-1">
                           <Clock className="h-3 w-3 shrink-0" />
                           <span>{formatDate(entry.createdAt)}</span>
@@ -764,7 +764,7 @@ export function AccountSecurityPage() {
                         {displayIp(entry.ipAddress) && (
                           <>
                             <span className="hidden min-[400px]:inline">&middot;</span>
-                            <span className="text-gray-400">{displayIp(entry.ipAddress)}</span>
+                            <span className="text-[#86868b]">{displayIp(entry.ipAddress)}</span>
                           </>
                         )}
                       </div>

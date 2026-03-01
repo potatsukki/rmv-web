@@ -113,10 +113,10 @@ export function OcularFeeQueuePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
           Ocular Fee Queue
         </h1>
-        <p className="text-gray-500 text-sm">
+        <p className="text-[#6e6e73] text-sm">
           Review and verify ocular fee payments from customers
         </p>
       </div>
@@ -124,7 +124,7 @@ export function OcularFeeQueuePage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-xl border-gray-100">
+            <Card key={i} className="rounded-xl border-[#c8c8cd]/50">
               <CardContent className="p-4">
                 <Skeleton className="h-24 w-full" />
               </CardContent>
@@ -142,16 +142,16 @@ export function OcularFeeQueuePage() {
           {appointments.map((appt) => (
             <Card
               key={appt._id}
-              className="rounded-xl border-gray-100 hover:shadow-md transition-shadow"
+              className="rounded-xl border-[#c8c8cd]/50 hover:shadow-md transition-shadow"
             >
               <CardContent className="p-5 space-y-3">
                 {/* Customer & status row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="font-semibold text-gray-900">
+                    <p className="font-semibold text-[#1d1d1f]">
                       {appt.customerName || 'Customer'}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-gray-500">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#6e6e73]">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         {format(new Date(appt.date), 'MMM d, yyyy')}
@@ -168,8 +168,8 @@ export function OcularFeeQueuePage() {
                 {/* Fee details */}
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500">Fee: </span>
-                    <span className="font-semibold text-orange-600">
+                    <span className="text-[#6e6e73]">Fee: </span>
+                    <span className="font-semibold text-[#1d1d1f]">
                       {formatCurrency(
                         appt.ocularFee ?? appt.ocularFeeBreakdown?.total ?? 0,
                       )}
@@ -177,7 +177,7 @@ export function OcularFeeQueuePage() {
                   </div>
                   {appt.ocularFeeReferenceNumber && (
                     <div>
-                      <span className="text-gray-500">Ref: </span>
+                      <span className="text-[#6e6e73]">Ref: </span>
                       <span className="font-medium">
                         {appt.ocularFeeReferenceNumber}
                       </span>
@@ -185,7 +185,7 @@ export function OcularFeeQueuePage() {
                   )}
                   {appt.distanceKm != null && (
                     <div>
-                      <span className="text-gray-500">Distance: </span>
+                      <span className="text-[#6e6e73]">Distance: </span>
                       <span className="font-medium">
                         {appt.distanceKm.toFixed(1)} km
                       </span>
@@ -199,7 +199,7 @@ export function OcularFeeQueuePage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-lg border-gray-200"
+                      className="rounded-lg border-[#d2d2d7]"
                       onClick={() => handleViewProof(appt.ocularFeeProofKey!)}
                       disabled={getDownloadUrl.isPending}
                     >
@@ -259,21 +259,21 @@ export function OcularFeeQueuePage() {
       >
         <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Decline Ocular Fee</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f]">Decline Ocular Fee</DialogTitle>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-gray-700 text-[13px] font-medium">Reason</Label>
+            <Label className="text-[#3a3a3e] text-[13px] font-medium">Reason</Label>
             <Input
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               placeholder="Why is this payment being declined?"
-              className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+              className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73]"
             />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-gray-200 rounded-lg"
+              className="border-[#d2d2d7] rounded-lg"
               onClick={() => setDeclineDialog({ open: false, id: '' })}
             >
               Cancel
@@ -294,7 +294,7 @@ export function OcularFeeQueuePage() {
       <Dialog open={proofViewOpen} onOpenChange={setProofViewOpen}>
         <DialogContent className="rounded-2xl max-w-lg">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Payment Proof</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f]">Payment Proof</DialogTitle>
           </DialogHeader>
           {proofImageUrl ? (
             <img

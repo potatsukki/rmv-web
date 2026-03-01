@@ -178,7 +178,7 @@ export function LineItemsEditor({
           type="button"
           variant="outline"
           onClick={addItem}
-          className="w-full border-dashed border-gray-300 text-gray-500 hover:text-orange-600 hover:border-orange-300 hover:bg-orange-50/50 rounded-xl"
+          className="w-full border-dashed border-[#c8c8cd] text-[#6e6e73] hover:text-[#1d1d1f] hover:border-[#6e6e73] hover:bg-[#f0f0f5] rounded-xl"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Measurement

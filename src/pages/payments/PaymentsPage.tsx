@@ -157,8 +157,8 @@ export function PaymentsPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Payments</h1>
-        <p className="text-gray-500 text-sm">
+        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Payments</h1>
+        <p className="text-[#6e6e73] text-sm">
           {isCustomer ? 'Submit and track your payments' : 'View payment details by project'}
         </p>
       </div>
@@ -182,22 +182,22 @@ export function PaymentsPage() {
                 className="flex items-center justify-between rounded-xl border border-amber-200 bg-white p-4"
               >
                 <div className="space-y-1">
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">
                     {format(new Date(appt.date), 'EEEE, MMMM d, yyyy')}
                   </p>
                   {appt.address && (
-                    <p className="flex items-center gap-1 text-xs text-gray-500">
+                    <p className="flex items-center gap-1 text-xs text-[#6e6e73]">
                       <MapPin className="h-3 w-3" />
                       {appt.address}
                     </p>
                   )}
-                  <p className="text-lg font-bold text-orange-600">
+                  <p className="text-lg font-bold text-[#1d1d1f]">
                     {formatCurrency(appt.ocularFee ?? 0)}
                   </p>
                 </div>
                 <Button
                   asChild
-                  className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl"
+                  className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
                 >
                   <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
                     Pay Now
@@ -210,9 +210,9 @@ export function PaymentsPage() {
       )}
 
       {/* Project Selector — Card-based */}
-      <Card className="rounded-xl border-gray-100">
+      <Card className="rounded-xl border-[#c8c8cd]/50">
         <CardHeader className="pb-2">
-          <CardTitle className="text-sm font-medium text-gray-700">Select Project</CardTitle>
+          <CardTitle className="text-sm font-medium text-[#3a3a3e]">Select Project</CardTitle>
         </CardHeader>
         <CardContent className="p-4 pt-0">
           {projects?.items && projects.items.length > 0 ? (
@@ -226,14 +226,14 @@ export function PaymentsPage() {
                     onClick={() => setSelectedProjectId(String(p._id))}
                     className={`w-full rounded-xl border p-3 text-left transition-all ${
                       isSelected
-                        ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-200'
-                        : 'border-gray-200 bg-gray-50/30 hover:border-gray-300 hover:bg-gray-50'
+                        ? 'border-[#6e6e73] bg-[#f0f0f5] ring-2 ring-[#d2d2d7]'
+                        : 'border-[#d2d2d7] bg-[#f5f5f7]/30 hover:border-[#c8c8cd] hover:bg-[#f5f5f7]'
                     }`}
                   >
-                    <p className={`text-sm font-semibold truncate ${isSelected ? 'text-orange-900' : 'text-gray-900'}`}>
+                    <p className={`text-sm font-semibold truncate ${isSelected ? 'text-[#1d1d1f]' : 'text-[#1d1d1f]'}`}>
                       {String(p.title)}
                     </p>
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">
+                    <p className="text-xs text-[#6e6e73] mt-0.5 truncate">
                       {String(p.serviceType).replace(/_/g, ' ')}
                     </p>
                     <div className="flex items-center gap-2 mt-1.5">
@@ -244,7 +244,7 @@ export function PaymentsPage() {
               })}
             </div>
           ) : (
-            <p className="text-sm text-gray-500">No projects found.</p>
+            <p className="text-sm text-[#6e6e73]">No projects found.</p>
           )}
         </CardContent>
       </Card>
@@ -256,7 +256,7 @@ export function PaymentsPage() {
           description="Choose a project above to view its payment plan."
         />
       ) : planLoading ? (
-        <Card className="rounded-xl border-gray-100">
+        <Card className="rounded-xl border-[#c8c8cd]/50">
           <CardContent className="p-4">
             <Skeleton className="h-32 w-full" />
           </CardContent>
@@ -295,20 +295,20 @@ export function PaymentsPage() {
       ) : (
         <>
           {/* Payment Plan */}
-          <Card className="rounded-xl border-gray-100">
+          <Card className="rounded-xl border-[#c8c8cd]/50">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Payment Plan</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f]">Payment Plan</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
                 {plan.stages.map((stage) => (
                   <div
                     key={String(stage.stageId)}
-                    className="flex items-center justify-between rounded-xl border border-gray-100 p-4 bg-gray-50/30 hover:bg-gray-50 transition-colors"
+                    className="flex items-center justify-between rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/30 hover:bg-[#f5f5f7] transition-colors"
                   >
                     <div>
-                      <p className="font-semibold text-gray-900">{String(stage.label)}</p>
-                      <p className="text-sm text-gray-500">
+                      <p className="font-semibold text-[#1d1d1f]">{String(stage.label)}</p>
+                      <p className="text-sm text-[#6e6e73]">
                         {String(stage.percentage)}% — {formatCurrency(Number(stage.amount))}
                       </p>
                     </div>
@@ -328,7 +328,7 @@ export function PaymentsPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-gray-200 rounded-lg"
+                            className="border-[#d2d2d7] rounded-lg"
                             onClick={() =>
                               setProofDialog({
                                 open: true,
@@ -343,7 +343,7 @@ export function PaymentsPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-orange-600 hover:text-orange-700 rounded-lg"
+                            className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg"
                             onClick={() => handleSimulate(String(stage.stageId))}
                             disabled={simulatePayment.isPending}
                             title="DEV: Simulate payment"
@@ -368,7 +368,7 @@ export function PaymentsPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="border-gray-200 rounded-lg"
+                            className="border-[#d2d2d7] rounded-lg"
                             onClick={() =>
                               setProofDialog({
                                 open: true,
@@ -407,26 +407,26 @@ export function PaymentsPage() {
 
           {/* Recent Payments */}
           {payments && payments.length > 0 && (
-            <Card className="rounded-xl border-gray-100">
+            <Card className="rounded-xl border-[#c8c8cd]/50">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Payment History</CardTitle>
+                <CardTitle className="text-lg text-[#1d1d1f]">Payment History</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {payments.map((p) => (
                     <div
                       key={String(p._id)}
-                      className="flex items-center justify-between rounded-xl border border-gray-100 p-4"
+                      className="flex items-center justify-between rounded-xl border border-[#c8c8cd]/50 p-4"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-[#1d1d1f]">
                           {formatCurrency(Number(p.amountPaid))}
                         </p>
-                        <p className="text-xs text-gray-500 capitalize">
+                        <p className="text-xs text-[#6e6e73] capitalize">
                           {String(p.method || '').replace('_', ' ')}
                           {p.receiptNumber && ` · ${String(p.receiptNumber)}`}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-[#86868b]">
                           {p.createdAt
                             ? format(new Date(String(p.createdAt)), 'MMM d, yyyy')
                             : ''}
@@ -443,7 +443,7 @@ export function PaymentsPage() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            className="text-orange-600 hover:text-orange-700 h-7 px-2"
+                            className="text-[#1d1d1f] hover:text-[#3a3a3e] h-7 px-2"
                             onClick={async () => {
                               try {
                                 const { data } = await api.get(`/payments/${p._id}/receipt-url`);
@@ -481,22 +481,22 @@ export function PaymentsPage() {
       >
         <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Submit Payment Proof</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f]">Submit Payment Proof</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-gray-700 text-[13px] font-medium">Amount Due</Label>
-              <p className="text-lg font-bold text-orange-600">
+              <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Due</Label>
+              <p className="text-lg font-bold text-[#1d1d1f]">
                 {formatCurrency(proofDialog.amount)}
               </p>
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-gray-700 text-[13px] font-medium">Payment Method</Label>
+              <Label className="text-[#3a3a3e] text-[13px] font-medium">Payment Method</Label>
               <select
                 value={method}
                 onChange={(e) => setMethod(e.target.value)}
-                className="w-full rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300"
+                className="w-full rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]"
               >
                 {Object.values(PaymentMethod).map((m) => (
                   <option key={m} value={m}>
@@ -507,27 +507,27 @@ export function PaymentsPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label className="text-gray-700 text-[13px] font-medium">Amount Paid</Label>
+              <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Paid</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={amountPaid}
                 onChange={(e) => setAmountPaid(e.target.value)}
                 placeholder="0.00"
-                className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
               />
             </div>
 
             {method !== PaymentMethod.CASH && (
               <div className="space-y-1.5">
-                <Label className="text-gray-700 text-[13px] font-medium">
+                <Label className="text-[#3a3a3e] text-[13px] font-medium">
                   Reference Number
                 </Label>
                 <Input
                   value={refNumber}
                   onChange={(e) => setRefNumber(e.target.value)}
                   placeholder="Transaction reference #"
-                  className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                  className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
                 />
               </div>
             )}
@@ -544,13 +544,13 @@ export function PaymentsPage() {
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-gray-200 rounded-lg"
+              className="border-[#d2d2d7] rounded-lg"
               onClick={() => setProofDialog({ open: false, stageId: '', amount: 0 })}
             >
               Cancel
             </Button>
             <Button
-              className="bg-gray-900 hover:bg-gray-800 rounded-lg"
+              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] rounded-lg"
               onClick={handleSubmitProof}
               disabled={submitProof.isPending}
             >
@@ -572,31 +572,31 @@ export function PaymentsPage() {
       >
         <DialogContent className="rounded-2xl sm:max-w-sm">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Record Cash Payment</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f]">Record Cash Payment</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
-              <Label className="text-gray-700 text-[13px] font-medium">Amount Due</Label>
+              <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Due</Label>
               <p className="text-lg font-bold text-emerald-700">
                 {formatCurrency(cashDialog.amount)}
               </p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-gray-700 text-[13px] font-medium">Amount Received</Label>
+              <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Received</Label>
               <Input
                 type="number"
                 step="0.01"
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
                 placeholder="0.00"
-                className="h-11 bg-gray-50/50 border-gray-200 focus:border-emerald-300 focus:ring-emerald-200"
+                className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-emerald-300 focus:ring-emerald-200"
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-gray-200 rounded-lg"
+              className="border-[#d2d2d7] rounded-lg"
               onClick={() => {
                 setCashDialog({ open: false, stageId: '', amount: 0 });
                 setCashAmount('');

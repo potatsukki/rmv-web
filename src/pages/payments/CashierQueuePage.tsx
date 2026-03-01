@@ -62,14 +62,14 @@ export function CashierQueuePage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">Cashier Queue</h1>
-        <p className="text-gray-500 text-sm">Review and verify payment submissions</p>
+        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Cashier Queue</h1>
+        <p className="text-[#6e6e73] text-sm">Review and verify payment submissions</p>
       </div>
 
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-xl border-gray-100">
+            <Card key={i} className="rounded-xl border-[#c8c8cd]/50">
               <CardContent className="p-4">
                 <Skeleton className="h-20 w-full" />
               </CardContent>
@@ -87,18 +87,18 @@ export function CashierQueuePage() {
           {payments.map((p) => (
             <Card
               key={String(p._id)}
-              className="rounded-xl border-gray-100 hover:shadow-md transition-shadow"
+              className="rounded-xl border-[#c8c8cd]/50 hover:shadow-md transition-shadow"
             >
               <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
-                  <p className="font-semibold text-gray-900">
+                  <p className="font-semibold text-[#1d1d1f]">
                     {formatCurrency(Number(p.amountPaid))}
                   </p>
-                  <p className="text-sm text-gray-500 capitalize">
+                  <p className="text-sm text-[#6e6e73] capitalize">
                     {String(p.method || '').replace('_', ' ')}
                     {p.referenceNumber && ` · Ref: ${String(p.referenceNumber)}`}
                   </p>
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-[#86868b]">
                     {p.createdAt
                       ? format(new Date(String(p.createdAt)), 'MMM d, yyyy h:mm a')
                       : ''}
@@ -156,21 +156,21 @@ export function CashierQueuePage() {
       >
         <DialogContent className="rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Decline Payment</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f]">Decline Payment</DialogTitle>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-gray-700 text-[13px] font-medium">Reason</Label>
+            <Label className="text-[#3a3a3e] text-[13px] font-medium">Reason</Label>
             <Input
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
               placeholder="Why is this payment being declined?"
-              className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+              className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
             />
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-gray-200 rounded-lg"
+              className="border-[#d2d2d7] rounded-lg"
               onClick={() => setDeclineDialog({ open: false, id: '' })}
             >
               Cancel

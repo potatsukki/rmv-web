@@ -165,12 +165,13 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Form */}
-      <div className="flex flex-1 flex-col justify-center px-6 py-12 lg:flex-none lg:px-20 xl:px-28 bg-white z-10 w-full lg:w-[48%]">
-        <div className="mx-auto w-full max-w-[380px]">
+      <div className="relative flex flex-1 flex-col justify-center px-6 py-12 lg:flex-none lg:px-20 xl:px-28 bg-gradient-to-br from-[#eaeaef] via-[#e0e0e6] to-[#d8d8de] z-10 w-full lg:w-[48%]">
+        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+        <div className="relative mx-auto w-full max-w-[380px]">
           {/* Back link */}
           <Link
             to="/"
-            className="inline-flex items-center gap-2 mb-10 text-sm font-medium text-gray-400 hover:text-gray-600 transition-colors group"
+            className="inline-flex items-center gap-2 mb-10 text-sm font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors group"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Home
@@ -178,20 +179,20 @@ export function LoginPage() {
 
           {/* Brand + Welcome */}
           <div className="flex items-center gap-2.5 mb-8">
-            <BrandLogo className="h-9 w-9 ring-2 ring-orange-500/25 shadow-lg shadow-orange-500/20" />
-            <span className="font-bold text-gray-900 tracking-tight">RMV Stainless</span>
+            <BrandLogo className="h-9 w-9 ring-2 ring-[#b8b8bd]/50 shadow-lg shadow-black/10" />
+            <span className="font-bold text-[#1d1d1f] tracking-tight">RMV Stainless</span>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
             Welcome back
           </h2>
-          <p className="mt-1.5 text-sm text-gray-500">
+          <p className="mt-1.5 text-sm text-[#6e6e73]">
             Sign in to manage your fabrication projects.
           </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="email" className="text-[#3a3a3e] text-[13px] font-medium">
                 Email Address
               </Label>
               <Input
@@ -199,7 +200,7 @@ export function LoginPage() {
                 type="email"
                 placeholder="Enter your email"
                 autoComplete="email"
-                className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                className="h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl"
                 {...register('email')}
               />
               {errors.email && (
@@ -209,12 +210,12 @@ export function LoginPage() {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-gray-700 text-[13px] font-medium">
+                <Label htmlFor="password" className="text-[#3a3a3e] text-[13px] font-medium">
                   Password
                 </Label>
                 <Link
                   to="/forgot-password"
-                  className="text-xs font-medium text-orange-600 hover:text-orange-500"
+                  className="text-xs font-semibold text-[#1d1d1f] hover:text-[#6e6e73] underline underline-offset-4"
                 >
                   Forgot password?
                 </Link>
@@ -225,12 +226,12 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   autoComplete="current-password"
-                  className="h-11 bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200 pr-10"
+                  className="h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 pr-10 rounded-xl"
                   {...register('password')}
                 />
                 <button
                   type="button"
-                  className="absolute right-0 top-0 h-full px-3 text-gray-400 hover:text-gray-600 transition-colors"
+                  className="absolute right-0 top-0 h-full px-3 text-[#86868b] hover:text-[#1d1d1f] transition-colors"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
@@ -248,7 +249,7 @@ export function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full bg-gray-900 hover:bg-gray-800 text-white font-semibold h-11 transition-all active:scale-[0.98] shadow-sm"
+              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white font-semibold h-11 transition-all active:scale-[0.98] shadow-lg shadow-black/20 rounded-xl"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -257,17 +258,17 @@ export function LoginPage() {
 
             <div className="relative my-1">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-gray-200" />
+                <span className="w-full border-t border-[#c8c8cd]/60" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-white px-2 text-gray-400">or</span>
+                <span className="bg-[#e4e4e9] px-2 text-[#86868b]">or</span>
               </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="w-full h-11 font-medium border-gray-200 hover:bg-gray-50 transition-all active:scale-[0.98]"
+              className="w-full h-11 font-medium border-[#c8c8cd] bg-white/60 hover:bg-white/90 text-[#1d1d1f] transition-all active:scale-[0.98] rounded-xl"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || isSubmitting}
             >
@@ -296,11 +297,11 @@ export function LoginPage() {
               Continue with Google
             </Button>
 
-            <p className="text-center text-sm text-gray-500">
+            <p className="text-center text-sm text-[#6e6e73]">
               Don&apos;t have an account?{' '}
               <Link
                 to="/register"
-                className="font-semibold text-orange-600 hover:text-orange-500"
+                className="font-semibold text-[#1d1d1f] hover:text-[#6e6e73] underline underline-offset-4"
               >
                 Create account
               </Link>
@@ -311,34 +312,31 @@ export function LoginPage() {
 
       {/* Right Side - Visual */}
       <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-gray-900 via-gray-900 to-gray-950" />
+        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1c] via-[#111113] to-[#0d0d0f]" />
         <img
           className="absolute inset-0 h-full w-full object-cover opacity-20 mix-blend-overlay"
           src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?ixlib=rb-4.0.3&auto=format&fit=crop&w=2070&q=80"
           alt="Industrial fabrication"
         />
-        <div className="absolute inset-0 bg-gradient-to-tr from-gray-950 via-gray-950/50 to-transparent" />
+        <div className="absolute inset-0 bg-gradient-to-tr from-[#0d0d0f] via-[#0d0d0f]/50 to-transparent" />
 
-        {/* Decorative dot grid */}
-        <div
-          className="absolute inset-0 opacity-[0.04]"
-          style={{
-            backgroundImage: 'radial-gradient(#ffffff 1px, transparent 1px)',
-            backgroundSize: '32px 32px',
-          }}
-        />
+        {/* Brushed metal noise texture */}
+        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+
+        {/* Silver light leak */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(180,180,190,0.06)_0%,transparent_60%)] pointer-events-none" />
 
         {/* Content overlay */}
         <div className="absolute bottom-0 left-0 right-0 p-12 lg:p-16">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-500/20 backdrop-blur-sm border border-orange-500/20 mb-6">
-            <Wrench className="h-6 w-6 text-orange-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 mb-6">
+            <Wrench className="h-6 w-6 text-[#d2d2d7]" />
           </div>
           <blockquote>
-            <p className="text-lg font-medium text-gray-200 leading-relaxed max-w-md">
+            <p className="text-lg font-medium text-[#d2d2d7] leading-relaxed max-w-md">
               &ldquo;Track your projects, manage blueprints, and schedule appointments
               — all from one secure dashboard.&rdquo;
             </p>
-            <footer className="mt-4 text-xs font-bold text-gray-500 uppercase tracking-[0.2em]">
+            <footer className="mt-4 text-xs font-bold text-[#6e6e73] uppercase tracking-[0.2em]">
               RMV Management System
             </footer>
           </blockquote>

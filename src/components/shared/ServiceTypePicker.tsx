@@ -100,13 +100,13 @@ export function ServiceTypePicker({
         onClick={() => setOpen(!open)}
         className={cn(
           'flex w-full items-center gap-3 h-11 rounded-xl border px-3 text-sm transition-all text-left',
-          'border-gray-200 bg-gray-50/50 hover:border-orange-300 focus:outline-none focus:ring-2 focus:ring-orange-200',
+          'border-gray-200 bg-gray-50/50 hover:border-[#6e6e73] focus:outline-none focus:ring-2 focus:ring-[#6e6e73]/20',
           disabled && 'opacity-50 cursor-not-allowed',
           !value && 'text-gray-400',
         )}
       >
-        <div className="rounded-lg bg-orange-50 p-1.5">
-          <Icon className="h-4 w-4 text-orange-600" />
+        <div className="rounded-lg bg-[#f0f0f5] p-1.5">
+          <Icon className="h-4 w-4 text-[#1d1d1f]" />
         </div>
         <span className="flex-1 truncate font-medium text-gray-900">
           {displayLabel}
@@ -131,22 +131,22 @@ export function ServiceTypePicker({
                   onClick={() => handleSelect(type)}
                   className={cn(
                     'flex flex-col items-center gap-1.5 rounded-xl border p-3 text-center transition-all',
-                    'hover:border-orange-300 hover:bg-orange-50/50',
+                    'hover:border-[#6e6e73] hover:bg-[#f0f0f5]/50',
                     isSelected
-                      ? 'border-orange-400 bg-orange-50 ring-2 ring-orange-200'
+                      ? 'border-[#1d1d1f] bg-[#f0f0f5] ring-2 ring-[#c8c8cd]'
                       : 'border-gray-100 bg-gray-50/50',
                   )}
                 >
                   <TypeIcon
                     className={cn(
                       'h-5 w-5',
-                      isSelected ? 'text-orange-600' : 'text-gray-400',
+                      isSelected ? 'text-[#1d1d1f]' : 'text-gray-400',
                     )}
                   />
                   <span
                     className={cn(
                       'text-[11px] font-semibold leading-tight',
-                      isSelected ? 'text-orange-700' : 'text-gray-600',
+                      isSelected ? 'text-[#1d1d1f]' : 'text-gray-600',
                     )}
                   >
                     {SERVICE_TYPE_LABELS[type]}

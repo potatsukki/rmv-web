@@ -81,7 +81,7 @@ export function NotificationsPage() {
             size="sm"
             onClick={() => markAllAsRead.mutate()}
             disabled={markAllAsRead.isPending || unreadCount === 0}
-            className="self-start sm:self-auto border-gray-200 text-gray-600 hover:text-orange-600 hover:border-orange-200 rounded-lg"
+            className="self-start sm:self-auto border-gray-200 text-gray-600 hover:text-[#1d1d1f] hover:border-[#c8c8cd] rounded-lg"
           >
             <CheckCheck className="mr-2 h-4 w-4" />
             Mark all read
@@ -151,7 +151,7 @@ export function NotificationsPage() {
                 n.link ? 'cursor-pointer' : ''
               } ${
                 !n.isRead
-                  ? 'border-orange-200 bg-orange-50/30 shadow-sm'
+                  ? 'border-[#c8c8cd] bg-[#f0f0f5]/30 shadow-sm'
                   : 'border-gray-100 bg-white opacity-80 hover:opacity-100'
               }`}
             >
@@ -159,7 +159,7 @@ export function NotificationsPage() {
                 <div
                   className={`mt-0.5 rounded-xl p-2 flex-shrink-0 ${
                     !n.isRead
-                      ? 'bg-orange-100 text-orange-600'
+                      ? 'bg-[#f0f0f5] text-[#1d1d1f]'
                       : 'bg-gray-100 text-gray-400'
                   }`}
                 >
@@ -192,7 +192,7 @@ export function NotificationsPage() {
                     {String(n.message || '')}
                   </p>
                   {n.link && (
-                    <span className="inline-flex items-center gap-1 mt-2 text-xs text-orange-600 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="inline-flex items-center gap-1 mt-2 text-xs text-[#1d1d1f] opacity-0 group-hover:opacity-100 transition-opacity">
                       <ExternalLink className="h-3 w-3" />
                       View details
                     </span>
@@ -203,7 +203,7 @@ export function NotificationsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-orange-600 hover:bg-orange-100 rounded-lg"
+                    className="h-8 w-8 text-gray-400 hover:text-[#1d1d1f] hover:bg-[#f0f0f5] rounded-lg"
                     onClick={(e) => {
                       e.stopPropagation();
                       markAsRead.mutate(String(n._id));

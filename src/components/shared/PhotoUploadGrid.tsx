@@ -70,7 +70,7 @@ export function PhotoUploadGrid({
       <Card className="rounded-xl border-gray-100 shadow-sm">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-            <Camera className="h-4 w-4 text-orange-500" />
+            <Camera className="h-4 w-4 text-[#6e6e73]" />
             Site Photos
           </CardTitle>
         </CardHeader>

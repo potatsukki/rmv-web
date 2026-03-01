@@ -77,23 +77,23 @@ function MediaThumbnail({ fileKey, type }: { fileKey: string; type: 'image' | 'v
     <button
       type="button"
       onClick={handleOpen}
-      className="relative group flex items-center justify-center w-24 h-24 rounded-xl border border-gray-200 bg-gray-50 hover:bg-gray-100 transition-colors overflow-hidden"
+      className="relative group flex items-center justify-center w-24 h-24 rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] hover:bg-[#f0f0f5] transition-colors overflow-hidden"
     >
       {loading ? (
-        <Loader2 className="h-5 w-5 animate-spin text-gray-400" />
+        <Loader2 className="h-5 w-5 animate-spin text-[#86868b]" />
       ) : (
         <>
           {type === 'image' ? (
-            <Camera className="h-6 w-6 text-gray-400 group-hover:text-orange-500 transition-colors" />
+            <Camera className="h-6 w-6 text-[#86868b] group-hover:text-[#6e6e73] transition-colors" />
           ) : (
-            <Video className="h-6 w-6 text-gray-400 group-hover:text-orange-500 transition-colors" />
+            <Video className="h-6 w-6 text-[#86868b] group-hover:text-[#6e6e73] transition-colors" />
           )}
           <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors">
             <Eye className="h-4 w-4 text-transparent group-hover:text-white transition-colors" />
           </div>
         </>
       )}
-      <span className="absolute bottom-0.5 text-[9px] text-gray-400 truncate max-w-[90%] px-1">
+      <span className="absolute bottom-0.5 text-[9px] text-[#86868b] truncate max-w-[90%] px-1">
         {fileKey.split('/').pop()?.substring(0, 12)}
       </span>
     </button>
@@ -117,11 +117,11 @@ function CollapsibleSection({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full text-left py-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+        className="flex items-center gap-2 w-full text-left py-2 text-sm font-medium text-[#3a3a3e] hover:text-[#1d1d1f]"
       >
-        <Icon className="h-4 w-4 text-gray-400" />
+        <Icon className="h-4 w-4 text-[#86868b]" />
         {title}
-        <span className="text-xs text-gray-400 bg-gray-100 rounded-full px-2 py-0.5">
+        <span className="text-xs text-[#86868b] bg-[#f0f0f5] rounded-full px-2 py-0.5">
           {count}
         </span>
         <span className="ml-auto">
@@ -403,16 +403,16 @@ export function ProjectDetailPage() {
           variant="ghost"
           size="icon"
           onClick={() => navigate(-1)}
-          className="rounded-xl hover:bg-gray-100"
+          className="rounded-xl hover:bg-[#f0f0f5]"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900 truncate">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] truncate">
             {project.title}
           </h1>
-          <p className="text-sm text-gray-500">
+          <p className="text-sm text-[#6e6e73]">
             Created {format(new Date(project.createdAt), 'MMM d, yyyy')}
           </p>
         </div>
@@ -431,7 +431,7 @@ export function ProjectDetailPage() {
                   <div
                     className={cn(
                       'h-0.5 w-6 sm:w-10',
-                      isPast ? 'bg-orange-500' : 'bg-gray-200',
+                      isPast ? 'bg-[#1d1d1f]' : 'bg-gray-200',
                     )}
                   />
                 )}
@@ -440,10 +440,10 @@ export function ProjectDetailPage() {
                     className={cn(
                       'flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold transition-colors',
                       isCurrent
-                        ? 'bg-orange-500 text-white ring-2 ring-orange-200'
+                        ? 'bg-[#1d1d1f] text-white ring-2 ring-[#c8c8cd]'
                         : isPast
-                          ? 'bg-orange-500 text-white'
-                          : 'bg-gray-100 text-gray-400',
+                          ? 'bg-[#1d1d1f] text-white'
+                          : 'bg-[#f0f0f5] text-[#86868b]',
                     )}
                   >
                     {isPast ? <Check className="h-3.5 w-3.5" /> : i + 1}
@@ -451,7 +451,7 @@ export function ProjectDetailPage() {
                   <span
                     className={cn(
                       'text-[10px] font-medium whitespace-nowrap',
-                      isCurrent ? 'text-orange-600' : isPast ? 'text-gray-600' : 'text-gray-400',
+                      isCurrent ? 'text-[#1d1d1f]' : isPast ? 'text-[#6e6e73]' : 'text-[#86868b]',
                     )}
                   >
                     {step.label}
@@ -467,16 +467,16 @@ export function ProjectDetailPage() {
       {isEngineer && (
         <>
           {project.status === 'submitted' && project.engineerIds.length === 0 && (
-            <Card className="rounded-xl border-orange-200 bg-orange-50/50">
+            <Card className="rounded-xl border-[#c8c8cd] bg-[#f0f0f5]/50">
               <CardContent className="p-4 flex items-center gap-3">
-                <UserPlus className="h-5 w-5 text-orange-600 shrink-0" />
+                <UserPlus className="h-5 w-5 text-[#1d1d1f] shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-orange-800">This project needs an engineer</p>
-                  <p className="text-xs text-orange-700">Claim it to start working on the blueprint.</p>
+                  <p className="text-sm font-semibold text-[#1d1d1f]">This project needs an engineer</p>
+                  <p className="text-xs text-[#6e6e73]">Claim it to start working on the blueprint.</p>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-orange-600 hover:bg-orange-700 text-white"
+                  className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
                   onClick={handleClaimProject}
                   disabled={assignEngineers.isPending}
                 >
@@ -534,7 +534,7 @@ export function ProjectDetailPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-gray-200">
+      <div className="flex gap-1 overflow-x-auto border-b border-[#d2d2d7]">
         {tabs.map((tab) => (
           <button
             type="button"
@@ -544,8 +544,8 @@ export function ProjectDetailPage() {
             className={cn(
               'flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
               activeTab === tab.key
-                ? 'border-orange-500 text-orange-600'
-                : 'border-transparent text-gray-500 hover:text-gray-900',
+                ? 'border-[#1d1d1f] text-[#1d1d1f]'
+                : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f]',
             )}
           >
             <tab.icon className="h-4 w-4" />
@@ -558,37 +558,37 @@ export function ProjectDetailPage() {
       {activeTab === 'details' && (
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Project Info */}
-          <Card className="rounded-xl border-gray-100">
+          <Card className="rounded-xl border-[#c8c8cd]/50">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Project Info</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f]">Project Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {project.description && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Description</p>
-                  <p className="text-sm text-gray-700 mt-1">{project.description}</p>
+                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Description</p>
+                  <p className="text-sm text-[#3a3a3e] mt-1">{project.description}</p>
                 </div>
               )}
               {isStaff && project.customerName && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Customer</p>
-                  <p className="text-sm text-gray-700 mt-1">{project.customerName}</p>
+                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Customer</p>
+                  <p className="text-sm text-[#3a3a3e] mt-1">{project.customerName}</p>
                 </div>
               )}
               {project.serviceType && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Service Type</p>
-                  <p className="text-sm text-gray-700 mt-1 capitalize">{project.serviceType.replace(/_/g, ' ')}</p>
+                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Service Type</p>
+                  <p className="text-sm text-[#3a3a3e] mt-1 capitalize">{project.serviceType.replace(/_/g, ' ')}</p>
                 </div>
               )}
               {project.siteAddress && (
                 <div>
-                  <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Site Address</p>
-                  <p className="text-sm text-gray-700 mt-1">{project.siteAddress}</p>
+                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Site Address</p>
+                  <p className="text-sm text-[#3a3a3e] mt-1">{project.siteAddress}</p>
                 </div>
               )}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Status</p>
+                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Status</p>
                 <div className="mt-1"><StatusBadge status={project.status} /></div>
               </div>
             </CardContent>
@@ -596,25 +596,25 @@ export function ProjectDetailPage() {
 
           {/* Team (internal staff only — customers see simplified view) */}
           {isStaff ? (
-          <Card className="rounded-xl border-gray-100">
+          <Card className="rounded-xl border-[#c8c8cd]/50">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Team</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f]">Team</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               {/* Engineers */}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Engineers</p>
+                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Engineers</p>
                 {project.engineerIds.length > 0 ? (
                   <div className="mt-1 space-y-2">
                     {project.engineerIds.map((eng: any) => (
                       <div key={String(eng._id || eng)} className="flex items-center gap-2">
-                        <p className="text-sm text-gray-700">
+                        <p className="text-sm text-[#3a3a3e]">
                           {eng.firstName ? `${eng.firstName} ${eng.lastName}` : String(eng)}
                         </p>
                         {eng.phone && (
                           <a
                             href={`tel:${eng.phone}`}
-                            className="inline-flex items-center gap-1 text-xs text-orange-600 hover:text-orange-700"
+                            className="inline-flex items-center gap-1 text-xs text-[#1d1d1f] hover:text-[#3a3a3e]"
                           >
                             <Phone className="h-3 w-3" />
                             {eng.phone}
@@ -625,11 +625,11 @@ export function ProjectDetailPage() {
                   </div>
                 ) : (
                   <div className="mt-2">
-                    <p className="text-sm text-gray-400 italic">Not assigned yet</p>
+                    <p className="text-sm text-[#86868b] italic">Not assigned yet</p>
                     {isEngineer && project.status === 'submitted' && (
                       <Button
                         size="sm"
-                        className="mt-2 bg-orange-600 hover:bg-orange-700 text-white"
+                        className="mt-2 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
                         onClick={handleClaimProject}
                         disabled={assignEngineers.isPending}
                       >
@@ -647,29 +647,29 @@ export function ProjectDetailPage() {
 
               {/* Fabrication Lead */}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Fabrication Lead</p>
+                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Fabrication Lead</p>
                 {hasFabLead ? (
-                  <p className="text-sm text-gray-700 mt-1">
+                  <p className="text-sm text-[#3a3a3e] mt-1">
                     {(project.fabricationLeadId as any).firstName} {(project.fabricationLeadId as any).lastName}
                   </p>
                 ) : (
-                  <p className="text-sm text-gray-400 italic mt-1">Not assigned yet</p>
+                  <p className="text-sm text-[#86868b] italic mt-1">Not assigned yet</p>
                 )}
               </div>
 
               {/* Fabrication Assistants */}
               <div>
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Fabrication Assistants</p>
+                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Fabrication Assistants</p>
                 {project.fabricationAssistantIds.length > 0 ? (
                   <div className="mt-1 space-y-1">
                     {project.fabricationAssistantIds.map((a: any) => (
-                      <p key={String(a._id || a)} className="text-sm text-gray-700">
+                      <p key={String(a._id || a)} className="text-sm text-[#3a3a3e]">
                         {a.firstName ? `${a.firstName} ${a.lastName}` : String(a)}
                       </p>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400 italic mt-1">Not assigned yet</p>
+                  <p className="text-sm text-[#86868b] italic mt-1">Not assigned yet</p>
                 )}
               </div>
 
@@ -683,7 +683,7 @@ export function ProjectDetailPage() {
 
                   {/* Lead Select */}
                   <div>
-                    <label className="text-xs font-medium text-gray-600 block mb-1">Lead Fabricator *</label>
+                    <label className="text-xs font-medium text-[#6e6e73] block mb-1">Lead Fabricator *</label>
                     <Select value={fabLeadId} onValueChange={setFabLeadId}>
                       <SelectTrigger className="bg-white">
                         <SelectValue placeholder="Select lead fabricator" />
@@ -700,8 +700,8 @@ export function ProjectDetailPage() {
 
                   {/* Assistants Multi-Select (checkbox list) */}
                   <div>
-                    <label className="text-xs font-medium text-gray-600 block mb-1">Assistants (optional)</label>
-                    <div className="max-h-40 overflow-y-auto rounded-lg border border-gray-200 bg-white divide-y divide-gray-100">
+                    <label className="text-xs font-medium text-[#6e6e73] block mb-1">Assistants (optional)</label>
+                    <div className="max-h-40 overflow-y-auto rounded-lg border border-[#d2d2d7] bg-white divide-y divide-[#e8e8ed]">
                       {fabStaffList
                         ?.filter((s) => s._id !== fabLeadId)
                         .map((s) => (
@@ -710,7 +710,7 @@ export function ProjectDetailPage() {
                             key={s._id}
                             onClick={() => toggleAssistant(s._id)}
                             className={cn(
-                              'flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-gray-50 transition-colors',
+                              'flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-[#f5f5f7] transition-colors',
                               fabAssistantIds.includes(s._id) && 'bg-violet-50',
                             )}
                           >
@@ -719,7 +719,7 @@ export function ProjectDetailPage() {
                                 'h-4 w-4 rounded border flex items-center justify-center',
                                 fabAssistantIds.includes(s._id)
                                   ? 'bg-violet-500 border-violet-500'
-                                  : 'border-gray-300',
+                                  : 'border-[#c8c8cd]',
                               )}
                             >
                               {fabAssistantIds.includes(s._id) && (
@@ -730,11 +730,11 @@ export function ProjectDetailPage() {
                           </button>
                         ))}
                       {(!fabStaffList || fabStaffList.filter((s) => s._id !== fabLeadId).length === 0) && (
-                        <p className="px-3 py-2 text-xs text-gray-400">No other fabrication staff available</p>
+                        <p className="px-3 py-2 text-xs text-[#86868b]">No other fabrication staff available</p>
                       )}
                     </div>
                     {fabAssistantIds.length > 0 && (
-                      <p className="text-xs text-gray-500 mt-1">{fabAssistantIds.length} selected</p>
+                      <p className="text-xs text-[#6e6e73] mt-1">{fabAssistantIds.length} selected</p>
                     )}
                   </div>
 
@@ -777,18 +777,18 @@ export function ProjectDetailPage() {
           </Card>
           ) : (
             /* Customer sees a simple info card instead of team details */
-            <Card className="rounded-xl border-gray-100">
+            <Card className="rounded-xl border-[#c8c8cd]/50">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Project Team</CardTitle>
+                <CardTitle className="text-lg text-[#1d1d1f]">Project Team</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-[#6e6e73]">
                   Your project is being handled by our expert team of engineers and fabrication specialists. 
                   We&apos;ll keep you updated on progress through notifications.
                 </p>
                 {project.engineerIds.length > 0 && (
-                  <p className="text-sm text-gray-500 mt-3">
-                    <span className="font-medium text-gray-700">{project.engineerIds.length}</span> engineer{project.engineerIds.length > 1 ? 's' : ''} assigned
+                  <p className="text-sm text-[#6e6e73] mt-3">
+                    <span className="font-medium text-[#3a3a3e]">{project.engineerIds.length}</span> engineer{project.engineerIds.length > 1 ? 's' : ''} assigned
                   </p>
                 )}
               </CardContent>
@@ -797,9 +797,9 @@ export function ProjectDetailPage() {
 
           {/* ── Visit Report (Site Survey Data) — Staff only ── */}
           {isStaff && visitReport && (
-            <Card className="rounded-xl border-gray-100 lg:col-span-2">
+            <Card className="rounded-xl border-[#c8c8cd]/50 lg:col-span-2">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
                   <Camera className="h-5 w-5" />
                   Site Visit Report
                 </CardTitle>
@@ -833,30 +833,30 @@ export function ProjectDetailPage() {
                 {/* Line Items */}
                 {visitReport.lineItems && visitReport.lineItems.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Line Items</p>
-                    <div className="overflow-x-auto rounded-lg border border-gray-200">
+                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">Line Items</p>
+                    <div className="overflow-x-auto rounded-lg border border-[#d2d2d7]">
                       <table className="min-w-full text-sm">
-                        <thead className="bg-gray-50/80">
+                        <thead className="bg-[#f5f5f7]/80">
                           <tr>
-                            <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Item</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-gray-500">Qty</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-gray-500">L</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-gray-500">W</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-gray-500">H</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-gray-500">Area</th>
-                            <th className="text-left px-3 py-2 text-xs font-medium text-gray-500">Notes</th>
+                            <th className="text-left px-3 py-2 text-xs font-medium text-[#6e6e73]">Item</th>
+                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">Qty</th>
+                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">L</th>
+                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">W</th>
+                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">H</th>
+                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">Area</th>
+                            <th className="text-left px-3 py-2 text-xs font-medium text-[#6e6e73]">Notes</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-100">
+                        <tbody className="divide-y divide-[#e8e8ed]">
                           {visitReport.lineItems.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-gray-50/50">
-                              <td className="px-3 py-2 font-medium text-gray-700">{item.label}</td>
-                              <td className="px-3 py-2 text-center text-gray-600">{item.quantity}</td>
-                              <td className="px-3 py-2 text-center text-gray-600">{item.length ?? '—'}</td>
-                              <td className="px-3 py-2 text-center text-gray-600">{item.width ?? '—'}</td>
-                              <td className="px-3 py-2 text-center text-gray-600">{item.height ?? '—'}</td>
-                              <td className="px-3 py-2 text-center text-gray-600">{item.area ?? '—'}</td>
-                              <td className="px-3 py-2 text-gray-500 text-xs">{item.notes || '—'}</td>
+                            <tr key={idx} className="hover:bg-[#f5f5f7]/50">
+                              <td className="px-3 py-2 font-medium text-[#3a3a3e]">{item.label}</td>
+                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.quantity}</td>
+                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.length ?? '—'}</td>
+                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.width ?? '—'}</td>
+                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.height ?? '—'}</td>
+                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.area ?? '—'}</td>
+                              <td className="px-3 py-2 text-[#6e6e73] text-xs">{item.notes || '—'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -868,48 +868,48 @@ export function ProjectDetailPage() {
                 {/* Site Conditions */}
                 {visitReport.siteConditions && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">Site Conditions</p>
+                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">Site Conditions</p>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {visitReport.siteConditions.environment && (
-                        <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
-                          <p className="text-[10px] uppercase text-gray-400 font-medium">Environment</p>
-                          <p className="text-sm text-gray-700 capitalize">{visitReport.siteConditions.environment}</p>
+                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Environment</p>
+                          <p className="text-sm text-[#3a3a3e] capitalize">{visitReport.siteConditions.environment}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.floorType && (
-                        <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
-                          <p className="text-[10px] uppercase text-gray-400 font-medium">Floor Type</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.floorType}</p>
+                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Floor Type</p>
+                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.floorType}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.wallMaterial && (
-                        <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
-                          <p className="text-[10px] uppercase text-gray-400 font-medium">Wall Material</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.wallMaterial}</p>
+                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Wall Material</p>
+                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.wallMaterial}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.hasElectrical !== undefined && (
-                        <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
-                          <p className="text-[10px] uppercase text-gray-400 font-medium">Electrical Access</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.hasElectrical ? 'Yes' : 'No'}</p>
+                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Electrical Access</p>
+                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.hasElectrical ? 'Yes' : 'No'}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.hasPlumbing !== undefined && (
-                        <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50">
-                          <p className="text-[10px] uppercase text-gray-400 font-medium">Plumbing Access</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.hasPlumbing ? 'Yes' : 'No'}</p>
+                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Plumbing Access</p>
+                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.hasPlumbing ? 'Yes' : 'No'}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.accessNotes && (
-                        <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50 sm:col-span-2 lg:col-span-3">
-                          <p className="text-[10px] uppercase text-gray-400 font-medium">Access Notes</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.accessNotes}</p>
+                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50 sm:col-span-2 lg:col-span-3">
+                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Access Notes</p>
+                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.accessNotes}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.obstaclesOrConstraints && (
-                        <div className="rounded-lg border border-gray-100 p-3 bg-gray-50/50 sm:col-span-2 lg:col-span-3">
-                          <p className="text-[10px] uppercase text-gray-400 font-medium">Obstacles / Constraints</p>
-                          <p className="text-sm text-gray-700">{visitReport.siteConditions.obstaclesOrConstraints}</p>
+                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50 sm:col-span-2 lg:col-span-3">
+                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Obstacles / Constraints</p>
+                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.obstaclesOrConstraints}</p>
                         </div>
                       )}
                     </div>
@@ -920,32 +920,32 @@ export function ProjectDetailPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {visitReport.customerRequirements && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Customer Requirements</p>
-                      <p className="text-sm text-gray-700 mt-1">{visitReport.customerRequirements}</p>
+                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Customer Requirements</p>
+                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.customerRequirements}</p>
                     </div>
                   )}
                   {visitReport.materials && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Materials</p>
-                      <p className="text-sm text-gray-700 mt-1">{visitReport.materials}</p>
+                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Materials</p>
+                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.materials}</p>
                     </div>
                   )}
                   {visitReport.finishes && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Finishes</p>
-                      <p className="text-sm text-gray-700 mt-1">{visitReport.finishes}</p>
+                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Finishes</p>
+                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.finishes}</p>
                     </div>
                   )}
                   {visitReport.preferredDesign && (
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Preferred Design</p>
-                      <p className="text-sm text-gray-700 mt-1">{visitReport.preferredDesign}</p>
+                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Preferred Design</p>
+                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.preferredDesign}</p>
                     </div>
                   )}
                   {visitReport.notes && (
                     <div className="sm:col-span-2">
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Notes</p>
-                      <p className="text-sm text-gray-700 mt-1">{visitReport.notes}</p>
+                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Notes</p>
+                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.notes}</p>
                     </div>
                   )}
                 </div>
@@ -955,9 +955,9 @@ export function ProjectDetailPage() {
 
           {/* ── Blueprint Card (inline for engineers) ── */}
           {isEngineer && (
-            <Card className="rounded-xl border-gray-100 lg:col-span-2">
+            <Card className="rounded-xl border-[#c8c8cd]/50 lg:col-span-2">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
                   <Image className="h-5 w-5" />
                   Blueprint
                 </CardTitle>
@@ -966,34 +966,34 @@ export function ProjectDetailPage() {
                 {blueprint ? (
                   <div className="space-y-4">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-gray-900">Version {blueprint.version}</p>
+                      <p className="text-sm font-semibold text-[#1d1d1f]">Version {blueprint.version}</p>
                       <StatusBadge status={blueprint.status} />
                     </div>
                     <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Blueprint</p>
+                      <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
+                        <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Blueprint</p>
                         <p className="mt-1 text-sm font-medium">
                           {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
                         </p>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="mt-2 text-orange-600 hover:text-orange-700 p-0 h-auto text-xs"
+                          className="mt-2 text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
                           onClick={() => handleDownloadFile(blueprint.blueprintKey)}
                         >
                           <Download className="mr-1 h-3 w-3" />
                           Download
                         </Button>
                       </div>
-                      <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
-                        <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Costing</p>
+                      <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
+                        <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Costing</p>
                         <p className="mt-1 text-sm font-medium">
                           {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
                         </p>
                         <Button
                           size="sm"
                           variant="ghost"
-                          className="mt-2 text-orange-600 hover:text-orange-700 p-0 h-auto text-xs"
+                          className="mt-2 text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
                           onClick={() => handleDownloadFile(blueprint.costingKey)}
                         >
                           <Download className="mr-1 h-3 w-3" />
@@ -1007,50 +1007,50 @@ export function ProjectDetailPage() {
                         <p className="text-sm text-amber-800 mt-1">{blueprint.revisionNotes}</p>
                       </div>
                     )}
-                    <p className="text-xs text-gray-400">
+                    <p className="text-xs text-[#86868b]">
                       Uploaded {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
                     </p>
 
                     {/* Revision upload (when revision requested) */}
                     {blueprint.status === 'revision_requested' && isAssignedEngineer && (
-                      <div className="rounded-xl border border-dashed border-gray-300 p-4 space-y-3">
-                        <p className="text-sm font-medium text-gray-700">Upload Revision</p>
+                      <div className="rounded-xl border border-dashed border-[#c8c8cd] p-4 space-y-3">
+                        <p className="text-sm font-medium text-[#3a3a3e]">Upload Revision</p>
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Blueprint File *</label>
+                            <label className="text-xs text-[#6e6e73] block mb-1">Blueprint File *</label>
                             <input
                               type="file"
                               accept=".pdf,.png,.jpg,.jpeg,.dwg"
                               onChange={(e) => setBlueprintFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-orange-50 file:text-orange-600 file:text-xs file:font-medium hover:file:bg-orange-100"
+                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Costing File *</label>
+                            <label className="text-xs text-[#6e6e73] block mb-1">Costing File *</label>
                             <input
                               type="file"
                               accept=".pdf,.xlsx,.xls,.csv"
                               onChange={(e) => setCostingFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-orange-50 file:text-orange-600 file:text-xs file:font-medium hover:file:bg-orange-100"
+                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
                             />
                           </div>
                         </div>
 
                         {/* Quotation Fields */}
-                        <div className="border-t border-gray-100 pt-3 space-y-3">
-                          <p className="text-sm font-medium text-gray-700">Quotation Details</p>
+                        <div className="border-t border-[#c8c8cd]/50 pt-3 space-y-3">
+                          <p className="text-sm font-medium text-[#3a3a3e]">Quotation Details</p>
                           <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
                             <div>
-                              <label className="text-xs text-gray-500 block mb-1">Materials (₱)</label>
-                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                              <label className="text-xs text-[#6e6e73] block mb-1">Materials (₱)</label>
+                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500 block mb-1">Labor (₱)</label>
-                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                              <label className="text-xs text-[#6e6e73] block mb-1">Labor (₱)</label>
+                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500 block mb-1">Other Fees (₱)</label>
-                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                              <label className="text-xs text-[#6e6e73] block mb-1">Other Fees (₱)</label>
+                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                             </div>
                           </div>
                           {(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)) > 0 && (
@@ -1059,18 +1059,18 @@ export function ProjectDetailPage() {
                             </p>
                           )}
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Estimated Duration</label>
-                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            <label className="text-xs text-[#6e6e73] block mb-1">Estimated Duration</label>
+                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Engineer Notes</label>
-                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            <label className="text-xs text-[#6e6e73] block mb-1">Engineer Notes</label>
+                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                           </div>
                         </div>
 
                         <Button
                           size="sm"
-                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                          className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
                           onClick={handleBlueprintUpload}
                           disabled={uploading || !blueprintFile || !costingFile}
                         >
@@ -1084,44 +1084,44 @@ export function ProjectDetailPage() {
                   <div>
                     {/* First blueprint upload */}
                     {isAssignedEngineer && ['blueprint', 'submitted'].includes(project.status) ? (
-                      <div className="rounded-xl border border-dashed border-gray-300 p-4 space-y-3">
-                        <p className="text-sm font-medium text-gray-700">Upload Blueprint & Costing</p>
+                      <div className="rounded-xl border border-dashed border-[#c8c8cd] p-4 space-y-3">
+                        <p className="text-sm font-medium text-[#3a3a3e]">Upload Blueprint & Costing</p>
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Blueprint File *</label>
+                            <label className="text-xs text-[#6e6e73] block mb-1">Blueprint File *</label>
                             <input
                               type="file"
                               accept=".pdf,.png,.jpg,.jpeg,.dwg"
                               onChange={(e) => setBlueprintFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-orange-50 file:text-orange-600 file:text-xs file:font-medium hover:file:bg-orange-100"
+                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
                             />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Costing File *</label>
+                            <label className="text-xs text-[#6e6e73] block mb-1">Costing File *</label>
                             <input
                               type="file"
                               accept=".pdf,.xlsx,.xls,.csv"
                               onChange={(e) => setCostingFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-orange-50 file:text-orange-600 file:text-xs file:font-medium hover:file:bg-orange-100"
+                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
                             />
                           </div>
                         </div>
 
                         {/* Quotation Fields */}
-                        <div className="border-t border-gray-100 pt-3 space-y-3">
-                          <p className="text-sm font-medium text-gray-700">Quotation Details <span className="text-xs text-red-500">*</span></p>
+                        <div className="border-t border-[#c8c8cd]/50 pt-3 space-y-3">
+                          <p className="text-sm font-medium text-[#3a3a3e]">Quotation Details <span className="text-xs text-red-500">*</span></p>
                           <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
                             <div>
-                              <label className="text-xs text-gray-500 block mb-1">Materials (₱) *</label>
-                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                              <label className="text-xs text-[#6e6e73] block mb-1">Materials (₱) *</label>
+                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500 block mb-1">Labor (₱) *</label>
-                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                              <label className="text-xs text-[#6e6e73] block mb-1">Labor (₱) *</label>
+                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                             </div>
                             <div>
-                              <label className="text-xs text-gray-500 block mb-1">Other Fees (₱)</label>
-                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                              <label className="text-xs text-[#6e6e73] block mb-1">Other Fees (₱)</label>
+                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                             </div>
                           </div>
                           {(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)) > 0 && (
@@ -1130,18 +1130,18 @@ export function ProjectDetailPage() {
                             </p>
                           )}
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Estimated Duration</label>
-                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            <label className="text-xs text-[#6e6e73] block mb-1">Estimated Duration</label>
+                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                           </div>
                           <div>
-                            <label className="text-xs text-gray-500 block mb-1">Engineer Notes</label>
-                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes for the customer..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-gray-200 bg-gray-50/50 focus:outline-none focus:ring-2 focus:ring-orange-200 focus:border-orange-300" />
+                            <label className="text-xs text-[#6e6e73] block mb-1">Engineer Notes</label>
+                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes for the customer..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
                           </div>
                         </div>
 
                         <Button
                           size="sm"
-                          className="bg-orange-600 hover:bg-orange-700 text-white"
+                          className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
                           onClick={handleBlueprintUpload}
                           disabled={uploading || !blueprintFile || !costingFile}
                         >
@@ -1150,7 +1150,7 @@ export function ProjectDetailPage() {
                         </Button>
                       </div>
                     ) : (
-                      <p className="text-sm text-gray-500 py-4">No blueprint uploaded yet.</p>
+                      <p className="text-sm text-[#6e6e73] py-4">No blueprint uploaded yet.</p>
                     )}
                   </div>
                 )}
@@ -1159,9 +1159,9 @@ export function ProjectDetailPage() {
           )}
 
           {/* Contract Card */}
-          <Card className="rounded-xl border-gray-100 lg:col-span-2">
+          <Card className="rounded-xl border-[#c8c8cd]/50 lg:col-span-2">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+              <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
                 <ScrollText className="h-5 w-5" />
                 Contract
               </CardTitle>
@@ -1171,7 +1171,7 @@ export function ProjectDetailPage() {
                 <div className="space-y-4">
                   {/* Contract info + download */}
                   <div className="space-y-3">
-                    <p className="text-sm text-gray-600">
+                    <p className="text-sm text-[#6e6e73]">
                       Contract generated on{' '}
                       {project.contractGeneratedAt
                         ? format(new Date(project.contractGeneratedAt), 'MMM d, yyyy h:mm a')
@@ -1180,7 +1180,7 @@ export function ProjectDetailPage() {
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        className="bg-orange-600 hover:bg-orange-700"
+                        className="bg-[#1d1d1f] hover:bg-[#2d2d2f]"
                         onClick={() => handleDownloadContract('original')}
                         disabled={!!project.originalContractDownloadedAt}
                       >
@@ -1271,10 +1271,10 @@ export function ProjectDetailPage() {
               ) : canGenerate &&
                 ['payment_pending', 'fabrication', 'completed'].includes(project.status) ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-gray-500">No contract has been generated yet.</p>
+                  <p className="text-sm text-[#6e6e73]">No contract has been generated yet.</p>
                   <Button
                     size="sm"
-                    className="bg-orange-600 hover:bg-orange-700"
+                    className="bg-[#1d1d1f] hover:bg-[#2d2d2f]"
                     onClick={handleGenerateContract}
                     disabled={generateContract.isPending}
                   >
@@ -1286,7 +1286,7 @@ export function ProjectDetailPage() {
                   </Button>
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 py-2">
+                <p className="text-sm text-[#6e6e73] py-2">
                   {['payment_pending', 'fabrication', 'completed'].includes(project.status)
                     ? 'No contract generated yet.'
                     : 'Contract will be available after blueprint acceptance.'}
@@ -1299,13 +1299,13 @@ export function ProjectDetailPage() {
 
       {/* ════════════════  BLUEPRINT TAB (non-engineers) ════════════════ */}
       {activeTab === 'blueprint' && !isEngineer && (
-        <Card className="rounded-xl border-gray-100">
+        <Card className="rounded-xl border-[#c8c8cd]/50">
           <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg text-gray-900">Latest Blueprint</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f]">Latest Blueprint</CardTitle>
             <Button
               variant="outline"
               size="sm"
-              className="rounded-xl border-gray-200 text-gray-700 gap-2"
+              className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] gap-2"
               onClick={() => navigate('/blueprints')}
             >
               <ExternalLink className="h-4 w-4" />
@@ -1316,18 +1316,18 @@ export function ProjectDetailPage() {
             {blueprint ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-gray-900">Version {blueprint.version}</p>
+                  <p className="text-sm font-semibold text-[#1d1d1f]">Version {blueprint.version}</p>
                   <StatusBadge status={blueprint.status} />
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Blueprint</p>
+                  <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
+                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Blueprint</p>
                     <p className="mt-1 text-sm font-medium">
                       {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
                     </p>
                   </div>
-                  <div className="rounded-xl border border-gray-100 p-4 bg-gray-50/50">
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Costing</p>
+                  <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
+                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Costing</p>
                     <p className="mt-1 text-sm font-medium">
                       {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
                     </p>
@@ -1335,16 +1335,16 @@ export function ProjectDetailPage() {
                 </div>
                 {blueprint.revisionNotes && (
                   <div>
-                    <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Revision Notes</p>
-                    <p className="text-sm text-gray-700 mt-1">{blueprint.revisionNotes}</p>
+                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Revision Notes</p>
+                    <p className="text-sm text-[#3a3a3e] mt-1">{blueprint.revisionNotes}</p>
                   </div>
                 )}
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-[#86868b]">
                   Uploaded {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
                 </p>
               </div>
             ) : (
-              <p className="text-sm text-gray-500 py-4">No blueprint uploaded yet.</p>
+              <p className="text-sm text-[#6e6e73] py-4">No blueprint uploaded yet.</p>
             )}
           </CardContent>
         </Card>
@@ -1354,20 +1354,20 @@ export function ProjectDetailPage() {
       {activeTab === 'payments' && (
         <div className="space-y-4">
           {paymentPlan && (
-            <Card className="rounded-xl border-gray-100">
+            <Card className="rounded-xl border-[#c8c8cd]/50">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Payment Plan</CardTitle>
+                <CardTitle className="text-lg text-[#1d1d1f]">Payment Plan</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {paymentPlan.stages.map((stage) => (
                     <div
                       key={String(stage.stageId)}
-                      className="flex items-center justify-between rounded-xl border border-gray-100 p-4 bg-gray-50/30 hover:bg-gray-50 transition-colors"
+                      className="flex items-center justify-between rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/30 hover:bg-[#f5f5f7] transition-colors"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">{String(stage.label)}</p>
-                        <p className="text-xs text-gray-500">
+                        <p className="text-sm font-semibold text-[#1d1d1f]">{String(stage.label)}</p>
+                        <p className="text-xs text-[#6e6e73]">
                           {String(stage.percentage)}% — {formatCurrency(Number(stage.amount))}
                         </p>
                       </div>
@@ -1379,9 +1379,9 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          <Card className="rounded-xl border-gray-100">
+          <Card className="rounded-xl border-[#c8c8cd]/50">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Payment History</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f]">Payment History</CardTitle>
             </CardHeader>
             <CardContent>
               {payments && payments.length > 0 ? (
@@ -1389,17 +1389,17 @@ export function ProjectDetailPage() {
                   {payments.map((p) => (
                     <div
                       key={String(p._id)}
-                      className="flex items-center justify-between rounded-xl border border-gray-100 p-4"
+                      className="flex items-center justify-between rounded-xl border border-[#c8c8cd]/50 p-4"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-gray-900">
+                        <p className="text-sm font-semibold text-[#1d1d1f]">
                           {formatCurrency(Number(p.amountPaid))}
                         </p>
-                        <p className="text-xs text-gray-500 capitalize">
+                        <p className="text-xs text-[#6e6e73] capitalize">
                           {String(p.method || '').replace('_', ' ')}
                           {p.receiptNumber && ` · ${String(p.receiptNumber)}`}
                         </p>
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-[#86868b]">
                           {p.createdAt ? format(new Date(String(p.createdAt)), 'MMM d, yyyy') : ''}
                         </p>
                       </div>
@@ -1408,7 +1408,7 @@ export function ProjectDetailPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 py-4">No payments yet.</p>
+                <p className="text-sm text-[#6e6e73] py-4">No payments yet.</p>
               )}
             </CardContent>
           </Card>
@@ -1445,35 +1445,35 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          <Card className="rounded-xl border-gray-100">
+          <Card className="rounded-xl border-[#c8c8cd]/50">
             <CardHeader>
-              <CardTitle className="text-lg text-gray-900">Fabrication Updates</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f]">Fabrication Updates</CardTitle>
             </CardHeader>
             <CardContent>
               {fabUpdates && fabUpdates.length > 0 ? (
                 <div className="relative space-y-4 before:absolute before:left-4 before:top-2 before:h-[calc(100%-16px)] before:w-px before:bg-gray-200">
                   {fabUpdates.map((update) => (
                     <div key={String(update._id)} className="relative flex gap-4 pl-10">
-                      <div className="absolute left-2.5 top-1.5 h-3 w-3 rounded-full border-2 border-orange-500 bg-white" />
+                      <div className="absolute left-2.5 top-1.5 h-3 w-3 rounded-full border-2 border-[#1d1d1f] bg-white" />
                       <div className="flex-1">
                         <div className="flex items-center gap-2">
                           <StatusBadge status={String(update.status)} />
-                          <span className="text-xs text-gray-400">
+                          <span className="text-xs text-[#86868b]">
                             {update.createdAt
                               ? format(new Date(String(update.createdAt)), 'MMM d, yyyy h:mm a')
                               : ''}
                           </span>
                         </div>
-                        <p className="mt-1 text-sm text-gray-700">{String(update.notes || '')}</p>
+                        <p className="mt-1 text-sm text-[#3a3a3e]">{String(update.notes || '')}</p>
                         {isStaff && update.createdByName ? (
-                          <p className="text-xs text-gray-400">By {String(update.createdByName)}</p>
+                          <p className="text-xs text-[#86868b]">By {String(update.createdByName)}</p>
                         ) : null}
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-gray-500 py-4">No fabrication updates yet.</p>
+                <p className="text-sm text-[#6e6e73] py-4">No fabrication updates yet.</p>
               )}
             </CardContent>
           </Card>

@@ -172,7 +172,7 @@ export function FabricationPage() {
                       Status
                     </Label>
                     <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger className="w-full h-11 rounded-xl border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-orange-200 focus:border-orange-300">
+                      <SelectTrigger className="w-full h-11 rounded-xl border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-[#6e6e73]/20 focus:border-[#6e6e73]">
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent>
@@ -224,7 +224,7 @@ export function FabricationPage() {
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
                         setNotes(e.target.value)
                       }
-                      className="min-h-[100px] bg-gray-50/50 border-gray-200 focus:border-orange-300 focus:ring-orange-200"
+                      className="min-h-[100px] bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
                     />
                   </div>
 
@@ -280,8 +280,8 @@ export function FabricationPage() {
                 className={cn(
                   'text-left rounded-xl border p-4 transition-all hover:shadow-md',
                   selectedProjectId === p._id
-                    ? 'border-orange-500 bg-orange-50 ring-2 ring-orange-200'
-                    : 'border-gray-200 bg-white hover:border-orange-300',
+                    ? 'border-[#1d1d1f] bg-[#f0f0f5] ring-2 ring-[#c8c8cd]'
+                    : 'border-gray-200 bg-white hover:border-[#c8c8cd]',
                 )}
               >
                 <h3 className="font-semibold text-gray-900 truncate">{p.title}</h3>
@@ -356,7 +356,7 @@ export function FabricationPage() {
                 className="relative pl-8"
               >
                 {/* Timeline Dot */}
-                <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-white border-4 border-orange-500 shadow-sm" />
+                <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-white border-4 border-[#1d1d1f] shadow-sm" />
 
                 <div className="flex flex-col sm:flex-row sm:items-baseline gap-2 mb-2">
                   <span className="text-sm font-semibold text-gray-900">
