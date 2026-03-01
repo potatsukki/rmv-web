@@ -1,6 +1,18 @@
 ﻿@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* 240Hz-smooth scrolling & global GPU hints */
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
 @theme {
   /* RMV Stainless Steel - "Apple-Level" Minimalist Silver Theme
      High contrast, stark aluminum, deep blacks */
@@ -131,12 +143,21 @@ a, button, input, select, textarea,
   will-change: transform, opacity;
   -webkit-backface-visibility: hidden;
   backface-visibility: hidden;
-  -webkit-transform: translateZ(0);
+  transform: translate3d(0, 0, 0);
+  -webkit-transform: translate3d(0, 0, 0);
+  contain: layout style paint;
 }
 
 /* Card hover lift - Apple style subtle */
 @utility card-hover {
-  @apply transition-all duration-500 hover:shadow-[0_20px_40px_rgba(0,0,0,0.12)] hover:-translate-y-1;
+  transition-property: transform, box-shadow;
+  transition-duration: 500ms;
+  transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+
+  &:hover {
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    transform: translateY(-4px);
+  }
 }
 
 /* Glass morphism effect - Frosted Apple Glass */
