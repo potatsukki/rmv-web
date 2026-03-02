@@ -257,3 +257,32 @@ You are NOT a code generator. You are a **design partner**. Your job is to:
 - Iterate based on feedback
 
 The goal is that when someone opens rmvfabrication.app, they think: *"This was clearly designed by someone who cares."* — not *"This looks like every other AI dashboard."*
+
+---
+
+## MANDATORY: Pre-Push Checklist
+
+**Before EVERY `git push`, you MUST run these checks. No exceptions.**
+
+### rmv-web (Frontend)
+```bash
+cd rmv-web
+npx tsc --noEmit
+```
+- This runs the **full TypeScript compiler** in strict mode — the exact same check CI runs.
+- `get_errors` (VS Code diagnostics) is NOT sufficient. It can miss strict null checks that `tsc` catches.
+- If `tsc --noEmit` reports errors, **fix them before pushing**. Do not push broken code.
+
+### rmv-server (Backend)
+```bash
+cd rmv-server
+npx tsc --noEmit
+```
+- Same rule applies for server-side TypeScript.
+
+### Why This Matters
+- CI runs `npm run build` which includes `tsc`. If it fails, the deploy is blocked.
+- Pushing code that fails CI wastes time and creates noisy red builds in GitHub Actions.
+- VS Code / esbuild only transpile — they do NOT enforce strict type checks the way `tsc` does.
+
+**TL;DR: Always `npx tsc --noEmit` before `git push`. Always.**
