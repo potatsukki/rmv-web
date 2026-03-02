@@ -26,12 +26,12 @@ jobs:
         run: npm run build
 
   deploy:
-    name: Deploy Frontend (Zero-Downtime)
+    name: Blue-Green Deploy (Frontend)
     runs-on: ubuntu-latest
     needs: ci
     concurrency:
-      group: vps-deploy-web
-      cancel-in-progress: true
+      group: vps-deploy
+      cancel-in-progress: false
     steps:
       - name: Deploy to VPS
         uses: appleboy/ssh-action@v1.2.0
@@ -42,9 +42,9 @@ jobs:
           command_timeout: 15m
           script_stop: false
           script: |
-            echo "========== FRONTEND DEPLOY START =========="
+            echo "========== FRONTEND BLUE-GREEN DEPLOY =========="
 
-            # ── Pull latest frontend code ─────────────────────────────
+            # ── Ensure repos exist ────────────────────────────────────
             mkdir -p /opt/rmv
             if [ ! -d /opt/rmv/rmv-web/.git ]; then
               git clone https://github.com/potatsukki/rmv-web.git /opt/rmv/rmv-web
@@ -53,49 +53,20 @@ jobs:
               git clone https://github.com/potatsukki/rmv-server.git /opt/rmv/rmv-server
             fi
 
+            # ── Pull latest code ──────────────────────────────────────
             cd /opt/rmv/rmv-web
             git fetch --all
             git reset --hard origin/main
             echo "Frontend commit: $(git log --oneline -1)"
 
-            # ── Build new image (old container still serves traffic) ──
-            cd /opt/rmv/rmv-server/deploy
-            echo "Building new web image..."
-            docker compose -f docker-compose.prod.yml build --no-cache web
-            BUILD_EXIT=$?
-            if [ "$BUILD_EXIT" -ne 0 ]; then
-              echo "FATAL: Docker build failed with exit code $BUILD_EXIT"
-              exit 1
-            fi
-            echo "Build succeeded"
+            # Also pull server (has deploy scripts + compose file)
+            cd /opt/rmv/rmv-server
+            git fetch --all
+            git reset --hard origin/main
 
-            # ── Swap container (near-instant) ─────────────────────────
-            echo "Swapping web container..."
-            docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate web
-            sleep 5
+            # ── Run blue-green deploy ─────────────────────────────────
+            chmod +x /opt/rmv/rmv-server/deploy/scripts/blue-green-deploy.sh
+            /opt/rmv/rmv-server/deploy/scripts/blue-green-deploy.sh web
 
-            # ── Health check ──────────────────────────────────────────
-            echo "Waiting for healthy..."
-            for i in $(seq 1 40); do
-              STATUS=$(docker inspect -f '{{.State.Health.Status}}' rmv-web 2>/dev/null || echo "starting")
-              echo "  [$i/40] rmv-web -> $STATUS"
-              if [ "$STATUS" = "healthy" ]; then
-                break
-              fi
-              if [ "$STATUS" = "unhealthy" ]; then
-                echo "Container is unhealthy!"
-                docker logs --tail 20 rmv-web 2>&1 || true
-                break
-              fi
-              sleep 3
-            done
-
-            # ── Reload nginx ──────────────────────────────────────────
-            docker exec rmv-nginx nginx -s reload 2>/dev/null || true
-
-            # ── Cleanup ───────────────────────────────────────────────
-            docker image prune -f 2>/dev/null || true
-            docker compose -f docker-compose.prod.yml ps 2>/dev/null || true
-
-            echo "========== FRONTEND DEPLOY COMPLETE =========="
+            echo "========== FRONTEND DEPLOY DONE =========="
             exit 0
