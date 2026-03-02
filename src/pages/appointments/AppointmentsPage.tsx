@@ -215,7 +215,7 @@ export function AppointmentsPage() {
           <div className="md:hidden space-y-2">
             {appointments.map((appt) => {
               const statusKey = getStatusKey(appt);
-              const config = statusConfig[statusKey] || statusConfig.requested;
+              const config = statusConfig[statusKey] ?? statusConfig.requested!;
 
               return (
                 <Link
@@ -300,7 +300,7 @@ export function AppointmentsPage() {
               <TableBody>
                 {appointments.map((appt) => {
                   const statusKey = getStatusKey(appt);
-                  const config = statusConfig[statusKey] || statusConfig.requested;
+                  const config = statusConfig[statusKey] ?? statusConfig.requested!;
 
                   return (
                     <TableRow
