@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { format } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -19,6 +19,8 @@ import {
   useStageCheckout,
   useSimulateStagePayment,
   useRecordCashPayment,
+  useMyPaymentHistory,
+  type PaymentHistoryItem,
 } from '@/hooks/usePayments';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, PaymentStageStatus, PaymentMethod } from '@/lib/constants';
@@ -35,6 +37,14 @@ import { useUnpaidOcularFees } from '@/hooks/useAppointments';
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
+
+const historyStatusConfig: Record<string, { label: string; className: string }> = {
+  verified: { label: 'Paid', className: 'bg-emerald-100 text-emerald-700' },
+  approved: { label: 'Approved', className: 'bg-emerald-100 text-emerald-700' },
+  pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700' },
+  proof_submitted: { label: 'Under Review', className: 'bg-blue-100 text-blue-700' },
+  declined: { label: 'Declined', className: 'bg-red-100 text-red-700' },
+};
 
 export function PaymentsPage() {
   const { user } = useAuthStore();
@@ -68,6 +78,21 @@ export function PaymentsPage() {
   const isCustomer = user?.roles.includes(Role.CUSTOMER);
   const isCashier = user?.roles.some((r: string) => [Role.CASHIER, Role.ADMIN].includes(r as Role));
   const { data: unpaidOcularFees } = useUnpaidOcularFees();
+
+  // Unified cross-project payment history (customer only)
+  const { data: allHistory, isLoading: historyLoading } = useMyPaymentHistory();
+  const [historySearch, setHistorySearch] = useState('');
+  const [selectedHistoryPayment, setSelectedHistoryPayment] = useState<PaymentHistoryItem | null>(null);
+
+  const filteredHistory = useMemo(() => {
+    if (!allHistory) return [];
+    if (!historySearch.trim()) return allHistory;
+    const query = historySearch.toLowerCase();
+    return allHistory.filter((item) => {
+      const searchStr = `${item.description} ${item.amount} ${item.status} ${item.method || ''} ${item.receiptNumber || ''} ${format(new Date(item.date), 'MMM d, yyyy h:mm a')}`.toLowerCase();
+      return searchStr.includes(query);
+    });
+  }, [allHistory, historySearch]);
 
   // Auto-select project: from navigation state or first project in list
   useEffect(() => {
@@ -308,6 +333,9 @@ export function PaymentsPage() {
                   >
                     <div>
                       <p className="font-semibold text-[#1d1d1f]">{String(stage.label)}</p>
+                      {(stage as any).description && (
+                        <p className="text-xs text-[#86868b]">{(stage as any).description}</p>
+                      )}
                       <p className="text-sm text-[#6e6e73]">
                         {String(stage.percentage)}% — {formatCurrency(Number(stage.amount))}
                       </p>
@@ -612,6 +640,193 @@ export function PaymentsPage() {
               Record Payment
             </Button>
           </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* ── Unified Payment History (Customer only) ── */}
+      {isCustomer && (
+        <Card className="rounded-xl border-[#c8c8cd]/50">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+              <Receipt className="h-5 w-5 text-[#6e6e73]" />
+              Payment History
+            </CardTitle>
+            <div className="relative w-full sm:w-64">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[#86868b]" />
+              <Input
+                placeholder="Search payments..."
+                value={historySearch}
+                onChange={(e) => setHistorySearch(e.target.value)}
+                className="pl-9 h-9 bg-[#f5f5f7]/50 border-[#d2d2d7] text-sm"
+              />
+            </div>
+          </CardHeader>
+          <CardContent className="p-0">
+            {historyLoading && (
+              <div className="divide-y divide-[#e8e8ed]">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="p-4">
+                    <Skeleton className="h-12 w-full rounded-lg" />
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {!historyLoading && filteredHistory.length === 0 && (
+              <div className="py-12 text-center">
+                <Receipt className="h-8 w-8 mx-auto text-[#c8c8cd] mb-2" />
+                <p className="text-sm font-medium text-[#3a3a3e]">
+                  {historySearch ? 'No results found' : 'No payments yet'}
+                </p>
+                <p className="text-xs text-[#86868b] mt-1">
+                  {historySearch
+                    ? 'Try adjusting your search keywords.'
+                    : 'Your payment history will appear here once you make a payment.'}
+                </p>
+              </div>
+            )}
+
+            {!historyLoading && filteredHistory.length > 0 && (
+              <div className="divide-y divide-[#e8e8ed]">
+                {filteredHistory.map((item) => {
+                  const cfg = historyStatusConfig[item.status] ?? {
+                    label: item.status,
+                    className: 'bg-gray-100 text-gray-700',
+                  };
+                  const isOcular = item.type === 'ocular_fee';
+
+                  return (
+                    <div
+                      key={item._id}
+                      onClick={() => setSelectedHistoryPayment(item)}
+                      className="px-5 py-4 transition-colors hover:bg-[#f5f5f7]/80 cursor-pointer group"
+                    >
+                      <div className="flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3 min-w-0 flex-1">
+                          <div
+                            className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full transition-transform group-hover:scale-105 ${
+                              isOcular
+                                ? 'bg-orange-100 text-orange-600'
+                                : 'bg-blue-100 text-blue-600'
+                            }`}
+                          >
+                            {isOcular ? (
+                              <MapPin className="h-5 w-5" />
+                            ) : (
+                              <CreditCard className="h-5 w-5" />
+                            )}
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                              {item.description}
+                            </p>
+                            <p className="text-xs text-[#86868b] mt-0.5">
+                              {format(new Date(item.date), 'MMM d, yyyy')}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center items-end gap-1.5 sm:gap-4 shrink-0">
+                          <span className="font-semibold text-[#1d1d1f] text-sm">
+                            {formatCurrency(item.amount)}
+                          </span>
+                          <span
+                            className={`inline-flex items-center justify-center rounded-full px-2.5 py-0.5 text-[11px] font-medium sm:w-24 ${cfg.className}`}
+                          >
+                            {cfg.label}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Payment History Detail Modal */}
+      <Dialog
+        open={!!selectedHistoryPayment}
+        onOpenChange={(open) => !open && setSelectedHistoryPayment(null)}
+      >
+        <DialogContent className="sm:max-w-md rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-[#1d1d1f]">Payment Details</DialogTitle>
+          </DialogHeader>
+
+          {selectedHistoryPayment && (
+            <div className="space-y-6 mt-2">
+              {/* Amount & Status */}
+              <div className="flex flex-col items-center justify-center p-6 bg-[#f5f5f7] rounded-xl border border-[#c8c8cd]/50">
+                <span className="text-sm text-[#86868b] font-medium mb-1">Amount</span>
+                <span className="text-3xl font-bold text-[#1d1d1f] mb-3">
+                  {formatCurrency(selectedHistoryPayment.amount)}
+                </span>
+                <span
+                  className={`inline-flex items-center justify-center rounded-full px-3 py-1 text-xs font-medium ${
+                    historyStatusConfig[selectedHistoryPayment.status]?.className || 'bg-gray-100 text-gray-700'
+                  }`}
+                >
+                  {historyStatusConfig[selectedHistoryPayment.status]?.label || selectedHistoryPayment.status}
+                </span>
+              </div>
+
+              {/* Details */}
+              <div className="space-y-4 px-1">
+                <div className="flex items-start gap-3">
+                  <Tag className="h-4 w-4 text-[#86868b] mt-0.5" />
+                  <div>
+                    <p className="text-xs text-[#86868b] font-medium">Description</p>
+                    <p className="text-sm font-medium text-[#1d1d1f] mt-0.5">{selectedHistoryPayment.description}</p>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <Calendar className="h-4 w-4 text-[#86868b] mt-0.5" />
+                  <div>
+                    <p className="text-xs text-[#86868b] font-medium">Date & Time</p>
+                    <p className="text-sm font-medium text-[#1d1d1f] mt-0.5">
+                      {format(new Date(selectedHistoryPayment.date), 'MMMM d, yyyy')} at{' '}
+                      {format(new Date(selectedHistoryPayment.date), 'h:mm a')}
+                    </p>
+                  </div>
+                </div>
+
+                {selectedHistoryPayment.method && (
+                  <div className="flex items-start gap-3">
+                    <CreditCard className="h-4 w-4 text-[#86868b] mt-0.5" />
+                    <div>
+                      <p className="text-xs text-[#86868b] font-medium">Payment Method</p>
+                      <p className="text-sm font-medium text-[#1d1d1f] mt-0.5 capitalize">
+                        {selectedHistoryPayment.method.replace(/_/g, ' ')}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedHistoryPayment.receiptNumber && (
+                  <div className="flex items-start gap-3">
+                    <Hash className="h-4 w-4 text-[#86868b] mt-0.5" />
+                    <div>
+                      <p className="text-xs text-[#86868b] font-medium">Receipt Number</p>
+                      <p className="text-sm font-medium text-[#1d1d1f] mt-0.5">{selectedHistoryPayment.receiptNumber}</p>
+                    </div>
+                  </div>
+                )}
+
+                {selectedHistoryPayment.status === 'declined' && selectedHistoryPayment.declineReason && (
+                  <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100 mt-2">
+                    <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
+                    <div>
+                      <p className="text-xs text-red-600 font-semibold">Decline Reason</p>
+                      <p className="text-sm font-medium text-red-700 mt-0.5">{selectedHistoryPayment.declineReason}</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>

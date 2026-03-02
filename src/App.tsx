@@ -125,11 +125,6 @@ const ProjectDetailPage = lazy(() =>
     default: module.ProjectDetailPage,
   })),
 );
-const BlueprintsPage = lazy(() =>
-  import('@/pages/blueprints/BlueprintsPage').then((module) => ({
-    default: module.BlueprintsPage,
-  })),
-);
 const VisitReportsListPage = lazy(() =>
   import('@/pages/visit-reports/VisitReportsListPage').then((module) => ({
     default: module.VisitReportsListPage,
@@ -143,19 +138,10 @@ const VisitReportPage = lazy(() =>
 const PaymentsPage = lazy(() =>
   import('@/pages/payments/PaymentsPage').then((module) => ({ default: module.PaymentsPage })),
 );
-const PaymentHistoryPage = lazy(() =>
-  import('@/pages/payments/PaymentHistoryPage').then((module) => ({
-    default: module.PaymentHistoryPage,
-  })),
-);
+
 const CashierQueuePage = lazy(() =>
   import('@/pages/payments/CashierQueuePage').then((module) => ({
     default: module.CashierQueuePage,
-  })),
-);
-const FabricationPage = lazy(() =>
-  import('@/pages/fabrication/FabricationPage').then((module) => ({
-    default: module.FabricationPage,
   })),
 );
 const CashCollectionsPage = lazy(() =>
@@ -310,16 +296,6 @@ export default function App() {
               <Route
                 element={
                   <ProtectedRoute
-                    allowedRoles={[Role.ENGINEER, Role.ADMIN, Role.CUSTOMER]}
-                  />
-                }
-              >
-                <Route path="/blueprints" element={<BlueprintsPage />} />
-              </Route>
-
-              <Route
-                element={
-                  <ProtectedRoute
                     allowedRoles={[Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN]}
                   />
                 }
@@ -338,15 +314,7 @@ export default function App() {
                 <Route path="/payments" element={<PaymentsPage />} />
               </Route>
 
-              <Route
-                element={
-                  <ProtectedRoute
-                    allowedRoles={[Role.CUSTOMER]}
-                  />
-                }
-              >
-                <Route path="/payment-history" element={<PaymentHistoryPage />} />
-              </Route>
+
 
               <Route
                 element={
@@ -356,21 +324,6 @@ export default function App() {
                 }
               >
                 <Route path="/cashier-queue" element={<CashierQueuePage />} />
-              </Route>
-
-              <Route
-                element={
-                  <ProtectedRoute
-                    allowedRoles={[
-                      Role.FABRICATION_STAFF,
-                      Role.ENGINEER,
-                      Role.CUSTOMER,
-                      Role.ADMIN,
-                    ]}
-                  />
-                }
-              >
-                <Route path="/fabrication" element={<FabricationPage />} />
               </Route>
 
               <Route

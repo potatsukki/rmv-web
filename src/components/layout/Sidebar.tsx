@@ -15,15 +15,12 @@ import {
   LogOut,
   Home,
   DollarSign,
-  FileText,
   ChevronRight,
-  Hammer,
   ClipboardList,
   CalendarOff,
-  Receipt,
   CalendarPlus,
 } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
@@ -88,18 +85,7 @@ const navGroups: NavGroup[] = [
         icon: FolderKanban,
         roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
       },
-      {
-        label: 'Blueprints',
-        path: '/blueprints',
-        icon: FileText,
-        roles: [Role.ENGINEER, Role.CUSTOMER, Role.ADMIN],
-      },
-      {
-        label: 'Fabrication',
-        path: '/fabrication',
-        icon: Hammer,
-        roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.CUSTOMER, Role.ADMIN],
-      },
+
     ],
   },
   {
@@ -111,12 +97,7 @@ const navGroups: NavGroup[] = [
         icon: CreditCard,
         roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN],
       },
-      {
-        label: 'Payment History',
-        path: '/payment-history',
-        icon: Receipt,
-        roles: [Role.CUSTOMER],
-      },
+
       {
         label: 'Cash Flow',
         path: '/cash',
@@ -159,6 +140,37 @@ export function Sidebar() {
   const { data: dashboardSummary } = useDashboardSummary();
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Track "last seen" counts so badges only show for NEW items since last visit
+  const seenAppointments = useRef<number>(
+    Number(sessionStorage.getItem('seen_pendingAppointments') || '0'),
+  );
+  const seenPayments = useRef<number>(
+    Number(sessionStorage.getItem('seen_pendingPayments') || '0'),
+  );
+
+  const onAppointments = location.pathname === '/appointments' || location.pathname.startsWith('/appointments/');
+  const onPayments = location.pathname === '/payments' || location.pathname.startsWith('/payments/');
+  const onCashierQueue = location.pathname === '/cashier-queue' || location.pathname.startsWith('/cashier-queue/');
+
+  useEffect(() => {
+    const pending = dashboardSummary?.pendingAppointments ?? 0;
+    if (onAppointments && pending > 0) {
+      seenAppointments.current = pending;
+      sessionStorage.setItem('seen_pendingAppointments', String(pending));
+    }
+  }, [onAppointments, dashboardSummary?.pendingAppointments]);
+
+  useEffect(() => {
+    const pending = dashboardSummary?.pendingPayments ?? 0;
+    if ((onPayments || onCashierQueue) && pending > 0) {
+      seenPayments.current = pending;
+      sessionStorage.setItem('seen_pendingPayments', String(pending));
+    }
+  }, [onPayments, onCashierQueue, dashboardSummary?.pendingPayments]);
+
+  const newAppointments = Math.max(0, (dashboardSummary?.pendingAppointments ?? 0) - seenAppointments.current);
+  const newPayments = Math.max(0, (dashboardSummary?.pendingPayments ?? 0) - seenPayments.current);
 
   if (!user) return null;
 
@@ -241,19 +253,19 @@ export function Sidebar() {
                               {unreadCount > 9 ? '9+' : unreadCount}
                             </span>
                           )}
-                          {item.label === 'Appointments' && !isActive && (dashboardSummary?.pendingAppointments ?? 0) > 0 && (
+                          {item.label === 'Appointments' && !isActive && newAppointments > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                              {(dashboardSummary?.pendingAppointments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingAppointments}
+                              {newAppointments > 9 ? '9+' : newAppointments}
                             </span>
                           )}
-                          {item.label === 'Payments' && !isActive && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
+                          {item.label === 'Payments' && !isActive && newPayments > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                              {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
+                              {newPayments > 9 ? '9+' : newPayments}
                             </span>
                           )}
-                          {item.label === 'Cashier Queue' && !isActive && (dashboardSummary?.pendingPayments ?? 0) > 0 && (
+                          {item.label === 'Cashier Queue' && !isActive && newPayments > 0 && (
                             <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1.5 text-[10px] font-bold text-white">
-                              {(dashboardSummary?.pendingPayments ?? 0) > 9 ? '9+' : dashboardSummary?.pendingPayments}
+                              {newPayments > 9 ? '9+' : newPayments}
                             </span>
                           )}
                           {isActive && (

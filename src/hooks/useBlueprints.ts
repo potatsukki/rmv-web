@@ -52,15 +52,25 @@ export function useUploadBlueprint() {
     mutationFn: async (body: {
       projectId: string;
       blueprintKey: string;
+      designKey: string;
       costingKey: string;
       quotation?: {
         materials: number;
         labor: number;
         fees: number;
         total: number;
+        lineItems?: {
+          label: string;
+          quantity: number;
+          materials: number;
+          labor: number;
+          amount: number;
+        }[];
+        validityDays?: number;
         breakdown?: string;
         estimatedDuration?: string;
         engineerNotes?: string;
+        paymentMilestones?: { label: string; description: string }[];
       };
     }) => {
       const { data } = await api.post<ApiResponse<Blueprint>>('/blueprints', body);
@@ -81,6 +91,7 @@ export function useUploadRevision() {
     }: {
       id: string;
       blueprintKey: string;
+      designKey: string;
       costingKey: string;
     }) => {
       const { data } = await api.post<ApiResponse<Blueprint>>(

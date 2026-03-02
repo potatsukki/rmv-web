@@ -17,6 +17,7 @@ interface FileUploadProps {
   onUploadComplete: (fileKeys: string[]) => void;
   existingKeys?: string[];
   label?: string;
+  readOnly?: boolean;
 }
 
 interface UploadedFile {
@@ -32,6 +33,16 @@ const COMPRESSIBLE_IMAGE_TYPES = new Set([
   'image/webp',
 ]);
 
+/** Strip the leading UUID prefix from R2 keys for a cleaner display name.
+ *  e.g. "a1b2c3d4-e5f6-...-MyPhoto.png" → "MyPhoto.png"
+ *       "a1b2c3d4-e5f6-...-89f1.png" (old UUID-only) stays as-is */
+function displayName(key: string): string {
+  const raw = key.split('/').pop() || key;
+  // UUID prefix pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-
+  const m = raw.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-(.+)$/i);
+  return m?.[1] ?? raw;
+}
+
 export function FileUpload({
   folder,
   accept = 'image/*,.pdf',
@@ -40,11 +51,12 @@ export function FileUpload({
   onUploadComplete,
   existingKeys = [],
   label = 'Upload files',
+  readOnly = false,
 }: FileUploadProps) {
   const [files, setFiles] = useState<UploadedFile[]>(
     existingKeys.map((key) => ({
       fileKey: key,
-      fileName: key.split('/').pop() || key,
+      fileName: displayName(key),
       isUploading: false,
     })),
   );
@@ -185,6 +197,91 @@ export function FileUpload({
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [files.map((f) => f.fileKey).join(',')]);
 
+  if (readOnly) {
+    if (files.length === 0) return null;
+    return (
+      <div className="space-y-2">
+        {files.map((file) => {
+          const url = previewUrls[file.fileKey];
+          const imageFile = isImage(file.fileName);
+          const videoFile = isVideo(file.fileName);
+          return (
+            <div
+              key={file.fileKey}
+              className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
+            >
+              {imageFile && url ? (
+                <button
+                  type="button"
+                  onClick={() => setLightbox(url)}
+                  className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-gray-200 hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer"
+                  title="Click to view full size"
+                >
+                  <img src={url} alt={file.fileName} className="h-full w-full object-cover" loading="lazy" />
+                </button>
+              ) : videoFile && url ? (
+                <a
+                  href={url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-900 hover:bg-gray-800 transition-colors"
+                  title="Click to play video"
+                >
+                  <Play className="h-4 w-4 text-white" fill="white" />
+                </a>
+              ) : imageFile ? (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                  <ImageIcon className="h-4 w-4 text-blue-500" />
+                </div>
+              ) : (
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                  <FileIcon className="h-4 w-4 text-muted-foreground" />
+                </div>
+              )}
+              <div className="flex-1 min-w-0 overflow-hidden">
+                <span className="block truncate text-xs text-foreground">{file.fileName}</span>
+                {url && (
+                  <a
+                    href={url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5"
+                  >
+                    <ExternalLink className="h-3 w-3 shrink-0" />
+                    {videoFile ? 'Play' : 'View full size'}
+                  </a>
+                )}
+              </div>
+            </div>
+          );
+        })}
+        {lightbox && (
+          <div
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4"
+            onClick={() => setLightbox(null)}
+            role="dialog"
+            aria-modal="true"
+          >
+            <button
+              type="button"
+              onClick={() => setLightbox(null)}
+              className="absolute top-4 right-4 rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
+              aria-label="Close preview"
+            >
+              <X className="h-6 w-6" />
+            </button>
+            <img
+              src={lightbox}
+              alt="Full-size preview"
+              className="max-h-[90vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        )}
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3">
       <div
@@ -237,18 +334,18 @@ export function FileUpload({
             return (
               <div
                 key={file.fileKey}
-                className="flex items-center gap-3 rounded-lg border border-border bg-card p-2"
+                className="flex items-center gap-2 rounded-lg border border-border bg-card p-2"
               >
                 {/* Thumbnail / icon */}
                 {file.isUploading ? (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
                   </div>
                 ) : imageFile && url ? (
                   <button
                     type="button"
                     onClick={() => setLightbox(url)}
-                    className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md border border-gray-200 hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer"
+                    className="relative h-10 w-10 shrink-0 overflow-hidden rounded-md border border-gray-200 hover:ring-2 hover:ring-primary/40 transition-all cursor-pointer"
                     title="Click to view full size"
                   >
                     <img
@@ -263,24 +360,24 @@ export function FileUpload({
                     href={url}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-gray-900 hover:bg-gray-800 transition-colors"
+                    className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-gray-900 hover:bg-gray-800 transition-colors"
                     title="Click to play video"
                   >
-                    <Play className="h-5 w-5 text-white" fill="white" />
+                    <Play className="h-4 w-4 text-white" fill="white" />
                   </a>
                 ) : imageFile ? (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
-                    <ImageIcon className="h-5 w-5 text-blue-500" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <ImageIcon className="h-4 w-4 text-blue-500" />
                   </div>
                 ) : (
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-md bg-muted">
-                    <FileIcon className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-md bg-muted">
+                    <FileIcon className="h-4 w-4 text-muted-foreground" />
                   </div>
                 )}
 
                 {/* File name + open link */}
-                <div className="flex-1 min-w-0">
-                  <span className="block truncate text-sm text-foreground">
+                <div className="flex-1 min-w-0 overflow-hidden">
+                  <span className="block truncate text-xs text-foreground">
                     {file.fileName}
                   </span>
                   {!file.isUploading && url && (
@@ -290,14 +387,14 @@ export function FileUpload({
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline mt-0.5"
                     >
-                      <ExternalLink className="h-3 w-3" />
+                      <ExternalLink className="h-3 w-3 shrink-0" />
                       {videoFile ? 'Play' : 'View full size'}
                     </a>
                   )}
                 </div>
 
-                {/* Remove button */}
-                {!file.isUploading && (
+                {/* Remove button — only when not read-only */}
+                {!file.isUploading && !readOnly && (
                   <Button
                     type="button"
                     variant="ghost"

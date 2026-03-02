@@ -16,14 +16,11 @@ import {
   BarChart3,
   Users,
   DollarSign,
-  FileText,
   User,
   Shield,
-  Hammer,
   ChevronRight,
   ClipboardList,
   CalendarOff,
-  Receipt,
   CalendarPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -60,6 +57,12 @@ const bottomTabItems: NavItem[] = [
     roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN],
   },
   {
+    label: 'Reports',
+    path: '/visit-reports',
+    icon: ClipboardList,
+    roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
+  },
+  {
     label: 'Projects',
     path: '/projects',
     icon: FolderKanban,
@@ -80,24 +83,7 @@ const menuItems: NavItem[] = [
     icon: ClipboardList,
     roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
   },
-  {
-    label: 'Blueprints',
-    path: '/blueprints',
-    icon: FileText,
-    roles: [Role.ENGINEER, Role.CUSTOMER, Role.ADMIN],
-  },
-  {
-    label: 'Fabrication',
-    path: '/fabrication',
-    icon: Hammer,
-    roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.ADMIN],
-  },
-  {
-    label: 'Payment History',
-    path: '/payment-history',
-    icon: Receipt,
-    roles: [Role.CUSTOMER],
-  },
+
   {
     label: 'Cash Management',
     path: '/cash',
@@ -370,7 +356,7 @@ export function MobileNav() {
                 key={item.path}
                 to={item.path}
                 className={cn(
-                  'flex-1 flex flex-col items-center justify-center py-2.5 text-[10px] font-semibold transition-all relative',
+                  'flex-1 flex flex-col items-center justify-center py-2.5 text-[10px] font-semibold transition-all relative min-w-0',
                   isActive ? 'text-[#1d1d1f]' : 'text-[#86868b] active:text-[#6e6e73]',
                 )}
               >
@@ -384,7 +370,7 @@ export function MobileNav() {
                   )}
                   strokeWidth={isActive ? 2.5 : 2}
                 />
-                <span>{item.label}</span>
+                <span className="truncate max-w-full px-1">{item.label}</span>
               </Link>
             );
           })}

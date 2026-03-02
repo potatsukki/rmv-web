@@ -467,12 +467,12 @@ export function BookAppointmentPage() {
     if (stepKey === 'type') return !!selectedType;
     if (stepKey === 'date') return !!selectedDate && !!selectedSlot;
     if (stepKey === 'location') return !!selectedLocation && !isFeeLoading && !feeError && !!feePreview;
-    if (stepKey === 'address') return !!(watchStreet?.trim()) && !!(watchBarangay?.trim()) && !!(watchCity?.trim());
+    if (stepKey === 'address') return true; // address is optional for office visits
     if (stepKey === 'details') return isOcular ? true : !!(siteRequirements.trim());
     if (stepKey === 'reason') return true;
     if (stepKey === 'review') return true;
     return false;
-  }, [currentStep, steps, selectedType, selectedDate, selectedSlot, selectedLocation, isFeeLoading, feeError, feePreview, watchStreet, watchBarangay, watchCity, siteRequirements]);
+  }, [currentStep, steps, selectedType, selectedDate, selectedSlot, selectedLocation, isFeeLoading, feeError, feePreview, siteRequirements]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) setCurrentStep((s) => s + 1);
@@ -807,23 +807,23 @@ export function BookAppointmentPage() {
         {steps[currentStep]?.key === 'address' && (
           <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f]">Your Address</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f]">Your Address <span className="text-xs font-normal text-[#86868b]">(optional)</span></CardTitle>
               <CardDescription className="text-[#6e6e73]">
-                Provide your address so we can plan site visits or deliveries if needed.
+                Optionally provide your address for deliveries. You can skip this step.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="space-y-1.5">
-                <Label htmlFor="street-office" className="text-[13px] font-medium text-[#3a3a3e]">Street / House No. <span className="text-red-500">*</span></Label>
+                <Label htmlFor="street-office" className="text-[13px] font-medium text-[#3a3a3e]">Street / House No.</Label>
                 <Input id="street-office" {...register('street')} placeholder="e.g. 123 Rizal St." className={inputClasses} />
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1.5">
-                  <Label htmlFor="barangay-office" className="text-[13px] font-medium text-[#3a3a3e]">Barangay <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="barangay-office" className="text-[13px] font-medium text-[#3a3a3e]">Barangay</Label>
                   <Input id="barangay-office" {...register('barangay')} placeholder="e.g. Brgy. San Jose" className={inputClasses} />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="city-office" className="text-[13px] font-medium text-[#3a3a3e]">City / Municipality <span className="text-red-500">*</span></Label>
+                  <Label htmlFor="city-office" className="text-[13px] font-medium text-[#3a3a3e]">City / Municipality</Label>
                   <Input id="city-office" {...register('city')} placeholder="e.g. Quezon City" className={inputClasses} />
                 </div>
               </div>
@@ -1122,11 +1122,40 @@ export function BookAppointmentPage() {
                 </div>
               )}
               {siteLineItems.length > 0 && (
-                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4">
-                  <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">Measurements</p>
-                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
-                    {siteLineItems.length} item{siteLineItems.length > 1 ? 's' : ''} ({siteMeasurementUnit})
+                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4 sm:col-span-2">
+                  <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">
+                    Measurements ({siteMeasurementUnit})
                   </p>
+                  <div className="mt-2 space-y-2">
+                    {siteLineItems.map((item, idx) => {
+                      const dims = [
+                        item.length != null && `L: ${item.length}`,
+                        item.width != null && `W: ${item.width}`,
+                        item.height != null && `H: ${item.height}`,
+                        item.area != null && `Area: ${item.area}`,
+                        item.thickness != null && `T: ${item.thickness}`,
+                      ].filter(Boolean).join(' × ');
+                      return (
+                        <div key={idx} className="flex items-start gap-2 text-sm">
+                          <span className="text-[#86868b] font-medium shrink-0">{idx + 1}.</span>
+                          <div className="min-w-0">
+                            <p className="font-semibold text-[#1d1d1f]">
+                              {item.label}
+                              {item.quantity > 1 && (
+                                <span className="ml-1.5 text-xs font-normal text-[#6e6e73]">×{item.quantity}</span>
+                              )}
+                            </p>
+                            {dims && (
+                              <p className="text-xs text-[#6e6e73] mt-0.5">{dims}</p>
+                            )}
+                            {item.notes && (
+                              <p className="text-xs text-[#86868b] mt-0.5 italic">{item.notes}</p>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
               {siteMaterials && (

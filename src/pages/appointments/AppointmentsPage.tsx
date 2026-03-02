@@ -267,10 +267,15 @@ export function AppointmentsPage() {
                     )}
 
                     {/* Row 4 (optional): Location */}
-                    {appt.address && (
+                    {(appt.addressStructured?.city || appt.address) ? (
                       <div className="flex items-center gap-1.5 ml-[18px] mt-1.5 text-[11px] text-[#86868b]">
                         <MapPin className="h-3 w-3 flex-shrink-0" />
-                        <span className="truncate">{appt.address}</span>
+                        <span className="truncate">{appt.addressStructured?.city || appt.address}</span>
+                      </div>
+                    ) : (
+                      <div className="flex items-center gap-1.5 ml-[18px] mt-1.5 text-[11px] text-[#c8c8cd]">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span>Address not provided</span>
                       </div>
                     )}
                   </div>
@@ -347,13 +352,13 @@ export function AppointmentsPage() {
 
                       {/* Location — hidden below lg */}
                       <TableCell className="py-4 hidden lg:table-cell">
-                        {appt.address ? (
+                        {appt.addressStructured?.city || appt.address ? (
                           <div className="flex items-center gap-1.5 text-xs text-[#6e6e73] max-w-[200px]">
                             <MapPin className="h-3 w-3 text-[#86868b] flex-shrink-0" />
-                            <span className="truncate">{appt.address}</span>
+                            <span className="truncate">{appt.addressStructured?.city || appt.address}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-[#c8c8cd]">—</span>
+                          <span className="text-xs text-[#c8c8cd]">Address not provided</span>
                         )}
                       </TableCell>
 

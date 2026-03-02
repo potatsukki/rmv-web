@@ -12,7 +12,6 @@ import {
   Activity,
   AlertCircle,
   CalendarCheck,
-  Package,
   Users,
   CalendarPlus,
   LogIn,
@@ -113,8 +112,8 @@ function getAuditNavPath(log: AuditLog): string | undefined {
     project: `/projects/${log.targetId}`,
     payment: '/payments',
     user: '/users',
-    blueprint: '/blueprints',
-    fabrication: '/fabrication',
+    blueprint: '/projects',
+    fabrication: '/projects',
     visit_report: '/visit-reports',
   };
   return map[log.targetType];
@@ -190,6 +189,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       return [
         { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.ENGINEER:
       return [
@@ -242,14 +242,13 @@ function getRoleActions(role: Role): QuickAction[] {
       actions.push(
         { label: 'Calendar', path: '/appointments', icon: CalendarDays, description: 'View appointments', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
         { label: 'Visit Reports', path: '/visit-reports', icon: FileText, description: 'Site inspections', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
+        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'View projects', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
       );
       break;
     case Role.ENGINEER:
       actions.push(
         { label: 'Report Queue', path: '/visit-reports', icon: FileText, description: 'Review visit reports', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
-        { label: 'Blueprints', path: '/blueprints', icon: FileText, description: 'Technical drawings', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
-        { label: 'Fabrication', path: '/fabrication', icon: Hammer, description: 'Workshop status', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
-        { label: 'Projects', path: '/projects', icon: Package, description: 'View all projects', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
+        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'Blueprints & fabrication', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
       );
       break;
     case Role.CASHIER:
@@ -260,7 +259,7 @@ function getRoleActions(role: Role): QuickAction[] {
       break;
     case Role.FABRICATION_STAFF:
       actions.push(
-        { label: 'Job Queue', path: '/fabrication', icon: Hammer, description: 'Pending tasks', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
+        { label: 'Job Queue', path: '/projects', icon: Hammer, description: 'Pending tasks', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
         { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'All projects', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
       );
       break;
@@ -388,7 +387,7 @@ export function DashboardPage() {
         </div>
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
           {actions.map((action) => (
-            <Link key={action.path} to={action.path} className="group">
+            <Link key={action.label} to={action.path} className="group">
               <div className="flex items-center gap-2 sm:gap-4 rounded-xl border border-[#c8c8cd]/50 bg-white/70 backdrop-blur-sm p-2.5 sm:p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[#b8b8bd] hover:-translate-y-0.5">
                 <div
                   className={`flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br ${action.color} text-white shadow-sm flex-shrink-0`}

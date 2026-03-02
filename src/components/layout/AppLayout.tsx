@@ -88,22 +88,9 @@ const quickSearchItems: QuickSearchItem[] = [
     path: '/projects',
     description: 'Track project progress',
     keywords: ['jobs', 'work orders', 'fabrication'],
-    roles: [Role.CUSTOMER, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
+    roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
   },
-  {
-    title: 'Blueprints',
-    path: '/blueprints',
-    description: 'Blueprint submissions and approvals',
-    keywords: ['drawings', 'costings', 'plans'],
-    roles: [Role.ENGINEER, Role.CUSTOMER, Role.ADMIN],
-  },
-  {
-    title: 'Fabrication',
-    path: '/fabrication',
-    description: 'Workshop production tracking',
-    keywords: ['production', 'shop floor', 'status'],
-    roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.CUSTOMER, Role.ADMIN],
-  },
+
   {
     title: 'Payments',
     path: '/payments',
@@ -272,7 +259,6 @@ export function AppLayout() {
   }, [searchQuery]);
 
   const isAdmin = user?.roles.includes(Role.ADMIN) ?? false;
-  const isSalesStaffOnly = !!(user?.roles.includes(Role.SALES_STAFF) && !isAdmin);
 
   // ── Live search queries ────────────────────────────────────────────────
   const { data: liveProjects, isFetching: projectsFetching } = useQuery({
@@ -283,7 +269,7 @@ export function AppLayout() {
           params: { search: debouncedQuery, limit: '5' },
         })
         .then((r) => r.data.data.items),
-    enabled: !!debouncedQuery && !isSalesStaffOnly,
+    enabled: !!debouncedQuery,
     staleTime: 30_000,
   });
 
@@ -715,7 +701,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <div className="p-4 pt-[4.5rem] md:p-8 md:pt-8 pb-28 md:pb-8 animate-page">
+        <div className="px-3 py-4 pt-[4.5rem] sm:px-4 md:p-8 md:pt-8 pb-28 md:pb-8 animate-page">
           <Outlet />
         </div>
       </main>

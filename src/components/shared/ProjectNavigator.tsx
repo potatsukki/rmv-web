@@ -201,7 +201,20 @@ export function ProjectNavigator({
       // Auto-open rename for the new card after navigation
       setTimeout(() => setRenamingId(String(newReport._id)), 300);
     } catch {
-      toast.error('Failed to add project');
+      toast((t) => (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-medium text-gray-900">
+            The appointment must be marked as complete first before adding projects.
+          </p>
+          <button
+            type="button"
+            onClick={() => { toast.dismiss(t.id); navigate(`/appointments/${appointmentId}`); }}
+            className="text-sm font-semibold text-blue-600 hover:text-blue-700 text-left"
+          >
+            Go to Appointment →
+          </button>
+        </div>
+      ), { duration: 6000, icon: '⚠️' });
     } finally {
       setAdding(false);
     }

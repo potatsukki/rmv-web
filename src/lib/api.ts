@@ -7,6 +7,7 @@ const API_BASE = '/api/v1';
 
 interface RetryableRequestConfig extends AxiosRequestConfig {
   _retry?: boolean;
+  _csrfRetry?: boolean;
 }
 
 export const api = axios.create({
@@ -16,6 +17,52 @@ export const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// ── Shared in-flight promises to prevent thundering-herd on concurrent 401/403 ──
+let refreshPromise: Promise<string | null> | null = null;
+let csrfRefreshPromise: Promise<string> | null = null;
+
+/**
+ * Deduplicated token refresh — only one POST /auth/refresh-token at a time.
+ * All concurrent 401 callers await the same promise.
+ */
+function doRefresh(): Promise<string | null> {
+  if (!refreshPromise) {
+    refreshPromise = api
+      .post('/auth/refresh-token')
+      .then((res) => {
+        const newToken = res.data?.data?.accessToken as string | undefined;
+        if (newToken) {
+          useAuthStore.getState().setAccessToken(newToken);
+        }
+        return newToken ?? null;
+      })
+      .finally(() => {
+        refreshPromise = null;
+      });
+  }
+  return refreshPromise;
+}
+
+/**
+ * Deduplicated CSRF refresh — only one GET /csrf-token at a time.
+ * All concurrent 403 callers await the same promise.
+ */
+function doCsrfRefresh(): Promise<string> {
+  if (!csrfRefreshPromise) {
+    csrfRefreshPromise = api
+      .get('/csrf-token')
+      .then((res) => {
+        const token = res.data.data.csrfToken as string;
+        useAuthStore.getState().setCsrfToken(token);
+        return token;
+      })
+      .finally(() => {
+        csrfRefreshPromise = null;
+      });
+  }
+  return csrfRefreshPromise;
+}
 
 // Request interceptor: attach Bearer token + CSRF token
 api.interceptors.request.use((config) => {
@@ -35,7 +82,7 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Response interceptor: handle 401
+// Response interceptor: handle 401 / 403
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -44,8 +91,30 @@ api.interceptors.response.use(
     const requestUrl = originalRequest?.url ?? '';
     const isRefreshRequest = requestUrl.includes('/auth/refresh-token');
     const isLogoutRequest = requestUrl.includes('/auth/logout');
+    const isCsrfRequest = requestUrl.includes('/csrf-token');
 
-    // If 401 and not retrying already
+    // ── 403: CSRF token missing or stale — refresh once and retry ──
+    // Handle 403 BEFORE 401 because a failed refresh-token POST due to
+    // missing CSRF should be retried with a fresh CSRF token first.
+    if (
+      status === 403 &&
+      originalRequest &&
+      !originalRequest._csrfRetry &&
+      !isCsrfRequest &&
+      originalRequest.method?.toLowerCase() !== 'get'
+    ) {
+      originalRequest._csrfRetry = true;
+      try {
+        const newCsrfToken = await doCsrfRefresh();
+        originalRequest.headers = originalRequest.headers ?? {};
+        originalRequest.headers['X-CSRF-Token'] = newCsrfToken;
+        return api(originalRequest);
+      } catch {
+        // CSRF refresh failed — propagate original error
+      }
+    }
+
+    // ── 401: Access token expired — refresh once and retry ──
     if (
       status === 401 &&
       originalRequest &&
@@ -56,18 +125,14 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Try refresh — refreshToken sent via httpOnly cookie automatically
-        const refreshResponse = await api.post('/auth/refresh-token');
-        const newAccessToken = refreshResponse.data?.data?.accessToken;
+        const newAccessToken = await doRefresh();
         if (newAccessToken) {
-          useAuthStore.getState().setAccessToken(newAccessToken);
-          // Update the original request's auth header with the new token
           originalRequest.headers = originalRequest.headers ?? {};
           originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
         }
         return api(originalRequest);
       } catch {
-        // Refresh failed - clear local auth without triggering another logout request
+        // Refresh failed — clear local auth without triggering another logout request
         disconnectSocket();
         sessionStorage.removeItem('accessToken');
         useAuthStore.setState({
@@ -86,10 +151,7 @@ api.interceptors.response.use(
   },
 );
 
-// CSRF token fetcher
+// CSRF token fetcher (used by App init)
 export async function fetchCsrfToken(): Promise<string> {
-  const { data } = await api.get('/csrf-token');
-  const token = data.data.csrfToken;
-  useAuthStore.getState().setCsrfToken(token);
-  return token;
+  return doCsrfRefresh();
 }

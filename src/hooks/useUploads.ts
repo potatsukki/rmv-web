@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import type { ApiResponse } from '@/lib/types';
 
@@ -61,4 +62,59 @@ export async function uploadFileToR2(uploadUrl: string, file: File): Promise<voi
   if (!response.ok) {
     throw new Error(`Upload failed (${response.status})`);
   }
+}
+
+/**
+ * Hook that gets a signed download URL for a file through the authenticated API.
+ * Returns the R2 signed URL directly — safe for `<img src>` (no CORS redirect issue).
+ */
+export function useAuthenticatedUrl(fileKey: string | null | undefined): {
+  url: string | null;
+  isLoading: boolean;
+  error: boolean;
+} {
+  const [url, setUrl] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(false);
+
+  useEffect(() => {
+    if (!fileKey) {
+      setUrl(null);
+      setError(false);
+      return;
+    }
+
+    let cancelled = false;
+    setIsLoading(true);
+    setError(false);
+
+    api
+      .post<ApiResponse<DownloadUrlResponse>>('/uploads/signed-download-url', { key: fileKey })
+      .then((res) => {
+        if (!cancelled) setUrl(res.data.data.downloadUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setIsLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [fileKey]);
+
+  return { url, isLoading, error };
+}
+
+/**
+ * Open a file in a new tab via authenticated signed URL.
+ */
+export async function openAuthenticatedFile(fileKey: string): Promise<void> {
+  const { data } = await api.post<ApiResponse<DownloadUrlResponse>>(
+    '/uploads/signed-download-url',
+    { key: fileKey },
+  );
+  window.open(data.data.downloadUrl, '_blank');
 }

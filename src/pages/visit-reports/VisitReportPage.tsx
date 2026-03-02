@@ -14,6 +14,7 @@ import {
   Calendar as CalendarIcon,
   MapPin,
   Layers,
+  FolderOpen,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -44,6 +45,7 @@ import {
   useSubmitVisitReport,
   useReturnVisitReport,
 } from '@/hooks/useVisitReports';
+import { useProjectByVisitReport } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   Role,
@@ -79,6 +81,11 @@ export function VisitReportPage() {
   const updateMutation = useUpdateVisitReport();
   const submitMutation = useSubmitVisitReport();
   const returnMutation = useReturnVisitReport();
+
+  // Fetch the linked project (only when report is submitted/completed)
+  const { data: linkedProject } = useProjectByVisitReport(
+    report?.status === VisitReportStatus.SUBMITTED ? id : undefined,
+  );
 
   const [submitOpen, setSubmitOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
@@ -270,7 +277,24 @@ export function VisitReportPage() {
       );
       setSubmitOpen(false);
     } catch {
-      toast.error('Failed to submit report');
+      setSubmitOpen(false);
+      const apptId = report ? rawId(report.appointmentId) : null;
+      toast((t) => (
+        <div className="flex flex-col gap-1.5">
+          <p className="text-sm font-medium text-gray-900">
+            The appointment must be marked as complete first before submitting reports.
+          </p>
+          {apptId && (
+            <button
+              type="button"
+              onClick={() => { toast.dismiss(t.id); navigate(`/appointments/${apptId}`); }}
+              className="text-sm font-semibold text-blue-600 hover:text-blue-700 text-left"
+            >
+              Go to Appointment →
+            </button>
+          )}
+        </div>
+      ), { duration: 6000, icon: '⚠️' });
     }
   };
 
@@ -782,6 +806,16 @@ export function VisitReportPage() {
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Return for Revision
+          </Button>
+        )}
+
+        {linkedProject?._id && (
+          <Button
+            onClick={() => navigate(`/projects/${linkedProject._id}`)}
+            className="bg-[#0066cc] hover:bg-[#0055b3] text-white rounded-xl"
+          >
+            <FolderOpen className="mr-2 h-4 w-4" />
+            Go to Project
           </Button>
         )}
       </div>

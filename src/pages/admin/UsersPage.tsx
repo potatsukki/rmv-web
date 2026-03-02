@@ -10,15 +10,23 @@ import {
   Edit2,
   CheckCircle2,
   XCircle,
+  Filter,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import {
   Dialog,
   DialogContent,
@@ -206,14 +214,14 @@ export function UsersPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">User Management</h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">User Management</h1>
+          <p className="text-[#6e6e73] text-sm mt-1">
             Manage system access and employee roles.
           </p>
         </div>
         <Button
           onClick={openCreate}
-          className="bg-gray-900 hover:bg-gray-800 text-white shadow-sm rounded-xl h-10"
+          className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white shadow-sm h-10"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add New User
@@ -221,132 +229,282 @@ export function UsersPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
           <Input
             placeholder="Search users..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
+            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
           />
         </div>
-        <div className="w-full md:w-48">
-          <select
-            value={roleFilter}
-            onChange={(e) => setRoleFilter(e.target.value)}
-            className="w-full h-10 rounded-xl border border-gray-200 bg-gray-50/50 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-[#6e6e73]/20 focus:border-[#6e6e73]"
-          >
-            <option value="all">All Roles</option>
-            {ROLES.map((r) => (
-              <option key={r.value} value={r.value}>
-                {r.label}
-              </option>
-            ))}
-          </select>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
+          {[{ value: 'all', label: 'All' }, ...ROLES].map((r) => (
+            <button
+              type="button"
+              key={r.value}
+              onClick={() => setRoleFilter(r.value)}
+              aria-pressed={roleFilter === r.value}
+              className={`
+                whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+                ${roleFilter === r.value
+                  ? 'bg-[#1d1d1f] text-white shadow-sm'
+                  : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
+                }
+              `}
+            >
+              {r.label}
+            </button>
+          ))}
         </div>
       </div>
 
-      {/* User Grid */}
+      {/* Users */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {Array.from({ length: 8 }).map((_, i) => (
-            <Card key={i} className="border-gray-100 rounded-xl">
-              <CardContent className="p-6 flex flex-col items-center text-center space-y-4">
-                <Skeleton className="h-20 w-20 rounded-full" />
-                <Skeleton className="h-4 w-32" />
-                <Skeleton className="h-3 w-24" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : !users || users.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-          <div className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-            <UserCog className="h-8 w-8 text-gray-300" />
+        <>
+          {/* Mobile skeleton */}
+          <div className="space-y-3 md:hidden">
+            {Array.from({ length: 5 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-[#c8c8cd]/50 p-4 space-y-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-10 w-10 rounded-full" />
+                  <div className="flex-1 space-y-1.5">
+                    <Skeleton className="h-4 w-32" />
+                    <Skeleton className="h-3 w-40" />
+                  </div>
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                </div>
+              </div>
+            ))}
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">No users found</h3>
-          <p className="text-gray-500 max-w-sm mt-1 text-sm">
+          {/* Desktop skeleton */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+            <div className="p-4 space-y-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-9 w-9 rounded-full" />
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-4 w-44" />
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-5 w-20 rounded-full" />
+                </div>
+              ))}
+            </div>
+          </div>
+        </>
+      ) : !users || users.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50 px-4">
+          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
+            <UserCog className="h-5 w-5 sm:h-6 sm:w-6 text-[#c8c8cd]" />
+          </div>
+          <h3 className="text-sm sm:text-base font-semibold text-[#1d1d1f]">No users found</h3>
+          <p className="text-xs sm:text-sm text-[#86868b] max-w-sm mt-1.5">
             Try adjusting your search criteria.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {users.map((user: User) => (
-            <Card
-              key={user._id}
-              className={`group relative transition-all duration-200 hover:shadow-md border-gray-100 rounded-xl ${
-                !user.isActive ? 'bg-gray-50 opacity-75' : 'bg-white'
-              }`}
-            >
-              <div className="absolute top-3 right-3">
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button
-                      variant="ghost"
-                      className="h-8 w-8 p-0 text-gray-400 hover:text-gray-600 rounded-lg"
-                    >
-                      <MoreVertical className="h-4 w-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="rounded-xl">
-                    <DropdownMenuLabel>Actions</DropdownMenuLabel>
-                    <DropdownMenuItem onClick={() => openEdit(user)}>
-                      <Edit2 className="mr-2 h-4 w-4" /> Edit Details
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      onClick={() => setDisableDialog({ open: true, user })}
-                      className={user.isActive ? 'text-red-600' : 'text-emerald-600'}
-                    >
-                      {user.isActive ? (
-                        <>
-                          <XCircle className="mr-2 h-4 w-4" /> Disable User
-                        </>
-                      ) : (
-                        <>
-                          <CheckCircle2 className="mr-2 h-4 w-4" /> Enable User
-                        </>
-                      )}
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </div>
-
-              <CardContent className="flex flex-col items-center pt-8 pb-6 text-center">
-                <div
-                  className={`h-20 w-20 rounded-full flex items-center justify-center text-xl font-bold mb-4 border-4 border-white shadow-sm ${
-                    !user.isActive
-                      ? 'bg-gray-200 text-gray-500'
-                      : 'bg-gradient-to-br from-gray-100 to-gray-200 text-gray-700'
-                  }`}
-                >
-                  {user.firstName[0]}
-                  {user.lastName[0]}
+        <>
+          {/* ── Mobile list (< md) ── */}
+          <div className="md:hidden space-y-2">
+            {users.map((u: User) => (
+              <div
+                key={u._id}
+                className={`bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 transition-colors ${
+                  !u.isActive ? 'opacity-60' : ''
+                }`}
+              >
+                <div className="flex items-center gap-3 min-w-0">
+                  {/* Avatar */}
+                  <div
+                    className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
+                      !u.isActive
+                        ? 'bg-gray-200 text-gray-400'
+                        : 'bg-gradient-to-br from-[#f0f0f5] to-[#e8e8ed] text-[#3a3a3e]'
+                    }`}
+                  >
+                    {u.firstName[0]}{u.lastName[0]}
+                  </div>
+                  {/* Info */}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                      {u.firstName} {u.lastName}
+                    </p>
+                    <p className="text-[11px] text-[#86868b] truncate">{u.email}</p>
+                  </div>
+                  {/* Actions */}
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" className="h-8 w-8 p-0 text-[#86868b] hover:text-[#3a3a3e] rounded-lg flex-shrink-0">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="rounded-xl">
+                      <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                      <DropdownMenuItem onClick={() => openEdit(u)}>
+                        <Edit2 className="mr-2 h-4 w-4" /> Edit Details
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => setDisableDialog({ open: true, user: u })}
+                        className={u.isActive ? 'text-red-600' : 'text-emerald-600'}
+                      >
+                        {u.isActive ? (
+                          <><XCircle className="mr-2 h-4 w-4" /> Disable User</>
+                        ) : (
+                          <><CheckCircle2 className="mr-2 h-4 w-4" /> Enable User</>
+                        )}
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
-
-                <h3 className="font-bold text-gray-900 truncate w-full px-4">
-                  {user.firstName} {user.lastName}
-                </h3>
-                <p className="text-sm text-gray-500 mb-4 truncate w-full px-4">{user.email}</p>
-
-                <div className="flex flex-wrap justify-center gap-2">
-                  {user.roles.map((r) => (
+                {/* Roles + Status row */}
+                <div className="flex items-center gap-2 mt-2 ml-[52px] flex-wrap">
+                  {u.roles.map((r) => (
                     <Badge
                       key={r}
                       variant="outline"
-                      className={`uppercase text-[10px] tracking-wider font-bold rounded-md ${
+                      className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${
                         roleBadgeStyles[r] || 'border-gray-200 text-gray-600'
                       }`}
                     >
                       {formatRole(r)}
                     </Badge>
                   ))}
+                  {!u.isActive && (
+                    <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 border-red-200 bg-red-50 text-red-600">
+                      Disabled
+                    </Badge>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            ))}
+            <div className="px-1 pt-1">
+              <p className="text-[11px] text-[#86868b]">
+                {users.length} user{users.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Desktop table (md+) ── */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pl-5">User</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Email</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Phone</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Role</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">Actions</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {users.map((u: User) => (
+                  <TableRow
+                    key={u._id}
+                    className={`border-b border-[#f0f0f5] transition-colors hover:bg-[#f9f9fb] group ${
+                      !u.isActive ? 'opacity-60' : ''
+                    }`}
+                  >
+                    {/* User */}
+                    <TableCell className="pl-5 py-4">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div
+                          className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                            !u.isActive
+                              ? 'bg-gray-200 text-gray-400'
+                              : 'bg-gradient-to-br from-[#f0f0f5] to-[#e8e8ed] text-[#3a3a3e]'
+                          }`}
+                        >
+                          {u.firstName[0]}{u.lastName[0]}
+                        </div>
+                        <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                          {u.firstName} {u.lastName}
+                        </p>
+                      </div>
+                    </TableCell>
+
+                    {/* Email */}
+                    <TableCell className="py-4">
+                      <span className="text-sm text-[#6e6e73]">{u.email}</span>
+                    </TableCell>
+
+                    {/* Phone — hidden below lg */}
+                    <TableCell className="py-4 hidden lg:table-cell">
+                      <span className="text-sm text-[#6e6e73]">{u.phone || '—'}</span>
+                    </TableCell>
+
+                    {/* Role */}
+                    <TableCell className="py-4">
+                      <div className="flex flex-wrap gap-1">
+                        {u.roles.map((r) => (
+                          <Badge
+                            key={r}
+                            variant="outline"
+                            className={`text-[10px] font-bold uppercase tracking-wider ${
+                              roleBadgeStyles[r] || 'border-gray-200 text-gray-600'
+                            }`}
+                          >
+                            {formatRole(r)}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+
+                    {/* Status */}
+                    <TableCell className="py-4">
+                      <Badge
+                        variant="outline"
+                        className={`text-[10px] font-bold uppercase tracking-wider ${
+                          u.isActive
+                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                            : 'border-red-200 bg-red-50 text-red-600'
+                        }`}
+                      >
+                        {u.isActive ? 'Active' : 'Disabled'}
+                      </Badge>
+                    </TableCell>
+
+                    {/* Actions */}
+                    <TableCell className="py-4 pr-5">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" className="h-8 w-8 p-0 text-[#c8c8cd] hover:text-[#6e6e73] group-hover:text-[#86868b] rounded-lg">
+                            <MoreVertical className="h-4 w-4" />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="rounded-xl">
+                          <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => openEdit(u)}>
+                            <Edit2 className="mr-2 h-4 w-4" /> Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => setDisableDialog({ open: true, user: u })}
+                            className={u.isActive ? 'text-red-600' : 'text-emerald-600'}
+                          >
+                            {u.isActive ? (
+                              <><XCircle className="mr-2 h-4 w-4" /> Disable User</>
+                            ) : (
+                              <><CheckCircle2 className="mr-2 h-4 w-4" /> Enable User</>
+                            )}
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+            <div className="px-5 py-3 border-t border-[#f0f0f5] bg-[#fafafa]">
+              <p className="text-xs text-[#86868b]">
+                {users.length} user{users.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+        </>
       )}
 
       {/* Create / Edit Dialog */}

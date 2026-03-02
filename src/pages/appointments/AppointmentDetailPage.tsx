@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, AlertTriangle, Camera, Image } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, AlertTriangle, Camera, Image, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -30,6 +30,7 @@ import {
   useUpdateVisitStatus,
   useRefundOcularFee,
 } from '@/hooks/useAppointments';
+import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, AppointmentStatus } from '@/lib/constants';
 import { SERVICE_TYPE_LABELS } from '@/lib/constants';
@@ -49,6 +50,9 @@ export function AppointmentDetailPage() {
   const noShowMutation = useMarkNoShow();
   const visitStatusMutation = useUpdateVisitStatus();
   const refundMutation = useRefundOcularFee();
+
+  // Fetch visit reports linked to this appointment (for sales staff link)
+  const { data: visitReports } = useVisitReportsByAppointment(id!);
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -554,51 +558,57 @@ export function AppointmentDetailPage() {
       {/* Actions */}
       <div className="flex flex-wrap gap-3">
 
-        {/* Sales staff: CONFIRMED → Preparing */}
+        {/* Sales staff: CONFIRMED → actions */}
         {canCompleteAppointment && appt.status === AppointmentStatus.CONFIRMED && (
           <>
-            <Button
-              onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'preparing' }).then(() => toast.success('Status updated: Preparing')).catch(() => toast.error('Failed to update'))}
-              disabled={visitStatusMutation.isPending}
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
-            >
-              Start Preparing
-            </Button>
-            <Button
-              onClick={handleComplete}
-              disabled={completeMutation.isPending}
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
-            >
-              Mark Complete
-            </Button>
+            {visitReports && visitReports.length > 0 ? (
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+              >
+                <Link to={`/visit-reports/${visitReports[0]!._id}`}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Go to Visit Report
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+              >
+                <Link to="/visit-reports">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Visit Reports
+                </Link>
+              </Button>
+            )}
+            {/* Ocular: CONFIRMED → On The Way */}
+            {appt.type === 'ocular' && (
+              <Button
+                onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way')).catch(() => toast.error('Failed to update'))}
+                disabled={visitStatusMutation.isPending}
+                className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+              >
+                {visitStatusMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'On The Way'}
+              </Button>
+            )}
+            {/* Office: CONFIRMED → Complete */}
+            {appt.type === 'office' && (
+              <Button
+                onClick={handleComplete}
+                disabled={completeMutation.isPending}
+                className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+              >
+                {completeMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</> : 'Mark Complete'}
+              </Button>
+            )}
             <Button
               variant="outline"
               onClick={handleNoShow}
               disabled={noShowMutation.isPending}
               className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
             >
-              Mark No-Show
-            </Button>
-          </>
-        )}
-
-        {/* Sales staff: PREPARING → On The Way */}
-        {canCompleteAppointment && appt.status === AppointmentStatus.PREPARING && (
-          <>
-            <Button
-              onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way')).catch(() => toast.error('Failed to update'))}
-              disabled={visitStatusMutation.isPending}
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
-            >
-              On The Way
-            </Button>
-            <Button
-              variant="outline"
-              onClick={handleNoShow}
-              disabled={noShowMutation.isPending}
-              className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
-            >
-              Mark No-Show
+              {noShowMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Mark No-Show'}
             </Button>
           </>
         )}
@@ -606,12 +616,33 @@ export function AppointmentDetailPage() {
         {/* Sales staff: ON_THE_WAY → Complete */}
         {canCompleteAppointment && appt.status === AppointmentStatus.ON_THE_WAY && (
           <>
+            {visitReports && visitReports.length > 0 ? (
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+              >
+                <Link to={`/visit-reports/${visitReports[0]!._id}`}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Go to Visit Report
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+              >
+                <Link to="/visit-reports">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Visit Reports
+                </Link>
+              </Button>
+            )}
             <Button
               onClick={handleComplete}
               disabled={completeMutation.isPending}
               className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
             >
-              Mark Complete
+              {completeMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</> : 'Mark Complete'}
             </Button>
             <Button
               variant="outline"
@@ -619,8 +650,35 @@ export function AppointmentDetailPage() {
               disabled={noShowMutation.isPending}
               className="border-gray-200 text-gray-700 rounded-xl"
             >
-              Mark No-Show
+              {noShowMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Mark No-Show'}
             </Button>
+          </>
+        )}
+
+        {/* Sales staff: COMPLETED → Visit Report link */}
+        {canCompleteAppointment && appt.status === AppointmentStatus.COMPLETED && (
+          <>
+            {visitReports && visitReports.length > 0 ? (
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+              >
+                <Link to={`/visit-reports/${visitReports[0]!._id}`}>
+                  <FileText className="mr-2 h-4 w-4" />
+                  Go to Visit Report
+                </Link>
+              </Button>
+            ) : (
+              <Button
+                asChild
+                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+              >
+                <Link to="/visit-reports">
+                  <FileText className="mr-2 h-4 w-4" />
+                  Visit Reports
+                </Link>
+              </Button>
+            )}
           </>
         )}
 

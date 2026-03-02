@@ -1,13 +1,17 @@
 import { useRef, useEffect, useState, useCallback } from 'react';
-import { Eraser, Check, RotateCcw } from 'lucide-react';
+import { Eraser, Check, RotateCcw, AlertTriangle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
-import { useGetUploadUrl, uploadFileToR2 } from '@/hooks/useUploads';
+import { useGetUploadUrl, uploadFileToR2, useAuthenticatedUrl } from '@/hooks/useUploads';
 
 interface SignaturePadProps {
   /** Called with the R2 file key after upload completes */
   onSave: (signatureKey: string) => void;
+  /** Called when the user confirms deletion */
+  onDelete?: () => void;
+  /** Whether the delete action is in progress */
+  isDeleting?: boolean;
   /** Optional existing signature key to display */
   existingKey?: string | null;
   /** Whether the pad is in loading/saving state */
@@ -22,6 +26,8 @@ interface SignaturePadProps {
 
 export function SignaturePad({
   onSave,
+  onDelete,
+  isDeleting = false,
   existingKey,
   isSaving = false,
   width = 500,
@@ -32,13 +38,12 @@ export function SignaturePad({
   const [isDrawing, setIsDrawing] = useState(false);
   const [hasDrawn, setHasDrawn] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const getUploadUrl = useGetUploadUrl();
   const isDrawingRef = useRef(false);
 
-  // Existing signature preview URL
-  const previewUrl = existingKey
-    ? `/api/v1/uploads/view?key=${encodeURIComponent(existingKey)}`
-    : null;
+  // Fetch existing signature through authenticated API
+  const { url: previewUrl, isLoading: sigImgLoading, error: sigImgError } = useAuthenticatedUrl(existingKey);
 
   const getCtx = useCallback(() => {
     const canvas = canvasRef.current;
@@ -200,23 +205,34 @@ export function SignaturePad({
     }
   };
 
-  const busy = isSaving || isUploading;
+  const busy = isSaving || isUploading || isDeleting;
 
   return (
     <div className="space-y-3">
       {/* Existing Signature Preview */}
-      {previewUrl && (
+      {existingKey && (
         <div className="space-y-1.5">
           <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">
             Current Signature
           </p>
-          <div className="border border-gray-200 rounded-xl p-2 bg-white inline-block">
-            <img
-              src={previewUrl}
-              alt="Current signature"
-              className="max-h-20 object-contain"
-            />
-          </div>
+          {sigImgLoading ? (
+            <div className="border border-gray-200 rounded-xl p-2 bg-white inline-block">
+              <div className="h-20 w-40 animate-pulse rounded bg-gray-100" />
+            </div>
+          ) : sigImgError ? (
+            <div className="border border-gray-200 rounded-xl px-4 py-3 bg-gray-50 inline-flex items-center gap-2 text-xs text-[#86868b]">
+              <AlertTriangle className="h-4 w-4 text-amber-500" />
+              Signature could not be loaded. You can draw a new one below.
+            </div>
+          ) : previewUrl ? (
+            <div className="border border-gray-200 rounded-xl p-2 bg-white inline-block">
+              <img
+                src={previewUrl}
+                alt="Current signature"
+                className="max-h-20 object-contain"
+              />
+            </div>
+          ) : null}
         </div>
       )}
 
@@ -242,7 +258,7 @@ export function SignaturePad({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2">
+      <div className="flex gap-2 flex-wrap">
         <Button
           type="button"
           variant="outline"
@@ -262,13 +278,53 @@ export function SignaturePad({
           disabled={busy || !hasDrawn}
           className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
         >
-          {busy ? (
+          {busy && isUploading ? (
             <Eraser className="mr-1.5 h-3.5 w-3.5 animate-pulse" />
           ) : (
             <Check className="mr-1.5 h-3.5 w-3.5" />
           )}
-          {busy ? 'Saving...' : 'Save Signature'}
+          {busy && isUploading ? 'Saving...' : 'Save Signature'}
         </Button>
+        )}
+        {onDelete && existingKey && (
+          confirmDelete ? (
+            <>
+              <span className="text-xs text-red-500 self-center">Are you sure?</span>
+              <Button
+                type="button"
+                size="sm"
+                variant="destructive"
+                disabled={busy}
+                onClick={() => { setConfirmDelete(false); onDelete(); }}
+                className="rounded-lg"
+              >
+                {isDeleting ? <Eraser className="mr-1.5 h-3.5 w-3.5 animate-pulse" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
+                {isDeleting ? 'Removing...' : 'Yes, remove'}
+              </Button>
+              <Button
+                type="button"
+                size="sm"
+                variant="outline"
+                disabled={busy}
+                onClick={() => setConfirmDelete(false)}
+                className="border-gray-200 rounded-lg"
+              >
+                Cancel
+              </Button>
+            </>
+          ) : (
+            <Button
+              type="button"
+              size="sm"
+              variant="outline"
+              disabled={busy}
+              onClick={() => setConfirmDelete(true)}
+              className="border-red-200 text-red-500 hover:bg-red-50 hover:text-red-600 rounded-lg ml-auto"
+            >
+              <Trash2 className="mr-1.5 h-3.5 w-3.5" />
+              Remove
+            </Button>
+          )
         )}
       </div>
     </div>

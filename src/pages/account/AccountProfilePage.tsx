@@ -18,7 +18,7 @@ import {
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { LocationPicker } from '@/components/maps/LocationPicker';
 import { useAuthStore } from '@/stores/auth.store';
-import { useUpdateProfile, useSignature, useSaveSignature } from '@/hooks/useUsers';
+import { useUpdateProfile, useSignature, useSaveSignature, useDeleteSignature } from '@/hooks/useUsers';
 import { Role } from '@/lib/constants';
 import type { MapPoint } from '@/lib/maps';
 
@@ -58,6 +58,7 @@ export function AccountProfilePage() {
   const updateProfile = useUpdateProfile();
   const { data: signatureData } = useSignature();
   const saveSignature = useSaveSignature();
+  const deleteSignature = useDeleteSignature();
 
   const ad = user?.addressData;
 
@@ -340,6 +341,8 @@ export function AccountProfilePage() {
           existingKey={signatureData?.signatureKey}
           onSave={(key) => saveSignature.mutate(key)}
           isSaving={saveSignature.isPending}
+          onDelete={() => deleteSignature.mutate(undefined, { onSuccess: () => toast.success('Signature removed') })}
+          isDeleting={deleteSignature.isPending}
         />
       </CardContent>
     </Card>

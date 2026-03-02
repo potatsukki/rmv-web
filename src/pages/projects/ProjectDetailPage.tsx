@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import {
   ArrowLeft, FileText, CreditCard, Hammer, Image, ScrollText,
   Download, Loader2, Phone, UserPlus, Upload, Camera, Video,
-  PenTool, ChevronDown, ChevronUp, Users, Eye, Check, ExternalLink,
+  PenTool, ChevronDown, ChevronUp, Users, Eye, Check, X, ExternalLink,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -15,18 +15,20 @@ import {
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
+import { AuthImage } from '@/components/shared/AuthImage';
 import { useProject, useGenerateContract, useSignContract, useAssignEngineers, useAssignFabrication } from '@/hooks/useProjects';
-import { useLatestBlueprint, useUploadBlueprint, useUploadRevision } from '@/hooks/useBlueprints';
+import { useLatestBlueprint } from '@/hooks/useBlueprints';
 import { usePaymentPlan, usePaymentsByProject } from '@/hooks/usePayments';
-import { useFabricationUpdates, useFabricationStatus } from '@/hooks/useFabrication';
-import { useGetUploadUrl, useGetDownloadUrl, uploadFileToR2 } from '@/hooks/useUploads';
-import { useUsers } from '@/hooks/useUsers';
+import { useGetDownloadUrl, openAuthenticatedFile } from '@/hooks/useUploads';
+import { useUsers, useSignature } from '@/hooks/useUsers';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { cn } from '@/lib/utils';
 import type { VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
+import { BlueprintTab } from './tabs/BlueprintTab';
+import { FabricationTab } from './tabs/FabricationTab';
 
 // ── Types ──
 type TabKey = 'details' | 'blueprint' | 'payments' | 'fabrication';
@@ -50,8 +52,33 @@ const LIFECYCLE_STEPS = [
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
-// ── Media Thumbnail Component (lazy download URLs) ──
-function MediaThumbnail({ fileKey, type }: { fileKey: string; type: 'image' | 'video' }) {
+// ── Media Thumbnail Component (shows real image thumbnail) ──
+function MediaThumbnail({ fileKey, type, onPreview }: { fileKey: string; type: 'image' | 'video'; onPreview?: (key: string) => void }) {
+  if (type === 'image') {
+    return (
+      <button
+        type="button"
+        onClick={() => onPreview?.(fileKey)}
+        className="relative group w-24 h-24 rounded-xl border border-[#d2d2d7] overflow-hidden cursor-pointer"
+      >
+        <AuthImage
+          fileKey={fileKey}
+          alt={fileKey.split('/').pop() || 'Image'}
+          className="w-24 h-24 object-cover rounded-xl"
+          fallback={
+            <div className="flex items-center justify-center w-24 h-24 rounded-xl bg-[#f5f5f7]">
+              <Camera className="h-6 w-6 text-[#86868b]" />
+            </div>
+          }
+        />
+        <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors">
+          <Eye className="h-4 w-4 text-transparent group-hover:text-white transition-colors" />
+        </div>
+      </button>
+    );
+  }
+
+  // Video: keep lazy-load approach (no thumbnail preview)
   const [url, setUrl] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const getDownloadUrl = useGetDownloadUrl();
@@ -83,11 +110,7 @@ function MediaThumbnail({ fileKey, type }: { fileKey: string; type: 'image' | 'v
         <Loader2 className="h-5 w-5 animate-spin text-[#86868b]" />
       ) : (
         <>
-          {type === 'image' ? (
-            <Camera className="h-6 w-6 text-[#86868b] group-hover:text-[#6e6e73] transition-colors" />
-          ) : (
-            <Video className="h-6 w-6 text-[#86868b] group-hover:text-[#6e6e73] transition-colors" />
-          )}
+          <Video className="h-6 w-6 text-[#86868b] group-hover:text-[#6e6e73] transition-colors" />
           <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors">
             <Eye className="h-4 w-4 text-transparent group-hover:text-white transition-colors" />
           </div>
@@ -152,20 +175,15 @@ export function ProjectDetailPage() {
 
   // ── Data queries ──
   const { data: project, isLoading, isError, refetch } = useProject(id!);
-  const { data: blueprint, refetch: refetchBlueprint } = useLatestBlueprint(id!);
+  const { data: blueprint } = useLatestBlueprint(id!);
   const { data: paymentPlan } = usePaymentPlan(id!);
   const { data: payments } = usePaymentsByProject(id!);
-  const { data: fabUpdates } = useFabricationUpdates(id!);
-  const { data: fabStatus } = useFabricationStatus(id!);
 
   // ── Mutations ──
   const generateContract = useGenerateContract();
   const signContractMutation = useSignContract();
   const assignEngineers = useAssignEngineers();
   const assignFabrication = useAssignFabrication();
-  const uploadBlueprint = useUploadBlueprint();
-  const uploadRevision = useUploadRevision();
-  const getUploadUrl = useGetUploadUrl();
 
   // ── Auth ──
   const user = useAuthStore((s) => s.user);
@@ -179,6 +197,7 @@ export function ProjectDetailPage() {
   // ── Fabrication staff list (only fetch when engineer is on the page) ──
   const { data: fabStaffList } = useUsers(
     isEngineer ? { role: 'fabrication_staff' } : undefined,
+    { enabled: !!isEngineer },
   );
 
   // ── Fab assignment form state ──
@@ -186,27 +205,13 @@ export function ProjectDetailPage() {
   const [fabLeadId, setFabLeadId] = useState('');
   const [fabAssistantIds, setFabAssistantIds] = useState<string[]>([]);
 
-  // ── Blueprint upload state ──
-  const [blueprintFile, setBlueprintFile] = useState<File | null>(null);
-  const [costingFile, setCostingFile] = useState<File | null>(null);
-  const [uploading, setUploading] = useState(false);
-  const [quotMaterials, setQuotMaterials] = useState('');
-  const [quotLabor, setQuotLabor] = useState('');
-  const [quotFees, setQuotFees] = useState('');
-  const [quotBreakdown, setQuotBreakdown] = useState('');
-  const [quotDuration, setQuotDuration] = useState('');
-  const [quotNotes, setQuotNotes] = useState('');
-
   // ── Derived ──
   const visitReport: VisitReport | null = useMemo(() => {
     if (!project?.visitReportId || typeof project.visitReportId === 'string') return null;
     return project.visitReportId as VisitReport;
   }, [project]);
 
-  const tabs = useMemo(() => {
-    if (isEngineer) return ALL_TABS.filter((t) => t.key !== 'blueprint');
-    return ALL_TABS;
-  }, [isEngineer]);
+  const tabs = ALL_TABS;
 
   const currentStepIndex = LIFECYCLE_STEPS.findIndex((s) => s.key === project?.status);
 
@@ -219,6 +224,9 @@ export function ProjectDetailPage() {
 
   // ── Handlers ──
   const [contractSignatureKey, setContractSignatureKey] = useState('');
+  const [lightboxKey, setLightboxKey] = useState<string | null>(null);
+  const [useNewSignature, setUseNewSignature] = useState(false);
+  const { data: savedSignature } = useSignature();
 
   const handleGenerateContract = async () => {
     try {
@@ -277,92 +285,6 @@ export function ProjectDetailPage() {
     }
   };
 
-  const handleBlueprintUpload = async () => {
-    if (!blueprintFile || !costingFile) {
-      toast.error('Please select both blueprint and costing files');
-      return;
-    }
-    setUploading(true);
-    try {
-      // Get signed upload URLs
-      const [bpUrl, costUrl] = await Promise.all([
-        getUploadUrl.mutateAsync({
-          folder: 'blueprints',
-          fileName: blueprintFile.name,
-          contentType: blueprintFile.type,
-        }),
-        getUploadUrl.mutateAsync({
-          folder: 'blueprints',
-          fileName: costingFile.name,
-          contentType: costingFile.type,
-        }),
-      ]);
-      // Upload to R2
-      await Promise.all([
-        uploadFileToR2(bpUrl.uploadUrl, blueprintFile),
-        uploadFileToR2(costUrl.uploadUrl, costingFile),
-      ]);
-
-      const materials = Number(quotMaterials) || 0;
-      const labor = Number(quotLabor) || 0;
-      const fees = Number(quotFees) || 0;
-      const total = materials + labor + fees;
-      const quotation = total > 0
-        ? {
-            materials,
-            labor,
-            fees,
-            total,
-            breakdown: quotBreakdown || undefined,
-            estimatedDuration: quotDuration || undefined,
-            engineerNotes: quotNotes || undefined,
-          }
-        : undefined;
-
-      if (blueprint) {
-        // Revision
-        await uploadRevision.mutateAsync({
-          id: blueprint._id,
-          blueprintKey: bpUrl.fileKey,
-          costingKey: costUrl.fileKey,
-        });
-        toast.success('Revision uploaded successfully');
-      } else {
-        // First upload
-        await uploadBlueprint.mutateAsync({
-          projectId: id!,
-          blueprintKey: bpUrl.fileKey,
-          costingKey: costUrl.fileKey,
-          quotation,
-        });
-        toast.success('Blueprint uploaded successfully');
-      }
-      setBlueprintFile(null);
-      setCostingFile(null);
-      setQuotMaterials('');
-      setQuotLabor('');
-      setQuotFees('');
-      setQuotBreakdown('');
-      setQuotDuration('');
-      setQuotNotes('');
-      refetchBlueprint();
-      refetch();
-    } catch {
-      toast.error('Failed to upload blueprint');
-    } finally {
-      setUploading(false);
-    }
-  };
-
-  const handleDownloadFile = async (fileKey: string) => {
-    try {
-      const res = await api.post('/uploads/signed-download-url', { key: fileKey });
-      window.open(res.data.data.downloadUrl, '_blank');
-    } catch {
-      toast.error('Failed to get download link');
-    }
-  };
-
   const handleAssignFabrication = async () => {
     if (!fabLeadId) {
       toast.error('Please select a fabrication lead');
@@ -396,87 +318,125 @@ export function ProjectDetailPage() {
   const hasFabLead = project.fabricationLeadId && typeof project.fabricationLeadId !== 'string';
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-start gap-3 sm:gap-4">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate(-1)}
-          className="rounded-xl hover:bg-[#f0f0f5]"
+          className="rounded-xl hover:bg-[#f0f0f5] shrink-0 mt-0.5"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] truncate">
-            {project.title}
-          </h1>
-          <p className="text-sm text-[#6e6e73]">
+          <div className="flex items-center gap-2 flex-wrap">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-[#1d1d1f] truncate">
+              {project.title}
+            </h1>
+            <StatusBadge status={project.status} />
+          </div>
+          <p className="text-xs sm:text-sm text-[#6e6e73] mt-0.5">
             Created {format(new Date(project.createdAt), 'MMM d, yyyy')}
           </p>
         </div>
-        <StatusBadge status={project.status} />
       </div>
 
       {/* ── Lifecycle Stepper ── */}
       {project.status !== 'cancelled' && (
-        <div className="flex items-center gap-0 overflow-x-auto py-1">
-          {LIFECYCLE_STEPS.map((step, i) => {
-            const isCurrent = step.key === project.status;
-            const isPast = i < currentStepIndex;
-            return (
-              <div key={step.key} className="flex items-center">
-                {i > 0 && (
-                  <div
-                    className={cn(
-                      'h-0.5 w-6 sm:w-10',
-                      isPast ? 'bg-[#1d1d1f]' : 'bg-gray-200',
-                    )}
-                  />
-                )}
-                <div className="flex flex-col items-center gap-1">
-                  <div
-                    className={cn(
-                      'flex items-center justify-center h-7 w-7 rounded-full text-xs font-bold transition-colors',
-                      isCurrent
-                        ? 'bg-[#1d1d1f] text-white ring-2 ring-[#c8c8cd]'
-                        : isPast
-                          ? 'bg-[#1d1d1f] text-white'
-                          : 'bg-[#f0f0f5] text-[#86868b]',
-                    )}
-                  >
-                    {isPast ? <Check className="h-3.5 w-3.5" /> : i + 1}
+        <>
+          {/* Mobile: compact progress bar */}
+          <div className="sm:hidden">
+            <div className="flex items-center justify-between mb-2">
+              <p className="text-sm font-semibold text-[#1d1d1f]">
+                {LIFECYCLE_STEPS[currentStepIndex]?.label}
+              </p>
+              <p className="text-xs text-[#6e6e73]">
+                Step {currentStepIndex + 1} of {LIFECYCLE_STEPS.length}
+              </p>
+            </div>
+            <div className="h-2 bg-[#f0f0f5] rounded-full overflow-hidden">
+              <div
+                className="h-full bg-[#1d1d1f] rounded-full transition-all duration-500"
+                style={{ width: `${((currentStepIndex + 1) / LIFECYCLE_STEPS.length) * 100}%` }}
+              />
+            </div>
+            <div className="flex justify-between mt-1.5">
+              {LIFECYCLE_STEPS.map((step, i) => (
+                <span
+                  key={step.key}
+                  className={cn(
+                    'text-[10px] font-medium',
+                    i === currentStepIndex ? 'text-[#1d1d1f] font-semibold' : i < currentStepIndex ? 'text-[#6e6e73]' : 'text-[#c8c8cd]',
+                  )}
+                >
+                  {i === 0 || i === LIFECYCLE_STEPS.length - 1 || i === currentStepIndex ? step.label : ''}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Desktop: circle stepper */}
+          <div className="hidden sm:flex items-start py-2">
+            {LIFECYCLE_STEPS.map((step, i) => {
+              const isCurrent = step.key === project.status;
+              const isPast = i < currentStepIndex;
+              return (
+                <div key={step.key} className={cn('flex items-center', i > 0 ? 'flex-1' : '')}>
+                  {i > 0 && (
+                    <div
+                      className={cn(
+                        'h-0.5 flex-1 min-w-4 mt-[18px]',
+                        isPast ? 'bg-[#1d1d1f]' : 'bg-[#e8e8ed]',
+                      )}
+                    />
+                  )}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <div
+                      className={cn(
+                        'flex items-center justify-center h-9 w-9 rounded-full text-sm font-bold transition-colors',
+                        isCurrent
+                          ? 'bg-[#1d1d1f] text-white ring-2 ring-[#c8c8cd]'
+                          : isPast
+                            ? 'bg-[#1d1d1f] text-white'
+                            : 'bg-[#f0f0f5] text-[#86868b]',
+                      )}
+                    >
+                      {isPast ? <Check className="h-4 w-4" /> : i + 1}
+                    </div>
+                    <span
+                      className={cn(
+                        'text-xs font-medium whitespace-nowrap',
+                        isCurrent ? 'text-[#1d1d1f] font-semibold' : isPast ? 'text-[#6e6e73]' : 'text-[#86868b]',
+                      )}
+                    >
+                      {step.label}
+                    </span>
                   </div>
-                  <span
-                    className={cn(
-                      'text-[10px] font-medium whitespace-nowrap',
-                      isCurrent ? 'text-[#1d1d1f]' : isPast ? 'text-[#6e6e73]' : 'text-[#86868b]',
-                    )}
-                  >
-                    {step.label}
-                  </span>
                 </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        </>
       )}
 
       {/* ── Contextual Action Banner (engineer) ── */}
       {isEngineer && (
         <>
           {project.status === 'submitted' && project.engineerIds.length === 0 && (
-            <Card className="rounded-xl border-[#c8c8cd] bg-[#f0f0f5]/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <UserPlus className="h-5 w-5 text-[#1d1d1f] shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">This project needs an engineer</p>
-                  <p className="text-xs text-[#6e6e73]">Claim it to start working on the blueprint.</p>
+            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-[#c8c8cd] bg-[#f0f0f5]/50">
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <UserPlus className="h-5 w-5 text-[#1d1d1f] shrink-0 mt-0.5 sm:mt-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-[#1d1d1f]">This project needs an engineer</p>
+                    <p className="text-xs text-[#6e6e73]">Claim it to start working on the blueprint.</p>
+                  </div>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
+                  className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white w-full sm:w-auto"
                   onClick={handleClaimProject}
                   disabled={assignEngineers.isPending}
                 >
@@ -487,7 +447,7 @@ export function ProjectDetailPage() {
             </Card>
           )}
           {project.status === 'blueprint' && isAssignedEngineer && !blueprint && (
-            <Card className="rounded-xl border-blue-200 bg-blue-50/50">
+            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
               <CardContent className="p-4 flex items-center gap-3">
                 <Upload className="h-5 w-5 text-blue-600 shrink-0" />
                 <div className="flex-1">
@@ -498,7 +458,7 @@ export function ProjectDetailPage() {
             </Card>
           )}
           {blueprint?.status === 'revision_requested' && isAssignedEngineer && (
-            <Card className="rounded-xl border-amber-200 bg-amber-50/50">
+            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
               <CardContent className="p-4 flex items-center gap-3">
                 <Upload className="h-5 w-5 text-amber-600 shrink-0" />
                 <div className="flex-1">
@@ -511,17 +471,19 @@ export function ProjectDetailPage() {
             </Card>
           )}
           {['approved', 'payment_pending'].includes(project.status) && isAssignedEngineer && !hasFabLead && (
-            <Card className="rounded-xl border-violet-200 bg-violet-50/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <Users className="h-5 w-5 text-violet-600 shrink-0" />
-                <div className="flex-1">
-                  <p className="text-sm font-semibold text-violet-800">Assign fabrication team</p>
-                  <p className="text-xs text-violet-700">Select a lead fabricator and assistants for this project.</p>
+            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-violet-200 bg-violet-50/50">
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+                <div className="flex items-start gap-3 flex-1 min-w-0">
+                  <Users className="h-5 w-5 text-violet-600 shrink-0 mt-0.5 sm:mt-0" />
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-violet-800">Assign fabrication team</p>
+                    <p className="text-xs text-violet-700">Select a lead fabricator and assistants for this project.</p>
+                  </div>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-violet-300 text-violet-700 hover:bg-violet-100"
+                  className="border-violet-300 text-violet-700 hover:bg-violet-100 w-full sm:w-auto"
                   onClick={() => setShowFabForm(true)}
                 >
                   <Users className="mr-1.5 h-4 w-4" />
@@ -534,35 +496,37 @@ export function ProjectDetailPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 overflow-x-auto border-b border-[#d2d2d7]">
-        {tabs.map((tab) => (
-          <button
-            type="button"
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            aria-pressed={activeTab === tab.key}
-            className={cn(
-              'flex items-center gap-2 whitespace-nowrap border-b-2 px-4 py-2.5 text-sm font-medium transition-colors',
-              activeTab === tab.key
-                ? 'border-[#1d1d1f] text-[#1d1d1f]'
-                : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f]',
-            )}
-          >
-            <tab.icon className="h-4 w-4" />
-            {tab.label}
-          </button>
-        ))}
+      <div className="-mx-3 sm:mx-0">
+        <div className="flex overflow-x-auto border-b border-[#d2d2d7] px-3 sm:px-0 no-scrollbar">
+          {tabs.map((tab) => (
+            <button
+              type="button"
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              aria-pressed={activeTab === tab.key}
+              className={cn(
+                'flex items-center gap-1.5 sm:gap-2 whitespace-nowrap border-b-2 px-3.5 sm:px-4 py-3 text-sm font-medium transition-colors',
+                activeTab === tab.key
+                  ? 'border-[#1d1d1f] text-[#1d1d1f]'
+                  : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f]',
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* ════════════════  DETAILS TAB  ════════════════ */}
       {activeTab === 'details' && (
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="grid gap-6 lg:grid-cols-2 -mx-3 sm:mx-0">
           {/* Project Info */}
-          <Card className="rounded-xl border-[#c8c8cd]/50">
-            <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f]">Project Info</CardTitle>
+          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Project Info</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4 sm:px-6">
               {project.description && (
                 <div>
                   <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Description</p>
@@ -596,11 +560,11 @@ export function ProjectDetailPage() {
 
           {/* Team (internal staff only — customers see simplified view) */}
           {isStaff ? (
-          <Card className="rounded-xl border-[#c8c8cd]/50">
-            <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f]">Team</CardTitle>
+          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Team</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 px-4 sm:px-6">
               {/* Engineers */}
               <div>
                 <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Engineers</p>
@@ -777,11 +741,11 @@ export function ProjectDetailPage() {
           </Card>
           ) : (
             /* Customer sees a simple info card instead of team details */
-            <Card className="rounded-xl border-[#c8c8cd]/50">
-              <CardHeader>
-                <CardTitle className="text-lg text-[#1d1d1f]">Project Team</CardTitle>
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Project Team</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6">
                 <p className="text-sm text-[#6e6e73]">
                   Your project is being handled by our expert team of engineers and fabrication specialists. 
                   We&apos;ll keep you updated on progress through notifications.
@@ -797,18 +761,18 @@ export function ProjectDetailPage() {
 
           {/* ── Visit Report (Site Survey Data) — Staff only ── */}
           {isStaff && visitReport && (
-            <Card className="rounded-xl border-[#c8c8cd]/50 lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 lg:col-span-2">
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-[#1d1d1f]">
                   <Camera className="h-5 w-5" />
                   Site Visit Report
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="space-y-4 px-4 sm:px-6">
                 {/* Media Gallery */}
                 <CollapsibleSection title="Photos" icon={Camera} count={visitReport.photoKeys?.length || 0} defaultOpen>
                   {visitReport.photoKeys?.map((key) => (
-                    <MediaThumbnail key={key} fileKey={key} type="image" />
+                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
                   ))}
                 </CollapsibleSection>
 
@@ -820,13 +784,13 @@ export function ProjectDetailPage() {
 
                 <CollapsibleSection title="Sketches" icon={PenTool} count={visitReport.sketchKeys?.length || 0}>
                   {visitReport.sketchKeys?.map((key) => (
-                    <MediaThumbnail key={key} fileKey={key} type="image" />
+                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
                   ))}
                 </CollapsibleSection>
 
                 <CollapsibleSection title="Reference Images" icon={Image} count={visitReport.referenceImageKeys?.length || 0}>
                   {visitReport.referenceImageKeys?.map((key) => (
-                    <MediaThumbnail key={key} fileKey={key} type="image" />
+                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
                   ))}
                 </CollapsibleSection>
 
@@ -834,7 +798,7 @@ export function ProjectDetailPage() {
                 {visitReport.lineItems && visitReport.lineItems.length > 0 && (
                   <div>
                     <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">Line Items</p>
-                    <div className="overflow-x-auto rounded-lg border border-[#d2d2d7]">
+                    <div className="-mx-4 sm:mx-0 overflow-x-auto sm:rounded-lg sm:border border-y sm:border-x border-[#d2d2d7]">
                       <table className="min-w-full text-sm">
                         <thead className="bg-[#f5f5f7]/80">
                           <tr>
@@ -953,220 +917,15 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          {/* ── Blueprint Card (inline for engineers) ── */}
-          {isEngineer && (
-            <Card className="rounded-xl border-[#c8c8cd]/50 lg:col-span-2">
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
-                  <Image className="h-5 w-5" />
-                  Blueprint
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                {blueprint ? (
-                  <div className="space-y-4">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-[#1d1d1f]">Version {blueprint.version}</p>
-                      <StatusBadge status={blueprint.status} />
-                    </div>
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
-                        <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Blueprint</p>
-                        <p className="mt-1 text-sm font-medium">
-                          {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="mt-2 text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
-                          onClick={() => handleDownloadFile(blueprint.blueprintKey)}
-                        >
-                          <Download className="mr-1 h-3 w-3" />
-                          Download
-                        </Button>
-                      </div>
-                      <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
-                        <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Costing</p>
-                        <p className="mt-1 text-sm font-medium">
-                          {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
-                        </p>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="mt-2 text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
-                          onClick={() => handleDownloadFile(blueprint.costingKey)}
-                        >
-                          <Download className="mr-1 h-3 w-3" />
-                          Download
-                        </Button>
-                      </div>
-                    </div>
-                    {blueprint.revisionNotes && (
-                      <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
-                        <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Revision Notes</p>
-                        <p className="text-sm text-amber-800 mt-1">{blueprint.revisionNotes}</p>
-                      </div>
-                    )}
-                    <p className="text-xs text-[#86868b]">
-                      Uploaded {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
-                    </p>
-
-                    {/* Revision upload (when revision requested) */}
-                    {blueprint.status === 'revision_requested' && isAssignedEngineer && (
-                      <div className="rounded-xl border border-dashed border-[#c8c8cd] p-4 space-y-3">
-                        <p className="text-sm font-medium text-[#3a3a3e]">Upload Revision</p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Blueprint File *</label>
-                            <input
-                              type="file"
-                              accept=".pdf,.png,.jpg,.jpeg,.dwg"
-                              onChange={(e) => setBlueprintFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Costing File *</label>
-                            <input
-                              type="file"
-                              accept=".pdf,.xlsx,.xls,.csv"
-                              onChange={(e) => setCostingFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Quotation Fields */}
-                        <div className="border-t border-[#c8c8cd]/50 pt-3 space-y-3">
-                          <p className="text-sm font-medium text-[#3a3a3e]">Quotation Details</p>
-                          <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
-                            <div>
-                              <label className="text-xs text-[#6e6e73] block mb-1">Materials (₱)</label>
-                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-[#6e6e73] block mb-1">Labor (₱)</label>
-                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-[#6e6e73] block mb-1">Other Fees (₱)</label>
-                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                            </div>
-                          </div>
-                          {(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)) > 0 && (
-                            <p className="text-sm font-semibold text-emerald-700">
-                              Total: ₱{(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                            </p>
-                          )}
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Estimated Duration</label>
-                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                          </div>
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Engineer Notes</label>
-                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                          </div>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
-                          onClick={handleBlueprintUpload}
-                          disabled={uploading || !blueprintFile || !costingFile}
-                        >
-                          {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                          Upload Revision
-                        </Button>
-                      </div>
-                    )}
-                  </div>
-                ) : (
-                  <div>
-                    {/* First blueprint upload */}
-                    {isAssignedEngineer && ['blueprint', 'submitted'].includes(project.status) ? (
-                      <div className="rounded-xl border border-dashed border-[#c8c8cd] p-4 space-y-3">
-                        <p className="text-sm font-medium text-[#3a3a3e]">Upload Blueprint & Costing</p>
-                        <div className="grid gap-3 sm:grid-cols-2">
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Blueprint File *</label>
-                            <input
-                              type="file"
-                              accept=".pdf,.png,.jpg,.jpeg,.dwg"
-                              onChange={(e) => setBlueprintFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
-                            />
-                          </div>
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Costing File *</label>
-                            <input
-                              type="file"
-                              accept=".pdf,.xlsx,.xls,.csv"
-                              onChange={(e) => setCostingFile(e.target.files?.[0] || null)}
-                              className="text-sm file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:bg-[#f0f0f5] file:text-[#1d1d1f] file:text-xs file:font-medium hover:file:bg-[#f0f0f5]"
-                            />
-                          </div>
-                        </div>
-
-                        {/* Quotation Fields */}
-                        <div className="border-t border-[#c8c8cd]/50 pt-3 space-y-3">
-                          <p className="text-sm font-medium text-[#3a3a3e]">Quotation Details <span className="text-xs text-red-500">*</span></p>
-                          <div className="grid grid-cols-1 min-[400px]:grid-cols-3 gap-3">
-                            <div>
-                              <label className="text-xs text-[#6e6e73] block mb-1">Materials (₱) *</label>
-                              <input type="number" value={quotMaterials} onChange={(e) => setQuotMaterials(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-[#6e6e73] block mb-1">Labor (₱) *</label>
-                              <input type="number" value={quotLabor} onChange={(e) => setQuotLabor(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                            </div>
-                            <div>
-                              <label className="text-xs text-[#6e6e73] block mb-1">Other Fees (₱)</label>
-                              <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                            </div>
-                          </div>
-                          {(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)) > 0 && (
-                            <p className="text-sm font-semibold text-emerald-700">
-                              Total: ₱{(Number(quotMaterials) + Number(quotLabor) + Number(quotFees)).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
-                            </p>
-                          )}
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Estimated Duration</label>
-                            <input value={quotDuration} onChange={(e) => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className="w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                          </div>
-                          <div>
-                            <label className="text-xs text-[#6e6e73] block mb-1">Engineer Notes</label>
-                            <textarea value={quotNotes} onChange={(e) => setQuotNotes(e.target.value)} placeholder="Any additional notes for the customer..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
-                          </div>
-                        </div>
-
-                        <Button
-                          size="sm"
-                          className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
-                          onClick={handleBlueprintUpload}
-                          disabled={uploading || !blueprintFile || !costingFile}
-                        >
-                          {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                          Upload Blueprint
-                        </Button>
-                      </div>
-                    ) : (
-                      <p className="text-sm text-[#6e6e73] py-4">No blueprint uploaded yet.</p>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
-
           {/* Contract Card */}
-          <Card className="rounded-xl border-[#c8c8cd]/50 lg:col-span-2">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 lg:col-span-2">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-[#1d1d1f]">
                 <ScrollText className="h-5 w-5" />
                 Contract
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6">
               {project.contractKey ? (
                 <div className="space-y-4">
                   {/* Contract info + download */}
@@ -1232,16 +991,62 @@ export function ProjectDetailPage() {
                           E-Sign Your Contract
                         </p>
                         <p className="text-xs text-amber-700">
-                          Please review the contract above, then draw your signature below to sign. You must sign before making any payments.
+                          Please review the contract above, then sign below. You must sign before making any payments.
                         </p>
                       </div>
-                      <SignaturePad
-                        onSave={(key) => setContractSignatureKey(key)}
-                        existingKey={null}
-                        width={460}
-                        height={160}
-                        hideSaveButton={false}
-                      />
+
+                      {/* Saved signature option */}
+                      {savedSignature?.signatureKey && !useNewSignature && (
+                        <div className="space-y-2">
+                          <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Your Saved Signature</p>
+                          <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-3">
+                            <AuthImage
+                              fileKey={savedSignature.signatureKey}
+                              alt="Saved signature"
+                              className="h-12 max-w-[160px] object-contain"
+                            />
+                            <div className="flex-1" />
+                            <Button
+                              size="sm"
+                              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                              onClick={() => setContractSignatureKey(savedSignature.signatureKey!)}
+                            >
+                              <Check className="mr-1.5 h-3.5 w-3.5" />
+                              Use This
+                            </Button>
+                          </div>
+                          <button
+                            type="button"
+                            className="text-[11px] text-amber-700 underline underline-offset-2 hover:text-amber-900"
+                            onClick={() => setUseNewSignature(true)}
+                          >
+                            Draw a new signature instead
+                          </button>
+                        </div>
+                      )}
+
+                      {/* Draw new signature (shown if no saved sig or user chose to draw new) */}
+                      {(!savedSignature?.signatureKey || useNewSignature) && (
+                        <div className="space-y-2">
+                          {useNewSignature && (
+                            <button
+                              type="button"
+                              className="text-[11px] text-amber-700 underline underline-offset-2 hover:text-amber-900"
+                              onClick={() => setUseNewSignature(false)}
+                            >
+                              &larr; Use saved signature instead
+                            </button>
+                          )}
+                          <SignaturePad
+                            onSave={(key) => setContractSignatureKey(key)}
+                            existingKey={null}
+                            width={400}
+                            height={120}
+                            hideSaveButton={false}
+                          />
+                        </div>
+                      )}
+
                       {contractSignatureKey && (
                         <p className="text-xs text-emerald-600 flex items-center gap-1">
                           <Check className="h-3.5 w-3.5" /> Signature captured
@@ -1297,76 +1102,31 @@ export function ProjectDetailPage() {
         </div>
       )}
 
-      {/* ════════════════  BLUEPRINT TAB (non-engineers) ════════════════ */}
-      {activeTab === 'blueprint' && !isEngineer && (
-        <Card className="rounded-xl border-[#c8c8cd]/50">
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle className="text-lg text-[#1d1d1f]">Latest Blueprint</CardTitle>
-            <Button
-              variant="outline"
-              size="sm"
-              className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] gap-2"
-              onClick={() => navigate('/blueprints')}
-            >
-              <ExternalLink className="h-4 w-4" />
-              View All Blueprints
-            </Button>
-          </CardHeader>
-          <CardContent>
-            {blueprint ? (
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">Version {blueprint.version}</p>
-                  <StatusBadge status={blueprint.status} />
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
-                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Blueprint</p>
-                    <p className="mt-1 text-sm font-medium">
-                      {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
-                    </p>
-                  </div>
-                  <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
-                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Costing</p>
-                    <p className="mt-1 text-sm font-medium">
-                      {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
-                    </p>
-                  </div>
-                </div>
-                {blueprint.revisionNotes && (
-                  <div>
-                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Revision Notes</p>
-                    <p className="text-sm text-[#3a3a3e] mt-1">{blueprint.revisionNotes}</p>
-                  </div>
-                )}
-                <p className="text-xs text-[#86868b]">
-                  Uploaded {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
-                </p>
-              </div>
-            ) : (
-              <p className="text-sm text-[#6e6e73] py-4">No blueprint uploaded yet.</p>
-            )}
-          </CardContent>
-        </Card>
+      {/* ════════════════  BLUEPRINT TAB  ════════════════ */}
+      {activeTab === 'blueprint' && (
+        <BlueprintTab projectId={id!} />
       )}
 
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
       {activeTab === 'payments' && (
-        <div className="space-y-4">
+        <div className="space-y-4 -mx-3 sm:mx-0">
           {paymentPlan && (
-            <Card className="rounded-xl border-[#c8c8cd]/50">
-              <CardHeader>
-                <CardTitle className="text-lg text-[#1d1d1f]">Payment Plan</CardTitle>
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Payment Plan</CardTitle>
               </CardHeader>
-              <CardContent>
+              <CardContent className="px-4 sm:px-6">
                 <div className="space-y-3">
                   {paymentPlan.stages.map((stage) => (
                     <div
                       key={String(stage.stageId)}
-                      className="flex items-center justify-between rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/30 hover:bg-[#f5f5f7] transition-colors"
+                      className="flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[#c8c8cd]/50 p-3.5 sm:p-4 bg-[#f5f5f7]/30 hover:bg-[#f5f5f7] transition-colors"
                     >
                       <div>
                         <p className="text-sm font-semibold text-[#1d1d1f]">{String(stage.label)}</p>
+                        {(stage as any).description && (
+                          <p className="text-[11px] text-[#86868b] mt-0.5">{(stage as any).description}</p>
+                        )}
                         <p className="text-xs text-[#6e6e73]">
                           {String(stage.percentage)}% — {formatCurrency(Number(stage.amount))}
                         </p>
@@ -1379,17 +1139,17 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          <Card className="rounded-xl border-[#c8c8cd]/50">
-            <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f]">Payment History</CardTitle>
+          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+            <CardHeader className="px-4 sm:px-6">
+              <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Payment History</CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-4 sm:px-6">
               {payments && payments.length > 0 ? (
                 <div className="space-y-3">
                   {payments.map((p) => (
                     <div
                       key={String(p._id)}
-                      className="flex items-center justify-between rounded-xl border border-[#c8c8cd]/50 p-4"
+                      className="flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[#c8c8cd]/50 p-3.5 sm:p-4"
                     >
                       <div>
                         <p className="text-sm font-semibold text-[#1d1d1f]">
@@ -1416,67 +1176,50 @@ export function ProjectDetailPage() {
       )}
 
       {/* ════════════════  FABRICATION TAB  ════════════════ */}
-      {activeTab === 'fabrication' && (
-        <div className="space-y-4">
-          {/* Payment Gate Banner */}
-          {fabStatus?.paymentGate && !fabStatus.paymentGate.allPaid && (
-            <Card className="rounded-xl border-amber-200 bg-amber-50/50">
-              <CardContent className="p-4 flex items-start gap-3">
-                <CreditCard className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-                <div>
-                  <p className="text-sm font-semibold text-amber-800">Payment Gate Active</p>
-                  <p className="text-xs text-amber-700 mt-0.5">
-                    {fabStatus.paymentGate.unpaidCount} payment stage(s) remain unpaid.
-                    Fabrication cannot proceed to &quot;Ready for Delivery&quot; until all stages are verified.
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          )}
+      {activeTab === 'fabrication' && <FabricationTab projectId={id!} />}
 
-          {fabStatus?.paymentGate?.allPaid && (
-            <Card className="rounded-xl border-emerald-200 bg-emerald-50/50">
-              <CardContent className="p-4 flex items-center gap-3">
-                <CreditCard className="h-5 w-5 text-emerald-600 shrink-0" />
-                <p className="text-sm font-medium text-emerald-800">
-                  All payments verified — fabrication is unblocked
-                </p>
-              </CardContent>
-            </Card>
-          )}
-
-          <Card className="rounded-xl border-[#c8c8cd]/50">
-            <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f]">Fabrication Updates</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {fabUpdates && fabUpdates.length > 0 ? (
-                <div className="relative space-y-4 before:absolute before:left-4 before:top-2 before:h-[calc(100%-16px)] before:w-px before:bg-gray-200">
-                  {fabUpdates.map((update) => (
-                    <div key={String(update._id)} className="relative flex gap-4 pl-10">
-                      <div className="absolute left-2.5 top-1.5 h-3 w-3 rounded-full border-2 border-[#1d1d1f] bg-white" />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2">
-                          <StatusBadge status={String(update.status)} />
-                          <span className="text-xs text-[#86868b]">
-                            {update.createdAt
-                              ? format(new Date(String(update.createdAt)), 'MMM d, yyyy h:mm a')
-                              : ''}
-                          </span>
-                        </div>
-                        <p className="mt-1 text-sm text-[#3a3a3e]">{String(update.notes || '')}</p>
-                        {isStaff && update.createdByName ? (
-                          <p className="text-xs text-[#86868b]">By {String(update.createdByName)}</p>
-                        ) : null}
-                      </div>
-                    </div>
-                  ))}
+      {/* ── Lightbox Preview ── */}
+      {lightboxKey && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/80 p-4"
+          onClick={() => setLightboxKey(null)}
+          role="dialog"
+          aria-modal="true"
+        >
+          <div className="absolute top-4 right-4 flex items-center gap-2">
+            <button
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                openAuthenticatedFile(lightboxKey);
+              }}
+              className="rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
+              aria-label="Open full size"
+              title="Open full size"
+            >
+              <ExternalLink className="h-5 w-5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setLightboxKey(null)}
+              className="rounded-full bg-white/20 p-2 text-white hover:bg-white/40 transition-colors"
+              aria-label="Close preview"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+          <div onClick={(e) => e.stopPropagation()}>
+            <AuthImage
+              fileKey={lightboxKey}
+              alt="Preview"
+              className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain"
+              fallback={
+                <div className="flex items-center justify-center w-64 h-64 rounded-lg bg-[#1d1d1f] text-[#86868b]">
+                  <p className="text-sm">Failed to load image</p>
                 </div>
-              ) : (
-                <p className="text-sm text-[#6e6e73] py-4">No fabrication updates yet.</p>
-              )}
-            </CardContent>
-          </Card>
+              }
+            />
+          </div>
         </div>
       )}
     </div>

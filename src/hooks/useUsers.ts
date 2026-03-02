@@ -10,13 +10,14 @@ const KEYS = {
   customers: (search: string) => [...KEYS.all, 'customers', search] as const,
 };
 
-export function useUsers(params?: Record<string, string>) {
+export function useUsers(params?: Record<string, string>, options?: { enabled?: boolean }) {
   return useQuery({
     queryKey: KEYS.list(params),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<User[]>>('/users/admin/users', { params });
       return data.data;
     },
+    enabled: options?.enabled ?? true,
   });
 }
 
@@ -173,6 +174,21 @@ export function useSaveSignature() {
       const { data } = await api.post<ApiResponse<{ signatureKey: string }>>('/users/signature', {
         signatureKey,
       });
+      return data.data;
+    },
+    onSuccess: async () => {
+      qc.invalidateQueries({ queryKey: ['signature'] });
+      await fetchMe();
+    },
+  });
+}
+
+export function useDeleteSignature() {
+  const qc = useQueryClient();
+  const { fetchMe } = useAuthStore();
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.delete<ApiResponse<{ signatureKey: null }>>('/users/signature');
       return data.data;
     },
     onSuccess: async () => {

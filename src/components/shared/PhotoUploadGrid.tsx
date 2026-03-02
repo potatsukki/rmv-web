@@ -30,44 +30,75 @@ export function PhotoUploadGrid({
   disabled = false,
 }: PhotoUploadGridProps) {
   if (disabled) {
-    // Read-only summary
     const total = photoKeys.length + videoKeys.length + sketchKeys.length + referenceImageKeys.length;
     if (total === 0) return null;
 
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {photoKeys.length > 0 && (
-          <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 border border-gray-100">
-            <Camera className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{photoKeys.length} photo{photoKeys.length > 1 ? 's' : ''}</span>
-          </div>
+          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
+                <Camera className="h-4 w-4 text-[#6e6e73]" />
+                Site Photos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FileUpload folder="visit-photos" accept={IMAGE_ACCEPT} maxSizeMB={10} maxFiles={20}
+                existingKeys={photoKeys} onUploadComplete={() => {}} readOnly />
+            </CardContent>
+          </Card>
         )}
         {videoKeys.length > 0 && (
-          <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 border border-gray-100">
-            <Video className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{videoKeys.length} video{videoKeys.length > 1 ? 's' : ''}</span>
-          </div>
+          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
+                <Video className="h-4 w-4 text-blue-500" />
+                Videos
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FileUpload folder="visit-videos" accept={VIDEO_ACCEPT} maxSizeMB={50} maxFiles={5}
+                existingKeys={videoKeys} onUploadComplete={() => {}} readOnly />
+            </CardContent>
+          </Card>
         )}
         {sketchKeys.length > 0 && (
-          <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 border border-gray-100">
-            <PenTool className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{sketchKeys.length} sketch{sketchKeys.length > 1 ? 'es' : ''}</span>
-          </div>
+          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
+                <PenTool className="h-4 w-4 text-emerald-500" />
+                Sketches
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FileUpload folder="visit-sketches" accept={IMAGE_OR_PDF_ACCEPT} maxSizeMB={10} maxFiles={10}
+                existingKeys={sketchKeys} onUploadComplete={() => {}} readOnly />
+            </CardContent>
+          </Card>
         )}
         {referenceImageKeys.length > 0 && (
-          <div className="flex items-center gap-2 rounded-xl bg-gray-50 p-3 border border-gray-100">
-            <Image className="h-4 w-4 text-gray-400" />
-            <span className="text-sm text-gray-600">{referenceImageKeys.length} reference{referenceImageKeys.length > 1 ? 's' : ''}</span>
-          </div>
+          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+            <CardHeader className="pb-2">
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
+                <Image className="h-4 w-4 text-purple-500" />
+                Reference Images
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <FileUpload folder="visit-references" accept={IMAGE_OR_PDF_ACCEPT} maxSizeMB={10} maxFiles={10}
+                existingKeys={referenceImageKeys} onUploadComplete={() => {}} readOnly />
+            </CardContent>
+          </Card>
         )}
       </div>
     );
   }
 
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {/* Site Photos */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
             <Camera className="h-4 w-4 text-[#6e6e73]" />
@@ -88,7 +119,7 @@ export function PhotoUploadGrid({
       </Card>
 
       {/* Videos */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
             <Video className="h-4 w-4 text-blue-500" />
@@ -109,7 +140,7 @@ export function PhotoUploadGrid({
       </Card>
 
       {/* Sketches */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
             <PenTool className="h-4 w-4 text-emerald-500" />
@@ -130,7 +161,7 @@ export function PhotoUploadGrid({
       </Card>
 
       {/* Reference Images */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
             <Image className="h-4 w-4 text-purple-500" />

@@ -1,22 +1,25 @@
 import { useState, useMemo } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Search,
   ClipboardList,
   Filter,
-  ArrowUpRight,
-  Calendar,
-  User,
+  ChevronRight,
   Layers,
-  FolderOpen,
 } from 'lucide-react';
-import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { PageError } from '@/components/shared/PageError';
 import { useVisitReports } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
@@ -87,24 +90,36 @@ const STATUS_FILTERS = [
   { label: 'Completed', value: VisitReportStatus.COMPLETED },
 ];
 
-const STATUS_COLORS: Record<string, string> = {
-  [VisitReportStatus.DRAFT]: 'border-gray-200 text-gray-600 bg-gray-50',
-  [VisitReportStatus.SUBMITTED]: 'border-blue-200 text-blue-700 bg-blue-50',
-  [VisitReportStatus.RETURNED]: 'border-orange-200 text-orange-700 bg-orange-50',
-  [VisitReportStatus.COMPLETED]: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
+  [VisitReportStatus.DRAFT]: {
+    label: 'Draft',
+    dot: 'bg-gray-400',
+    badge: 'border-gray-200 text-gray-600 bg-gray-50',
+  },
+  [VisitReportStatus.SUBMITTED]: {
+    label: 'Submitted',
+    dot: 'bg-blue-500',
+    badge: 'border-blue-200 text-blue-700 bg-blue-50',
+  },
+  [VisitReportStatus.RETURNED]: {
+    label: 'Returned',
+    dot: 'bg-orange-500',
+    badge: 'border-orange-200 text-orange-700 bg-orange-50',
+  },
+  [VisitReportStatus.COMPLETED]: {
+    label: 'Completed',
+    dot: 'bg-emerald-500',
+    badge: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+  },
 };
 
-const BAR_COLORS: Record<string, string> = {
-  [VisitReportStatus.DRAFT]: 'bg-gray-300',
-  [VisitReportStatus.SUBMITTED]: 'bg-blue-500',
-  [VisitReportStatus.RETURNED]: 'bg-orange-500',
-  [VisitReportStatus.COMPLETED]: 'bg-emerald-500',
-};
+const defaultConfig = { label: 'Draft', dot: 'bg-gray-400', badge: 'border-gray-200 text-gray-600 bg-gray-50' };
 
 /* ── Component ── */
 
 export function VisitReportsListPage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
 
@@ -150,41 +165,43 @@ export function VisitReportsListPage() {
     : 'Manage your visit reports and site inspection records.';
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
             {pageTitle}
           </h1>
-          <p className="text-gray-500 mt-1 text-sm">{pageDescription}</p>
+          <p className="text-[#6e6e73] mt-1 text-sm">{pageDescription}</p>
         </div>
       </div>
 
-      {/* Controls */}
-      <div className="flex flex-col gap-4 md:flex-row md:items-center bg-white p-4 rounded-xl border border-gray-100 shadow-sm">
+      {/* Filters */}
+      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
         <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
           <Input
             placeholder="Search by customer name or report ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
+            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
           />
         </div>
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 no-scrollbar">
-          <Filter className="h-4 w-4 text-gray-400 hidden md:block mr-1" />
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
+          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
           {STATUS_FILTERS.map((f) => (
             <button
               type="button"
               key={f.value}
               onClick={() => setStatusFilter(f.value)}
               aria-pressed={statusFilter === f.value}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                statusFilter === f.value
-                  ? 'bg-gray-900 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-900'
-              }`}
+              className={`
+                whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
+                ${statusFilter === f.value
+                  ? 'bg-[#1d1d1f] text-white shadow-sm'
+                  : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
+                }
+              `}
             >
               {f.label}
             </button>
@@ -192,32 +209,49 @@ export function VisitReportsListPage() {
         </div>
       </div>
 
-      {/* Grid */}
+      {/* Content */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="border-gray-100 overflow-hidden rounded-xl">
-              <div className="h-1.5 bg-gray-100 w-full" />
-              <CardContent className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <Skeleton className="h-10 w-10 rounded-xl" />
+        <>
+          {/* Mobile skeleton */}
+          <div className="space-y-3 md:hidden">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-[#c8c8cd]/50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="h-2 w-2 rounded-full" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <Skeleton className="h-5 w-18 rounded-full" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3.5 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Desktop skeleton */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+            <div className="p-4 space-y-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-5 w-20 rounded-full" />
                 </div>
-                <Skeleton className="h-6 w-3/4 mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : !groups.length ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-200 rounded-2xl bg-gray-50/50">
-          <div className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-            <ClipboardList className="h-8 w-8 text-gray-300" />
+              ))}
+            </div>
           </div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            No visit reports found
-          </h3>
-          <p className="text-gray-500 max-w-sm mt-1 text-sm">
+        </>
+      ) : !groups.length ? (
+        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50 px-4">
+          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
+            <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-[#c8c8cd]" />
+          </div>
+          <h3 className="text-sm sm:text-base font-semibold text-[#1d1d1f]">No visit reports found</h3>
+          <p className="text-xs sm:text-sm text-[#86868b] max-w-sm mt-1.5 mb-6">
             {search || statusFilter
               ? 'Try adjusting your search or filters.'
               : 'Visit reports will appear here after appointments are confirmed.'}
@@ -225,7 +259,7 @@ export function VisitReportsListPage() {
           {(search || statusFilter) && (
             <Button
               variant="outline"
-              className="mt-4 border-gray-200 text-[#1d1d1f] hover:text-[#6e6e73] hover:bg-[#f0f0f5] rounded-lg"
+              className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7]"
               onClick={() => {
                 setSearch('');
                 setStatusFilter('');
@@ -236,105 +270,166 @@ export function VisitReportsListPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {groups.map((group) => {
-            const { reports: reps, status, customerName: custName } = group;
-            const firstReport = reps[0]!;
-            const projectCount = reps.length;
-            const projectLabels = reps.map(serviceLabel);
+        <>
+          {/* ── Mobile list (< md) ── */}
+          <div className="md:hidden space-y-2">
+            {groups.map((group) => {
+              const { reports: reps, status, customerName: custName } = group;
+              const firstReport = reps[0]!;
+              const projectCount = reps.length;
+              const projectLabels = reps.map(serviceLabel);
+              const config = statusConfig[status] ?? defaultConfig;
 
-            return (
-              <Link
-                key={group.appointmentId}
-                to={`/visit-reports/${firstReport._id}`}
-                className="group block h-full"
-              >
-                <Card className="h-full border-gray-100 transition-all duration-200 hover:border-[#c8c8cd] hover:shadow-md hover:-translate-y-0.5 overflow-hidden flex flex-col rounded-xl">
-                  <div
-                    className={`h-1.5 w-full ${BAR_COLORS[status] || 'bg-gray-200'}`}
-                  />
-                  <CardContent className="p-6 flex-1 flex flex-col">
-                    {/* Top row: icon + status */}
-                    <div className="flex items-start justify-between mb-4">
-                      <div className="h-10 w-10 text-[#1d1d1f] bg-[#f0f0f5] rounded-xl flex items-center justify-center">
-                        <ClipboardList className="h-5 w-5" />
+              return (
+                <Link
+                  key={group.appointmentId}
+                  to={`/visit-reports/${firstReport._id}`}
+                  className="group block"
+                >
+                  <div className="bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 active:bg-[#f5f5f7] transition-colors">
+                    {/* Row 1: Status dot + Name + Badge + Chevron */}
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
+                        <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                          {custName}
+                        </p>
                       </div>
-                      <Badge
-                        variant="outline"
-                        className={`uppercase text-[10px] font-bold tracking-wider rounded-md ${
-                          STATUS_COLORS[status] || 'border-gray-200 text-gray-600 bg-gray-50'
-                        }`}
-                      >
-                        {String(status || '').replace(/_/g, ' ')}
-                      </Badge>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${config.badge}`}
+                        >
+                          {config.label}
+                        </Badge>
+                        <ChevronRight className="h-4 w-4 text-[#c8c8cd]" />
+                      </div>
                     </div>
 
-                    {/* Customer name + project count */}
-                    <div className="mb-3 flex-1">
-                      <h3 className="font-bold text-gray-900 group-hover:text-[#6e6e73] transition-colors line-clamp-1">
-                        {custName}
-                      </h3>
-                      <p className="text-sm text-gray-500 mt-1">
-                        {projectCount === 1
-                          ? '1 project'
-                          : `${projectCount} projects`}
-                      </p>
+                    {/* Row 2: Meta — visit type · project count */}
+                    <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-[11px] text-[#86868b]">
+                      <span className="capitalize">{group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}</span>
+                      <span className="text-[#d2d2d7]">·</span>
+                      <span>{projectCount} project{projectCount !== 1 ? 's' : ''}</span>
                     </div>
 
-                    {/* Service type chips */}
-                    <div className="flex flex-wrap gap-1.5 mb-4">
+                    {/* Row 3: Service type chips */}
+                    <div className="flex flex-wrap gap-1 mt-2 ml-[18px]">
                       {projectLabels.map((label, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center rounded-full bg-[#f0f0f5] px-2 py-0.5 text-[11px] font-medium text-[#1d1d1f] border border-[#c8c8cd]"
+                          className="inline-flex items-center rounded-full bg-[#f0f0f5] px-2 py-0.5 text-[10px] font-medium text-[#1d1d1f] border border-[#e8e8ed]"
                         >
                           {label}
                         </span>
                       ))}
                     </div>
+                  </div>
+                </Link>
+              );
+            })}
+            <div className="px-1 pt-1">
+              <p className="text-[11px] text-[#86868b]">
+                {groups.length} report group{groups.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
 
-                    {/* Meta info */}
-                    <div className="space-y-2 pt-4 border-t border-gray-100">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Layers className="mr-2 h-3.5 w-3.5 text-gray-400" />
-                        <span className="text-xs font-medium text-gray-500">
-                          {group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}
+          {/* ── Desktop table (md+) ── */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pl-5">Customer</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Visit Type</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Projects</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Services</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {groups.map((group) => {
+                  const { reports: reps, status, customerName: custName } = group;
+                  const firstReport = reps[0]!;
+                  const projectCount = reps.length;
+                  const projectLabels = reps.map(serviceLabel);
+                  const config = statusConfig[status] ?? defaultConfig;
+
+                  return (
+                    <TableRow
+                      key={group.appointmentId}
+                      onClick={() => navigate(`/visit-reports/${firstReport._id}`)}
+                      className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group"
+                    >
+                      {/* Customer */}
+                      <TableCell className="pl-5 py-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
+                          <p className="font-medium text-[#1d1d1f] text-sm truncate group-hover:text-[#0066cc] transition-colors">
+                            {custName}
+                          </p>
+                        </div>
+                      </TableCell>
+
+                      {/* Visit Type */}
+                      <TableCell className="py-4">
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-[#6e6e73]">
+                          <Layers className="h-3.5 w-3.5 text-[#86868b]" />
+                          <span>{group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}</span>
+                        </div>
+                      </TableCell>
+
+                      {/* Projects */}
+                      <TableCell className="py-4">
+                        <span className="text-sm text-[#1d1d1f] font-medium">
+                          {projectCount}
                         </span>
-                      </div>
-                      {firstReport.actualVisitDateTime && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <Calendar className="mr-2 h-3.5 w-3.5 text-gray-400" />
-                          <span>
-                            {format(new Date(firstReport.actualVisitDateTime), 'MMM d, yyyy')}
-                          </span>
-                        </div>
-                      )}
-                      <div className="flex items-center text-sm text-gray-600">
-                        <User className="mr-2 h-3.5 w-3.5 text-gray-400" />
-                        <span className="line-clamp-1">{custName}</span>
-                      </div>
-                      {projectCount > 1 && (
-                        <div className="flex items-center text-sm text-gray-600">
-                          <FolderOpen className="mr-2 h-3.5 w-3.5 text-gray-400" />
-                          <span className="text-xs font-medium text-gray-500">
-                            {projectCount} projects in this visit
-                          </span>
-                        </div>
-                      )}
-                    </div>
+                        <span className="text-xs text-[#86868b] ml-1">
+                          project{projectCount !== 1 ? 's' : ''}
+                        </span>
+                      </TableCell>
 
-                    <div className="mt-4 flex items-center text-sm font-medium text-[#1d1d1f] opacity-0 group-hover:opacity-100 transition-opacity">
-                      {status === VisitReportStatus.DRAFT
-                        ? 'Continue Editing'
-                        : 'View Details'}{' '}
-                      <ArrowUpRight className="ml-1 h-3.5 w-3.5" />
-                    </div>
-                  </CardContent>
-                </Card>
-              </Link>
-            );
-          })}
-        </div>
+                      {/* Services — hidden below lg */}
+                      <TableCell className="py-4 hidden lg:table-cell">
+                        <div className="flex flex-wrap gap-1 max-w-[280px]">
+                          {projectLabels.map((label, i) => (
+                            <span
+                              key={i}
+                              className="inline-flex items-center rounded-full bg-[#f0f0f5] px-2 py-0.5 text-[11px] font-medium text-[#1d1d1f] border border-[#e8e8ed]"
+                            >
+                              {label}
+                            </span>
+                          ))}
+                        </div>
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="py-4">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] font-bold uppercase tracking-wider ${config.badge}`}
+                        >
+                          {config.label}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Arrow */}
+                      <TableCell className="py-4 pr-5">
+                        <ChevronRight className="h-4 w-4 text-[#c8c8cd] group-hover:text-[#86868b] transition-colors" />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            <div className="px-5 py-3 border-t border-[#f0f0f5] bg-[#fafafa]">
+              <p className="text-xs text-[#86868b]">
+                {groups.length} report group{groups.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

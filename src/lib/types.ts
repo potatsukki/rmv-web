@@ -185,6 +185,7 @@ export interface Blueprint {
   projectId: string;
   version: number;
   blueprintKey: string;
+  designKey?: string;
   costingKey: string;
   blueprintApproved: boolean;
   costingApproved: boolean;
@@ -202,9 +203,18 @@ export interface Blueprint {
     labor: number;
     fees: number;
     total: number;
+    lineItems?: {
+      label: string;
+      quantity: number;
+      materials: number;
+      labor: number;
+      amount: number;
+    }[];
+    validityDays?: number;
     breakdown?: string;
     estimatedDuration?: string;
     engineerNotes?: string;
+    paymentMilestones?: { label: string; description: string }[];
   };
   createdAt: string;
 }
@@ -213,6 +223,7 @@ export interface Blueprint {
 export interface PaymentStage {
   stageId: string;
   label: string;
+  description?: string;
   percentage: number;
   amount: number;
   status: string;

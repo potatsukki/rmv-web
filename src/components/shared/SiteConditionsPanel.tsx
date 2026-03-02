@@ -81,7 +81,7 @@ export function SiteConditionsPanel({
             checked={value.hasElectrical ?? false}
             onChange={(e) => update('hasElectrical', e.target.checked)}
             disabled={disabled}
-            className="h-4 w-4 rounded border-[#c8c8cd] text-[#1d1d1f] focus:ring-[#6e6e73]/20"
+            className="h-4 w-4 rounded border-[#c8c8cd] accent-[#6e6e73] focus:ring-[#6e6e73]/20"
           />
           <span className="text-sm text-gray-700">Electrical nearby</span>
         </label>
@@ -91,7 +91,7 @@ export function SiteConditionsPanel({
             checked={value.hasPlumbing ?? false}
             onChange={(e) => update('hasPlumbing', e.target.checked)}
             disabled={disabled}
-            className="h-4 w-4 rounded border-[#c8c8cd] text-[#1d1d1f] focus:ring-[#6e6e73]/20"
+            className="h-4 w-4 rounded border-[#c8c8cd] accent-[#6e6e73] focus:ring-[#6e6e73]/20"
           />
           <span className="text-sm text-gray-700">Plumbing nearby</span>
         </label>

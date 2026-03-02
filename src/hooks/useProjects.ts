@@ -6,6 +6,7 @@ const KEYS = {
   all: ['projects'] as const,
   list: (params?: Record<string, unknown>) => [...KEYS.all, 'list', params] as const,
   detail: (id: string) => [...KEYS.all, id] as const,
+  byVisitReport: (visitReportId: string) => [...KEYS.all, 'by-visit-report', visitReportId] as const,
 };
 
 export function useProjects(params?: Record<string, string>) {
@@ -28,6 +29,19 @@ export function useProject(id: string) {
       return data.data;
     },
     enabled: !!id,
+  });
+}
+
+export function useProjectByVisitReport(visitReportId: string | undefined) {
+  return useQuery({
+    queryKey: KEYS.byVisitReport(visitReportId!),
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<{ _id: string } | null>>(
+        `/projects/by-visit-report/${visitReportId}`,
+      );
+      return data.data;
+    },
+    enabled: !!visitReportId,
   });
 }
 
