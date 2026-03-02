@@ -8,8 +8,10 @@ interface AuthStore {
   isAuthenticated: boolean;
   isLoading: boolean;
   csrfToken: string | null;
+  accessToken: string | null;
   setUser: (user: User) => void;
   setCsrfToken: (token: string) => void;
+  setAccessToken: (token: string) => void;
   logout: () => void;
   fetchMe: () => Promise<void>;
 }
@@ -19,16 +21,23 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   csrfToken: null,
+  accessToken: sessionStorage.getItem('accessToken'),
 
   setUser: (user: User) =>
     set({ user, isAuthenticated: true, isLoading: false }),
 
   setCsrfToken: (token: string) => set({ csrfToken: token }),
 
+  setAccessToken: (token: string) => {
+    sessionStorage.setItem('accessToken', token);
+    set({ accessToken: token });
+  },
+
   logout: () => {
     const wasAuthenticated = get().isAuthenticated;
     disconnectSocket();
-    set({ user: null, isAuthenticated: false, isLoading: false, csrfToken: null });
+    sessionStorage.removeItem('accessToken');
+    set({ user: null, isAuthenticated: false, isLoading: false, csrfToken: null, accessToken: null });
     if (wasAuthenticated) {
       api.post('/auth/logout').catch(() => {});
     }
@@ -39,7 +48,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const { data } = await api.get('/auth/me');
       set({ user: data.data, isAuthenticated: true, isLoading: false });
     } catch {
-      set({ user: null, isAuthenticated: false, isLoading: false });
+      sessionStorage.removeItem('accessToken');
+      set({ user: null, isAuthenticated: false, isLoading: false, accessToken: null });
     }
   },
 }));

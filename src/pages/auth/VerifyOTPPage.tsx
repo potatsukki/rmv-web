@@ -15,7 +15,7 @@ const RESEND_COOLDOWN = 60;
 export function VerifyOTPPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fetchMe } = useAuthStore();
+  const { fetchMe, setAccessToken } = useAuthStore();
 
   const state = location.state as { email?: string; purpose?: string } | null;
   const email = state?.email || '';
@@ -72,7 +72,8 @@ export function VerifyOTPPage() {
     setIsSubmitting(true);
     try {
       if (purpose === 'email_verification') {
-        await api.post('/auth/verify-email', { email, otp: code });
+        const response = await api.post('/auth/verify-email', { email, otp: code });
+        if (response.data?.data?.accessToken) setAccessToken(response.data.data.accessToken);
         await fetchMe();
         toast.success('Email verified successfully!');
         navigate('/dashboard', { replace: true });
@@ -87,7 +88,7 @@ export function VerifyOTPPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, email, purpose, navigate, fetchMe]);
+  }, [otp, email, purpose, navigate, fetchMe, setAccessToken]);
 
   useEffect(() => {
     if (otp.every((d) => d !== '')) handleSubmit();

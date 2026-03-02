@@ -11,15 +11,23 @@ interface RetryableRequestConfig extends AxiosRequestConfig {
 
 export const api = axios.create({
   baseURL: API_BASE,
-  withCredentials: true,
+  withCredentials: true, // still needed for refreshToken cookie
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor: attach CSRF token
+// Request interceptor: attach Bearer token + CSRF token
 api.interceptors.request.use((config) => {
-  const csrfToken = useAuthStore.getState().csrfToken;
+  const { csrfToken, accessToken } = useAuthStore.getState();
+
+  // Attach access token as Authorization header (per-tab isolation)
+  if (accessToken) {
+    config.headers = config.headers ?? {};
+    config.headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  // Attach CSRF token on mutating requests
   if (csrfToken && config.method?.toLowerCase() !== 'get') {
     config.headers = config.headers ?? {};
     config.headers['X-CSRF-Token'] = csrfToken;
@@ -48,17 +56,26 @@ api.interceptors.response.use(
       originalRequest._retry = true;
 
       try {
-        // Try refresh
-        await api.post('/auth/refresh-token');
+        // Try refresh — refreshToken sent via httpOnly cookie automatically
+        const refreshResponse = await api.post('/auth/refresh-token');
+        const newAccessToken = refreshResponse.data?.data?.accessToken;
+        if (newAccessToken) {
+          useAuthStore.getState().setAccessToken(newAccessToken);
+          // Update the original request's auth header with the new token
+          originalRequest.headers = originalRequest.headers ?? {};
+          originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+        }
         return api(originalRequest);
       } catch {
         // Refresh failed - clear local auth without triggering another logout request
         disconnectSocket();
+        sessionStorage.removeItem('accessToken');
         useAuthStore.setState({
           user: null,
           isAuthenticated: false,
           isLoading: false,
           csrfToken: null,
+          accessToken: null,
         });
         window.location.href = '/login';
         return Promise.reject(error);

@@ -27,7 +27,7 @@ export function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { fetchMe, setCsrfToken } = useAuthStore();
+  const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();
 
   const from =
     (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
@@ -82,6 +82,7 @@ export function LoginPage() {
       // Existing user — logged in
       const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
+      if (responseData.accessToken) setAccessToken(responseData.accessToken);
       await fetchMe();
       toast.success('Welcome back!');
       navigate(from, { replace: true });
@@ -117,6 +118,7 @@ export function LoginPage() {
 
       const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
+      if (responseData.accessToken) setAccessToken(responseData.accessToken);
       
       await fetchMe();
       toast.success('Welcome back!');

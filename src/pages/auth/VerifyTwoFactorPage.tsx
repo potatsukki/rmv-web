@@ -21,7 +21,7 @@ interface VerifyTwoFactorState {
 export function VerifyTwoFactorPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fetchMe, setCsrfToken } = useAuthStore();
+  const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();
 
   const state = location.state as VerifyTwoFactorState | null;
   const tempToken = state?.tempToken || '';
@@ -85,6 +85,7 @@ export function VerifyTwoFactorPage() {
 
       const csrfToken = response.data.data.csrfToken;
       setCsrfToken(csrfToken);
+      if (response.data.data.accessToken) setAccessToken(response.data.data.accessToken);
 
       await fetchMe();
       toast.success('Welcome back!');
@@ -112,7 +113,7 @@ export function VerifyTwoFactorPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, tempToken, navigate, fetchMe, setCsrfToken]);
+  }, [otp, tempToken, navigate, fetchMe, setCsrfToken, setAccessToken]);
 
   useEffect(() => {
     if (otp.every((d) => d !== '')) handleSubmit();

@@ -1,13 +1,20 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { Plus, Calendar, Search, Filter, Clock, MapPin, FileText } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Plus, Calendar, Search, Filter, FileText, ChevronRight, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 import { PageError } from '@/components/shared/PageError';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
@@ -21,8 +28,47 @@ const STATUS_FILTERS = [
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
 ];
 
+const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
+  requested: {
+    label: 'Requested',
+    dot: 'bg-amber-500',
+    badge: 'border-amber-200 text-amber-700 bg-amber-50',
+  },
+  confirmed: {
+    label: 'Confirmed',
+    dot: 'bg-blue-500',
+    badge: 'border-blue-200 text-blue-700 bg-blue-50',
+  },
+  completed: {
+    label: 'Completed',
+    dot: 'bg-emerald-500',
+    badge: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+  },
+  cancelled: {
+    label: 'Cancelled',
+    dot: 'bg-red-500',
+    badge: 'border-red-200 text-red-700 bg-red-50',
+  },
+  no_show: {
+    label: 'No Show',
+    dot: 'bg-gray-500',
+    badge: 'border-gray-200 text-gray-700 bg-gray-50',
+  },
+  reschedule_requested: {
+    label: 'Reschedule',
+    dot: 'bg-violet-500',
+    badge: 'border-violet-200 text-violet-700 bg-violet-50',
+  },
+  awaiting_payment: {
+    label: 'Awaiting Payment',
+    dot: 'bg-orange-500',
+    badge: 'border-orange-200 text-orange-700 bg-orange-50',
+  },
+};
+
 export function AppointmentsPage() {
   const { user } = useAuthStore();
+  const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
 
@@ -45,6 +91,12 @@ export function AppointmentsPage() {
   if (isError) return <PageError onRetry={refetch} />;
 
   const appointments = data?.items || [];
+
+  const getStatusKey = (appt: (typeof appointments)[0]) => {
+    const awaitingPayment =
+      appt.type === 'ocular' && appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
+    return awaitingPayment ? 'awaiting_payment' : appt.status;
+  };
 
   return (
     <div className="space-y-6">
@@ -102,29 +154,49 @@ export function AppointmentsPage() {
         </div>
       </div>
 
-      {/* List */}
+      {/* Content */}
       {isLoading ? (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Card key={i} className="border-[#c8c8cd]/50 overflow-hidden">
-              <CardContent className="p-5 space-y-4">
-                <div className="flex justify-between">
-                  <Skeleton className="h-10 w-10 rounded-xl" />
+        <>
+          {/* Mobile skeleton */}
+          <div className="space-y-3 md:hidden">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div key={i} className="bg-white rounded-xl border border-[#c8c8cd]/50 p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2.5">
+                    <Skeleton className="h-2 w-2 rounded-full" />
+                    <Skeleton className="h-4 w-32" />
+                  </div>
+                  <Skeleton className="h-5 w-18 rounded-full" />
+                </div>
+                <div className="flex items-center gap-3">
+                  <Skeleton className="h-3.5 w-24" />
+                  <Skeleton className="h-3.5 w-16" />
+                </div>
+              </div>
+            ))}
+          </div>
+          {/* Desktop skeleton */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+            <div className="p-4 space-y-4">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4">
+                  <Skeleton className="h-4 w-4 rounded-full" />
+                  <Skeleton className="h-4 w-36" />
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-28" />
                   <Skeleton className="h-5 w-20 rounded-full" />
                 </div>
-                <Skeleton className="h-4 w-3/4" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      ) : !appointments.length ? (
-        <div className="flex flex-col items-center justify-center py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50">
-          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
-            <Calendar className="h-6 w-6 text-[#c8c8cd]" />
+              ))}
+            </div>
           </div>
-          <h3 className="text-base font-semibold text-[#1d1d1f]">No appointments found</h3>
-          <p className="text-sm text-[#86868b] max-w-sm mt-1.5 mb-6">
+        </>
+      ) : !appointments.length ? (
+        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50 px-4">
+          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
+            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-[#c8c8cd]" />
+          </div>
+          <h3 className="text-sm sm:text-base font-semibold text-[#1d1d1f]">No appointments found</h3>
+          <p className="text-xs sm:text-sm text-[#86868b] max-w-sm mt-1.5 mb-6">
             {isCustomer
               ? 'Book your first appointment to get started with your project.'
               : 'No appointments match your current filters.'}
@@ -138,87 +210,179 @@ export function AppointmentsPage() {
           )}
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {appointments.map((appt) => {
-            const awaitingPayment = appt.type === 'ocular' && appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
-            return (
-            <Link key={appt._id} to={`/appointments/${appt._id}`} className="group block h-full">
-              <Card className="h-full border-[#c8c8cd]/50 transition-all duration-200 hover:border-[#b8b8bd] hover:shadow-lg hover:-translate-y-0.5 overflow-hidden flex flex-col">
-                {/* Top color bar */}
-                <div
-                  className={`h-1 w-full ${
-                    awaitingPayment
-                      ? 'bg-orange-500'
-                      : appt.status === 'confirmed'
-                        ? 'bg-blue-500'
-                        : appt.status === 'completed'
-                          ? 'bg-emerald-500'
-                          : appt.status === 'cancelled'
-                            ? 'bg-red-500'
-                            : 'bg-amber-500'
-                  }`}
-                />
-                <CardContent className="p-5 flex-1 flex flex-col">
-                  <div className="flex items-start justify-between mb-4">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f0f5] text-[#1d1d1f]">
-                      <Calendar className="h-5 w-5" />
-                    </div>
-                    <Badge
-                      variant="outline"
-                      className={`uppercase text-[10px] font-bold tracking-wider ${
-                        awaitingPayment
-                          ? 'border-orange-200 text-orange-700 bg-orange-50'
-                          : appt.status === 'confirmed'
-                            ? 'border-blue-200 text-blue-700 bg-blue-50'
-                            : appt.status === 'completed'
-                              ? 'border-emerald-200 text-emerald-700 bg-emerald-50'
-                              : appt.status === 'cancelled'
-                                ? 'border-red-200 text-red-700 bg-red-50'
-                                : 'border-amber-200 text-amber-700 bg-amber-50'
-                      }`}
-                    >
-                      {awaitingPayment ? 'Awaiting Payment' : appt.status}
-                    </Badge>
-                  </div>
+        <>
+          {/* ── Mobile list (< md) ── */}
+          <div className="md:hidden space-y-2">
+            {appointments.map((appt) => {
+              const statusKey = getStatusKey(appt);
+              const config = statusConfig[statusKey] || statusConfig.requested;
 
-                  <div className="space-y-3 flex-1">
-                    <div>
-                      <h3 className="font-semibold text-[#1d1d1f] group-hover:text-[#6e6e73] transition-colors line-clamp-1">
-                        {appt.customerName || 'Appointment'}
-                      </h3>
-                      <p className="text-[11px] font-semibold text-[#86868b] uppercase tracking-wide mt-1">
-                        {appt.type}
-                      </p>
-                      {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
-                        <span className="inline-flex items-center gap-1 mt-1.5 text-[11px] font-medium text-blue-700 bg-blue-50 border border-blue-200 rounded-full px-2 py-0.5">
+              return (
+                <Link
+                  key={appt._id}
+                  to={`/appointments/${appt._id}`}
+                  className="group block"
+                >
+                  <div className="bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 active:bg-[#f5f5f7] transition-colors">
+                    {/* Row 1: Status dot + Name + Badge + Chevron */}
+                    <div className="flex items-center justify-between gap-2 min-w-0">
+                      <div className="flex items-center gap-2.5 min-w-0 flex-1">
+                        <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
+                        <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                          {appt.customerName || 'Appointment'}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0">
+                        <Badge
+                          variant="outline"
+                          className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${config.badge}`}
+                        >
+                          {config.label}
+                        </Badge>
+                        <ChevronRight className="h-4 w-4 text-[#c8c8cd]" />
+                      </div>
+                    </div>
+
+                    {/* Row 2: Meta — type · date · time */}
+                    <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-[11px] text-[#86868b]">
+                      <span className="capitalize">{appt.type}</span>
+                      <span className="text-[#d2d2d7]">·</span>
+                      <span>
+                        {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'}
+                      </span>
+                      <span className="text-[#d2d2d7]">·</span>
+                      <span className="font-medium text-[#3a3a3e]">
+                        {formatSlotTime(appt.slotCode)}
+                      </span>
+                    </div>
+
+                    {/* Row 3 (optional): Site details badge */}
+                    {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
+                      <div className="ml-[18px] mt-1.5">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600">
                           <FileText className="h-3 w-3" />
                           {appt.type === 'office' ? 'Site Details Required' : 'Site Details Optional'}
                         </span>
-                      )}
-                    </div>
-
-                    <div className="pt-3 border-t border-[#f0f0f5] space-y-2">
-                      <div className="flex items-center text-sm text-[#6e6e73]">
-                        <Clock className="mr-2 h-3.5 w-3.5 text-[#86868b]" />
-                        <span>
-                          {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'} &middot;{' '}
-                          <span className="text-[#3a3a3e] font-medium">{formatSlotTime(appt.slotCode)}</span>
-                        </span>
                       </div>
-                      {appt.address && (
-                        <div className="flex items-start text-sm text-[#6e6e73]">
-                          <MapPin className="mr-2 h-3.5 w-3.5 text-[#86868b] mt-0.5" />
-                          <span className="line-clamp-1">{appt.address}</span>
-                        </div>
-                      )}
-                    </div>
+                    )}
+
+                    {/* Row 4 (optional): Location */}
+                    {appt.address && (
+                      <div className="flex items-center gap-1.5 ml-[18px] mt-1.5 text-[11px] text-[#86868b]">
+                        <MapPin className="h-3 w-3 flex-shrink-0" />
+                        <span className="truncate">{appt.address}</span>
+                      </div>
+                    )}
                   </div>
-                </CardContent>
-              </Card>
-            </Link>
-          );
-          })}
-        </div>
+                </Link>
+              );
+            })}
+            <div className="px-1 pt-1">
+              <p className="text-[11px] text-[#86868b]">
+                {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+
+          {/* ── Desktop table (md+) ── */}
+          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pl-5">Customer</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Type</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Date & Time</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Location</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {appointments.map((appt) => {
+                  const statusKey = getStatusKey(appt);
+                  const config = statusConfig[statusKey] || statusConfig.requested;
+
+                  return (
+                    <TableRow
+                      key={appt._id}
+                      onClick={() => navigate(`/appointments/${appt._id}`)}
+                      className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group"
+                    >
+                      {/* Customer */}
+                      <TableCell className="pl-5 py-4">
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
+                          <div className="min-w-0">
+                            <p className="font-medium text-[#1d1d1f] text-sm truncate group-hover:text-[#0066cc] transition-colors">
+                              {appt.customerName || 'Appointment'}
+                            </p>
+                            {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
+                              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-blue-600">
+                                <FileText className="h-3 w-3" />
+                                {appt.type === 'office' ? 'Site Details Required' : 'Site Details Optional'}
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Type */}
+                      <TableCell className="py-4">
+                        <span className="inline-flex items-center text-xs font-medium text-[#6e6e73] capitalize">
+                          {appt.type}
+                        </span>
+                      </TableCell>
+
+                      {/* Date & Time */}
+                      <TableCell className="py-4">
+                        <div className="text-sm">
+                          <p className="text-[#1d1d1f] font-medium">
+                            {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'}
+                          </p>
+                          <p className="text-[#86868b] text-xs mt-0.5">
+                            {formatSlotTime(appt.slotCode)}
+                          </p>
+                        </div>
+                      </TableCell>
+
+                      {/* Location — hidden below lg */}
+                      <TableCell className="py-4 hidden lg:table-cell">
+                        {appt.address ? (
+                          <div className="flex items-center gap-1.5 text-xs text-[#6e6e73] max-w-[200px]">
+                            <MapPin className="h-3 w-3 text-[#86868b] flex-shrink-0" />
+                            <span className="truncate">{appt.address}</span>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-[#c8c8cd]">—</span>
+                        )}
+                      </TableCell>
+
+                      {/* Status */}
+                      <TableCell className="py-4">
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] font-bold uppercase tracking-wider ${config.badge}`}
+                        >
+                          {config.label}
+                        </Badge>
+                      </TableCell>
+
+                      {/* Arrow */}
+                      <TableCell className="py-4 pr-5">
+                        <ChevronRight className="h-4 w-4 text-[#c8c8cd] group-hover:text-[#86868b] transition-colors" />
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+            <div className="px-5 py-3 border-t border-[#f0f0f5] bg-[#fafafa]">
+              <p className="text-xs text-[#86868b]">
+                {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}
+              </p>
+            </div>
+          </div>
+        </>
       )}
     </div>
   );

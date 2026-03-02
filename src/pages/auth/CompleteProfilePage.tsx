@@ -24,7 +24,7 @@ type CompleteProfileForm = z.infer<typeof completeProfileSchema>;
 export function CompleteProfilePage() {
   const navigate = useNavigate();
   const location = useLocation();
-  const { fetchMe, setCsrfToken } = useAuthStore();
+  const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();
   const [submitting, setSubmitting] = useState(false);
 
   const state = location.state as {
@@ -72,6 +72,7 @@ export function CompleteProfilePage() {
       const responseData = response.data.data;
       const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
+      if (responseData.accessToken) setAccessToken(responseData.accessToken);
 
       await fetchMe();
       toast.success('Account created successfully!');

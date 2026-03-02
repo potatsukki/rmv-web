@@ -1,7 +1,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
-import { fetchCsrfToken } from '@/lib/api';
+import { api, fetchCsrfToken } from '@/lib/api';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -193,7 +193,7 @@ const SLOT_MGMT_ROLES = [Role.ADMIN, Role.APPOINTMENT_AGENT];
 const AGENT_ROLES = [Role.APPOINTMENT_AGENT];
 
 export default function App() {
-  const { fetchMe, setCsrfToken } = useAuthStore();
+  const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();
 
   useEffect(() => {
     const init = async () => {
@@ -221,10 +221,23 @@ export default function App() {
         return;
       }
 
+      // If no access token in sessionStorage, try to get one via refresh cookie
+      if (!sessionStorage.getItem('accessToken')) {
+        try {
+          const { data } = await api.post('/auth/refresh-token');
+          const newToken = data?.data?.accessToken;
+          if (newToken) {
+            setAccessToken(newToken);
+          }
+        } catch {
+          // No valid refresh token — user will be redirected to login by fetchMe
+        }
+      }
+
       await fetchMe();
     };
     init();
-  }, [fetchMe, setCsrfToken]);
+  }, [fetchMe, setCsrfToken, setAccessToken]);
 
   return (
     <BrowserRouter>

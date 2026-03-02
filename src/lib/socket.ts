@@ -18,6 +18,9 @@ export function connectSocket(): Socket {
     reconnectionAttempts: Infinity,
     reconnectionDelay: 1000,
     reconnectionDelayMax: 10000,
+    auth: {
+      token: sessionStorage.getItem('accessToken') || '',
+    },
   });
 
   socket.on('connect', () => {
