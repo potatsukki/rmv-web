@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     needs: ci
     concurrency:
-      group: vps-deploy-frontend
+      group: vps-deploy
       cancel-in-progress: false
     steps:
       - name: Deploy to VPS
@@ -40,13 +40,15 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           password: ${{ secrets.VPS_PASSWORD }}
           command_timeout: 15m
-          script_stop: true
+          script_stop: false
           script: |
             set -e
 
+            echo "========== FRONTEND DEPLOY START =========="
+
             # ── Cross-repo deploy lock (mkdir is atomic) ──────────────
             LOCKDIR="/tmp/rmv-deploy.lock"
-            cleanup() { rm -rf "$LOCKDIR"; }
+            cleanup() { rm -rf "$LOCKDIR" 2>/dev/null; }
             trap cleanup EXIT
 
             acquired=false
@@ -56,61 +58,87 @@ jobs:
                 lock_age=$(( $(date +%s) - $(stat -c %Y "$LOCKDIR") ))
                 if [ "$lock_age" -gt 900 ]; then
                   echo "Breaking stale lock (${lock_age}s old)"
-                  rm -rf "$LOCKDIR"; mkdir "$LOCKDIR"; acquired=true; break
+                  rm -rf "$LOCKDIR"
+                  mkdir "$LOCKDIR"
+                  acquired=true
+                  break
                 fi
               fi
               echo "Waiting for deploy lock ($i/60)..."
               sleep 5
             done
-            [ "$acquired" = true ] || { echo "Failed to acquire deploy lock"; exit 1; }
+            if [ "$acquired" != "true" ]; then
+              echo "FATAL: Failed to acquire deploy lock after 5 minutes"
+              exit 1
+            fi
             echo "Deploy lock acquired"
 
             # ── Helper: wait for container health ─────────────────────
             wait_for_health() {
-              local c="$1" retries="${2:-60}" delay="${3:-3}"
-              for i in $(seq 1 "$retries"); do
-                s=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$c" 2>/dev/null || true)
+              local c="$1"
+              local retries="${2:-60}"
+              local delay="${3:-3}"
+              local i=1
+              while [ "$i" -le "$retries" ]; do
+                local s=""
+                s=$(docker inspect -f '{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' "$c" 2>/dev/null) || s="not-found"
                 echo "  [$i/$retries] $c -> $s"
-                [ "$s" = "healthy" ] && return 0
+                if [ "$s" = "healthy" ]; then
+                  return 0
+                fi
                 if [ "$s" = "unhealthy" ]; then
                   echo "!! $c is unhealthy — recent logs:"
                   docker logs --tail 30 "$c" 2>&1 || true
                   return 1
                 fi
                 sleep "$delay"
+                i=$((i + 1))
               done
               echo "Timeout waiting for $c"
               docker logs --tail 30 "$c" 2>&1 || true
               return 1
             }
 
-            # ── Clone repo (first-time only) ──────────────────────────
+            # ── Clone repos (first-time only) ─────────────────────────
             mkdir -p /opt/rmv
             [ -d /opt/rmv/rmv-web/.git ] || git clone https://github.com/potatsukki/rmv-web.git /opt/rmv/rmv-web
             [ -d /opt/rmv/rmv-server/.git ] || git clone https://github.com/potatsukki/rmv-server.git /opt/rmv/rmv-server
 
             # ── Pull ONLY frontend code ───────────────────────────────
-            echo "Pulling latest frontend code..."
+            echo ">>> Pulling latest frontend code..."
             git -C /opt/rmv/rmv-web fetch --all
             git -C /opt/rmv/rmv-web reset --hard origin/main
+            echo "Frontend code pulled: $(git -C /opt/rmv/rmv-web log --oneline -1)"
 
             # ── Build new image WHILE old container keeps serving ─────
             cd /opt/rmv/rmv-server/deploy
-            echo "Building new web image (old container still running)..."
+            echo ">>> Building new web image (old container still running)..."
             docker compose -f docker-compose.prod.yml build --no-cache web
+            echo ">>> Build complete"
 
             # ── Swap container (near-instant) ─────────────────────────
-            echo "Swapping web container..."
+            echo ">>> Swapping web container..."
             docker compose -f docker-compose.prod.yml up -d --no-deps --force-recreate web
+            echo ">>> Container swapped, waiting 5s for startup..."
+            sleep 5
 
             # ── Health check ──────────────────────────────────────────
-            echo "Waiting for health check..."
+            echo ">>> Running health check..."
             wait_for_health rmv-web 40 3
+            echo ">>> Health check passed"
 
-            # ── Smoke test ────────────────────────────────────────────
-            echo "Running smoke test..."
-            docker exec rmv-nginx wget -qO/dev/null --tries=3 --spider http://web/ || echo "Smoke test warning (non-fatal)"
+            # ── Reload nginx so it resolves new container IP ──────────
+            echo ">>> Reloading nginx..."
+            docker exec rmv-nginx nginx -s reload 2>&1 || true
 
-            echo "Frontend deploy successful"
-            docker compose -f docker-compose.prod.yml ps
-            docker image prune -f
+            # ═══ Non-critical cleanup (don't fail deploy) ═════════════
+            set +e
+            echo ">>> Smoke test..."
+            docker exec rmv-nginx wget -qO/dev/null --tries=3 --timeout=5 --spider http://web/ 2>&1
+            echo ">>> Container status:"
+            docker compose -f docker-compose.prod.yml ps 2>&1
+            echo ">>> Pruning old images..."
+            docker image prune -f 2>&1
+
+            echo "========== FRONTEND DEPLOY SUCCESS =========="
+            exit 0
