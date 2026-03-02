@@ -920,31 +920,31 @@ export function ProjectDetailPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {visitReport.customerRequirements && (
                     <div>
-                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Customer Requirements</p>
+                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Customer Requirements</p>
                       <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.customerRequirements}</p>
                     </div>
                   )}
                   {visitReport.materials && (
                     <div>
-                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Materials</p>
+                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Materials</p>
                       <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.materials}</p>
                     </div>
                   )}
                   {visitReport.finishes && (
                     <div>
-                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Finishes</p>
+                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Finishes</p>
                       <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.finishes}</p>
                     </div>
                   )}
                   {visitReport.preferredDesign && (
                     <div>
-                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Preferred Design</p>
+                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Preferred Design</p>
                       <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.preferredDesign}</p>
                     </div>
                   )}
                   {visitReport.notes && (
                     <div className="sm:col-span-2">
-                      <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Notes</p>
+                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Notes</p>
                       <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.notes}</p>
                     </div>
                   )}
