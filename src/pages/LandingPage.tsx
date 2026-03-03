@@ -284,7 +284,7 @@ export function LandingPage() {
         <div ref={heroWrapperRef} className="relative" style={{ height: '160vh' }}>
         <section id="hero" className="sticky top-0 min-h-[85vh] md:min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden bg-gradient-to-b from-[#e6e6ea] via-[#dcdce0] to-[#d0d0d5]">
           {/* Subtle noise texture */}
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Soft center glow — parallax layer */}
           <motion.div
             style={{ scale: heroGlowScale, opacity: heroGlowOpacity }}
@@ -442,7 +442,7 @@ export function LandingPage() {
 
         {/* Built on Trust Section */}
         <section ref={aboutRef} id="about" className="relative py-16 md:py-32 bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d4d4d9] overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Blueprint corner decoration */}
           <div className="absolute top-8 right-8 w-[200px] md:w-[280px] pointer-events-none hidden md:block">
             <svg viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.07]">
@@ -635,7 +635,7 @@ export function LandingPage() {
 
         {/* Fabrication Capabilities (Bento) */}
         <section ref={capabilitiesRef} id="capabilities" className="relative py-16 md:py-32 bg-gradient-to-br from-[#e4e4e9] via-[#eeeef2] to-[#d8d8de] overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#b0b0b6] to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#b0b0b6] to-transparent" />
           {/* Blueprint measurement decoration */}
@@ -759,7 +759,7 @@ export function LandingPage() {
 
         {/* Featured Projects */}
         <section ref={projectsRef} id="projects" className="relative py-16 md:py-32 bg-gradient-to-br from-[#e0e0e6] via-[#ebebf0] to-[#d6d6dc] overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Blueprint annotation decoration */}
           <div className="absolute top-10 right-6 w-[140px] md:w-[180px] pointer-events-none hidden md:block">
             <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.06]">
@@ -1044,7 +1044,7 @@ export function LandingPage() {
 
         {/* Our Purpose */}
         <section ref={purposeRef} className="relative py-16 md:py-24 bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d0d0d6] overflow-hidden">
-          <div className="absolute inset-0 opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Blueprint dimension decoration */}
           <div className="absolute top-6 left-6 w-[160px] md:w-[200px] pointer-events-none hidden md:block">
             <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.06]">
@@ -1150,7 +1150,7 @@ export function LandingPage() {
 
         {/* Global Footer based on exact details */}
         <footer id="contact" className="relative bg-gradient-to-br from-[#e8e8ed] via-[#f0f0f4] to-[#dcdce2] border-t border-[#b0b0b6]/40 pt-16 md:pt-20 pb-10 md:pb-12">
-          <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-12 md:mb-16">
               
@@ -1169,7 +1169,7 @@ export function LandingPage() {
                 <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Services</h4>
                 <ul className="space-y-3 md:space-y-4">
                   {['Kitchen SS Fabrication', 'Kitchen Remodeling', 'LPG Gas Pipeline', 'Fire Suppression', 'Exhaust Systems', 'Railings'].map(link => (
-                    <li key={link}><a href="#" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">{link}</a></li>
+                    <li key={link}><button type="button" onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">{link}</button></li>
                   ))}
                 </ul>
               </div>
@@ -1177,9 +1177,11 @@ export function LandingPage() {
               <div>
                 <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Company</h4>
                 <ul className="space-y-3 md:space-y-4">
-                  {['About Us', 'Projects', 'Careers', 'Privacy Policy'].map(link => (
-                    <li key={link}><a href="#" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">{link}</a></li>
-                  ))}
+                  <li><button type="button" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">About Us</button></li>
+                  <li><button type="button" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">Projects</button></li>
+                  <li><button type="button" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">Contact</button></li>
+                  <li><Link to="/privacy" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">Privacy Policy</Link></li>
+                  <li><Link to="/terms" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">Terms of Service</Link></li>
                 </ul>
               </div>
 

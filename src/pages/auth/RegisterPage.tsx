@@ -47,6 +47,9 @@ const registerSchema = z
       .regex(/\d/, 'Must contain a digit')
       .regex(/[^A-Za-z0-9]/, 'Must contain a special character'),
     confirmPassword: z.string().min(1, 'Please confirm your password'),
+    agreeToTerms: z.literal(true, {
+      message: 'You must agree to the Terms of Service and Privacy Policy',
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     message: 'Passwords do not match',
@@ -454,6 +457,30 @@ export function RegisterPage() {
               </div>
               {errors.confirmPassword && (
                 <p className="text-xs text-red-500">{errors.confirmPassword.message}</p>
+              )}
+            </div>
+
+            {/* Terms & Privacy agreement */}
+            <div className="mt-1">
+              <label className="flex items-start gap-2.5 cursor-pointer group">
+                <input
+                  type="checkbox"
+                  {...register('agreeToTerms')}
+                  className="mt-0.5 h-4 w-4 rounded border-[#c8c8cd] text-[#1d1d1f] focus:ring-[#1d1d1f] cursor-pointer accent-[#1d1d1f]"
+                />
+                <span className="text-xs text-[#6e6e73] leading-relaxed">
+                  I agree to the{' '}
+                  <Link to="/terms" target="_blank" className="text-[#1d1d1f] font-medium underline underline-offset-2 hover:text-[#0071e3] transition-colors">
+                    Terms of Service
+                  </Link>{' '}
+                  and{' '}
+                  <Link to="/privacy" target="_blank" className="text-[#1d1d1f] font-medium underline underline-offset-2 hover:text-[#0071e3] transition-colors">
+                    Privacy Policy
+                  </Link>
+                </span>
+              </label>
+              {errors.agreeToTerms && (
+                <p className="text-xs text-red-500 mt-1 ml-6.5">{errors.agreeToTerms.message}</p>
               )}
             </div>
 
