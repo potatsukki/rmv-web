@@ -1220,9 +1220,15 @@ export function LandingPage() {
               <p className="text-sm font-medium text-[#6e6e73]">
                 &copy; {new Date().getFullYear()} RMV Stainless Steel Fabrication. All rights reserved.
               </p>
-              <div className="flex items-center gap-2 text-sm font-medium text-[#6e6e73]">
-                <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
-                All Systems Operational
+              <div className="flex items-center gap-6">
+                <div className="flex items-center gap-4 text-sm font-medium">
+                  <Link to="/privacy" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Privacy Policy</Link>
+                  <Link to="/terms" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Terms of Service</Link>
+                </div>
+                <div className="flex items-center gap-2 text-sm font-medium text-[#6e6e73]">
+                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                  All Systems Operational
+                </div>
               </div>
             </div>
           </div>
