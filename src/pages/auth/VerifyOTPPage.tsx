@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api } from '@/lib/api';
-import { useAuthStore } from '@/stores/auth.store';
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60;
@@ -15,7 +14,6 @@ const RESEND_COOLDOWN = 60;
 export function VerifyOTPPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fetchMe, setAccessToken } = useAuthStore();
 
   const state = location.state as { email?: string; purpose?: string } | null;
   const email = state?.email || '';
@@ -72,11 +70,9 @@ export function VerifyOTPPage() {
     setIsSubmitting(true);
     try {
       if (purpose === 'email_verification') {
-        const response = await api.post('/auth/verify-email', { email, otp: code });
-        if (response.data?.data?.accessToken) setAccessToken(response.data.data.accessToken);
-        await fetchMe();
-        toast.success('Email verified successfully!');
-        navigate('/dashboard', { replace: true });
+        await api.post('/auth/verify-email', { email, otp: code });
+        toast.success('Email verified! Please sign in to continue.');
+        navigate('/login', { replace: true });
       } else if (purpose === 'password_reset') {
         navigate('/reset-password', { state: { email, otp: code } });
       }
@@ -88,7 +84,7 @@ export function VerifyOTPPage() {
     } finally {
       setIsSubmitting(false);
     }
-  }, [otp, email, purpose, navigate, fetchMe, setAccessToken]);
+  }, [otp, email, purpose, navigate]);
 
   useEffect(() => {
     if (otp.every((d) => d !== '')) handleSubmit();
