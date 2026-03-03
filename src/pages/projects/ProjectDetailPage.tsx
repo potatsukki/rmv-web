@@ -918,7 +918,7 @@ export function ProjectDetailPage() {
           )}
 
           {/* Contract Card */}
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 lg:col-span-2">
+          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
             <CardHeader className="px-4 sm:px-6">
               <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-[#1d1d1f]">
                 <ScrollText className="h-5 w-5" />
@@ -974,41 +974,41 @@ export function ProjectDetailPage() {
 
                   {/* Signing status */}
                   {project.contractSignedAt ? (
-                    <div className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4">
-                      <div className="flex items-center gap-2 text-emerald-700">
+                    <div className="rounded-xl border border-[#d2d2d7]/60 bg-[#f0f0f5]/60 p-4">
+                      <div className="flex items-center gap-2 text-[#1d1d1f]">
                         <Check className="h-5 w-5" />
                         <span className="text-sm font-semibold">Contract Signed</span>
                       </div>
-                      <p className="text-xs text-emerald-600 mt-1">
+                      <p className="text-xs text-[#6e6e73] mt-1">
                         Signed on {format(new Date(project.contractSignedAt), 'MMM d, yyyy h:mm a')}
                       </p>
                     </div>
                   ) : isCustomer ? (
-                    <div className="rounded-xl border-2 border-amber-300 bg-amber-50/50 p-4 space-y-3">
-                      <div className="space-y-1">
-                        <p className="text-sm font-semibold text-amber-800 flex items-center gap-2">
-                          <PenTool className="h-4 w-4" />
+                    <div className="rounded-xl border-2 border-amber-300 bg-amber-50/50 p-3 space-y-2">
+                      <div>
+                        <p className="text-sm font-semibold text-amber-800 flex items-center gap-1.5">
+                          <PenTool className="h-3.5 w-3.5" />
                           E-Sign Your Contract
                         </p>
-                        <p className="text-xs text-amber-700">
-                          Please review the contract above, then sign below. You must sign before making any payments.
+                        <p className="text-[11px] text-amber-700 mt-0.5">
+                          Review the contract above, then sign below.
                         </p>
                       </div>
 
                       {/* Saved signature option */}
                       {savedSignature?.signatureKey && !useNewSignature && (
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Your Saved Signature</p>
-                          <div className="flex items-center gap-3 bg-white rounded-lg border border-gray-200 p-3">
+                          <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-2">
                             <AuthImage
                               fileKey={savedSignature.signatureKey}
                               alt="Saved signature"
-                              className="h-12 max-w-[160px] object-contain"
+                              className="h-9 max-w-[140px] object-contain"
                             />
                             <div className="flex-1" />
                             <Button
                               size="sm"
-                              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-lg"
                               onClick={() => setContractSignatureKey(savedSignature.signatureKey!)}
                             >
                               <Check className="mr-1.5 h-3.5 w-3.5" />
@@ -1041,21 +1041,21 @@ export function ProjectDetailPage() {
                             onSave={(key) => setContractSignatureKey(key)}
                             existingKey={null}
                             width={400}
-                            height={120}
+                            height={80}
                             hideSaveButton={false}
                           />
                         </div>
                       )}
 
                       {contractSignatureKey && (
-                        <p className="text-xs text-emerald-600 flex items-center gap-1">
+                        <p className="text-xs text-[#6e6e73] flex items-center gap-1">
                           <Check className="h-3.5 w-3.5" /> Signature captured
                         </p>
                       )}
                       <Button
                         onClick={handleSignContract}
                         disabled={!contractSignatureKey || signContractMutation.isPending}
-                        className="w-full bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                        className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-lg disabled:opacity-40"
                       >
                         {signContractMutation.isPending ? (
                           <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -1104,11 +1104,37 @@ export function ProjectDetailPage() {
 
       {/* ════════════════  BLUEPRINT TAB  ════════════════ */}
       {activeTab === 'blueprint' && (
-        <BlueprintTab projectId={id!} />
+        <BlueprintTab projectId={id!} onNavigateToDetails={() => setActiveTab('details')} />
       )}
 
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
-      {activeTab === 'payments' && (
+      {activeTab === 'payments' && isCustomer && !project?.contractSignedAt && (
+        <div className="-mx-3 sm:mx-0">
+          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+            <CardContent className="flex flex-col items-center text-center py-12 px-6">
+              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f5f7] mb-4">
+                <ScrollText className="h-7 w-7 text-[#6e6e73]" />
+              </div>
+              <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">Sign Your Contract First</h3>
+              <p className="text-sm text-[#6e6e73] max-w-sm mb-6">
+                {project?.contractKey
+                  ? 'Your contract has been generated and is ready for signing. Please read and sign it before making any payments.'
+                  : 'Your contract is being prepared by our team. Once it\'s ready, you\'ll be able to read and sign it here.'}
+              </p>
+              {project?.contractKey && (
+                <Button
+                  className="bg-[#1d1d1f] hover:bg-[#3a3a3e] text-white rounded-xl px-6"
+                  onClick={() => setActiveTab('details')}
+                >
+                  <ScrollText className="mr-2 h-4 w-4" />
+                  Go to Contract &amp; Sign
+                </Button>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+      {activeTab === 'payments' && (!isCustomer || project?.contractSignedAt) && (
         <div className="space-y-4 -mx-3 sm:mx-0">
           {paymentPlan && (
             <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">

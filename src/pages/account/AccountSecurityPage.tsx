@@ -226,13 +226,14 @@ export function AccountSecurityPage() {
   }, [otp2fa, showOtpInput, confirmEnable2FA]);
 
   const handleDisable2FA = async () => {
-    if (!disablePassword) {
+    const isGoogleUser = user?.provider === 'google';
+    if (!isGoogleUser && !disablePassword) {
       toast.error('Password is required');
       return;
     }
     setDisabling2FA(true);
     try {
-      await api.post('/auth/2fa/disable', { password: disablePassword });
+      await api.post('/auth/2fa/disable', isGoogleUser ? {} : { password: disablePassword });
       await fetchMe();
       toast.success('Two-factor authentication disabled');
       setShowDisableForm(false);
@@ -475,9 +476,9 @@ export function AccountSecurityPage() {
         <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
           <CardHeader className="pb-3">
             <div className="flex items-start gap-3">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${user?.twoFactorEnabled ? 'bg-emerald-50' : 'bg-[#f0f0f5]'}`}>
+              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-xl ${user?.twoFactorEnabled ? 'bg-[#1d1d1f]' : 'bg-[#f0f0f5]'}`}>
                 {user?.twoFactorEnabled ? (
-                  <Shield className="h-5 w-5 text-emerald-600" />
+                  <Shield className="h-5 w-5 text-white" />
                 ) : (
                   <ShieldOff className="h-5 w-5 text-[#86868b]" />
                 )}
@@ -491,10 +492,24 @@ export function AccountSecurityPage() {
                 </CardDescription>
               </div>
               {!showOtpInput && !showDisableForm && (
-                <span className={`shrink-0 mt-0.5 inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-semibold ${user?.twoFactorEnabled ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200' : 'bg-[#f0f0f5] text-[#86868b] ring-1 ring-[#d2d2d7]'}`}>
-                  <span className={`h-1.5 w-1.5 rounded-full ${user?.twoFactorEnabled ? 'bg-emerald-500' : 'bg-[#86868b]'}`} />
-                  {user?.twoFactorEnabled ? 'On' : 'Off'}
-                </span>
+                <button
+                  role="switch"
+                  aria-checked={user?.twoFactorEnabled}
+                  onClick={() => {
+                    if (user?.twoFactorEnabled) setShowDisableForm(true);
+                    else handleEnable2FA();
+                  }}
+                  disabled={enabling2FA}
+                  className={`relative shrink-0 inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none disabled:opacity-50 ${
+                    user?.twoFactorEnabled ? 'bg-[#1d1d1f]' : 'bg-[#d2d2d7]'
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform ${
+                      user?.twoFactorEnabled ? 'translate-x-6' : 'translate-x-1'
+                    }`}
+                  />
+                </button>
               )}
             </div>
           </CardHeader>
@@ -556,52 +571,56 @@ export function AccountSecurityPage() {
             )}
 
             {user?.twoFactorEnabled && !showDisableForm && (
-              <div className="space-y-4">
-                <div className="flex items-start gap-2.5 rounded-lg bg-emerald-50/70 border border-emerald-100 p-3">
-                  <ShieldCheck className="h-4 w-4 text-emerald-600 mt-0.5 shrink-0" />
-                  <p className="text-sm text-emerald-700">
-                    Active &mdash; a code is sent to your email on every login.
-                  </p>
+              <div className="flex items-center gap-3 rounded-xl bg-[#f0f0f5] px-3.5 py-3">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-[#1d1d1f]">
+                  <ShieldCheck className="h-4 w-4 text-white" />
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="text-red-600 border-red-200 hover:bg-red-50"
-                  onClick={() => setShowDisableForm(true)}
-                >
-                  Disable Two-Factor
-                </Button>
+                <div className="min-w-0">
+                  <p className="text-[13px] font-semibold text-[#1d1d1f]">Protected</p>
+                  <p className="text-xs text-[#6e6e73] leading-snug">Code sent to your email on every sign-in</p>
+                </div>
               </div>
             )}
 
             {showDisableForm && (
               <div className="space-y-4">
-                <p className="text-sm text-[#86868b]">Enter your password to disable two-factor authentication.</p>
-                <div className="space-y-1.5">
-                  <Label className="text-[#3a3a3e] text-[13px] font-medium">Password</Label>
-                  <Input
-                    type="password"
-                    value={disablePassword}
-                    onChange={(e) => setDisablePassword(e.target.value)}
-                    placeholder="Enter your password"
-                    className={inputClasses}
-                  />
-                </div>
+                {user?.provider === 'google' ? (
+                  <div className="flex items-start gap-3 rounded-xl bg-[#f0f0f5] px-3.5 py-3">
+                    <AlertTriangle className="h-4 w-4 text-[#6e6e73] shrink-0 mt-0.5" />
+                    <p className="text-sm text-[#3a3a3e]">
+                      Your account is managed by Google — no password needed to confirm.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <p className="text-sm text-[#86868b]">Enter your password to disable two-factor authentication.</p>
+                    <div className="space-y-1.5">
+                      <Label className="text-[#3a3a3e] text-[13px] font-medium">Password</Label>
+                      <Input
+                        type="password"
+                        value={disablePassword}
+                        onChange={(e) => setDisablePassword(e.target.value)}
+                        placeholder="Enter your password"
+                        className={inputClasses}
+                      />
+                    </div>
+                  </>
+                )}
                 <div className="flex gap-2">
-                  <Button
+                  <button
                     onClick={handleDisable2FA}
-                    disabled={disabling2FA || !disablePassword}
-                    className="bg-red-600 hover:bg-red-700 text-white"
+                    disabled={disabling2FA || (user?.provider !== 'google' && !disablePassword)}
+                    className="inline-flex items-center gap-1.5 rounded-xl bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white px-3.5 py-2 text-sm font-medium transition-colors disabled:opacity-50 active:scale-[0.98]"
                   >
-                    {disabling2FA && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                    {disabling2FA && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                     Confirm Disable
-                  </Button>
-                  <Button
-                    variant="outline"
+                  </button>
+                  <button
                     onClick={() => { setShowDisableForm(false); setDisablePassword(''); }}
+                    className="inline-flex items-center rounded-xl border border-[#d2d2d7] bg-white hover:bg-[#f0f0f5] px-3.5 py-2 text-sm font-medium text-[#3a3a3e] transition-colors active:scale-[0.98]"
                   >
                     Cancel
-                  </Button>
+                  </button>
                 </div>
               </div>
             )}
@@ -614,8 +633,8 @@ export function AccountSecurityPage() {
         <CardHeader>
           <div className="space-y-3 sm:space-y-0 sm:flex sm:items-center sm:justify-between sm:gap-3">
             <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-blue-50">
-                <Globe className="h-5 w-5 text-blue-500" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f0f0f5]">
+                <Globe className="h-5 w-5 text-[#6e6e73]" />
               </div>
               <div>
                 <CardTitle className="text-base sm:text-lg font-semibold text-[#1d1d1f]">Active Sessions</CardTitle>
@@ -650,10 +669,10 @@ export function AccountSecurityPage() {
               {sessions.map((session) => (
                 <div
                   key={session._id}
-                  className={`p-3 rounded-xl border ${session.isCurrent ? 'border-emerald-200 bg-emerald-50/50' : 'border-[#d2d2d7]/50 bg-white/60'}`}
+                  className={`p-3 rounded-xl border ${session.isCurrent ? 'border-[#1d1d1f]/15 bg-[#f0f0f5]/60' : 'border-[#d2d2d7]/50 bg-white/60'}`}
                 >
                   <div className="flex items-start gap-3">
-                    <div className={`p-2 rounded-lg shrink-0 ${session.isCurrent ? 'bg-emerald-100 text-emerald-600' : 'bg-[#f0f0f5] text-[#6e6e73]'}`}>
+                    <div className={`p-2 rounded-lg shrink-0 ${session.isCurrent ? 'bg-[#1d1d1f] text-white' : 'bg-[#f0f0f5] text-[#6e6e73]'}`}>
                       {getDeviceIcon(session.device)}
                     </div>
                     <div className="flex-1 min-w-0">
@@ -662,7 +681,7 @@ export function AccountSecurityPage() {
                           {session.browser} on {session.os}
                         </p>
                         {session.isCurrent && (
-                          <span className="shrink-0 text-[10px] font-bold text-emerald-700 bg-emerald-100 px-1.5 py-0.5 rounded">
+                          <span className="shrink-0 text-[10px] font-bold text-white bg-[#1d1d1f] px-1.5 py-0.5 rounded">
                             THIS DEVICE
                           </span>
                         )}
@@ -706,8 +725,8 @@ export function AccountSecurityPage() {
       <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
         <CardHeader>
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-purple-50">
-              <History className="h-5 w-5 text-purple-500" />
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f0f0f5]">
+              <History className="h-5 w-5 text-[#6e6e73]" />
             </div>
             <div>
               <CardTitle className="text-base sm:text-lg font-semibold text-[#1d1d1f]">Login History</CardTitle>
@@ -743,7 +762,7 @@ export function AccountSecurityPage() {
                         <span
                           className={`shrink-0 text-[10px] font-bold px-1.5 py-0.5 rounded ${
                             entry.status === 'success'
-                              ? 'text-emerald-700 bg-emerald-100'
+                              ? 'text-white bg-[#1d1d1f]'
                               : 'text-red-700 bg-red-100'
                           }`}
                         >

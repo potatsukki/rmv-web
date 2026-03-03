@@ -1,4 +1,6 @@
-import { Mail, Shield, Copy, CalendarDays, UserCircle } from 'lucide-react';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Mail, Shield, Copy, CalendarDays, UserCircle, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { format } from 'date-fns';
 
@@ -12,9 +14,42 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth.store';
+import { api } from '@/lib/api';
 
 export function AccountInfoPage() {
-  const { user } = useAuthStore();
+  const { user, logout } = useAuthStore();
+  const navigate = useNavigate();
+
+  const [showDeleteForm, setShowDeleteForm] = useState(false);
+  const [confirmation, setConfirmation] = useState('');
+  const [password, setPassword] = useState('');
+  const [deleting, setDeleting] = useState(false);
+
+  const isGoogleUser = user?.provider === 'google';
+  const canDelete =
+    confirmation === 'DELETE' && (isGoogleUser || password.trim().length > 0);
+
+  const handleDeleteAccount = async () => {
+    if (!canDelete) return;
+    setDeleting(true);
+    try {
+      await api.delete('/users/account', {
+        data: { confirmation, ...(isGoogleUser ? {} : { password }) },
+      });
+      toast.success('Your account has been deleted.');
+      logout();
+      navigate('/', { replace: true });
+    } catch (err: unknown) {
+      const msg =
+        err instanceof Error
+          ? err.message
+          : (err as { response?: { data?: { message?: string } } })?.response?.data?.message ??
+            'Failed to delete account.';
+      toast.error(msg);
+    } finally {
+      setDeleting(false);
+    }
+  };
 
   const handleCopyId = () => {
     if (!user?._id) return;
@@ -106,6 +141,107 @@ export function AccountInfoPage() {
                 </Badge>
               ))}
             </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone */}
+      <Card className="border-red-200 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="text-lg font-semibold text-red-600 flex items-center gap-2">
+            <AlertTriangle className="h-5 w-5" />
+            Danger Zone
+          </CardTitle>
+          <CardDescription className="text-[#86868b]">
+            Irreversible actions that permanently affect your account.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="p-4 border border-red-100 rounded-xl bg-red-50/60 space-y-3">
+            <div>
+              <p className="text-sm font-medium text-[#1d1d1f]">Delete Account</p>
+              <p className="text-xs text-[#86868b] mt-0.5">
+                Permanently deactivates your account and removes your sessions, notifications, and
+                tokens. This action cannot be undone.
+              </p>
+            </div>
+
+            {!showDeleteForm ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="border-red-300 text-red-600 hover:bg-red-50 hover:border-red-400 rounded-xl text-xs"
+                onClick={() => setShowDeleteForm(true)}
+              >
+                Delete my account
+              </Button>
+            ) : (
+              <div className="space-y-3 pt-1">
+                {/* Google info banner */}
+                {isGoogleUser && (
+                  <div className="flex items-start gap-2 p-3 bg-[#f0f0f5] border border-[#d2d2d7]/60 rounded-xl">
+                    <Shield className="h-4 w-4 text-[#6e6e73] mt-0.5 shrink-0" />
+                    <p className="text-xs text-[#6e6e73]">
+                      Your account is managed by Google — no password needed to confirm.
+                    </p>
+                  </div>
+                )}
+
+                {/* Password (local users only) */}
+                {!isGoogleUser && (
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-[#3a3a3e]">
+                      Confirm your password
+                    </label>
+                    <input
+                      type="password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      placeholder="Enter your password"
+                      className="w-full px-3 py-2 text-sm border border-[#d2d2d7] rounded-xl bg-white placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-[#1d1d1f]/10"
+                    />
+                  </div>
+                )}
+
+                {/* Confirmation text */}
+                <div className="space-y-1">
+                  <label className="text-xs font-medium text-[#3a3a3e]">
+                    Type{' '}
+                    <span className="font-mono font-semibold text-red-600">DELETE</span> to confirm
+                  </label>
+                  <input
+                    type="text"
+                    value={confirmation}
+                    onChange={(e) => setConfirmation(e.target.value)}
+                    placeholder="DELETE"
+                    className="w-full px-3 py-2 text-sm border border-[#d2d2d7] rounded-xl bg-white placeholder:text-[#aeaeb2] focus:outline-none focus:ring-2 focus:ring-red-500/20 font-mono"
+                  />
+                </div>
+
+                <div className="flex items-center gap-2 pt-1">
+                  <Button
+                    size="sm"
+                    disabled={!canDelete || deleting}
+                    onClick={handleDeleteAccount}
+                    className="bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs disabled:opacity-40"
+                  >
+                    {deleting ? 'Deleting…' : 'Permanently delete account'}
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setShowDeleteForm(false);
+                      setConfirmation('');
+                      setPassword('');
+                    }}
+                    className="text-[#6e6e73] hover:text-[#1d1d1f] rounded-xl text-xs"
+                  >
+                    Cancel
+                  </Button>
+                </div>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
