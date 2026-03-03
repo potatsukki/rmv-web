@@ -1,4 +1,5 @@
 import { useState, useRef, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   FileText, CheckCircle, AlertCircle, Eye, Info,
@@ -177,7 +178,7 @@ function FilePreviewThumb({ fileKey, label }: { fileKey: string | undefined | nu
     );
   }
 
-  // Non-image file or no URL � show icon placeholder
+  // Non-image file or no URL � show icon placeholder
   const isPdf = fileKey ? /\.pdf$/i.test(fileKey) : false;
   const isSpreadsheet = fileKey ? /\.(xlsx?|csv)$/i.test(fileKey) : false;
   return (
@@ -198,6 +199,7 @@ function FilePreviewThumb({ fileKey, label }: { fileKey: string | undefined | nu
 }
 
 export function BlueprintTab({ projectId }: BlueprintTabProps) {
+  const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const isEngineer = user?.roles?.some((r: string) => r === 'engineer');
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
@@ -215,6 +217,7 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
   const approveMutation = useApproveComponent();
   const revisionMutation = useRequestBlueprintRevision();
   const acceptMutation = useAcceptBlueprint();
+  const [approvingComponent, setApprovingComponent] = useState<'blueprint' | 'costing' | null>(null);
 
   const { data: configs } = useConfigs();
   const surchargePercent = (() => {
@@ -317,8 +320,10 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
 
   const inputCls = 'w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]';
 
-  const formatCurrency = (n: number) =>
-    `₱${n.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  const formatCurrency = (n: number | undefined | null) => {
+    const val = Number(n);
+    return `₱${(Number.isFinite(val) ? val : 0).toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   // Shared quotation form used in both first-upload and revision-upload
   const quotationFormJSX = (
@@ -487,6 +492,7 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
 
   // ── Customer handlers ──
   const handleApprove = (blueprintId: string, component: 'blueprint' | 'costing') => {
+    setApprovingComponent(component);
     approveMutation.mutate(
       { id: blueprintId, component },
       {
@@ -496,6 +502,7 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
           refetchBlueprint();
         },
         onError: () => toast.error('Approval failed'),
+        onSettled: () => setApprovingComponent(null),
       },
     );
   };
@@ -613,6 +620,7 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
           blueprintKey: bpUrl.fileKey,
           designKey: designUrl.fileKey,
           costingKey: costUrl.fileKey,
+          quotation,
         });
         toast.success('Revision uploaded successfully');
       } else {
@@ -951,8 +959,13 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
                     <Button
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
                       onClick={() => handleApprove(bp._id, 'blueprint')}
+                      disabled={approveMutation.isPending}
                     >
-                      <CheckCircle className="mr-2 h-4 w-4" /> Approve
+                      {approvingComponent === 'blueprint' && approveMutation.isPending ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Approving...</>
+                      ) : (
+                        <><CheckCircle className="mr-2 h-4 w-4" /> Approve</>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -986,8 +999,13 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
                     <Button
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
                       onClick={() => handleApprove(bp._id, 'costing')}
+                      disabled={approveMutation.isPending}
                     >
-                      <CheckCircle className="mr-2 h-4 w-4" /> Approve
+                      {approvingComponent === 'costing' && approveMutation.isPending ? (
+                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Approving...</>
+                      ) : (
+                        <><CheckCircle className="mr-2 h-4 w-4" /> Approve</>
+                      )}
                     </Button>
                   )}
                 </div>
@@ -1025,17 +1043,37 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 flex-shrink-0">
                   <CreditCard className="h-6 w-6 text-emerald-700" />
                 </div>
-                <div className="flex-1 text-center sm:text-left">
-                  <p className="text-sm font-semibold text-emerald-900">Both Design & Costing Approved!</p>
-                  <p className="text-xs text-emerald-700 mt-0.5">You're all set. Accept the blueprint and choose your payment method to proceed.</p>
-                </div>
-                <Button
-                  className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
-                  onClick={() => setAcceptDialog({ open: true, blueprint: bp })}
-                >
-                  <CheckCircle className="mr-2 h-4 w-4" />
-                  Accept & Choose Payment
-                </Button>
+                {project && ['payment_pending', 'in_progress', 'fabrication', 'ready_for_delivery', 'delivered', 'completed'].includes(project.status) ? (
+                  /* Payment plan already exists — redirect to Payments */
+                  <>
+                    <div className="flex-1 text-center sm:text-left">
+                      <p className="text-sm font-semibold text-emerald-900">Payment Plan Created!</p>
+                      <p className="text-xs text-emerald-700 mt-0.5">You&apos;ve already selected a payment plan. Head to Payments to view or pay.</p>
+                    </div>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
+                      onClick={() => navigate('/payments')}
+                    >
+                      <ArrowRight className="mr-2 h-4 w-4" />
+                      Go to Payments
+                    </Button>
+                  </>
+                ) : (
+                  /* No plan yet — show accept CTA */
+                  <>
+                    <div className="flex-1 text-center sm:text-left">
+                      <p className="text-sm font-semibold text-emerald-900">Both Design & Costing Approved!</p>
+                      <p className="text-xs text-emerald-700 mt-0.5">You&apos;re all set. Accept the blueprint and choose your payment method to proceed.</p>
+                    </div>
+                    <Button
+                      className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
+                      onClick={() => setAcceptDialog({ open: true, blueprint: bp })}
+                    >
+                      <CheckCircle className="mr-2 h-4 w-4" />
+                      Accept & Choose Payment
+                    </Button>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}
@@ -1355,7 +1393,7 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
                     </p>
                     <p className="text-sm font-bold text-blue-700 mt-1">
                       {formatCurrency(
-                        acceptDialog.blueprint.quotation.total *
+                        (acceptDialog.blueprint.quotation.total || 0) *
                           (1 + surchargePercent / 100),
                       )}{' '}
                       <span className="text-xs font-normal text-gray-400">
@@ -1365,7 +1403,7 @@ export function BlueprintTab({ projectId }: BlueprintTabProps) {
                     {/* Milestone breakdown */}
                     {paymentType === 'installment' && (() => {
                       const milestones = acceptDialog.blueprint?.quotation?.paymentMilestones;
-                      const installTotal = acceptDialog.blueprint.quotation.total * (1 + surchargePercent / 100);
+                      const installTotal = (acceptDialog.blueprint.quotation.total || 0) * (1 + surchargePercent / 100);
                       return (
                         <div className="mt-2.5 space-y-1.5 border-t border-blue-200 pt-2">
                           {cfgSplit.map((pct, idx) => {

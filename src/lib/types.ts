@@ -175,6 +175,7 @@ export interface Project {
   contractSignatureKey?: string;
   originalContractDownloadedAt?: string;
   cancelReason?: string;
+  latestBlueprintStatus?: string;
   createdAt: string;
   updatedAt: string;
 }
@@ -227,6 +228,12 @@ export interface PaymentStage {
   percentage: number;
   amount: number;
   status: string;
+  // Payment activation (fabrication-driven)
+  activatedAt?: string | null;
+  headsUpSentAt?: string | null;
+  remindersSent?: number;
+  lastReminderAt?: string | null;
+  escalatedToCashier?: boolean;
 }
 
 export interface PaymentPlan {

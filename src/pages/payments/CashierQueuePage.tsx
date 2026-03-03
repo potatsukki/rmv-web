@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CreditCard, CheckCircle, XCircle } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { usePendingPayments, useVerifyPayment, useDeclinePayment } from '@/hooks/usePayments';
+import { usePendingPayments, useVerifyPayment, useDeclinePayment, useOverduePayments } from '@/hooks/usePayments';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
@@ -25,6 +26,7 @@ const formatCurrency = (v: number) =>
 
 export function CashierQueuePage() {
   const { data: payments, isLoading, isError, refetch } = usePendingPayments();
+  const { data: overduePayments, isLoading: overdueLoading } = useOverduePayments();
   const verifyMutation = useVerifyPayment();
   const declineMutation = useDeclinePayment();
 
@@ -133,6 +135,58 @@ export function CashierQueuePage() {
             </Card>
           ))}
         </div>
+      )}
+
+      {/* ── Overdue Payments Section ── */}
+      {!overdueLoading && overduePayments && overduePayments.length > 0 && (
+        <Card className="rounded-xl border-red-200 bg-red-50/30">
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg text-red-700">
+              <AlertTriangle className="h-5 w-5" />
+              Overdue Payments ({overduePayments.length})
+            </CardTitle>
+            <p className="text-xs text-red-600/70">Customers who have not paid after their stage was activated</p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {overduePayments.map((item) => (
+                <div
+                  key={`${item.projectId}-${item.stageId}`}
+                  className="flex items-center justify-between rounded-lg border border-red-100 bg-white p-3"
+                >
+                  <div className="space-y-0.5">
+                    <p className="font-medium text-[#1d1d1f]">
+                      {item.customerName}
+                    </p>
+                    <p className="text-sm text-[#6e6e73]">
+                      {item.projectTitle} — {item.stageLabel}
+                    </p>
+                    <div className="flex items-center gap-2 text-xs text-[#86868b]">
+                      <span className="font-semibold text-red-600">
+                        {formatCurrency(item.amount)}
+                      </span>
+                      <span>·</span>
+                      <span>{item.daysSinceActivation} days overdue</span>
+                      <span>·</span>
+                      <span>{item.remindersSent} reminders sent</span>
+                      {item.escalatedToCashier && (
+                        <>
+                          <span>·</span>
+                          <span className="text-red-600 font-medium">Escalated</span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <Link to={`/projects/${item.projectId}`}>
+                    <Button size="sm" variant="outline" className="border-red-200 text-red-700 hover:bg-red-50 rounded-lg">
+                      View Project
+                    </Button>
+                  </Link>
+                </div>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Verify Confirm */}

@@ -194,6 +194,18 @@ export function FabricationTab({ projectId }: FabricationTabProps) {
                         </p>
                       </div>
                     )}
+                    {/* Payment notification hint */}
+                    {status && ['finishing', 'quality_check', 'ready_for_delivery', 'done'].includes(status) && (
+                      <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 mt-1.5">
+                        <CreditCard className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
+                        <p className="text-xs text-blue-700">
+                          Advancing to this stage will notify the customer about an upcoming or due payment.
+                          {['quality_check', 'done'].includes(status)
+                            ? ' Their next payment stage will be unlocked for payment.'
+                            : ' They\'ll receive a heads-up to prepare their payment.'}
+                        </p>
+                      </div>
+                    )}
                   </div>
 
                   <div className="space-y-1.5">

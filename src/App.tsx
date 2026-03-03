@@ -42,6 +42,16 @@ const CompleteProfilePage = lazy(() =>
     default: module.CompleteProfilePage,
   })),
 );
+const PrivacyPolicyPage = lazy(() =>
+  import('@/pages/PrivacyPolicyPage').then((module) => ({
+    default: module.PrivacyPolicyPage,
+  })),
+);
+const TermsOfServicePage = lazy(() =>
+  import('@/pages/TermsOfServicePage').then((module) => ({
+    default: module.TermsOfServicePage,
+  })),
+);
 
 const AccountLayout = lazy(() =>
   import('@/pages/account/AccountLayout').then((module) => ({
@@ -237,6 +247,8 @@ export default function App() {
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
           <Route path="/complete-profile" element={<CompleteProfilePage />} />
+          <Route path="/privacy" element={<PrivacyPolicyPage />} />
+          <Route path="/terms" element={<TermsOfServicePage />} />
 
           <Route element={<ProtectedRoute />}>
             <Route element={<AppLayout />}>

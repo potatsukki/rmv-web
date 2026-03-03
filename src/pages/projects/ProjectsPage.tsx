@@ -18,7 +18,7 @@ import {
 import { PageError } from '@/components/shared/PageError';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
-import { ProjectStatus, Role } from '@/lib/constants';
+import { ProjectStatus, BlueprintStatus, Role } from '@/lib/constants';
 
 const STATUS_FILTERS = [
   { label: 'All Projects', value: '' },
@@ -52,6 +52,25 @@ function statusConfig(status: string) {
 
 function statusLabel(status: string) {
   return String(status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+/** Derive the display status: if project is in blueprint phase and the latest
+ *  blueprint has been sent back for revision, show "Revision Requested" instead. */
+function deriveDisplayStatus(project: { status?: string; latestBlueprintStatus?: string }) {
+  const ps = String(project.status || '');
+  const bps = project.latestBlueprintStatus;
+  if (
+    ps === ProjectStatus.BLUEPRINT &&
+    bps === BlueprintStatus.REVISION_REQUESTED
+  ) {
+    return {
+      status: 'revision_requested',
+      label: 'Revision Requested',
+      cfg: { badge: 'border-orange-200 text-orange-700 bg-orange-50', bar: 'bg-orange-500' },
+    };
+  }
+  const cfg = statusConfig(ps);
+  return { status: ps, label: statusLabel(ps), cfg };
 }
 
 export function ProjectsPage() {
@@ -170,7 +189,7 @@ export function ProjectsPage() {
               </TableHeader>
               <TableBody>
                 {projects.map((project) => {
-                  const cfg = statusConfig(String(project.status || ''));
+                  const { label: displayLabel, cfg } = deriveDisplayStatus(project);
                   const engineers = Array.isArray(project.engineerIds)
                     ? (project.engineerIds as unknown as { firstName: string; lastName: string }[]).filter(
                         (e) => typeof e === 'object',
@@ -207,7 +226,7 @@ export function ProjectsPage() {
                       {/* Status */}
                       <TableCell className="py-4">
                         <Badge variant="outline" className={`text-[10px] font-bold uppercase tracking-wider ${cfg.badge}`}>
-                          {statusLabel(String(project.status || ''))}
+                          {displayLabel}
                         </Badge>
                       </TableCell>
 
@@ -278,7 +297,7 @@ export function ProjectsPage() {
           {/* â”€â”€ Mobile cards (< md) â”€â”€ */}
           <div className="md:hidden space-y-2">
             {projects.map((project) => {
-              const cfg = statusConfig(String(project.status || ''));
+              const { label: displayLabel, cfg } = deriveDisplayStatus(project);
               const customer =
                 project.customerId && typeof project.customerId === 'object'
                   ? (project.customerId as { firstName: string; lastName: string })
@@ -298,7 +317,7 @@ export function ProjectsPage() {
                       </p>
                     </div>
                     <Badge variant="outline" className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${cfg.badge}`}>
-                      {statusLabel(String(project.status || ''))}
+                      {displayLabel}
                     </Badge>
                   </div>
 

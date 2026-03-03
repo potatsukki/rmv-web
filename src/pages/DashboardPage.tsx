@@ -293,6 +293,7 @@ export function DashboardPage() {
 
   const primaryRole =
     user?.roles.find((r) => r !== Role.ADMIN) ?? user?.roles[0] ?? Role.CUSTOMER;
+  const isCustomerRole = user?.roles.includes(Role.CUSTOMER);
   const kpis = getRoleKpis(
     primaryRole as Role,
     data as Record<string, unknown> | undefined,
@@ -328,6 +329,26 @@ export function DashboardPage() {
           </span>
         </div>
       </div>
+
+      {/* Payment Due Alert Banner (customers with pending payments) */}
+      {isCustomerRole && (data as any)?.pendingPayments > 0 && (
+        <Link to="/payments">
+          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4 hover:bg-amber-50 transition-colors cursor-pointer">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
+              <AlertCircle className="h-5 w-5 text-amber-600" />
+            </div>
+            <div className="flex-1">
+              <p className="font-semibold text-amber-800 text-sm">
+                You have {(data as any).pendingPayments} payment{(data as any).pendingPayments > 1 ? 's' : ''} due
+              </p>
+              <p className="text-xs text-amber-600">
+                Tap here to view and pay your outstanding balances.
+              </p>
+            </div>
+            <ArrowRight className="h-4 w-4 text-amber-500" />
+          </div>
+        </Link>
+      )}
 
       {/* KPI Cards */}
       <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">

@@ -21,6 +21,7 @@ const KEYS = {
   planByProject: (projectId: string) => [...KEYS.plans, projectId] as const,
   byProject: (projectId: string) => [...KEYS.all, 'project', projectId] as const,
   pending: ['payments', 'pending'] as const,
+  overdue: ['payments', 'overdue'] as const,
   detail: (id: string) => [...KEYS.all, id] as const,
   myHistory: ['payments', 'my-history'] as const,
 };
@@ -215,6 +216,32 @@ export function useRecordCashPayment() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.plans });
+    },
+  });
+}
+
+// ── Cashier: Overdue Payments ──
+
+export interface OverduePaymentItem {
+  projectId: string;
+  projectTitle: string;
+  customerId: string;
+  customerName: string;
+  stageId: string;
+  stageLabel: string;
+  amount: number;
+  activatedAt: string;
+  daysSinceActivation: number;
+  remindersSent: number;
+  escalatedToCashier: boolean;
+}
+
+export function useOverduePayments() {
+  return useQuery({
+    queryKey: KEYS.overdue,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<OverduePaymentItem[]>>('/payments/overdue');
+      return data.data;
     },
   });
 }

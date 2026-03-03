@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle } from 'lucide-react';
+import { format, differenceInDays } from 'date-fns';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock } from 'lucide-react';
 import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -326,32 +326,86 @@ export function PaymentsPage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-3">
-                {plan.stages.map((stage) => (
+                {plan.stages.map((stage) => {
+                  const isActivated = !!stage.activatedAt;
+                  const isVerified = stage.status === PaymentStageStatus.VERIFIED;
+                  const isProofSubmitted = stage.status === 'proof_submitted';
+                  const isNotYetDue = !isActivated && !isVerified && !isProofSubmitted;
+                  const isHeadsUp = !isActivated && !!stage.headsUpSentAt && !isVerified;
+                  const daysSinceActivation = isActivated
+                    ? differenceInDays(new Date(), new Date(stage.activatedAt!))
+                    : 0;
+                  const isOverdue = isActivated && daysSinceActivation >= 3 &&
+                    (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED);
+                  // Allow advance payments — badges are informational only
+                  const canPay = !isVerified && !isProofSubmitted;
+                  const isEarlyPay = canPay && !isActivated;
+
+                  return (
                   <div
                     key={String(stage.stageId)}
-                    className="flex items-center justify-between rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/30 hover:bg-[#f5f5f7] transition-colors"
+                    className={`flex items-center justify-between rounded-xl border p-4 transition-colors ${
+                      isNotYetDue
+                        ? 'border-[#c8c8cd]/40 bg-[#f5f5f7]/30'
+                        : isOverdue
+                          ? 'border-red-200 bg-red-50/30 hover:bg-red-50/50'
+                          : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/30 hover:bg-[#f5f5f7]'
+                    }`}
                   >
                     <div>
-                      <p className="font-semibold text-[#1d1d1f]">{String(stage.label)}</p>
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-[#1d1d1f]">{String(stage.label)}</p>
+                        {isNotYetDue && !isHeadsUp && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                            <Lock className="h-3 w-3" />
+                            Not Yet Due
+                          </span>
+                        )}
+                        {isHeadsUp && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+                            <Clock className="h-3 w-3" />
+                            Coming Soon
+                          </span>
+                        )}
+                        {isActivated && !isVerified && !isProofSubmitted && !isOverdue && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                            <AlertCircle className="h-3 w-3" />
+                            Due Now
+                          </span>
+                        )}
+                        {isOverdue && (
+                          <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                            <AlertTriangle className="h-3 w-3" />
+                            Overdue ({daysSinceActivation}d)
+                          </span>
+                        )}
+                      </div>
                       {(stage as any).description && (
                         <p className="text-xs text-[#86868b]">{(stage as any).description}</p>
                       )}
                       <p className="text-sm text-[#6e6e73]">
                         {String(stage.percentage)}% — {formatCurrency(Number(stage.amount))}
                       </p>
+                      {isNotYetDue && (
+                        <p className="text-xs text-[#86868b] mt-1">
+                          {isHeadsUp ? 'Payment will be due when fabrication advances.' : 'Waiting for fabrication milestone.'}
+                        </p>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 flex-wrap">
                       <StatusBadge status={String(stage.status)} />
-                      {isCustomer && stage.status === PaymentStageStatus.PENDING && (
+                      {isCustomer && canPay && stage.status === PaymentStageStatus.PENDING && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                            className={isEarlyPay
+                              ? 'border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg'}
                             onClick={() => handleQrCheckout(String(stage.stageId))}
                             disabled={stageCheckout.isPending}
                           >
                             <QrCode className="mr-1.5 h-3.5 w-3.5" />
-                            Pay via QR
+                            {isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}
                           </Button>
                           <Button
                             size="sm"
@@ -365,7 +419,7 @@ export function PaymentsPage() {
                               })
                             }
                           >
-                            Upload Proof
+                            {isEarlyPay ? 'Pay Early — Upload Proof' : 'Upload Proof'}
                           </Button>
                           {import.meta.env.DEV && (
                           <Button
@@ -382,16 +436,18 @@ export function PaymentsPage() {
                           )}
                         </>
                       )}
-                      {isCustomer && stage.status === PaymentStageStatus.DECLINED && (
+                      {isCustomer && canPay && stage.status === PaymentStageStatus.DECLINED && (
                         <>
                           <Button
                             size="sm"
-                            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                            className={isEarlyPay
+                              ? 'border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg'
+                              : 'bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg'}
                             onClick={() => handleQrCheckout(String(stage.stageId))}
                             disabled={stageCheckout.isPending}
                           >
                             <QrCode className="mr-1.5 h-3.5 w-3.5" />
-                            Pay via QR
+                            {isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}
                           </Button>
                           <Button
                             size="sm"
@@ -405,11 +461,11 @@ export function PaymentsPage() {
                               })
                             }
                           >
-                            Resubmit Proof
+                            {isEarlyPay ? 'Pay Early — Resubmit' : 'Resubmit Proof'}
                           </Button>
                         </>
                       )}
-                      {isCashier && (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED) && (
+                      {isCashier && canPay && (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED) && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -428,7 +484,8 @@ export function PaymentsPage() {
                       )}
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             </CardContent>
           </Card>

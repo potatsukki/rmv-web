@@ -66,7 +66,7 @@ export function useRequestAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>('/appointments', body);
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -87,7 +87,7 @@ export function useAgentCreateAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>('/appointments/agent', body);
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -107,7 +107,7 @@ export function useConfirmAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/confirm`, body);
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -120,7 +120,7 @@ export function useCompleteAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/complete`);
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -133,7 +133,7 @@ export function useUpdateVisitStatus() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/visit-status/${status}`);
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -146,7 +146,7 @@ export function useCancelAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/cancel`, { reason });
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -159,7 +159,7 @@ export function useMarkNoShow() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/no-show`, {});
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -183,7 +183,7 @@ export function useRequestReschedule() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -206,7 +206,7 @@ export function useRecordOcularFee() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -238,6 +238,9 @@ export function useVerifyOcularFeeCheckout() {
         qc.invalidateQueries({ queryKey: ['appointments'] });
       }
     },
+    onError: () => {
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+    },
   });
 }
 
@@ -252,7 +255,7 @@ export function useSimulateOcularPayment() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
@@ -276,7 +279,7 @@ export function useSubmitOcularFeeProof() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -292,7 +295,7 @@ export function useVerifyOcularFee() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: ['ocular-fee-queue'] });
     },
@@ -309,7 +312,7 @@ export function useDeclineOcularFee() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: ['ocular-fee-queue'] });
     },
@@ -356,7 +359,7 @@ export function useSubmitSiteDetails() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -372,7 +375,7 @@ export function useSkipSiteDetails() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -388,7 +391,7 @@ export function useRefundOcularFee() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSettled: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });

@@ -18,6 +18,7 @@ export function useNotifications(params?: Record<string, string>, enabled = true
       return data.data;
     },
     enabled,
+    refetchInterval: 30_000, // Poll every 30s as fallback for missed WebSocket events
   });
 }
 
