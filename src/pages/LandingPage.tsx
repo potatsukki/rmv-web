@@ -417,7 +417,7 @@ export function LandingPage() {
               transition={{ duration: 1, delay: 0.25, ease: SMOOTH_240 }}
               className="text-base sm:text-xl md:text-2xl lg:text-3xl font-medium tracking-tight text-[#6e6e73] max-w-2xl mb-8 md:mb-12 px-2 gpu-reveal"
             >
-              Uncompromising quality in every weld. Designed for longevity, built for the standards of tomorrow.
+              RMV Stainless Steel Fabrication — your online platform for managing custom fabrication projects, from blueprint approvals and payment tracking to real-time progress updates.
             </motion.p>
             
             <motion.div
