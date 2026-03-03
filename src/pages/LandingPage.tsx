@@ -415,15 +415,23 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.25, ease: SMOOTH_240 }}
-              className="text-base sm:text-xl md:text-2xl lg:text-3xl font-medium tracking-tight text-[#6e6e73] max-w-2xl mb-8 md:mb-12 px-2 gpu-reveal"
+              className="text-lg sm:text-xl md:text-2xl font-medium tracking-tight text-[#6e6e73] max-w-2xl mb-3 md:mb-4 px-2 gpu-reveal"
             >
-              RMV Stainless Steel Fabrication — your online platform for managing custom fabrication projects, from blueprint approvals and payment tracking to real-time progress updates.
+              Uncompromising quality in every weld.
+            </motion.p>
+            <motion.p
+              initial={{ opacity: 0, y: 50 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 1, delay: 0.35, ease: SMOOTH_240 }}
+              className="text-sm sm:text-base md:text-lg font-normal text-[#86868b] max-w-xl mb-8 md:mb-12 px-4 gpu-reveal"
+            >
+              Your online platform for managing custom fabrication projects — from blueprint approvals and payment tracking to real-time progress updates.
             </motion.p>
             
             <motion.div
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 1, delay: 0.45, ease: SMOOTH_240 }}
+              transition={{ duration: 1, delay: 0.5, ease: SMOOTH_240 }}
               className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto gpu-reveal"
             >
               <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300 shadow-xl shadow-black/15 w-full sm:w-auto">
