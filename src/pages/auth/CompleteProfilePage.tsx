@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useNavigate, useLocation, Navigate } from 'react-router-dom';
+import { useNavigate, useLocation, Navigate, Link } from 'react-router-dom';
 import { Loader2, ArrowLeft, UserPlus } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -17,6 +17,9 @@ const completeProfileSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50),
   lastName: z.string().min(1, 'Last name is required').max(50),
   phone: z.string().regex(/^(09|\+639)\d{9}$/, 'Must be a valid PH mobile (09XXXXXXXXX)'),
+  agreeToTerms: z.literal(true, {
+    message: 'You must agree to the Terms of Service and Privacy Policy',
+  }),
 });
 
 type CompleteProfileForm = z.infer<typeof completeProfileSchema>;
@@ -185,6 +188,31 @@ export function CompleteProfilePage() {
               />
               {errors.phone && (
                 <p className="text-xs text-red-500">{errors.phone.message}</p>
+              )}
+            </div>
+
+            {/* Terms Agreement */}
+            <div className="space-y-1.5">
+              <div className="flex items-start gap-3">
+                <input
+                  type="checkbox"
+                  id="agreeToTerms"
+                  className="mt-0.5 h-4 w-4 rounded border-[#c8c8cd] accent-[#1d1d1f] cursor-pointer flex-shrink-0"
+                  {...register('agreeToTerms')}
+                />
+                <label htmlFor="agreeToTerms" className="text-sm text-[#6e6e73] leading-snug cursor-pointer">
+                  I agree to the{' '}
+                  <Link to="/terms" target="_blank" className="font-semibold text-[#1d1d1f] hover:text-[#6e6e73] underline underline-offset-4">
+                    Terms of Service
+                  </Link>
+                  {' '}and{' '}
+                  <Link to="/privacy" target="_blank" className="font-semibold text-[#1d1d1f] hover:text-[#6e6e73] underline underline-offset-4">
+                    Privacy Policy
+                  </Link>
+                </label>
+              </div>
+              {errors.agreeToTerms && (
+                <p className="text-xs text-red-500">{errors.agreeToTerms.message}</p>
               )}
             </div>
 
