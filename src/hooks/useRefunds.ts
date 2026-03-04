@@ -12,13 +12,14 @@ const KEYS = {
 // ── Queries ──
 
 /** Customer: list own refund requests */
-export function useMyRefundRequests() {
+export function useMyRefundRequests(enabled = true) {
   return useQuery({
     queryKey: KEYS.my,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<RefundRequest[]>>('/refunds/my');
       return data.data;
     },
+    enabled,
   });
 }
 

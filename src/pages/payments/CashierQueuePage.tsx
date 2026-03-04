@@ -24,6 +24,16 @@ import {
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
+// Helper to extract populated project/customer fields from pending payments
+function getPaymentContext(p: any) {
+  const proj = typeof p.projectId === 'object' ? p.projectId : null;
+  const cust = proj?.customerId && typeof proj.customerId === 'object' ? proj.customerId : null;
+  return {
+    projectTitle: proj?.title || 'Unknown Project',
+    customerName: cust ? `${cust.firstName} ${cust.lastName}` : 'Unknown Customer',
+  };
+}
+
 export function CashierQueuePage() {
   const { data: payments, isLoading, isError, refetch } = usePendingPayments();
   const { data: overduePayments, isLoading: overdueLoading } = useOverduePayments();
@@ -94,12 +104,20 @@ export function CashierQueuePage() {
               <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
                 <div className="space-y-1">
                   <p className="font-semibold text-[#1d1d1f]">
-                    {formatCurrency(Number(p.amountPaid))}
+                    {getPaymentContext(p).customerName}
                   </p>
-                  <p className="text-sm text-[#6e6e73] capitalize">
-                    {String(p.method || '').replace('_', ' ')}
-                    {p.referenceNumber && ` · Ref: ${String(p.referenceNumber)}`}
+                  <p className="text-sm text-[#6e6e73]">
+                    {getPaymentContext(p).projectTitle}
                   </p>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="font-bold text-[#1d1d1f]">{formatCurrency(Number(p.amountPaid))}</span>
+                    <span className="text-[#86868b] capitalize">
+                      {String(p.method || '').replace('_', ' ')}
+                    </span>
+                    {p.referenceNumber && (
+                      <span className="text-[#86868b]">· Ref: {String(p.referenceNumber)}</span>
+                    )}
+                  </div>
                   <p className="text-xs text-[#86868b]">
                     {p.createdAt
                       ? format(new Date(String(p.createdAt)), 'MMM d, yyyy h:mm a')

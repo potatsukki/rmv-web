@@ -59,6 +59,7 @@ export function usePendingPayments() {
       const { data } = await api.get<ApiResponse<Payment[]>>('/payments/pending');
       return data.data;
     },
+    refetchInterval: 30_000,
   });
 }
 

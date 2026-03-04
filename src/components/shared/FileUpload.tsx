@@ -15,6 +15,7 @@ interface FileUploadProps {
   maxSizeMB?: number;
   maxFiles?: number;
   onUploadComplete: (fileKeys: string[]) => void;
+  onUploadingChange?: (isUploading: boolean) => void;
   existingKeys?: string[];
   label?: string;
   readOnly?: boolean;
@@ -49,6 +50,7 @@ export function FileUpload({
   maxSizeMB = 5,
   maxFiles = 5,
   onUploadComplete,
+  onUploadingChange,
   existingKeys = [],
   label = 'Upload files',
   readOnly = false,
@@ -63,6 +65,11 @@ export function FileUpload({
   const inputId = useId();
   const inputRef = useRef<HTMLInputElement>(null);
   const getUploadUrl = useGetUploadUrl();
+
+  // Notify parent whenever uploading state changes
+  useEffect(() => {
+    onUploadingChange?.(files.some((f) => f.isUploading));
+  }, [files, onUploadingChange]);
 
   const processFile = useCallback(
     async (file: File): Promise<File> => {

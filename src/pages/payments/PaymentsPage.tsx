@@ -267,8 +267,8 @@ export function PaymentsPage() {
           {/* ── Projects Table ── */}
           <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 overflow-hidden">
             {/* Search + Filter bar */}
-            <div className="px-4 sm:px-6 pt-4 pb-3 space-y-3 sm:space-y-0 sm:flex sm:items-center sm:gap-3">
-              <div className="relative flex-1">
+            <div className="px-4 sm:px-6 pt-4 pb-3 space-y-3">
+              <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#86868b]" />
                 <Input
                   placeholder="Search projects..."
@@ -277,20 +277,35 @@ export function PaymentsPage() {
                   className="pl-8 h-9 bg-[#f5f5f7]/50 border-[#d2d2d7] text-sm rounded-lg"
                 />
               </div>
-              <div className="relative shrink-0">
-                <ListFilter className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#86868b] pointer-events-none" />
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="h-9 pl-8 pr-8 rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 text-sm text-[#3a3a3e] appearance-none cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]"
+              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
+                <ListFilter className="h-3.5 w-3.5 text-[#86868b] hidden sm:block mr-0.5 flex-shrink-0" />
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('all')}
+                  aria-pressed={statusFilter === 'all'}
+                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    statusFilter === 'all'
+                      ? 'bg-[#1d1d1f] text-white shadow-sm'
+                      : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
+                  }`}
                 >
-                  <option value="all">All Statuses</option>
-                  {projectStatuses.map((s) => (
-                    <option key={s} value={s}>
-                      {s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                    </option>
-                  ))}
-                </select>
+                  All Statuses
+                </button>
+                {projectStatuses.map((s) => (
+                  <button
+                    type="button"
+                    key={s}
+                    onClick={() => setStatusFilter(s)}
+                    aria-pressed={statusFilter === s}
+                    className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                      statusFilter === s
+                        ? 'bg-[#1d1d1f] text-white shadow-sm'
+                        : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
+                    }`}
+                  >
+                    {s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                  </button>
+                ))}
               </div>
             </div>
 
@@ -598,6 +613,15 @@ export function PaymentsPage() {
                     (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED);
                   const isDeclined = stage.status === PaymentStageStatus.DECLINED;
 
+                  // Find latest decline reason for this stage
+                  const declineReason = isDeclined
+                    ? payments?.filter(p => p.stageId === stage.stageId && p.status === 'declined')
+                        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())[0]?.declineReason
+                    : undefined;
+
+                  // Remaining balance for partial payments
+                  const hasPartialPayment = !isVerified && (stage.amountPaid ?? 0) > 0 && (stage.remainingBalance ?? 0) > 0;
+
                   return (
                     <div
                       key={String(stage.stageId)}
@@ -627,6 +651,19 @@ export function PaymentsPage() {
                           <p className="text-xs text-[#86868b]">
                             {isHeadsUp ? 'Payment will be due when fabrication advances.' : 'Waiting for fabrication milestone.'}
                           </p>
+                        )}
+                        {isDeclined && declineReason && (
+                          <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
+                            <p className="text-xs font-medium text-red-700">Declined: {declineReason}</p>
+                            <p className="text-xs text-red-600 mt-0.5">Please resubmit your payment proof.</p>
+                          </div>
+                        )}
+                        {hasPartialPayment && (
+                          <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2">
+                            <p className="text-xs font-medium text-amber-700">
+                              {formatCurrency(stage.remainingBalance!)} remaining after partial payment of {formatCurrency(stage.amountPaid!)}
+                            </p>
+                          </div>
                         )}
                         {showPayButtons && (
                           <div className="flex flex-wrap gap-2 pt-1">
@@ -698,6 +735,16 @@ export function PaymentsPage() {
                             <p className="text-xs text-[#86868b] mt-0.5 truncate">{(stage as any).description}</p>
                           )}
                           <p className="text-xs text-[#86868b]">{String(stage.percentage)}%</p>
+                          {isDeclined && declineReason && (
+                            <p className="text-xs text-red-600 mt-1 truncate" title={declineReason}>
+                              Declined: {declineReason}
+                            </p>
+                          )}
+                          {hasPartialPayment && (
+                            <p className="text-xs text-amber-600 mt-0.5">
+                              {formatCurrency(stage.remainingBalance!)} remaining
+                            </p>
+                          )}
                         </div>
                         <p className="text-sm font-bold text-[#1d1d1f] text-right">{formatCurrency(Number(stage.amount))}</p>
                         <div className="flex justify-center">
@@ -947,6 +994,9 @@ export function PaymentsPage() {
               label="Upload payment proof"
               onUploadComplete={(keys) => setProofKey(keys[0] || '')}
             />
+            {!proofKey && (
+              <p className="text-xs text-amber-600">Please upload your proof image to continue.</p>
+            )}
           </div>
           <DialogFooter>
             <Button
@@ -959,7 +1009,7 @@ export function PaymentsPage() {
             <Button
               className="bg-[#1d1d1f] hover:bg-[#2d2d2f] rounded-lg"
               onClick={handleSubmitProof}
-              disabled={submitProof.isPending}
+              disabled={submitProof.isPending || !proofKey}
             >
               Submit Proof
             </Button>

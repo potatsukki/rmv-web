@@ -1202,7 +1202,7 @@ export function ProjectDetailPage() {
       )}
 
       {/* ════════════════  FABRICATION TAB  ════════════════ */}
-      {activeTab === 'fabrication' && <FabricationTab projectId={id!} />}
+      {activeTab === 'fabrication' && <FabricationTab projectId={id!} installationConfirmedAt={project?.installationConfirmedAt} />}
 
       {/* ── Lightbox Preview ── */}
       {lightboxKey && (

@@ -14,7 +14,7 @@ import {
   Bell,
   LogOut,
   Home,
-  DollarSign,
+  Banknote,
   ChevronRight,
   ClipboardList,
   CalendarOff,
@@ -102,7 +102,7 @@ const navGroups: NavGroup[] = [
       {
         label: 'Cash Flow',
         path: '/cash',
-        icon: DollarSign,
+        icon: Banknote,
         roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
       },
       {

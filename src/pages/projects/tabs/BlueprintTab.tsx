@@ -204,6 +204,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const user = useAuthStore((s) => s.user);
   const isEngineer = user?.roles?.some((r: string) => r === 'engineer');
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
+  const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
 
   const { data: project, refetch: refetchProject } = useProject(projectId);
   const { data: blueprint, refetch: refetchBlueprint } = useLatestBlueprint(projectId);
@@ -817,6 +818,133 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           )}
         </CardContent>
       </Card>
+    );
+  }
+
+  // ═══════════════════════════════════════════
+  // ═══  FABRICATION STAFF VIEW  ═════════════
+  // ═══════════════════════════════════════════
+  if (isFabricationStaff) {
+    if (isLoading) {
+      return (
+        <div className="space-y-4">
+          {[1, 2].map((i) => (
+            <div key={i} className="h-36 rounded-xl bg-gray-100 animate-pulse" />
+          ))}
+        </div>
+      );
+    }
+
+    if (!blueprint) {
+      return (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-[#c8c8cd]/50">
+          <CardContent className="p-8 text-center">
+            <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-[#6e6e73]">No blueprint uploaded yet.</p>
+            <p className="text-xs text-[#86868b] mt-1">
+              The engineering team will upload drawings before fabrication begins.
+            </p>
+          </CardContent>
+        </Card>
+      );
+    }
+
+    return (
+      <div className="space-y-4 -mx-3 sm:mx-0 px-3 sm:px-0">
+        {/* Version + status row */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Badge variant="outline" className="border-[#c8c8cd] text-[#3a3a3e] font-medium rounded-lg">
+              v{blueprint.version}
+            </Badge>
+            <span className="text-xs text-[#86868b]">
+              {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
+            </span>
+          </div>
+          <StatusBadge status={blueprint.status} />
+        </div>
+
+        {/* Two file cards: Blueprint + Design */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Technical Blueprint */}
+          <Card className="border-gray-100 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 bg-gray-50/50 border-b border-gray-100 sm:rounded-t-xl px-4 sm:px-6">
+              <div className="flex items-center gap-2">
+                <FileText className="h-5 w-5 text-[#6e6e73]" />
+                <h3 className="font-semibold text-gray-900">Technical Blueprint</h3>
+              </div>
+              <span className="text-[10px] text-[#86868b] bg-[#f0f0f5] px-1.5 py-0.5 rounded">Fabrication reference</span>
+            </CardHeader>
+            <CardContent className="pt-6 space-y-3 px-4 sm:px-6">
+              <p className="text-xs text-[#86868b]">Engineering drawing for fabrication use.</p>
+              <div className="flex gap-2">
+                <Button
+                  className="flex-1 bg-gray-900 text-white hover:bg-gray-800 rounded-xl"
+                  onClick={() => handleViewFile(blueprint.blueprintKey)}
+                >
+                  <Eye className="mr-2 h-4 w-4" /> View
+                </Button>
+                <Button
+                  variant="outline"
+                  className="flex-1 rounded-xl border-gray-200"
+                  onClick={() => handleDownloadFile(blueprint.blueprintKey)}
+                >
+                  <Download className="mr-2 h-4 w-4" /> Download
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Design */}
+          <Card className="border-gray-100 rounded-none sm:rounded-xl border-x-0 sm:border-x">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 bg-gray-50/50 border-b border-gray-100 sm:rounded-t-xl px-4 sm:px-6">
+              <div className="flex items-center gap-2">
+                <Image className="h-5 w-5 text-[#6e6e73]" />
+                <h3 className="font-semibold text-gray-900">Design</h3>
+              </div>
+              {blueprint.blueprintApproved ? (
+                <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 shadow-none hover:bg-emerald-100">
+                  <CheckCircle className="mr-1 h-3 w-3" /> Approved
+                </Badge>
+              ) : (
+                <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                  Pending Review
+                </Badge>
+              )}
+            </CardHeader>
+            <CardContent className="pt-6 space-y-3 px-4 sm:px-6">
+              <p className="text-xs text-[#86868b]">Customer-facing design render.</p>
+              {blueprint.designKey ? (
+                <div className="flex gap-2">
+                  <Button
+                    className="flex-1 bg-gray-900 text-white hover:bg-gray-800 rounded-xl"
+                    onClick={() => handleViewFile(blueprint.designKey!)}
+                  >
+                    <Eye className="mr-2 h-4 w-4" /> View
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="flex-1 rounded-xl border-gray-200"
+                    onClick={() => handleDownloadFile(blueprint.designKey!)}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download
+                  </Button>
+                </div>
+              ) : (
+                <p className="text-xs text-[#86868b] italic">Not uploaded yet.</p>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revision notes if any */}
+        {blueprint.revisionNotes && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+            <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Revision Notes from Customer</p>
+            <p className="text-sm text-amber-800 mt-1">{blueprint.revisionNotes}</p>
+          </div>
+        )}
+      </div>
     );
   }
 

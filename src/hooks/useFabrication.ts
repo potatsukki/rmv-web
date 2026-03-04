@@ -125,3 +125,29 @@ export function useCreateFabricationUpdate() {
     },
   });
 }
+
+export function useUpdateFabricationUpdate(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, notes, photoKeys }: { id: string; notes?: string; photoKeys?: string[] }) => {
+      const { data } = await api.patch<ApiResponse<FabricationApiUpdate>>(`/fabrication/${id}`, { notes, photoKeys });
+      return normalizeUpdate(data.data);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.byProject(projectId) });
+    },
+  });
+}
+
+export function useDeleteFabricationUpdate(projectId: string) {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      await api.delete(`/fabrication/${id}`);
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.byProject(projectId) });
+      qc.invalidateQueries({ queryKey: KEYS.status(projectId) });
+    },
+  });
+}

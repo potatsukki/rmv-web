@@ -195,6 +195,7 @@ export interface Project {
   contractSignatureKey?: string;
   originalContractDownloadedAt?: string;
   cancelReason?: string;
+  installationConfirmedAt?: string;
   latestBlueprintStatus?: string;
   createdAt: string;
   updatedAt: string;
@@ -248,6 +249,8 @@ export interface PaymentStage {
   percentage: number;
   amount: number;
   status: string;
+  amountPaid?: number;
+  remainingBalance?: number;
   // Payment activation (fabrication-driven)
   activatedAt?: string | null;
   headsUpSentAt?: string | null;

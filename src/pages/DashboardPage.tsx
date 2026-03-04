@@ -10,6 +10,7 @@ import {
   ArrowRight,
   FileText,
   Activity,
+  Banknote,
   AlertCircle,
   CalendarCheck,
   Users,
@@ -189,6 +190,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       return [
         { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.ENGINEER:
@@ -199,8 +201,9 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       ];
     case Role.CASHIER:
       return [
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Unpaid', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         activeProjects,
       ];
     case Role.FABRICATION_STAFF:
@@ -211,10 +214,14 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       ];
     case Role.ADMIN:
       return [
-        { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        activeProjects,
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        activeProjects,
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Proofs to verify', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Appointment requests', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Team Members', value: d?.totalUsers ?? 0, icon: Users, description: 'Active accounts', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     default:
       return [activeProjects];
@@ -242,7 +249,8 @@ function getRoleActions(role: Role): QuickAction[] {
       actions.push(
         { label: 'Calendar', path: '/appointments', icon: CalendarDays, description: 'View appointments', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
         { label: 'Visit Reports', path: '/visit-reports', icon: FileText, description: 'Site inspections', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
-        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'View projects', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
+        { label: 'Cash Flow', path: '/cash', icon: Banknote, description: 'Pending cash payments', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
+        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'View projects', color: 'from-[#5a5a5e] to-[#4a4a4e]' },
       );
       break;
     case Role.ENGINEER:
@@ -253,8 +261,10 @@ function getRoleActions(role: Role): QuickAction[] {
       break;
     case Role.CASHIER:
       actions.push(
-        { label: 'Process Payment', path: '/cashier-queue', icon: DollarSign, description: 'Accept payments', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
-        { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Financial reports', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
+        { label: 'Cashier Queue', path: '/cashier-queue', icon: CreditCard, description: 'Verify payment proofs', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
+        { label: 'Cash Flow', path: '/cash', icon: Banknote, description: 'Record cash collections', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
+        { label: 'Refund Requests', path: '/refund-requests', icon: Receipt, description: 'Pending refunds', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
+        { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Financial analytics', color: 'from-[#5a5a5e] to-[#4a4a4e]' },
       );
       break;
     case Role.FABRICATION_STAFF:
@@ -265,9 +275,12 @@ function getRoleActions(role: Role): QuickAction[] {
       break;
     case Role.ADMIN:
       actions.push(
-        { label: 'Team', path: '/users', icon: Users, description: 'Manage staff', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
-        { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Analytics', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
-        { label: 'Settings', path: '/settings', icon: CalendarDays, description: 'System config', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
+        { label: 'Appointments', path: '/appointments', icon: CalendarDays, description: 'Manage schedule', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
+        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'All projects', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
+        { label: 'Cashier Queue', path: '/cashier-queue', icon: CreditCard, description: 'Verify proofs', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
+        { label: 'Team', path: '/users', icon: Users, description: 'Manage staff', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
+        { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Analytics', color: 'from-[#5a5a5e] to-[#4a4a4e]' },
+        { label: 'Settings', path: '/settings', icon: Settings, description: 'System config', color: 'from-[#6a6a6e] to-[#5a5a5e]' },
       );
       break;
   }

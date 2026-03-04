@@ -18,11 +18,49 @@ interface CashDiscrepancy {
   createdAt: string;
 }
 
+export interface PendingCashAppointment {
+  _id: string;
+  date: string;
+  slotCode: string;
+  status: string;
+  type: string;
+  ocularFee: number;
+  ocularFeeStatus: string;
+  ocularFeeBreakdown?: {
+    label: string;
+    isWithinNCR: boolean;
+    baseFee: number;
+    baseCoveredKm: number;
+    perKmRate: number;
+    additionalDistanceKm: number;
+    additionalFee: number;
+    total: number;
+  };
+  formattedAddress?: string;
+  customerId: string;
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  salesStaffId?: string;
+  salesStaffName?: string;
+}
+
 const KEYS = {
   all: ['cash'] as const,
   collections: (params?: Record<string, unknown>) => [...KEYS.all, 'collections', params] as const,
   discrepancies: ['cash', 'discrepancies'] as const,
+  pendingAppointments: ['cash', 'pending-appointments'] as const,
 };
+
+export function usePendingCashAppointments() {
+  return useQuery({
+    queryKey: KEYS.pendingAppointments,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<PendingCashAppointment[]>>('/cash/pending-appointments');
+      return data.data;
+    },
+  });
+}
 
 export function useCashCollections(params?: Record<string, string>) {
   return useQuery({
@@ -36,13 +74,14 @@ export function useCashCollections(params?: Record<string, string>) {
   });
 }
 
-export function useCashDiscrepancies() {
+export function useCashDiscrepancies(enabled = true) {
   return useQuery({
     queryKey: KEYS.discrepancies,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<CashDiscrepancy[]>>('/cash/discrepancies');
       return data.data;
     },
+    enabled,
   });
 }
 

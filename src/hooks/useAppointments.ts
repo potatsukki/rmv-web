@@ -33,6 +33,7 @@ export function useAppointment(id: string) {
       return data.data;
     },
     enabled: !!id,
+    staleTime: 0, // Always refetch — detail pages must show fresh status
   });
 }
 

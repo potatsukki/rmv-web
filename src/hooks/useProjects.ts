@@ -180,3 +180,18 @@ export function useContractDownloadUrl(projectId: string, copy: 'original' | 'co
     enabled: false, // manual fetch only
   });
 }
+
+export function useConfirmInstallation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      const { data } = await api.post<ApiResponse<Project>>(
+        `/projects/${projectId}/confirm-installation`,
+      );
+      return data.data;
+    },
+    onSuccess: (_data, projectId) => {
+      qc.invalidateQueries({ queryKey: KEYS.detail(projectId) });
+    },
+  });
+}

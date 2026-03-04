@@ -11,6 +11,9 @@ import {
   CheckCircle2,
   XCircle,
   Filter,
+  Eye,
+  EyeOff,
+  Wand2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -43,6 +46,13 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { PageError } from '@/components/shared/PageError';
 import {
@@ -56,7 +66,6 @@ import { Role } from '@/lib/constants';
 import type { User } from '@/lib/types';
 
 const ROLES: { value: Role; label: string }[] = [
-  { value: Role.CUSTOMER, label: 'Customer' },
   { value: Role.APPOINTMENT_AGENT, label: 'Appointment Agent' },
   { value: Role.SALES_STAFF, label: 'Sales Staff' },
   { value: Role.ENGINEER, label: 'Engineer' },
@@ -64,6 +73,13 @@ const ROLES: { value: Role; label: string }[] = [
   { value: Role.CASHIER, label: 'Cashier' },
   { value: Role.ADMIN, label: 'Administrator' },
 ];
+
+function generatePassword(len = 12) {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789!@#$%';
+  return Array.from(crypto.getRandomValues(new Uint8Array(len)))
+    .map((b) => chars[b % chars.length])
+    .join('');
+}
 
 const userSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
@@ -95,6 +111,7 @@ export function UsersPage() {
     open: false,
     user: null,
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   const params: Record<string, string> = {};
   if (search) params.search = search;
@@ -112,19 +129,20 @@ export function UsersPage() {
       lastName: '',
       email: '',
       phone: '',
-      role: Role.CUSTOMER,
+      role: Role.APPOINTMENT_AGENT,
       password: '',
     },
   });
 
   const openCreate = () => {
     setEditingUser(null);
+    setShowPassword(false);
     form.reset({
       firstName: '',
       lastName: '',
       email: '',
       phone: '',
-      role: Role.CUSTOMER,
+      role: Role.APPOINTMENT_AGENT,
       password: '',
     });
     setDialogOpen(true);
@@ -132,6 +150,7 @@ export function UsersPage() {
 
   const openEdit = (user: User) => {
     setEditingUser(user);
+    setShowPassword(false);
     form.reset({
       firstName: user.firstName,
       lastName: user.lastName,
@@ -340,7 +359,7 @@ export function UsersPage() {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl">
+                    <DropdownMenuContent align="end" className="rounded-xl bg-white shadow-lg border border-[#e8e8ed]">
                       <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => openEdit(u)}>
                         <Edit2 className="mr-2 h-4 w-4" /> Edit Details
@@ -475,7 +494,7 @@ export function UsersPage() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl">
+                        <DropdownMenuContent align="end" className="rounded-xl bg-white shadow-lg border border-[#e8e8ed]">
                           <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => openEdit(u)}>
                             <Edit2 className="mr-2 h-4 w-4" /> Edit Details
@@ -517,7 +536,7 @@ export function UsersPage() {
             <DialogDescription className="text-gray-500">
               {editingUser
                 ? 'Modify user details and roles.'
-                : 'Create a new account for an employee or customer.'}
+                : 'Create a new account for a team member.'}
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-2">
@@ -583,30 +602,59 @@ export function UsersPage() {
               <Label htmlFor="role" className="text-gray-700 text-[13px] font-medium">
                 Assigned Role
               </Label>
-              <select
-                id="role"
-                {...form.register('role')}
-                className="w-full h-11 rounded-xl border border-gray-200 bg-gray-50/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#6e6e73]/20 focus:border-[#6e6e73] cursor-pointer"
+              <Select
+                value={form.watch('role')}
+                onValueChange={(v) => form.setValue('role', v as Role)}
               >
-                {ROLES.map((r) => (
-                  <option key={r.value} value={r.value}>
-                    {r.label}
-                  </option>
-                ))}
-              </select>
+                <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 text-sm focus:ring-2 focus:ring-[#6e6e73]/20">
+                  <SelectValue placeholder="Select a role" />
+                </SelectTrigger>
+                <SelectContent className="rounded-xl bg-white shadow-lg border border-[#e8e8ed]">
+                  {ROLES.map((r) => (
+                    <SelectItem key={r.value} value={r.value} className="text-sm rounded-lg">
+                      {r.label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-gray-700 text-[13px] font-medium">
-                {editingUser ? 'New Password (Optional)' : 'Password'}
-              </Label>
-              <Input
-                id="password"
-                type="password"
-                {...form.register('password')}
-                placeholder={editingUser ? 'Leave blank to keep current' : 'Min. 8 characters'}
-                className={inputClasses}
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="password" className="text-gray-700 text-[13px] font-medium">
+                  {editingUser ? 'New Password (Optional)' : 'Password'}
+                </Label>
+                {!editingUser && (
+                  <button
+                    type="button"
+                    className="flex items-center gap-1 text-[11px] font-medium text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+                    onClick={() => {
+                      const pw = generatePassword();
+                      form.setValue('password', pw);
+                      setShowPassword(true);
+                    }}
+                  >
+                    <Wand2 className="h-3 w-3" /> Auto-generate
+                  </button>
+                )}
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? 'text' : 'password'}
+                  {...form.register('password')}
+                  placeholder={editingUser ? 'Leave blank to keep current' : 'Min. 8 characters'}
+                  className={`${inputClasses} pr-10`}
+                />
+                <button
+                  type="button"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#3a3a3e] transition-colors"
+                  onClick={() => setShowPassword((p) => !p)}
+                  tabIndex={-1}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
               {form.formState.errors.password && (
                 <p className="text-xs text-red-500">
                   {form.formState.errors.password.message}

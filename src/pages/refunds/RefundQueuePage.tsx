@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { RotateCcw, CheckCircle, XCircle, Clock, User, Phone, Building2, Filter } from 'lucide-react';
+import { RotateCcw, CheckCircle, XCircle, Clock, User, Phone, Building2, Filter, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
+import { Input } from '@/components/ui/input';
 import { PageError } from '@/components/shared/PageError';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,10 +41,12 @@ const STATUS_FILTERS = [
 
 export function RefundQueuePage() {
   const [statusFilter, setStatusFilter] = useState<string>('pending');
+  const [searchQuery, setSearchQuery] = useState('');
   const [page, setPage] = useState(1);
 
   const params: Record<string, string> = { page: String(page), limit: '20' };
   if (statusFilter !== 'all') params.status = statusFilter;
+  if (searchQuery.trim()) params.search = searchQuery.trim();
 
   const { data, isLoading, isError, refetch } = useRefundRequests(params);
   const approveMutation = useApproveRefund();
@@ -101,7 +104,17 @@ export function RefundQueuePage() {
         <p className="text-[#6e6e73] mt-1 text-sm">Review and process customer refund requests</p>
       </div>
 
-      <div className="flex items-center gap-1.5 bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-x-auto no-scrollbar">
+      <div className="flex flex-col gap-3 bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
+          <Input
+            placeholder="Search by customer name, reason..."
+            value={searchQuery}
+            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
+            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
+          />
+        </div>
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
         <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
         {STATUS_FILTERS.map((f) => (
           <button
@@ -118,6 +131,7 @@ export function RefundQueuePage() {
             {f.label}
           </button>
         ))}
+        </div>
       </div>
 
       {isLoading ? (

@@ -1,7 +1,28 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, AlertTriangle, Camera, Image, Loader2, DollarSign, RotateCcw, Mail } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, AlertTriangle, Camera, Image, Loader2, RotateCcw, Mail, Banknote } from 'lucide-react';
 import toast from 'react-hot-toast';
+
+function extractErrorMessage(error: unknown, fallback: string): string {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'data' in error.response &&
+    typeof error.response.data === 'object' &&
+    error.response.data !== null &&
+    'error' in error.response.data &&
+    typeof error.response.data.error === 'object' &&
+    error.response.data.error !== null &&
+    'message' in error.response.data.error &&
+    typeof error.response.data.error.message === 'string'
+  ) {
+    return error.response.data.error.message;
+  }
+  return fallback;
+}
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,7 +79,8 @@ export function AppointmentDetailPage() {
 
   // Refund request
   const submitRefundMutation = useSubmitRefundRequest();
-  const { data: myRefundRequests } = useMyRefundRequests();
+  const isCustomer = user?.roles.includes(Role.CUSTOMER);
+  const { data: myRefundRequests } = useMyRefundRequests(!!isCustomer);
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -82,7 +104,6 @@ export function AppointmentDetailPage() {
   const isStaff = user?.roles.some((r) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(r),
   );
-  const isCustomer = user?.roles.includes(Role.CUSTOMER);
 
   // Fetch sales staff list when the agent views a requested appointment
   useEffect(() => {
@@ -104,8 +125,8 @@ export function AppointmentDetailPage() {
     try {
       await confirmMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
       toast.success('Appointment confirmed & sales staff assigned');
-    } catch {
-      toast.error('Failed to confirm');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to confirm'));
     }
   };
 
@@ -113,8 +134,8 @@ export function AppointmentDetailPage() {
     try {
       await completeMutation.mutateAsync(id!);
       toast.success('Appointment completed');
-    } catch {
-      toast.error('Failed to complete');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to complete'));
     }
   };
 
@@ -128,8 +149,8 @@ export function AppointmentDetailPage() {
       toast.success('Appointment cancelled');
       setCancelOpen(false);
       setCancelReason('');
-    } catch {
-      toast.error('Failed to cancel');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to cancel'));
     }
   };
 
@@ -137,8 +158,8 @@ export function AppointmentDetailPage() {
     try {
       await noShowMutation.mutateAsync(id!);
       toast.success('Marked as no-show');
-    } catch {
-      toast.error('Failed to mark');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to mark as no-show'));
     }
   };
 
@@ -578,7 +599,8 @@ export function AppointmentDetailPage() {
             {visitReports && visitReports.length > 0 ? (
               <Button
                 asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                variant="outline"
+                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
               >
                 <Link to={`/visit-reports/${visitReports[0]!._id}`}>
                   <FileText className="mr-2 h-4 w-4" />
@@ -588,7 +610,8 @@ export function AppointmentDetailPage() {
             ) : (
               <Button
                 asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                variant="outline"
+                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
               >
                 <Link to="/visit-reports">
                   <FileText className="mr-2 h-4 w-4" />
@@ -599,7 +622,7 @@ export function AppointmentDetailPage() {
             {/* Ocular: CONFIRMED → On The Way */}
             {appt.type === 'ocular' && (
               <Button
-                onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way')).catch(() => toast.error('Failed to update'))}
+                onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way')).catch((err: unknown) => toast.error(extractErrorMessage(err, 'Failed to update')))}
                 disabled={visitStatusMutation.isPending}
                 className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
               >
@@ -633,7 +656,8 @@ export function AppointmentDetailPage() {
             {visitReports && visitReports.length > 0 ? (
               <Button
                 asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                variant="outline"
+                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
               >
                 <Link to={`/visit-reports/${visitReports[0]!._id}`}>
                   <FileText className="mr-2 h-4 w-4" />
@@ -643,7 +667,8 @@ export function AppointmentDetailPage() {
             ) : (
               <Button
                 asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                variant="outline"
+                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
               >
                 <Link to="/visit-reports">
                   <FileText className="mr-2 h-4 w-4" />
@@ -654,7 +679,7 @@ export function AppointmentDetailPage() {
             <Button
               onClick={handleComplete}
               disabled={completeMutation.isPending}
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
             >
               {completeMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</> : 'Mark Complete'}
             </Button>
@@ -662,7 +687,7 @@ export function AppointmentDetailPage() {
               variant="outline"
               onClick={handleNoShow}
               disabled={noShowMutation.isPending}
-              className="border-gray-200 text-gray-700 rounded-xl"
+              className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
             >
               {noShowMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Mark No-Show'}
             </Button>
@@ -675,7 +700,8 @@ export function AppointmentDetailPage() {
             {visitReports && visitReports.length > 0 ? (
               <Button
                 asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                variant="outline"
+                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
               >
                 <Link to={`/visit-reports/${visitReports[0]!._id}`}>
                   <FileText className="mr-2 h-4 w-4" />
@@ -685,7 +711,8 @@ export function AppointmentDetailPage() {
             ) : (
               <Button
                 asChild
-                className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+                variant="outline"
+                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
               >
                 <Link to="/visit-reports">
                   <FileText className="mr-2 h-4 w-4" />
@@ -768,11 +795,11 @@ export function AppointmentDetailPage() {
         {/* Sales Staff: Record Cash Payment (for cash_pending appointments) */}
         {canCompleteAppointment && appt.ocularFeeStatus === 'cash_pending' && (
           <Button
-            onClick={() => navigate('/cash', { state: { appointmentId: appt._id, expectedAmount: appt.ocularFee } })}
-            className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+            onClick={() => navigate('/cash')}
+            className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
           >
-            <DollarSign className="mr-2 h-4 w-4" />
-            Record Cash Payment ({formatCurrency(appt.ocularFee ?? 0)})
+            <Banknote className="mr-2 h-4 w-4" />
+            Record Cash Payment
           </Button>
         )}
       </div>
@@ -843,8 +870,8 @@ export function AppointmentDetailPage() {
                   toast.success('Ocular fee refunded successfully');
                   setRefundOpen(false);
                   setRefundReason('');
-                } catch {
-                  toast.error('Failed to process refund');
+                } catch (err) {
+                  toast.error(extractErrorMessage(err, 'Failed to process refund'));
                 }
               }}
               disabled={refundMutation.isPending || !refundReason.trim()}
@@ -960,8 +987,8 @@ export function AppointmentDetailPage() {
                   });
                   toast.success('Refund request submitted successfully');
                   setCustomerRefundOpen(false);
-                } catch {
-                  toast.error('Failed to submit refund request');
+                } catch (err) {
+                  toast.error(extractErrorMessage(err, 'Failed to submit refund request'));
                 }
               }}
               disabled={submitRefundMutation.isPending || !customerRefundReason.trim() || !customerRefundAccountName.trim() || !customerRefundAccountNumber.trim() || (customerRefundMethod === 'bank_transfer' && !customerRefundBankName.trim())}

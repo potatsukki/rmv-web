@@ -7,10 +7,16 @@ interface DashboardSummary {
   totalAppointmentsToday: number;
   pendingAppointments: number;
   activeProjects: number;
+  completedProjects: number;
+  totalProjects: number;
   pendingPayments: number;
   revenueThisMonth: number;
   conversionRate: number;
   fabricationInProgress: number;
+  pendingVisitReports: number;
+  pendingCashPayments: number;
+  totalUsers: number;
+  pendingBlueprints: number;
 }
 
 export function useDashboardSummary() {
@@ -26,6 +32,8 @@ export function useDashboardSummary() {
 
 // Revenue
 interface RevenueApiResponse {
+  totalRevenue: number;
+  totalPayments: number;
   byPeriod: Array<{
     period: string;
     revenue: number;
@@ -33,10 +41,16 @@ interface RevenueApiResponse {
   }>;
 }
 
-interface RevenueDataPoint {
+export interface RevenueDataPoint {
   label: string;
   total: number;
   count: number;
+}
+
+export interface RevenueReport {
+  items: RevenueDataPoint[];
+  totalRevenue: number;
+  totalPayments: number;
 }
 
 export function useRevenueReport(params?: { groupBy?: string; from?: string; to?: string }) {
@@ -51,23 +65,39 @@ export function useRevenueReport(params?: { groupBy?: string; from?: string; to?
         },
       });
 
-      return (data.data.byPeriod || []).map((item) => ({
-        label: item.period,
-        total: item.revenue,
-        count: item.count,
-      })) as RevenueDataPoint[];
+      return {
+        items: (data.data.byPeriod || []).map((item) => ({
+          label: item.period,
+          total: item.revenue,
+          count: item.count,
+        })),
+        totalRevenue: data.data.totalRevenue ?? 0,
+        totalPayments: data.data.totalPayments ?? 0,
+      } as RevenueReport;
     },
   });
 }
 
 // Payment stages
-interface PaymentStageData {
+export interface PaymentStageData {
   status: string;
   count: number;
 }
 
 interface PaymentStageApiResponse {
+  totalPlans: number;
+  totalAmount: number;
+  totalPaid: number;
+  totalOutstanding: number;
   byStatus: PaymentStageData[];
+}
+
+export interface PaymentStageReport {
+  byStatus: PaymentStageData[];
+  totalPlans: number;
+  totalAmount: number;
+  totalPaid: number;
+  totalOutstanding: number;
 }
 
 export function usePaymentStageReport() {
@@ -77,7 +107,13 @@ export function usePaymentStageReport() {
       const { data } = await api.get<ApiResponse<PaymentStageApiResponse>>(
         '/reports/payment-stages',
       );
-      return data.data.byStatus || [];
+      return {
+        byStatus: data.data.byStatus || [],
+        totalPlans: data.data.totalPlans ?? 0,
+        totalAmount: data.data.totalAmount ?? 0,
+        totalPaid: data.data.totalPaid ?? 0,
+        totalOutstanding: data.data.totalOutstanding ?? 0,
+      } as PaymentStageReport;
     },
   });
 }
@@ -177,14 +213,24 @@ export function useWorkloadReport() {
 // Conversion
 interface ConversionApiResponse {
   totalAppointments: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
   projectsCreated: number;
   conversionRate: number;
+  completionRate: number;
+  byType: { office: number; ocular: number };
 }
 
-interface ConversionData {
+export interface ConversionData {
   totalAppointments: number;
+  completed: number;
+  cancelled: number;
+  noShow: number;
   convertedToProjects: number;
   rate: number;
+  completionRate: number;
+  byType: { office: number; ocular: number };
 }
 
 export function useConversionReport() {
@@ -194,8 +240,13 @@ export function useConversionReport() {
       const { data } = await api.get<ApiResponse<ConversionApiResponse>>('/reports/conversion');
       return {
         totalAppointments: data.data.totalAppointments,
+        completed: data.data.completed ?? 0,
+        cancelled: data.data.cancelled ?? 0,
+        noShow: data.data.noShow ?? 0,
         convertedToProjects: data.data.projectsCreated,
         rate: (data.data.conversionRate || 0) / 100,
+        completionRate: (data.data.completionRate || 0) / 100,
+        byType: data.data.byType ?? { office: 0, ocular: 0 },
       } as ConversionData;
     },
   });

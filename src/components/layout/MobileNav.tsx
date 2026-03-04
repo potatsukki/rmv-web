@@ -15,7 +15,8 @@ import {
   Settings,
   BarChart3,
   Users,
-  DollarSign,
+  Banknote,
+  ReceiptText,
   User,
   Shield,
   ChevronRight,
@@ -74,6 +75,24 @@ const bottomTabItems: NavItem[] = [
     icon: CreditCard,
     roles: [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN],
   },
+  {
+    label: 'Queue',
+    path: '/cashier-queue',
+    icon: ReceiptText,
+    roles: [Role.CASHIER, Role.ADMIN],
+  },
+  {
+    label: 'Cash',
+    path: '/cash',
+    icon: Banknote,
+    roles: [Role.CASHIER],
+  },
+  {
+    label: 'Analytics',
+    path: '/reports',
+    icon: BarChart3,
+    roles: [Role.CASHIER],
+  },
 ];
 
 const menuItems: NavItem[] = [
@@ -87,7 +106,7 @@ const menuItems: NavItem[] = [
   {
     label: 'Cash Management',
     path: '/cash',
-    icon: DollarSign,
+    icon: Banknote,
     roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
   },
   {

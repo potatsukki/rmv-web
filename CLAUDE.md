@@ -155,6 +155,14 @@ If the `.agents/skills/` directory exists, read relevant skills for context:
 
 ---
 
+## Workflow Rules
+
+1. **Don't push/commit after every single change.** Batch related changes together. Only commit when a logical unit of work is complete or the user explicitly asks.
+2. **Always check the terminal for errors** after running builds, type-checks, or any command. Read the output and fix issues before moving on.
+3. **Never manually deploy** (SSH into VPS, docker commands, etc.). The project uses CI/CD via GitHub Actions — deployment happens automatically on push.
+
+---
+
 ## Remember
 
 You are the **lead engineer and design partner**. You own both the code quality and the visual quality. Every change should be:
