@@ -655,18 +655,16 @@ export function PaymentsPage() {
                             >
                               {isDeclined ? 'Resubmit Proof' : isEarlyPay ? 'Pay Early — Proof' : 'Upload Proof'}
                             </Button>
-                            {(import.meta.env.DEV || user?.roles.includes(Role.ADMIN)) && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-8"
-                                onClick={() => handleSimulate(String(stage.stageId))}
-                                disabled={simulatePayment.isPending}
-                                title="Simulate payment (testing)"
-                              >
-                                <Zap className="mr-1 h-3.5 w-3.5" /> Simulate
-                              </Button>
-                            )}
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-8"
+                              onClick={() => handleSimulate(String(stage.stageId))}
+                              disabled={simulatePayment.isPending}
+                              title="Simulate payment (testing)"
+                            >
+                              <Zap className="mr-1 h-3.5 w-3.5" /> Simulate
+                            </Button>
                           </div>
                         )}
                         {isCashier && canPay && (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED) && (
@@ -733,18 +731,16 @@ export function PaymentsPage() {
                               >
                                 {isDeclined ? 'Resubmit' : 'Proof'}
                               </Button>
-                              {(import.meta.env.DEV || user?.roles.includes(Role.ADMIN)) && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-7 px-2"
-                                  onClick={() => handleSimulate(String(stage.stageId))}
-                                  disabled={simulatePayment.isPending}
-                                  title="Simulate payment (testing)"
-                                >
-                                  <Zap className="h-3 w-3" />
-                                </Button>
-                              )}
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-7 px-2"
+                                onClick={() => handleSimulate(String(stage.stageId))}
+                                disabled={simulatePayment.isPending}
+                                title="Simulate payment (testing)"
+                              >
+                                <Zap className="h-3 w-3" />
+                              </Button>
                             </>
                           )}
                           {isCashier && canPay && (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED) && (
