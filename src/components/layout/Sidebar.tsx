@@ -19,6 +19,7 @@ import {
   ClipboardList,
   CalendarOff,
   CalendarPlus,
+  RotateCcw,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
@@ -102,7 +103,7 @@ const navGroups: NavGroup[] = [
         label: 'Cash Flow',
         path: '/cash',
         icon: DollarSign,
-        roles: [Role.CASHIER, Role.ADMIN],
+        roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
       },
       {
         label: 'Cashier Queue',
@@ -114,6 +115,12 @@ const navGroups: NavGroup[] = [
         label: 'Ocular Fee Queue',
         path: '/ocular-fee-queue',
         icon: CreditCard,
+        roles: [Role.CASHIER, Role.ADMIN],
+      },
+      {
+        label: 'Refund Requests',
+        path: '/refund-requests',
+        icon: RotateCcw,
         roles: [Role.CASHIER, Role.ADMIN],
       },
     ],

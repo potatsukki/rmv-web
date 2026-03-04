@@ -179,6 +179,7 @@ export function BookAppointmentPage() {
   const [isFeeLoading, setIsFeeLoading] = useState(false);
   const [isAddressLoading, setIsAddressLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
+  const [ocularFeePaymentChoice, setOcularFeePaymentChoice] = useState<'online' | 'cash'>('online');
 
   const isOcularBooking = selectedType === AppointmentType.OCULAR && !rescheduleId;
 
@@ -362,6 +363,7 @@ export function BookAppointmentPage() {
           customerLocation: selectedLocation ?? undefined,
           formattedAddress: formattedAddress || undefined,
           addressStructured,
+          ocularFeePaymentChoice: isOutsideNcr ? ocularFeePaymentChoice : undefined,
         });
 
         // Always auto-submit site details for office visits (details step is mandatory).
@@ -400,12 +402,17 @@ export function BookAppointmentPage() {
           }
         }
 
-        // If outside NCR, redirect to ocular fee payment page
+        // If outside NCR with online payment, redirect to ocular fee payment page
         if (
           data.type === AppointmentType.OCULAR &&
           feePreview &&
           !feePreview.fee.isWithinNCR
         ) {
+          if (ocularFeePaymentChoice === 'cash') {
+            toast.success('Appointment booked! The sales staff will collect the ocular fee in cash during the visit.');
+            navigate(`/appointments/${result._id}`);
+            return;
+          }
           toast.success('Appointment booked! Please pay the ocular fee to proceed.');
           navigate(`/appointments/${result._id}/pay-ocular-fee`);
           return;
@@ -748,15 +755,59 @@ export function BookAppointmentPage() {
                     )}
 
                     {!feePreview.fee.isWithinNCR && (
-                      <div className="mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4">
-                        <p className="text-sm font-semibold text-amber-800">
-                          Ocular fee payment required via QRPH
-                        </p>
-                        <p className="mt-1 text-xs text-amber-700">
-                          Your location is outside Metro Manila. After booking, you will be
-                          redirected to pay the ocular fee of{' '}
-                          <strong>{currency(feePreview.fee.total)}</strong> via QRPH.
-                        </p>
+                      <div className="mt-3 space-y-3">
+                        {/* Payment Choice */}
+                        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+                          <p className="text-sm font-semibold text-amber-800">
+                            Ocular fee payment required
+                          </p>
+                          <p className="text-xs text-amber-700">
+                            Your location is outside Metro Manila. An ocular fee of{' '}
+                            <strong>{currency(feePreview.fee.total)}</strong> is required. Choose how you'd like to pay:
+                          </p>
+                          <div className="grid grid-cols-2 gap-2">
+                            <button
+                              type="button"
+                              onClick={() => setOcularFeePaymentChoice('online')}
+                              className={cn(
+                                'rounded-lg border-2 p-3 text-left transition-all text-sm',
+                                ocularFeePaymentChoice === 'online'
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                                  : 'border-[#d2d2d7] bg-white text-[#3a3a3e] hover:border-[#86868b]',
+                              )}
+                            >
+                              <p className="font-semibold">Pay Online</p>
+                              <p className="text-xs mt-0.5 opacity-75">Pay via QRPH after booking</p>
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => setOcularFeePaymentChoice('cash')}
+                              className={cn(
+                                'rounded-lg border-2 p-3 text-left transition-all text-sm',
+                                ocularFeePaymentChoice === 'cash'
+                                  ? 'border-emerald-500 bg-emerald-50 text-emerald-900'
+                                  : 'border-[#d2d2d7] bg-white text-[#3a3a3e] hover:border-[#86868b]',
+                              )}
+                            >
+                              <p className="font-semibold">Pay Cash</p>
+                              <p className="text-xs mt-0.5 opacity-75">Pay the sales staff on visit day</p>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Refund Policy Banner */}
+                        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+                          <p className="text-sm font-semibold text-blue-800">Refund Policy</p>
+                          <p className="mt-1 text-xs text-blue-700">
+                            Refund requests are available after payment and before the sales staff
+                            is on the way. Once the visit has started, please contact the admin
+                            directly for assistance.
+                          </p>
+                          <div className="mt-2 text-xs text-blue-600 space-y-0.5">
+                            <p>Email: rmvstainless@gmail.com</p>
+                            <p>Phone: 02-9506187 / 0945 285 2974</p>
+                          </div>
+                        </div>
                       </div>
                     )}
                   </div>
@@ -1105,6 +1156,14 @@ export function BookAppointmentPage() {
                     </p>
                   </div>
                 )}
+                {isOcular && feePreview && !feePreview.fee.isWithinNCR && (
+                  <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4">
+                    <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">Payment Method</p>
+                    <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
+                      {ocularFeePaymentChoice === 'cash' ? 'Cash (on visit day)' : 'Online (QRPH)'}
+                    </p>
+                  </div>
+                )}
               </div>
 
               {siteRequirements && (
@@ -1357,7 +1416,9 @@ export function BookAppointmentPage() {
               {rescheduleId
                 ? 'Submit Reschedule Request'
                 : isOutsideNcr
-                  ? 'Book & Pay Ocular Fee'
+                  ? ocularFeePaymentChoice === 'cash'
+                    ? 'Confirm Booking (Cash)'
+                    : 'Book & Pay Ocular Fee'
                   : 'Confirm Booking'}
             </Button>
           )}

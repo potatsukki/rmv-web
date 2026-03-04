@@ -62,6 +62,7 @@ export function useRequestAppointment() {
       customerLocation?: { lat: number; lng: number };
       lockId?: string;
       addressStructured?: { street: string; barangay: string; city: string; province: string; zip: string };
+      ocularFeePaymentChoice?: 'online' | 'cash';
     }) => {
       const { data } = await api.post<ApiResponse<Appointment>>('/appointments', body);
       return data.data;

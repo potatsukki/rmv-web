@@ -90,6 +90,19 @@ export enum CashCollectionStatus {
   DISCREPANCY = 'discrepancy',
 }
 
+// ── Ocular Fee Payment Choice ──
+export enum OcularFeePaymentChoice {
+  ONLINE = 'online',
+  CASH = 'cash',
+}
+
+// ── Refund Request Status ──
+export enum RefundRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  DENIED = 'denied',
+}
+
 // ── Notification ──
 export enum NotificationCategory {
   APPOINTMENT = 'appointment',

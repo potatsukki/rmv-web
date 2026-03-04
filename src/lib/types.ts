@@ -121,10 +121,11 @@ export interface Appointment {
     total: number;
   };
   ocularFeeMethod?: string;
+  ocularFeePaymentChoice?: 'online' | 'cash';
   ocularFeePaid?: boolean;
   ocularFeeProofKey?: string;
   ocularFeeReferenceNumber?: string;
-  ocularFeeStatus?: 'pending' | 'proof_submitted' | 'verified' | 'declined' | 'refunded';
+  ocularFeeStatus?: 'pending' | 'cash_pending' | 'proof_submitted' | 'verified' | 'declined' | 'refunded';
   ocularFeeDeclineReason?: string;
   ocularFeeRefundReason?: string;
   ocularFeeRefundedAt?: string;
@@ -135,6 +136,25 @@ export interface Appointment {
   internalNotes?: string;
   customerSiteDetails?: CustomerSiteDetails;
   siteDetailsStatus?: 'pending' | 'submitted' | 'skipped';
+  createdAt: string;
+  updatedAt: string;
+}
+
+// ── Refund Request ──
+export interface RefundRequest {
+  _id: string;
+  appointmentId: string | Appointment;
+  customerId: string | { _id: string; firstName: string; lastName: string; email?: string; phone?: string };
+  reason: string;
+  refundMethod: 'gcash' | 'bank_transfer';
+  accountName: string;
+  accountNumber: string;
+  bankName?: string;
+  amount: number;
+  status: 'pending' | 'approved' | 'denied';
+  reviewedBy?: string | { _id: string; firstName: string; lastName: string };
+  reviewedAt?: string;
+  denialReason?: string;
   createdAt: string;
   updatedAt: string;
 }

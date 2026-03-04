@@ -173,6 +173,11 @@ const SlotManagementPage = lazy(() =>
     default: module.SlotManagementPage,
   })),
 );
+const RefundQueuePage = lazy(() =>
+  import('@/pages/refunds/RefundQueuePage').then((module) => ({
+    default: module.RefundQueuePage,
+  })),
+);
 
 const NotFoundPage = lazy(() =>
   import('@/pages/errors/NotFoundPage').then((module) => ({ default: module.NotFoundPage })),
@@ -336,6 +341,7 @@ export default function App() {
                 }
               >
                 <Route path="/cashier-queue" element={<CashierQueuePage />} />
+                <Route path="/refund-requests" element={<RefundQueuePage />} />
               </Route>
 
               <Route
