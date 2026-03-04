@@ -134,6 +134,11 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
       return;
     }
 
+    if (status === FabricationStatus.DONE && !installationConfirmed) {
+      toast.error('The customer must confirm the installation schedule before marking as Done');
+      return;
+    }
+
     try {
       await addUpdateMutation.mutateAsync({
         projectId,
@@ -273,7 +278,7 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
       <Card className="rounded-xl border-[#c8c8cd]/50">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-lg text-[#1d1d1f]">Fabrication Updates</CardTitle>
-          {canAddUpdate && (
+          {canAddUpdate && !(allowedStatuses.includes(FabricationStatus.DONE) && !installationConfirmed && allowedStatuses.length === 1) && (
             <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
               <DialogTrigger asChild>
                 <Button className="bg-gray-900 hover:bg-gray-800 text-white shrink-0 rounded-xl" size="sm">
@@ -301,7 +306,7 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
                         {(allowedStatuses.length > 0 ? allowedStatuses : Object.values(FabricationStatus)).map((value) => {
                           const gate = fabricationStatus?.paymentGate?.stageGates?.[value];
                           const isPaymentBlocked = gate?.blocked === true;
-                          const isDoneBlocked = value === FabricationStatus.DONE && isReadyForDelivery && !installationConfirmed;
+                          const isDoneBlocked = value === FabricationStatus.DONE && !installationConfirmed;
                           const isBlocked = isPaymentBlocked || isDoneBlocked;
                           return (
                             <SelectItem key={value} value={value} disabled={isBlocked}>
