@@ -242,6 +242,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     open: false,
     blueprintId: '',
   });
+  const [approveConfirmDialog, setApproveConfirmDialog] = useState<{
+    open: boolean;
+    blueprintId: string;
+    component: 'blueprint' | 'costing' | null;
+  }>({ open: false, blueprintId: '', component: null });
   const [revisionNotes, setRevisionNotes] = useState('');
   const [revisionRefKeys, setRevisionRefKeys] = useState<string[]>([]);
   const [acceptDialog, setAcceptDialog] = useState<{ open: boolean; blueprint: Blueprint | null }>({
@@ -1087,7 +1092,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                   {canReviewBlueprint && !bp.blueprintApproved && (
                     <Button
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
-                      onClick={() => handleApprove(bp._id, 'blueprint')}
+                      onClick={() => setApproveConfirmDialog({ open: true, blueprintId: bp._id, component: 'blueprint' })}
                       disabled={approveMutation.isPending}
                     >
                       {approvingComponent === 'blueprint' && approveMutation.isPending ? (
@@ -1127,7 +1132,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                   {canReviewBlueprint && !bp.costingApproved && (
                     <Button
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
-                      onClick={() => handleApprove(bp._id, 'costing')}
+                      onClick={() => setApproveConfirmDialog({ open: true, blueprintId: bp._id, component: 'costing' })}
                       disabled={approveMutation.isPending}
                     >
                       {approvingComponent === 'costing' && approveMutation.isPending ? (
@@ -1377,7 +1382,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           )}
 
           {/* Action buttons for customer review */}
-          {canReviewBlueprint && ['uploaded', 'revision_uploaded', 'approved'].includes(bp.status) && (
+          {canReviewBlueprint && ['uploaded', 'revision_uploaded'].includes(bp.status) && (
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="outline"
@@ -1391,6 +1396,61 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           )}
         </div>
       ))}
+
+      {/* Approve Confirmation Dialog */}
+      <Dialog
+        open={approveConfirmDialog.open}
+        onOpenChange={(open) => {
+          if (!open) setApproveConfirmDialog({ open: false, blueprintId: '', component: null });
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px] rounded-2xl">
+          <DialogHeader>
+            <DialogTitle className="text-gray-900">
+              Approve {approveConfirmDialog.component === 'blueprint' ? 'Design' : 'Costing Sheet'}?
+            </DialogTitle>
+            <DialogDescription className="text-gray-500 pt-1">
+              Please make sure you have carefully reviewed the{' '}
+              <span className="font-medium text-gray-700">
+                {approveConfirmDialog.component === 'blueprint' ? 'design' : 'costing sheet'}
+              </span>{' '}
+              before approving.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex gap-3 my-1">
+            <span className="shrink-0 text-amber-500 mt-0.5">
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+                <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+              </svg>
+            </span>
+            <p className="text-sm text-amber-800">
+              Once you approve <span className="font-semibold">both</span> the design and costing sheet, you will{' '}
+              <span className="font-semibold">no longer be able to request a revision</span>. This action is final.
+            </p>
+          </div>
+          <DialogFooter className="mt-2">
+            <Button
+              variant="outline"
+              className="border-gray-200 rounded-lg"
+              onClick={() => setApproveConfirmDialog({ open: false, blueprintId: '', component: null })}
+            >
+              Go Back
+            </Button>
+            <Button
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              onClick={() => {
+                if (approveConfirmDialog.blueprintId && approveConfirmDialog.component) {
+                  handleApprove(approveConfirmDialog.blueprintId, approveConfirmDialog.component);
+                }
+                setApproveConfirmDialog({ open: false, blueprintId: '', component: null });
+              }}
+            >
+              <CheckCircle className="mr-2 h-4 w-4" />
+              Yes, Approve
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Revision Dialog */}
       <Dialog
