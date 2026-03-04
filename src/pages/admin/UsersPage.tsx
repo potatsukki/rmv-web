@@ -85,7 +85,10 @@ const userSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
   email: z.string().email('Valid email is required'),
-  phone: z.string().optional().or(z.literal('')),
+  phone: z.string().refine(
+    (v) => !v || /^\+639\d{9}$/.test(v),
+    { message: 'Enter a valid 10-digit mobile number (9XXXXXXXXX)' }
+  ).optional().or(z.literal('')),
   role: z.nativeEnum(Role),
   password: z.string().optional(),
 });
@@ -590,12 +593,25 @@ export function UsersPage() {
               <Label htmlFor="phone" className="text-gray-700 text-[13px] font-medium">
                 Phone Number (Optional)
               </Label>
-              <Input
-                id="phone"
-                placeholder="+639XXXXXXXXX"
-                {...form.register('phone')}
-                className={inputClasses}
-              />
+              <div className="flex h-11 rounded-lg overflow-hidden border border-gray-200 bg-gray-50/50 focus-within:border-[#6e6e73] focus-within:ring-2 focus-within:ring-[#6e6e73]/20 transition-all">
+                <span className="flex items-center px-3 text-sm font-medium text-[#3a3a3e] bg-gray-100/80 border-r border-gray-200 select-none shrink-0">+63</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="9XXXXXXXXX"
+                  value={(form.watch('phone') || '').replace(/^\+63/, '')}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10);
+                    form.setValue('phone', raw ? `+63${raw}` : '', { shouldValidate: true });
+                  }}
+                  className="flex-1 bg-transparent px-3 text-sm text-[#1d1d1f] outline-none placeholder:text-gray-400 min-w-0"
+                />
+              </div>
+              {form.formState.errors.phone && (
+                <p className="text-xs text-red-500">{form.formState.errors.phone.message}</p>
+              )}
             </div>
 
             <div className="space-y-1.5">
