@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { RotateCcw, CheckCircle, XCircle, Clock, User, Phone, Building2 } from 'lucide-react';
+import { RotateCcw, CheckCircle, XCircle, Clock, User, Phone, Building2, Filter } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -19,13 +19,6 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { useRefundRequests, useApproveRefund, useDenyRefund } from '@/hooks/useRefunds';
 import type { RefundRequest } from '@/lib/types';
 
@@ -37,6 +30,13 @@ const statusConfig: Record<string, { label: string; color: string; icon: typeof 
   approved: { label: 'Approved', color: 'text-green-700 bg-green-50 border-green-200', icon: CheckCircle },
   denied: { label: 'Denied', color: 'text-red-700 bg-red-50 border-red-200', icon: XCircle },
 };
+
+const STATUS_FILTERS = [
+  { label: 'All', value: 'all' },
+  { label: 'Pending', value: 'pending' },
+  { label: 'Approved', value: 'approved' },
+  { label: 'Denied', value: 'denied' },
+];
 
 export function RefundQueuePage() {
   const [statusFilter, setStatusFilter] = useState<string>('pending');
@@ -96,22 +96,28 @@ export function RefundQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Refund Requests</h1>
-          <p className="text-[#6e6e73] text-sm">Review and process customer refund requests</p>
-        </div>
-        <Select value={statusFilter} onValueChange={(v) => { setStatusFilter(v); setPage(1); }}>
-          <SelectTrigger className="w-[160px] rounded-xl border-[#d2d2d7]">
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            <SelectItem value="pending">Pending</SelectItem>
-            <SelectItem value="approved">Approved</SelectItem>
-            <SelectItem value="denied">Denied</SelectItem>
-          </SelectContent>
-        </Select>
+      <div>
+        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Refund Requests</h1>
+        <p className="text-[#6e6e73] mt-1 text-sm">Review and process customer refund requests</p>
+      </div>
+
+      <div className="flex items-center gap-1.5 bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-x-auto no-scrollbar">
+        <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
+        {STATUS_FILTERS.map((f) => (
+          <button
+            type="button"
+            key={f.value}
+            onClick={() => { setStatusFilter(f.value); setPage(1); }}
+            aria-pressed={statusFilter === f.value}
+            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+              statusFilter === f.value
+                ? 'bg-[#1d1d1f] text-white shadow-sm'
+                : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
+            }`}
+          >
+            {f.label}
+          </button>
+        ))}
       </div>
 
       {isLoading ? (
