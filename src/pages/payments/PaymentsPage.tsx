@@ -551,7 +551,7 @@ export function PaymentsPage() {
             </CardHeader>
 
             {/* Desktop table header */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_100px_120px_auto] gap-3 px-6 pb-2 text-xs font-medium text-[#86868b] uppercase tracking-wider border-b border-[#e8e8ed]">
+            <div className="hidden sm:grid sm:grid-cols-[2fr_minmax(100px,1fr)_100px_minmax(140px,auto)] gap-3 px-6 pb-2 text-xs font-medium text-[#86868b] uppercase tracking-wider border-b border-[#e8e8ed]">
               <span>Stage</span>
               <span className="text-right">Amount</span>
               <span className="text-center">Status</span>
@@ -655,14 +655,14 @@ export function PaymentsPage() {
                             >
                               {isDeclined ? 'Resubmit Proof' : isEarlyPay ? 'Pay Early — Proof' : 'Upload Proof'}
                             </Button>
-                            {import.meta.env.DEV && (
+                            {(import.meta.env.DEV || user?.roles.includes(Role.ADMIN)) && (
                               <Button
                                 size="sm"
                                 variant="ghost"
                                 className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-8"
                                 onClick={() => handleSimulate(String(stage.stageId))}
                                 disabled={simulatePayment.isPending}
-                                title="DEV: Simulate payment"
+                                title="Simulate payment (testing)"
                               >
                                 <Zap className="mr-1 h-3.5 w-3.5" /> Simulate
                               </Button>
@@ -690,7 +690,7 @@ export function PaymentsPage() {
                       </div>
 
                       {/* ─── Desktop layout (table row) ─── */}
-                      <div className="hidden sm:grid sm:grid-cols-[1fr_100px_120px_auto] gap-3 items-center">
+                      <div className="hidden sm:grid sm:grid-cols-[2fr_minmax(100px,1fr)_100px_minmax(140px,auto)] gap-3 items-center">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold text-[#1d1d1f] truncate">{String(stage.label)}</p>
@@ -733,14 +733,14 @@ export function PaymentsPage() {
                               >
                                 {isDeclined ? 'Resubmit' : 'Proof'}
                               </Button>
-                              {import.meta.env.DEV && (
+                              {(import.meta.env.DEV || user?.roles.includes(Role.ADMIN)) && (
                                 <Button
                                   size="sm"
                                   variant="ghost"
                                   className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-7 px-2"
                                   onClick={() => handleSimulate(String(stage.stageId))}
                                   disabled={simulatePayment.isPending}
-                                  title="DEV: Simulate payment"
+                                  title="Simulate payment (testing)"
                                 >
                                   <Zap className="h-3 w-3" />
                                 </Button>
