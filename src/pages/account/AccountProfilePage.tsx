@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Phone, Check, PenTool, Navigation } from 'lucide-react';
+import { Check, PenTool, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useState, useEffect, useCallback } from 'react';
 
@@ -42,7 +42,10 @@ const NCR_CITIES = [
 const profileSchema = z.object({
   firstName: z.string().min(1, 'First name is required'),
   lastName: z.string().min(1, 'Last name is required'),
-  phone: z.string().optional().or(z.literal('')),
+  phone: z.string().refine(
+    (v) => !v || /^\+639\d{9}$/.test(v),
+    { message: 'Enter a valid 10-digit mobile number (9XXXXXXXXX)' }
+  ).optional().or(z.literal('')),
   street: z.string().max(200).optional().or(z.literal('')),
   barangay: z.string().max(100).optional().or(z.literal('')),
   city: z.string().max(100).optional().or(z.literal('')),
@@ -182,13 +185,20 @@ export function AccountProfilePage() {
             <Label htmlFor="phone" className="text-[#3a3a3e] text-[13px] font-medium">
               Phone Number
             </Label>
-            <div className="relative">
-              <Phone className="absolute left-3 top-3 h-4 w-4 text-[#86868b]" />
-              <Input
+            <div className="flex h-11 rounded-xl overflow-hidden border border-[#c8c8cd] bg-white/80 focus-within:border-[#6e6e73] focus-within:ring-2 focus-within:ring-[#6e6e73]/20 transition-all">
+              <span className="flex items-center px-3 text-sm font-medium text-[#3a3a3e] bg-gray-100/80 border-r border-[#c8c8cd] select-none shrink-0">+63</span>
+              <input
                 id="phone"
-                placeholder="+63 9XX XXX XXXX"
-                {...register('phone')}
-                className={`pl-10 ${inputClasses}`}
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                placeholder="9XXXXXXXXX"
+                value={(watch('phone') || '').replace(/^\+63/, '')}
+                onChange={(e) => {
+                  const raw = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10);
+                  setValue('phone', raw ? `+63${raw}` : '', { shouldValidate: true, shouldDirty: true });
+                }}
+                className="flex-1 bg-transparent px-3 text-sm text-[#1d1d1f] outline-none placeholder:text-gray-400 min-w-0"
               />
             </div>
             <p className="text-xs text-[#86868b]">{phoneDescription}</p>
