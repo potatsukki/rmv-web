@@ -111,13 +111,13 @@ export function LandingPage() {
     target: heroWrapperRef,
     offset: ['start start', 'end start'],
   });
-  const heroContentY = useTransform(heroProgress, [0, 1], [0, 180]);
-  const heroContentOpacity = useTransform(heroProgress, [0, 0.6, 1], [1, 0.8, 0]);
-  const heroContentScale = useTransform(heroProgress, [0, 1], [1, 0.92]);
-  const blueprintLeftX = useTransform(heroProgress, [0, 1], [0, -120]);
-  const blueprintRightX = useTransform(heroProgress, [0, 1], [0, 120]);
+  const heroContentY = useTransform(heroProgress, [0, 1], [0, 100]);
+  const heroContentOpacity = useTransform(heroProgress, [0, 0.5, 1], [1, 0.6, 0]);
+  const heroContentScale = useTransform(heroProgress, [0, 1], [1, 0.95]);
+  const blueprintLeftX = useTransform(heroProgress, [0, 1], [0, -80]);
+  const blueprintRightX = useTransform(heroProgress, [0, 1], [0, 80]);
   const blueprintOpacity = useTransform(heroProgress, [0, 0.5, 1], [1, 0.6, 0]);
-  const heroGlowScale = useTransform(heroProgress, [0, 1], [1, 1.4]);
+  const heroGlowScale = useTransform(heroProgress, [0, 1], [1, 1.3]);
   const heroGlowOpacity = useTransform(heroProgress, [0, 0.7, 1], [0.45, 0.2, 0]);
 
   // About section parallax
@@ -280,9 +280,8 @@ export function LandingPage() {
           </motion.div>
         )}
 
-        {/* Hero Section — Sticky wrapper gives scroll room for parallax */}
-        <div ref={heroWrapperRef} className="relative" style={{ height: '160vh' }}>
-        <section id="hero" className="sticky top-0 min-h-[85vh] md:min-h-[90vh] flex items-center justify-center pt-20 overflow-hidden bg-gradient-to-b from-[#e6e6ea] via-[#dcdce0] to-[#d0d0d5]">
+        {/* Hero Section */}
+        <section ref={heroWrapperRef} id="hero" className="relative h-svh flex items-center justify-center pt-20 pb-12 overflow-hidden bg-gradient-to-b from-[#e6e6ea] via-[#dcdce0] to-[#d0d0d5]">
           {/* Subtle noise texture */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Soft center glow — parallax layer */}
@@ -395,7 +394,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 80, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 1.4, ease: SMOOTH_240 }}
-              className="text-[2.75rem] sm:text-6xl md:text-8xl lg:text-[140px] font-bold tracking-tighter leading-[0.9] text-center mb-4 md:mb-6 gpu-reveal"
+              className="text-[2.75rem] sm:text-6xl md:text-7xl lg:text-[120px] font-bold tracking-tighter leading-[0.95] text-center mb-4 md:mb-6 py-2 gpu-reveal"
             >
               <span
                 className="bg-clip-text text-transparent"
@@ -415,7 +414,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.25, ease: SMOOTH_240 }}
-              className="text-lg sm:text-xl md:text-2xl font-medium tracking-tight text-[#6e6e73] max-w-2xl mb-3 md:mb-4 px-2 gpu-reveal"
+              className="text-lg sm:text-xl md:text-2xl font-medium tracking-tight text-[#6e6e73] max-w-2xl mb-4 md:mb-5 px-2 gpu-reveal"
             >
               Uncompromising quality in every weld.
             </motion.p>
@@ -423,7 +422,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.35, ease: SMOOTH_240 }}
-              className="text-sm sm:text-base md:text-lg font-normal text-[#86868b] max-w-xl mb-8 md:mb-12 px-4 gpu-reveal"
+              className="text-sm sm:text-base md:text-lg font-normal text-[#86868b] max-w-xl mb-6 md:mb-8 px-4 gpu-reveal"
             >
               Your online platform for managing custom fabrication projects — from blueprint approvals and payment tracking to real-time progress updates.
             </motion.p>
@@ -432,24 +431,23 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.5, ease: SMOOTH_240 }}
-              className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto gpu-reveal"
+              className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pb-4 gpu-reveal overflow-visible"
             >
-              <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300 shadow-xl shadow-black/15 w-full sm:w-auto">
+              <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all active:scale-95 duration-300 w-full sm:w-auto">
                 <Link to="/register">
                   Commission a Project
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button asChild className="relative overflow-hidden text-[#2d2d2f] border border-[#b0b0b6] text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300 shadow-md shadow-black/8 w-full sm:w-auto" style={{ background: 'linear-gradient(160deg, #e8e8ec 0%, #d4d4d8 25%, #f0f0f3 50%, #c8c8cd 75%, #dcdce0 100%)' }}>
+              <Button asChild className="relative overflow-hidden text-[#2d2d2f] border border-[#b0b0b6] text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all active:scale-95 duration-300 shadow-md shadow-black/8 hover:shadow-lg hover:shadow-black/12 hover:brightness-105 w-full sm:w-auto" style={{ background: 'linear-gradient(160deg, #e8e8ec 0%, #d4d4d8 25%, #f0f0f3 50%, #c8c8cd 75%, #dcdce0 100%)' }}>
                 <a href="#capabilities">Explore Services</a>
               </Button>
             </motion.div>
           </motion.div>
         </section>
-        </div>
 
         {/* Built on Trust Section */}
-        <section ref={aboutRef} id="about" className="relative py-16 md:py-32 bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d4d4d9] overflow-hidden">
+        <section ref={aboutRef} id="about" className="relative -mt-10 md:-mt-16 pt-20 pb-16 md:pt-40 md:pb-32 rounded-t-[40px] md:rounded-t-[80px] bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d4d4d9] overflow-hidden z-10">
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Blueprint corner decoration */}
           <div className="absolute top-8 right-8 w-[200px] md:w-[280px] pointer-events-none hidden md:block">
