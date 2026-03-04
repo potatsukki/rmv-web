@@ -895,6 +895,34 @@ export function BookAppointmentPage() {
         {/* Step: Details for Sales Staff */}
         {steps[currentStep]?.key === 'details' && (
           <div className="space-y-6">
+            {/* Office visit measurement warning banner */}
+            {!isOcular && (
+              <div className="flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3.5">
+                <span className="mt-0.5 shrink-0 text-amber-500">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
+                    <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
+                  </svg>
+                </span>
+                <div className="space-y-1.5">
+                  <p className="text-sm font-semibold text-amber-800">Provide accurate measurements</p>
+                  <p className="text-sm text-amber-700">
+                    Since this is an <span className="font-medium">office visit</span>, our staff will not be able to measure your space on-site. Please enter the most accurate dimensions you have — incorrect measurements may affect the final quotation and fabrication outcome.
+                  </p>
+                  <p className="text-sm text-amber-600">
+                    Not sure about your measurements?{' '}
+                    <button
+                      type="button"
+                      onClick={() => setCurrentStep(0)}
+                      className="font-medium underline underline-offset-2 hover:text-amber-800 transition-colors"
+                    >
+                      Switch to an ocular visit instead
+                    </button>{' '}
+                    and our staff will measure on-site.
+                  </p>
+                </div>
+              </div>
+            )}
+
             {/* Service Type + Requirements side-by-side */}
             <div className="grid gap-6 lg:grid-cols-2">
               <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
