@@ -36,6 +36,7 @@ export function usePaymentPlan(projectId: string) {
       return data.data;
     },
     enabled: !!projectId,
+    refetchInterval: 10_000,
   });
 }
 
@@ -49,6 +50,7 @@ export function usePaymentsByProject(projectId: string) {
       return data.data;
     },
     enabled: !!projectId,
+    refetchInterval: 10_000,
   });
 }
 
@@ -191,7 +193,7 @@ export function useSimulateStagePayment() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (stageId: string) => {
-      const { data } = await api.post<ApiResponse<{ payment: Payment; receiptNumber: string }>>(
+      const { data } = await api.post<ApiResponse<{ payment: Payment }>>(
         `/payments/stages/${stageId}/simulate`,
       );
       return data.data;

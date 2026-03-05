@@ -5,6 +5,7 @@ import {
   ArrowLeft, FileText, CreditCard, Hammer, Image, ScrollText,
   Download, Loader2, Phone, UserPlus, Upload, Camera, Video,
   PenTool, ChevronDown, ChevronUp, Users, Eye, Check, X, ExternalLink,
+  Info, CheckCircle2,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -231,7 +232,7 @@ export function ProjectDetailPage() {
   const handleGenerateContract = async () => {
     try {
       await generateContract.mutateAsync(id!);
-      toast.success('Contract generated successfully');
+      toast.success('Contract generated! The customer can now review and sign it.', { duration: 5000 });
       refetch();
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to generate contract'));
@@ -248,7 +249,7 @@ export function ProjectDetailPage() {
         projectId: id!,
         signatureKey: contractSignatureKey,
       });
-      toast.success('Contract signed successfully! Redirecting to payments...');
+      toast.success('Contract signed! Redirecting to payments — complete the down-payment to start fabrication.', { duration: 5000 });
       setContractSignatureKey('');
       // Redirect customer to payments page with this project pre-selected
       setTimeout(() => {
@@ -277,7 +278,7 @@ export function ProjectDetailPage() {
     if (!user?._id) return;
     try {
       await assignEngineers.mutateAsync({ id: id!, engineerIds: [user._id] });
-      toast.success('You have been assigned to this project');
+      toast.success('You’ve been assigned to this project. Next: upload the blueprint and costing for customer review.', { duration: 5000 });
       refetch();
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to claim project'));
@@ -295,7 +296,7 @@ export function ProjectDetailPage() {
         fabricationLeadId: fabLeadId,
         fabricationAssistantIds: fabAssistantIds,
       });
-      toast.success('Fabrication team assigned');
+      toast.success('Fabrication team assigned! They can now begin tracking fabrication progress.', { duration: 5000 });
       setShowFabForm(false);
       setFabLeadId('');
       setFabAssistantIds([]);
@@ -332,7 +333,7 @@ export function ProjectDetailPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-[#1d1d1f] truncate">
-              {project.title}
+              {project.serviceType || project.title}
             </h1>
             <StatusBadge status={project.status} />
           </div>
@@ -418,6 +419,74 @@ export function ProjectDetailPage() {
             })}
           </div>
         </>
+      )}
+
+      {/* ── Customer Status Guide Banner ── */}
+      {isCustomer && project.status === 'submitted' && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900">Project Submitted</p>
+              <p className="text-xs text-blue-700 mt-0.5">Your project has been created from the visit report. An engineer will be assigned to design your blueprint.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isCustomer && project.status === 'blueprint' && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Info className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Blueprint In Progress</p>
+              <p className="text-xs text-amber-700 mt-0.5">The engineer is working on your blueprint and costing. You&apos;ll be notified once it&apos;s ready for your review.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isCustomer && project.status === 'approved' && !project.contractSignedAt && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 bg-emerald-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <PenTool className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-900">Ready for Contract Signing</p>
+              <p className="text-xs text-emerald-700 mt-0.5">Your blueprint has been approved! Scroll down to review and sign the contract, then proceed to payment.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isCustomer && project.status === 'payment_pending' && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <CreditCard className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Payment Required</p>
+              <p className="text-xs text-amber-700 mt-0.5">Complete the required payments to begin fabrication. Go to the Payments tab to pay via QR or cash.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isCustomer && project.status === 'fabrication' && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-indigo-200 bg-indigo-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Hammer className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-indigo-900">Fabrication In Progress</p>
+              <p className="text-xs text-indigo-700 mt-0.5">Your order is being fabricated. Check the Fabrication tab for progress updates and photos.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isCustomer && project.status === 'completed' && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 bg-emerald-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-900">Project Complete</p>
+              <p className="text-xs text-emerald-700 mt-0.5">Your project has been completed. Thank you for choosing our services!</p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* ── Contextual Action Banner (engineer) ── */}
@@ -828,8 +897,8 @@ export function ProjectDetailPage() {
                   </div>
                 )}
 
-                {/* Site Conditions */}
-                {visitReport.siteConditions && (
+                {/* Site Conditions — ocular visits only */}
+                {visitReport.visitType === 'ocular' && visitReport.siteConditions && (
                   <div>
                     <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">Site Conditions</p>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">

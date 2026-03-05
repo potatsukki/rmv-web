@@ -212,13 +212,8 @@ export function ProjectsPage() {
                           <div className={`h-2 w-2 rounded-full flex-shrink-0 ${cfg.bar}`} />
                           <div className="min-w-0">
                             <p className="font-medium text-sm text-[#1d1d1f] truncate max-w-[220px] group-hover:text-[#0066cc] transition-colors">
-                              {String(project.title || '')}
+                              {String(project.serviceType || project.title || '')}
                             </p>
-                            {project.serviceType && (
-                              <span className="text-[11px] text-[#6e6e73] bg-[#f0f0f5] px-1.5 py-0.5 rounded mt-0.5 inline-block">
-                                {String(project.serviceType)}
-                              </span>
-                            )}
                           </div>
                         </div>
                       </TableCell>

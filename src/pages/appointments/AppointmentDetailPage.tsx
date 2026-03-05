@@ -1,9 +1,11 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, AlertTriangle, Camera, Image, Loader2, RotateCcw, Mail, Banknote } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, RotateCcw, Mail, Banknote, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
+import { LocationPicker } from '@/components/maps/LocationPicker';
+import { reverseGeocodeLocation, fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {
@@ -31,6 +33,8 @@ import {
   useMarkNoShow,
   useUpdateVisitStatus,
   useRefundOcularFee,
+  useAgentFinalizeOcular,
+  useCustomerSubmitLocation,
 } from '@/hooks/useAppointments';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { useSubmitRefundRequest, useMyRefundRequests } from '@/hooks/useRefunds';
@@ -39,7 +43,7 @@ import { Role, AppointmentStatus } from '@/lib/constants';
 import { SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import type { ApiResponse } from '@/lib/types';
+import type { ApiResponse, Appointment } from '@/lib/types';
 
 export function AppointmentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -53,13 +57,34 @@ export function AppointmentDetailPage() {
   const noShowMutation = useMarkNoShow();
   const visitStatusMutation = useUpdateVisitStatus();
   const refundMutation = useRefundOcularFee();
+  const finalizeMutation = useAgentFinalizeOcular();
+  const submitLocationMutation = useCustomerSubmitLocation();
 
-  // Fetch visit reports linked to this appointment (for sales staff link)
-  const { data: visitReports } = useVisitReportsByAppointment(id!);
+  // Customer location submission state
+  const [customerLocationPin, setCustomerLocationPin] = useState<MapPoint | null>(null);
+  const [customerAddress, setCustomerAddress] = useState('');
+  const [feePreview, setFeePreview] = useState<OcularFeePreview | null>(null);
+  const [feeLoading, setFeeLoading] = useState(false);
+  const [feeError, setFeeError] = useState<string | null>(null);
+
+  // Official address state — pre-filled from user profile
+  const [addrStreet, setAddrStreet] = useState(user?.addressData?.street ?? '');
+  const [addrBarangay, setAddrBarangay] = useState(user?.addressData?.barangay ?? '');
+  const [addrCity, setAddrCity] = useState(user?.addressData?.city ?? '');
+  const [addrProvince, setAddrProvince] = useState(user?.addressData?.province ?? '');
+  const [addrZip, setAddrZip] = useState(user?.addressData?.zip ?? '');
+
+  const isCustomer = user?.roles.includes(Role.CUSTOMER);
+  const isAgent = user?.roles.includes(Role.APPOINTMENT_AGENT);
+  const isSalesStaff = user?.roles.includes(Role.SALES_STAFF);
+  const isAdmin = user?.roles.includes(Role.ADMIN);
+
+  // Fetch visit reports — only for roles that have access (not customers)
+  const canSeeVisitReports = isSalesStaff || isAdmin || user?.roles.includes(Role.ENGINEER) || isAgent;
+  const { data: visitReports } = useVisitReportsByAppointment(canSeeVisitReports ? id! : '');
 
   // Refund request
   const submitRefundMutation = useSubmitRefundRequest();
-  const isCustomer = user?.roles.includes(Role.CUSTOMER);
   const { data: myRefundRequests } = useMyRefundRequests(!!isCustomer);
 
   const [cancelOpen, setCancelOpen] = useState(false);
@@ -67,7 +92,10 @@ export function AppointmentDetailPage() {
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundReason, setRefundReason] = useState('');
   const [selectedSalesStaff, setSelectedSalesStaff] = useState('');
+  const [finalizeSalesStaff, setFinalizeSalesStaff] = useState('');
   const [salesStaffList, setSalesStaffList] = useState<{ _id: string; firstName: string; lastName: string }[]>([]);
+  const [previousStaff, setPreviousStaff] = useState<{ _id: string; name: string } | null>(null);
+  const [previousStaffLoading, setPreviousStaffLoading] = useState(false);
 
   // Customer refund request form state
   const [customerRefundOpen, setCustomerRefundOpen] = useState(false);
@@ -77,13 +105,46 @@ export function AppointmentDetailPage() {
   const [customerRefundAccountNumber, setCustomerRefundAccountNumber] = useState('');
   const [customerRefundBankName, setCustomerRefundBankName] = useState('');
 
-  const isAgent = user?.roles.includes(Role.APPOINTMENT_AGENT);
-  const isAdmin = user?.roles.includes(Role.ADMIN);
   const canConfirmAppointment = !!(isAgent || isAdmin);
   const canCompleteAppointment = !!user?.roles.includes(Role.SALES_STAFF);
   const isStaff = user?.roles.some((r) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(r),
   );
+
+  // Philippines bounding box (rough)
+  const PH_BOUNDS = { latMin: 4.5, latMax: 21.5, lngMin: 116.0, lngMax: 127.0 };
+
+  // Live fee computation when customer moves pin
+  useEffect(() => {
+    if (!customerLocationPin) {
+      setFeePreview(null);
+      setFeeError(null);
+      return;
+    }
+    const { lat, lng } = customerLocationPin;
+    if (lat < PH_BOUNDS.latMin || lat > PH_BOUNDS.latMax || lng < PH_BOUNDS.lngMin || lng > PH_BOUNDS.lngMax) {
+      setFeePreview(null);
+      setFeeError('Location must be within the Philippines. Please select a valid land location.');
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setFeeLoading(true);
+      setFeeError(null);
+      try {
+        const preview = await fetchOcularFeePreview(customerLocationPin);
+        if (!cancelled) setFeePreview(preview);
+      } catch {
+        if (!cancelled) {
+          setFeePreview(null);
+          setFeeError('Unable to calculate route to this location. Please select a reachable land location.');
+        }
+      } finally {
+        if (!cancelled) setFeeLoading(false);
+      }
+    }, 500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [customerLocationPin]);
 
   // Fetch sales staff list when the agent views a requested appointment
   useEffect(() => {
@@ -93,6 +154,23 @@ export function AppointmentDetailPage() {
         .catch(() => {});
     }
   }, [canConfirmAppointment]);
+
+  // Auto-detect previous consultation's sales staff for ocular appointments
+  useEffect(() => {
+    if (!canConfirmAppointment || !appt || appt.type !== 'ocular') return;
+    setPreviousStaffLoading(true);
+    api.get<ApiResponse<{ items: Appointment[] }>>('/appointments', { params: { customerId: appt.customerId, type: 'office', limit: 5, sortBy: 'date', sortOrder: 'desc' } })
+      .then(res => {
+        const items = res.data.data?.items || [];
+        const found = items.find((a: Appointment) => a.salesStaffId && a.salesStaffName);
+        if (found?.salesStaffId && found?.salesStaffName) {
+          setPreviousStaff({ _id: found.salesStaffId, name: found.salesStaffName });
+          setFinalizeSalesStaff(found.salesStaffId);
+        }
+      })
+      .catch(() => {})
+      .finally(() => setPreviousStaffLoading(false));
+  }, [canConfirmAppointment, appt?.customerId, appt?.type]);
 
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
@@ -104,7 +182,10 @@ export function AppointmentDetailPage() {
     }
     try {
       await confirmMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
-      toast.success('Appointment confirmed & sales staff assigned');
+      toast.success(
+        'Appointment confirmed! The assigned sales staff will receive a notification. Next: customer pays ocular fee, then staff visits the site.',
+        { duration: 5000 },
+      );
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to confirm'));
     }
@@ -113,7 +194,10 @@ export function AppointmentDetailPage() {
   const handleComplete = async () => {
     try {
       await completeMutation.mutateAsync(id!);
-      toast.success('Appointment completed');
+      toast.success(
+        'Appointment completed! The sales staff can now submit their visit report to create a project.',
+        { duration: 5000 },
+      );
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to complete'));
     }
@@ -202,6 +286,72 @@ export function AppointmentDetailPage() {
         )}
       </div>
 
+      {/* ── Status Guide Banner ── */}
+      {appt.status === AppointmentStatus.REQUESTED && (
+        <Card className="rounded-xl border-amber-200 bg-amber-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Info className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Awaiting Confirmation</p>
+              <p className="text-xs text-amber-700 mt-0.5">
+                {isCustomer
+                  ? appt.type === 'ocular' && !appt.customerLocation
+                    ? 'Please submit your site location below so the agent can finalize your appointment.'
+                    : appt.type === 'ocular' && !appt.ocularFeePaid
+                    ? 'Please pay the ocular visit fee to proceed. An agent will confirm your appointment once payment is received.'
+                    : 'Your appointment request has been received. An agent will review and confirm it shortly.'
+                  : 'Review this appointment request and assign a sales staff member to confirm it.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {appt.status === AppointmentStatus.CONFIRMED && (
+        <Card className="rounded-xl border-blue-200 bg-blue-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900">Confirmed — Ready to Visit</p>
+              <p className="text-xs text-blue-700 mt-0.5">
+                {isCustomer
+                  ? 'Your appointment is confirmed. The assigned sales staff will visit on the scheduled date.'
+                  : 'Mark yourself as "On the Way" when heading to the site, then mark "Complete" after the visit.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {appt.status === AppointmentStatus.ON_THE_WAY && (
+        <Card className="rounded-xl border-indigo-200 bg-indigo-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Info className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-indigo-900">Sales Staff En Route</p>
+              <p className="text-xs text-indigo-700 mt-0.5">
+                {isCustomer
+                  ? 'The sales staff is on their way to your location. Please be available at the site.'
+                  : 'You are on the way. After the visit, mark this appointment as "Complete" and fill out the visit report.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {appt.status === AppointmentStatus.COMPLETED && (
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-900">Visit Completed</p>
+              <p className="text-xs text-emerald-700 mt-0.5">
+                {isCustomer
+                  ? 'The visit is complete. The sales staff will submit a visit report, which will automatically create your project.'
+                  : 'Visit complete. Submit the visit report to generate the project for this customer.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       <div className="grid gap-6 lg:grid-cols-2">
         {/* Info */}
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
@@ -220,6 +370,18 @@ export function AppointmentDetailPage() {
               label="Type"
               value={`${appt.type.charAt(0).toUpperCase() + appt.type.slice(1)} Visit`}
             />
+
+            {appt.serviceType && (
+              <InfoRow
+                icon={FileText}
+                label="Service Type"
+                value={
+                  appt.serviceType === 'custom'
+                    ? (appt.serviceTypeCustom || 'Custom')
+                    : (SERVICE_TYPE_LABELS[appt.serviceType] || appt.serviceType)
+                }
+              />
+            )}
 
             {appt.purpose && (
               <div>
@@ -356,29 +518,266 @@ export function AppointmentDetailPage() {
           </CardContent>
         </Card>
 
-      {/* Customer: Site Details CTA (pending) */}
-      {isCustomer && appt.siteDetailsStatus === 'pending' && appt.status === AppointmentStatus.REQUESTED && (
-        <Card className="rounded-xl border-blue-200 bg-blue-50 shadow-sm">
-          <CardContent className="py-5 space-y-3">
+
+
+      {/* Customer: Submit Location for Ocular Visit */}
+      {isCustomer && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && !appt.customerLocation && !appt.ocularFeePaid && (
+        <Card className="rounded-xl border-blue-200 bg-blue-50/50 shadow-sm lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
+              <MapPin className="h-5 w-5 text-blue-600" />
+              Provide Your Location
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-blue-800">
+              An ocular visit has been scheduled for{' '}
+              <strong>{format(new Date(appt.date), 'MMMM d, yyyy')}</strong>.
+              Please pin your site location on the map so we can calculate the visit fee and finalize your appointment.
+            </p>
+            <LocationPicker
+              value={customerLocationPin}
+              onChange={(loc, addrHint) => {
+                setCustomerLocationPin(loc);
+                if (addrHint) setCustomerAddress(addrHint);
+                else {
+                  reverseGeocodeLocation(loc)
+                    .then(addr => setCustomerAddress(addr || ''))
+                    .catch(() => {});
+                }
+              }}
+            />
+            {customerAddress && (
+              <div className="rounded-lg border border-blue-200 bg-white p-3">
+                <p className="text-xs font-medium text-blue-700">Resolved Address</p>
+                <p className="text-sm text-[#3a3a3e] mt-0.5">{customerAddress}</p>
+              </div>
+            )}
+
+            {/* Official address */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-semibold text-[#1d1d1f]">Official Site Address</p>
+                {!user?.addressData?.street && !user?.addressData?.city && (
+                  <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                    Not set in profile — please fill in
+                  </span>
+                )}
+              </div>
+              <p className="text-xs text-[#6e6e73]">This is the official address of the site to be visited. You can adjust it if needed.</p>
+              <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                <div className="sm:col-span-2">
+                  <Label htmlFor="addr-street" className="text-xs font-medium text-[#3a3a3e]">Street / Unit / Building</Label>
+                  <Input
+                    id="addr-street"
+                    value={addrStreet}
+                    onChange={e => setAddrStreet(e.target.value)}
+                    placeholder="e.g. 123 Rizal St."
+                    className="mt-1 h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="addr-barangay" className="text-xs font-medium text-[#3a3a3e]">Barangay</Label>
+                  <Input
+                    id="addr-barangay"
+                    value={addrBarangay}
+                    onChange={e => setAddrBarangay(e.target.value)}
+                    placeholder="e.g. Barangay 1"
+                    className="mt-1 h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="addr-city" className="text-xs font-medium text-[#3a3a3e]">City / Municipality</Label>
+                  <Input
+                    id="addr-city"
+                    value={addrCity}
+                    onChange={e => setAddrCity(e.target.value)}
+                    placeholder="e.g. Quezon City"
+                    className="mt-1 h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="addr-province" className="text-xs font-medium text-[#3a3a3e]">Province / Region</Label>
+                  <Input
+                    id="addr-province"
+                    value={addrProvince}
+                    onChange={e => setAddrProvince(e.target.value)}
+                    placeholder="e.g. Metro Manila"
+                    className="mt-1 h-9 text-sm"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="addr-zip" className="text-xs font-medium text-[#3a3a3e]">ZIP Code</Label>
+                  <Input
+                    id="addr-zip"
+                    value={addrZip}
+                    onChange={e => setAddrZip(e.target.value)}
+                    placeholder="e.g. 1100"
+                    className="mt-1 h-9 text-sm"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Live fee preview */}
+            {feeLoading && (
+              <div className="flex items-center gap-2 text-sm text-blue-600">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Calculating visit fee...
+              </div>
+            )}
+            {feeError && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
+                <p className="text-sm text-red-700">{feeError}</p>
+              </div>
+            )}
+            {feePreview && !feeLoading && (
+              <div className={`rounded-lg border p-4 space-y-2 ${feePreview.fee.isWithinNCR ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
+                <div className="flex items-center justify-between">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">Ocular Visit Fee</p>
+                  {feePreview.fee.isWithinNCR ? (
+                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full px-2.5 py-0.5">
+                      <CheckCircle2 className="h-3 w-3" /> FREE
+                    </span>
+                  ) : (
+                    <span className="text-lg font-bold text-amber-800">
+                      {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(feePreview.fee.total)}
+                    </span>
+                  )}
+                </div>
+                <div className="text-xs text-[#6e6e73] space-y-0.5">
+                  <p>Distance: {feePreview.route.distanceKm.toFixed(1)} km · ~{feePreview.route.durationMinutes} min drive</p>
+                  {feePreview.fee.isWithinNCR ? (
+                    <p className="text-emerald-700">Within Metro Manila — no ocular visit fee</p>
+                  ) : (
+                    <>
+                      <p>Base fee: ₱{feePreview.fee.baseFee} (first {feePreview.fee.baseCoveredKm} km)</p>
+                      {feePreview.fee.additionalDistanceKm > 0 && (
+                        <p>Additional: ₱{feePreview.fee.perKmRate}/km × {feePreview.fee.additionalDistanceKm.toFixed(1)} km = ₱{feePreview.fee.additionalFee}</p>
+                      )}
+                      <p className="text-amber-700 font-medium mt-1">Payment required before your appointment can be confirmed.</p>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Submit / Pay button */}
+            {feePreview && !feeLoading && !feeError && (
+              (() => {
+                const addressStructured = {
+                  street: addrStreet.trim(),
+                  barangay: addrBarangay.trim(),
+                  city: addrCity.trim(),
+                  province: addrProvince.trim(),
+                  zip: addrZip.trim(),
+                };
+                const handleSubmit = async (redirect?: boolean) => {
+                  if (!customerLocationPin) return;
+                  if (!addrCity.trim()) {
+                    toast.error('Please enter at least the city/municipality for the official address');
+                    return;
+                  }
+                  try {
+                    await submitLocationMutation.mutateAsync({
+                      id: id!,
+                      customerLocation: customerLocationPin,
+                      formattedAddress: customerAddress || undefined,
+                      addressStructured,
+                    });
+                    if (redirect) {
+                      navigate(`/appointments/${id}/pay-ocular-fee`);
+                    } else {
+                      toast.success('Location submitted! The agent will finalize your appointment.');
+                    }
+                  } catch (err) {
+                    toast.error(extractErrorMessage(err, 'Failed to submit location'));
+                  }
+                };
+                return feePreview.fee.isWithinNCR ? (
+                  <Button
+                    onClick={() => handleSubmit(false)}
+                    disabled={submitLocationMutation.isPending}
+                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl w-full sm:w-auto h-10"
+                  >
+                    {submitLocationMutation.isPending ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Submitting...</>
+                    ) : (
+                      <>
+                        <MapPin className="mr-2 h-4 w-4" />
+                        Submit Location
+                      </>
+                    )}
+                  </Button>
+                ) : (
+                  <Button
+                    onClick={() => handleSubmit(true)}
+                    disabled={submitLocationMutation.isPending}
+                    className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl w-full sm:w-auto h-10"
+                  >
+                    {submitLocationMutation.isPending ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
+                    ) : (
+                      <>
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Submit & Pay Ocular Fee ({new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(feePreview.fee.total)})
+                      </>
+                    )}
+                  </Button>
+                );
+              })()
+            )}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Customer: Waiting for agent finalization (within NCR — no payment needed) */}
+      {isCustomer && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (appt.ocularFeeBreakdown?.isWithinNCR || appt.ocularFeePaid) && (
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 shadow-sm lg:col-span-2">
+          <CardContent className="py-5">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-100 p-2">
-                <FileText className="h-5 w-5 text-blue-600" />
+              <div className="rounded-lg bg-emerald-100 p-2">
+                <CheckCircle2 className="h-5 w-5 text-emerald-600" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-blue-900">
-                  {appt.type === 'office' ? 'Site Details Required' : 'Provide Site Details (Optional)'}
-                </p>
-                <p className="text-xs text-blue-700 mt-0.5">
-                  {appt.type === 'office'
-                    ? 'Please provide your site photos and details so the sales staff can prepare for your consultation.'
-                    : 'You may optionally provide site details to help the sales staff prepare for the ocular visit.'}
+                <p className="text-sm font-semibold text-emerald-900">Location Submitted</p>
+                <p className="text-xs text-emerald-700 mt-0.5">
+                  {appt.address || 'Your location has been submitted.'}
+                  {' '}Waiting for our agent to finalize your appointment.
                 </p>
               </div>
             </div>
-            <Button asChild className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm">
-              <Link to={`/appointments/${appt._id}/site-details`}>
-                <Camera className="mr-2 h-4 w-4" />
-                {appt.type === 'office' ? 'Complete Site Details' : 'Add Site Details'}
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Customer: Location submitted but ocular fee not paid (outside NCR) */}
+      {isCustomer && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && !appt.ocularFeeBreakdown?.isWithinNCR && !appt.ocularFeePaid && appt.ocularFeeStatus === 'pending' && (
+        <Card className="rounded-xl border-amber-200 bg-amber-50/50 shadow-sm lg:col-span-2">
+          <CardContent className="py-5 space-y-3">
+            <div className="flex items-center gap-3">
+              <div className="rounded-lg bg-amber-100 p-2">
+                <CreditCard className="h-5 w-5 text-amber-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-semibold text-amber-900">Ocular Fee Payment Required</p>
+                <p className="text-xs text-amber-700 mt-0.5">
+                  Your location is outside Metro Manila. Please pay the ocular visit fee to proceed.
+                </p>
+              </div>
+              {appt.ocularFee != null && (
+                <p className="text-lg font-bold text-amber-800">
+                  {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(appt.ocularFee)}
+                </p>
+              )}
+            </div>
+            <Button
+              asChild
+              className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl w-full sm:w-auto h-10"
+            >
+              <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
+                <CreditCard className="mr-2 h-4 w-4" />
+                Pay Ocular Fee
               </Link>
             </Button>
           </CardContent>
@@ -520,19 +919,13 @@ export function AppointmentDetailPage() {
       )}
 
       {/* Agent: Assign Sales Staff & Confirm */}
-      {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && (
+      {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && appt.type !== 'ocular' && (
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
             <CardTitle className="text-lg text-[#1d1d1f]">Assign Sales Staff & Confirm</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            {/* Warning: office appointment without site details */}
-            {appt.type === 'office' && appt.siteDetailsStatus !== 'submitted' && (
-              <div className="flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>Cannot confirm — customer has not yet submitted their site details.</span>
-              </div>
-            )}
+
             {salesStaffList.length === 0 ? (
               <div className="flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700">
                 <Users className="h-4 w-4 shrink-0" />
@@ -560,10 +953,88 @@ export function AppointmentDetailPage() {
             )}
             <Button
               onClick={handleConfirm}
-              disabled={confirmMutation.isPending || !selectedSalesStaff || (appt.type === 'office' && appt.siteDetailsStatus !== 'submitted')}
+              disabled={confirmMutation.isPending || !selectedSalesStaff}
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm"
             >
               Confirm & Assign
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Agent: Finalize Ocular (for REQUESTED oculars where customer has submitted location) */}
+      {canConfirmAppointment && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50 shadow-sm lg:col-span-2">
+          <CardHeader>
+            <CardTitle className="text-lg text-emerald-900">Finalize Ocular Visit</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <p className="text-sm text-emerald-800">
+              Customer has submitted their location. {previousStaff ? 'The sales staff from the previous consultation will be assigned.' : 'Assign a sales staff member to finalize this ocular appointment.'}
+            </p>
+            {appt.address && (
+              <div className="rounded-lg bg-white/70 border border-emerald-200 p-3">
+                <p className="text-xs font-medium text-emerald-700">Customer Address</p>
+                <p className="text-sm text-emerald-900 mt-0.5">{appt.address}</p>
+              </div>
+            )}
+            {appt.ocularFee != null && appt.ocularFee > 0 && (
+              <div className="rounded-lg bg-white/70 border border-emerald-200 p-3">
+                <p className="text-xs font-medium text-emerald-700">Ocular Fee</p>
+                <p className="text-sm font-semibold text-emerald-900 mt-0.5">{formatCurrency(appt.ocularFee)}</p>
+              </div>
+            )}
+            {previousStaffLoading ? (
+              <div className="flex items-center gap-2 text-sm text-emerald-700">
+                <Loader2 className="h-4 w-4 animate-spin" /> Looking up previous sales staff...
+              </div>
+            ) : previousStaff ? (
+              <div className="rounded-lg bg-white/70 border border-emerald-200 p-3">
+                <p className="text-xs font-medium text-emerald-700">Assigned Sales Staff (from consultation)</p>
+                <p className="text-sm font-semibold text-emerald-900 mt-0.5">{previousStaff.name}</p>
+              </div>
+            ) : salesStaffList.length > 0 ? (
+              <div>
+                <label className="block text-[13px] font-medium text-emerald-800 mb-2">Assign Sales Staff</label>
+                <Select value={finalizeSalesStaff} onValueChange={setFinalizeSalesStaff}>
+                  <SelectTrigger className="h-12 rounded-xl border-emerald-300 bg-white px-4 text-base text-[#1d1d1f] focus:ring-1 focus:ring-emerald-300 w-full">
+                    <SelectValue placeholder="Choose a sales staff member..." />
+                  </SelectTrigger>
+                  <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg max-w-[calc(100vw-3rem)]">
+                    {salesStaffList.map((s) => (
+                      <SelectItem key={s._id} value={s._id} className="rounded-lg cursor-pointer text-sm py-2.5">
+                        {s.firstName} {s.lastName}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            ) : null}
+            <Button
+              onClick={async () => {
+                const staffId = previousStaff?._id || finalizeSalesStaff;
+                if (!staffId && !previousStaff) {
+                  toast.error('Please select a sales staff member');
+                  return;
+                }
+                try {
+                  await finalizeMutation.mutateAsync({ id: id!, ...(staffId ? { salesStaffId: staffId } : {}) });
+                  toast.success('Ocular visit finalized! The customer will be asked to pay the ocular fee, then sales staff can proceed with the site visit.', { duration: 5000 });
+                } catch (err) {
+                  toast.error(extractErrorMessage(err, 'Failed to finalize ocular'));
+                }
+              }}
+              disabled={finalizeMutation.isPending || (!previousStaff && !finalizeSalesStaff) || previousStaffLoading}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm"
+            >
+              {finalizeMutation.isPending ? (
+                <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalizing...</>
+              ) : (
+                <>
+                  <CheckCircle2 className="mr-2 h-4 w-4" />
+                  Finalize & Confirm
+                </>
+              )}
             </Button>
           </CardContent>
         </Card>
@@ -602,7 +1073,7 @@ export function AppointmentDetailPage() {
             {/* Ocular: CONFIRMED → On The Way */}
             {appt.type === 'ocular' && (
               <Button
-                onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way')).catch((err: unknown) => toast.error(extractErrorMessage(err, 'Failed to update')))}
+                onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way — the customer has been notified.')).catch((err: unknown) => toast.error(extractErrorMessage(err, 'Failed to update')))}
                 disabled={visitStatusMutation.isPending}
                 className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
               >
@@ -702,6 +1173,30 @@ export function AppointmentDetailPage() {
             )}
           </>
         )}
+
+        {/* Agent: Schedule Ocular Visit (for completed office appointments) */}
+        {canConfirmAppointment && appt.status === AppointmentStatus.COMPLETED && appt.type === 'office' && (() => {
+          const consultationReport = visitReports?.find(r => r.visitType === 'consultation');
+          const recDate = consultationReport?.recommendedOcularDate?.split('T')[0] ?? '';
+          const recSlot = consultationReport?.recommendedOcularSlot ?? '';
+          const params = new URLSearchParams({
+            ocularFor: appt.customerId,
+            appointmentId: appt._id,
+            ...(recDate && { recommendedDate: recDate }),
+            ...(recSlot && { recommendedSlot: recSlot }),
+          });
+          return (
+            <Button
+              asChild
+              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+            >
+              <Link to={`/appointments/create-for-customer?${params.toString()}`}>
+                <MapPin className="mr-2 h-4 w-4" />
+                Schedule Ocular Visit
+              </Link>
+            </Button>
+          );
+        })()}
 
         {(isCustomer || isAgent || isAdmin) &&
           [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(

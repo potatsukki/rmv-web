@@ -72,7 +72,12 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   // draft, submitted, completed already defined above
 };
 
+const STATUS_LABEL_OVERRIDE: Record<string, string> = {
+  proof_submitted: 'Awaiting Verification',
+};
+
 function formatStatus(status: string): string {
+  if (STATUS_LABEL_OVERRIDE[status]) return STATUS_LABEL_OVERRIDE[status];
   return status.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 }
 

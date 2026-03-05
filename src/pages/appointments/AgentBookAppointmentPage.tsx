@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,25 +13,22 @@ import {
   Mail,
   Phone,
   X,
+  Info,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
-import { LocationPicker } from '@/components/maps/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAvailableSlots, useAgentCreateAppointment } from '@/hooks/useAppointments';
+import { useAvailableSlots, useAgentCreateAppointment, useAgentCreateOcular } from '@/hooks/useAppointments';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { AppointmentType, SLOT_CODES } from '@/lib/constants';
-import {
-  fetchOcularFeePreview,
-  reverseGeocodeLocation,
-  type MapPoint,
-  type OcularFeePreview,
-} from '@/lib/maps';
+import type { MapPoint } from '@/lib/maps';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api';
+import type { ApiResponse } from '@/lib/types';
 
 /* ── Helpers ── */
 
@@ -42,13 +39,7 @@ function formatSlotTime(slotCode: string): string {
   return `${displayHour}:00 ${ampm}`;
 }
 
-function currency(amount: number): string {
-  return new Intl.NumberFormat('en-PH', {
-    style: 'currency',
-    currency: 'PHP',
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
+
 
 /* ── Schema ── */
 
@@ -65,6 +56,11 @@ type BookingForm = z.infer<typeof bookingSchema>;
 
 export function AgentBookAppointmentPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const ocularForCustomerId = searchParams.get('ocularFor');
+  const recommendedDate = searchParams.get('recommendedDate');
+  const recommendedSlot = searchParams.get('recommendedSlot');
+  const isOcularMode = !!ocularForCustomerId;
 
   /* ── Step 1: Customer Search ── */
   const [searchTerm, setSearchTerm] = useState('');
@@ -79,6 +75,10 @@ export function AgentBookAppointmentPage() {
   const { data: customers, isLoading: isSearching } = useCustomerSearch(debouncedSearch);
 
   /* ── Step 2: Booking Form ── */
+  const defaultDate = recommendedDate && recommendedDate >= format(addDays(new Date(), 3), 'yyyy-MM-dd')
+    ? recommendedDate
+    : format(addDays(new Date(), 3), 'yyyy-MM-dd');
+
   const {
     register,
     handleSubmit,
@@ -88,85 +88,43 @@ export function AgentBookAppointmentPage() {
   } = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      type: 'office',
-      date: format(addDays(new Date(), 1), 'yyyy-MM-dd'),
+      type: isOcularMode ? 'ocular' : 'office',
+      date: defaultDate,
+      ...(recommendedSlot && { slotCode: recommendedSlot }),
     },
   });
 
   const selectedType = watch('type');
   const selectedDate = watch('date');
   const selectedSlot = watch('slotCode');
-  const minDate = format(addDays(new Date(), 1), 'yyyy-MM-dd');
+  const minDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
 
   const [selectedLocation, setSelectedLocation] = useState<MapPoint | null>(null);
   const [formattedAddress, setFormattedAddress] = useState('');
-  const [feePreview, setFeePreview] = useState<OcularFeePreview | null>(null);
-  const [isFeeLoading, setIsFeeLoading] = useState(false);
-  const [isAddressLoading, setIsAddressLoading] = useState(false);
-  const [feeError, setFeeError] = useState<string | null>(null);
 
   const isOcularBooking = selectedType === AppointmentType.OCULAR;
 
   const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(selectedDate, selectedType);
 
   const createMutation = useAgentCreateAppointment();
+  const createOcularMutation = useAgentCreateOcular();
 
-  // Ocular fee preview
+  // Auto-fetch customer when ocularFor param is present
+  useEffect(() => {
+    if (ocularForCustomerId && !selectedCustomer) {
+      api.get<ApiResponse<CustomerSearchResult>>(`/users/customers/${ocularForCustomerId}`)
+        .then(res => setSelectedCustomer(res.data.data))
+        .catch(() => toast.error('Failed to load customer'));
+    }
+  }, [ocularForCustomerId]);
+
+  // Reset location state when switching away from ocular
   useEffect(() => {
     if (!isOcularBooking) {
       setSelectedLocation(null);
       setFormattedAddress('');
-      setFeePreview(null);
-      setFeeError(null);
-      setIsFeeLoading(false);
-      setIsAddressLoading(false);
     }
   }, [isOcularBooking]);
-
-  useEffect(() => {
-    if (!isOcularBooking || !selectedLocation) {
-      setFormattedAddress('');
-      setFeePreview(null);
-      setFeeError(null);
-      return;
-    }
-
-    let cancelled = false;
-    const timer = window.setTimeout(async () => {
-      setFeeError(null);
-      setIsFeeLoading(true);
-      setIsAddressLoading(true);
-      try {
-        const [preview, address] = await Promise.all([
-          fetchOcularFeePreview(selectedLocation),
-          reverseGeocodeLocation(selectedLocation).catch(() => ''),
-        ]);
-        if (cancelled) return;
-        setFeePreview(preview);
-        if (address) setFormattedAddress(address);
-      } catch (error) {
-        if (cancelled) return;
-        setFeePreview(null);
-        setFeeError(extractErrorMessage(error, 'Failed to compute ocular fee for this location.'));
-      } finally {
-        if (!cancelled) {
-          setIsFeeLoading(false);
-          setIsAddressLoading(false);
-        }
-      }
-    }, 450);
-
-    return () => {
-      cancelled = true;
-      window.clearTimeout(timer);
-    };
-  }, [isOcularBooking, selectedLocation]);
-
-  const handleLocationChange = (location: MapPoint, addressHint?: string) => {
-    setSelectedLocation(location);
-    setFeeError(null);
-    if (addressHint) setFormattedAddress(addressHint);
-  };
 
   const onSubmit = async (data: BookingForm) => {
     if (!selectedCustomer) {
@@ -174,35 +132,32 @@ export function AgentBookAppointmentPage() {
       return;
     }
 
-    if (data.type === AppointmentType.OCULAR) {
-      if (!selectedLocation) {
-        toast.error("Please pin the customer's site location on the map.");
-        return;
-      }
-      if (!feePreview || isFeeLoading) {
-        toast.error('Please wait while we compute the ocular fee.');
-        return;
-      }
-      if (feeError) {
-        toast.error(feeError);
-        return;
-      }
-    }
-
     try {
-      await createMutation.mutateAsync({
-        customerId: selectedCustomer._id,
-        type: data.type,
-        date: data.date,
-        slotCode: data.slotCode,
-        purpose: data.purpose,
-        customerLocation: selectedLocation ?? undefined,
-        formattedAddress: formattedAddress || undefined,
-      });
+      if (data.type === AppointmentType.OCULAR) {
+        // New flow: create ocular without location, customer provides later
+        await createOcularMutation.mutateAsync({
+          customerId: selectedCustomer._id,
+          date: data.date,
+          slotCode: data.slotCode,
+        });
+        toast.success(
+          `Ocular scheduled for ${selectedCustomer.firstName} ${selectedCustomer.lastName}. Customer will provide their location.`,
+        );
+      } else {
+        await createMutation.mutateAsync({
+          customerId: selectedCustomer._id,
+          type: data.type,
+          date: data.date,
+          slotCode: data.slotCode,
+          purpose: data.purpose,
+          customerLocation: selectedLocation ?? undefined,
+          formattedAddress: formattedAddress || undefined,
+        });
+        toast.success(
+          `Appointment created for ${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
+        );
+      }
 
-      toast.success(
-        `Appointment created for ${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
-      );
       navigate('/appointments');
     } catch (error: unknown) {
       toast.error(extractErrorMessage(error, 'Failed to create appointment'));
@@ -210,21 +165,12 @@ export function AgentBookAppointmentPage() {
   };
 
   const submitDisabled = useMemo(() => {
-    if (createMutation.isPending || !selectedSlot || !selectedCustomer) return true;
-    if (!isOcularBooking) return false;
-    if (!selectedLocation) return true;
-    if (isFeeLoading) return true;
-    if (!!feeError) return true;
-    if (!feePreview) return true;
+    if ((createMutation.isPending || createOcularMutation.isPending) || !selectedSlot || !selectedCustomer) return true;
     return false;
   }, [
     createMutation.isPending,
-    feeError,
-    feePreview,
-    isFeeLoading,
-    isOcularBooking,
+    createOcularMutation.isPending,
     selectedCustomer,
-    selectedLocation,
     selectedSlot,
   ]);
 
@@ -246,10 +192,12 @@ export function AgentBookAppointmentPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
-            Create Appointment
+            {isOcularMode ? 'Schedule Ocular Visit' : 'Create Appointment'}
           </h1>
           <p className="text-[#6e6e73] text-sm">
-            Book an appointment on behalf of a customer
+            {isOcularMode
+              ? 'Customer will provide location after booking'
+              : 'Book an appointment on behalf of a customer'}
           </p>
         </div>
       </div>
@@ -382,6 +330,20 @@ export function AgentBookAppointmentPage() {
       {/* Step 2: Booking form (shown after selecting customer) */}
       {selectedCustomer && (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Pre-filled recommendation banner */}
+          {(recommendedDate || recommendedSlot) && (
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4">
+              <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-600" />
+              <div className="text-sm text-blue-800">
+                <p className="font-medium">Pre-filled from consultation recommendation</p>
+                <p className="mt-0.5 text-blue-600">
+                  {recommendedDate && `Date: ${recommendedDate}`}
+                  {recommendedDate && recommendedSlot && ' · '}
+                  {recommendedSlot && `Time: ${formatSlotTime(recommendedSlot)}`}
+                </p>
+              </div>
+            </div>
+          )}
           {/* Visit Type & Date */}
           <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
@@ -438,85 +400,15 @@ export function AgentBookAppointmentPage() {
                 {errors.date && <p className="text-sm text-red-500">{errors.date.message}</p>}
               </div>
 
-              {/* Ocular location picker */}
+              {/* Ocular info banner */}
               {isOcularBooking && (
-                <div className="space-y-4 rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 p-4">
-                  <div className="space-y-1">
-                    <Label className="text-[13px] font-medium text-[#3a3a3e]">Customer&apos;s Site Location</Label>
-                    <p className="text-sm text-[#6e6e73]">
-                      Ocular visits are free within Metro Manila. Locations outside NCR have a
-                      transportation fee.
+                <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-3.5">
+                  <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
+                  <div className="text-sm text-blue-800">
+                    <p className="font-medium">No location needed yet</p>
+                    <p className="text-xs text-blue-700 mt-0.5">
+                      After scheduling, the customer will be notified to provide their site location. You will finalize the visit once they submit it.
                     </p>
-                  </div>
-
-                  <LocationPicker value={selectedLocation} onChange={handleLocationChange} />
-
-                  <div className="rounded-lg border border-[#d2d2d7] bg-white p-3">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#6e6e73]">
-                      Resolved Address
-                    </p>
-                    {isAddressLoading ? (
-                      <p className="mt-1 text-sm text-[#6e6e73]">Resolving address...</p>
-                    ) : (
-                      <p className="mt-1 text-sm text-[#3a3a3e]">
-                        {formattedAddress || 'Address will appear after you pin a location.'}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="rounded-lg border border-[#d2d2d7] bg-white p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-[#6e6e73]">
-                      Ocular Fee Preview
-                    </p>
-
-                    {!selectedLocation && (
-                      <p className="mt-2 text-sm text-[#6e6e73]">
-                        Pin the location to calculate distance and fee.
-                      </p>
-                    )}
-
-                    {selectedLocation && isFeeLoading && (
-                      <div className="mt-2 flex items-center gap-2 text-sm text-[#6e6e73]">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Calculating distance and fee...
-                      </div>
-                    )}
-
-                    {selectedLocation && !isFeeLoading && feeError && (
-                      <p className="mt-2 text-sm text-red-500">{feeError}</p>
-                    )}
-
-                    {feePreview && !isFeeLoading && !feeError && (
-                      <div className="mt-3 space-y-2 text-sm text-[#3a3a3e]">
-                        <p>
-                          Distance from shop:{' '}
-                          <strong>{feePreview.route.distanceKm.toFixed(2)} km</strong>
-                        </p>
-
-                        {feePreview.fee.isWithinNCR ? (
-                          <p className="rounded-md bg-emerald-50 px-3 py-2 font-medium text-emerald-700">
-                            Ocular Visit Fee: FREE (within Metro Manila)
-                          </p>
-                        ) : (
-                          <div className="space-y-1.5 rounded-md bg-amber-50 px-3 py-2">
-                            <p>
-                              Base Fee: <strong>{currency(feePreview.fee.baseFee)}</strong>
-                            </p>
-                            <p>
-                              Additional Distance: {feePreview.fee.additionalDistanceKm.toFixed(2)}{' '}
-                              km
-                            </p>
-                            <p>
-                              Additional Fee:{' '}
-                              <strong>{currency(feePreview.fee.additionalFee)}</strong>
-                            </p>
-                            <p className="pt-1 font-semibold text-[#1d1d1f]">
-                              Estimated Ocular Fee: {currency(feePreview.fee.total)}
-                            </p>
-                          </div>
-                        )}
-                      </div>
-                    )}
                   </div>
                 </div>
               )}
@@ -599,12 +491,14 @@ export function AgentBookAppointmentPage() {
             size="lg"
             disabled={submitDisabled}
           >
-            {createMutation.isPending ? (
+            {(createMutation.isPending || createOcularMutation.isPending) ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <CheckCircle className="mr-2 h-4 w-4" />
             )}
-            Create Appointment for {selectedCustomer.firstName}
+            {isOcularBooking
+              ? `Schedule Ocular for ${selectedCustomer.firstName}`
+              : `Create Appointment for ${selectedCustomer.firstName}`}
           </Button>
         </form>
       )}

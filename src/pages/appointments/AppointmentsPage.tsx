@@ -39,6 +39,11 @@ const statusConfig: Record<string, { label: string; dot: string; badge: string }
     dot: 'bg-blue-500',
     badge: 'border-blue-200 text-blue-700 bg-blue-50',
   },
+  ready_for_ocular: {
+    label: 'Ready for Ocular',
+    dot: 'bg-purple-500',
+    badge: 'border-purple-200 text-purple-700 bg-purple-50',
+  },
   completed: {
     label: 'Completed',
     dot: 'bg-emerald-500',
@@ -95,7 +100,10 @@ export function AppointmentsPage() {
   const getStatusKey = (appt: (typeof appointments)[0]) => {
     const awaitingPayment =
       appt.type === 'ocular' && appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
-    return awaitingPayment ? 'awaiting_payment' : appt.status;
+    if (awaitingPayment) return 'awaiting_payment';
+    if (appt.type === 'office' && appt.status === 'completed' && appt.consultationReportSubmitted)
+      return 'ready_for_ocular';
+    return appt.status;
   };
 
   return (

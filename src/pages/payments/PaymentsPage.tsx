@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, ListFilter } from 'lucide-react';
-import { Link, useLocation } from 'react-router-dom';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, ListFilter, CheckCircle } from 'lucide-react';
+import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
@@ -16,7 +16,6 @@ import { useProjects } from '@/hooks/useProjects';
 import {
   usePaymentPlan,
   usePaymentsByProject,
-  useSubmitPaymentProof,
   useStageCheckout,
   useSimulateStagePayment,
   useRecordCashPayment,
@@ -24,7 +23,7 @@ import {
   type PaymentHistoryItem,
 } from '@/hooks/usePayments';
 import { useAuthStore } from '@/stores/auth.store';
-import { Role, PaymentStageStatus, PaymentMethod } from '@/lib/constants';
+import { Role, PaymentStageStatus } from '@/lib/constants';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -33,7 +32,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { FileUpload } from '@/components/shared/FileUpload';
 import { useUnpaidOcularFees } from '@/hooks/useAppointments';
 
 const formatCurrency = (v: number) =>
@@ -43,7 +41,7 @@ const historyStatusConfig: Record<string, { label: string; className: string }> 
   verified: { label: 'Paid', className: 'bg-emerald-100 text-emerald-700' },
   approved: { label: 'Approved', className: 'bg-emerald-100 text-emerald-700' },
   pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700' },
-  proof_submitted: { label: 'Under Review', className: 'bg-blue-100 text-blue-700' },
+  proof_submitted: { label: 'Awaiting Verification', className: 'bg-blue-100 text-blue-700' },
   declined: { label: 'Declined', className: 'bg-red-100 text-red-700' },
 };
 
@@ -52,23 +50,16 @@ export function PaymentsPage() {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [proofDialog, setProofDialog] = useState<{
-    open: boolean;
-    stageId: string;
-    amount: number;
-  }>({ open: false, stageId: '', amount: 0 });
-  const [method, setMethod] = useState<string>(PaymentMethod.GCASH);
-  const [amountPaid, setAmountPaid] = useState('');
-  const [refNumber, setRefNumber] = useState('');
-  const [proofKey, setProofKey] = useState('');
+
 
   const { data: projects } = useProjects();
   const { data: plan, isLoading: planLoading } = usePaymentPlan(selectedProjectId);
   const { data: payments } = usePaymentsByProject(selectedProjectId);
-  const submitProof = useSubmitPaymentProof();
   const stageCheckout = useStageCheckout();
   const simulatePayment = useSimulateStagePayment();
   const recordCash = useRecordCashPayment();
+
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [cashDialog, setCashDialog] = useState<{ open: boolean; stageId: string; amount: number }>({
     open: false,
@@ -106,6 +97,20 @@ export function PaymentsPage() {
     }
   }, [projects, selectedProjectId, location.state]);
 
+  // Detect ?paid=1 redirect from PayMongo checkout
+  useEffect(() => {
+    if (searchParams.get('paid') === '1') {
+      toast.success(
+        'Payment received! The cashier will verify it shortly. Your payment status will update automatically.',
+        { duration: 6000 },
+      );
+      setSearchParams({}, { replace: true });
+    } else if (searchParams.get('cancelled') === '1') {
+      toast('Payment was cancelled. You can try again anytime.', { icon: '↩️', duration: 4000 });
+      setSearchParams({}, { replace: true });
+    }
+  }, [searchParams, setSearchParams]);
+
   // Filtered project list for table view
   const filteredProjects = useMemo(() => {
     if (!projects?.items) return [];
@@ -135,41 +140,14 @@ export function PaymentsPage() {
   );
   const contractSigned = !!selectedProject?.contractSignedAt;
 
-  const handleSubmitProof = async () => {
-    const amount = parseFloat(amountPaid);
-    if (!amount || amount <= 0) {
-      toast.error('Enter a valid amount');
-      return;
-    }
-    try {
-      await submitProof.mutateAsync({
-        projectId: selectedProjectId,
-        stageId: proofDialog.stageId,
-        method,
-        amountPaid: amount,
-        referenceNumber: refNumber || undefined,
-        proofKey: proofKey || undefined,
-      });
-      toast.success('Payment proof submitted');
-      setProofDialog({ open: false, stageId: '', amount: 0 });
-      resetForm();
-    } catch (err: unknown) {
-      toast.error(extractErrorMessage(err, 'Submission failed'));
-    }
-  };
-
-  const resetForm = () => {
-    setMethod(PaymentMethod.GCASH);
-    setAmountPaid('');
-    setRefNumber('');
-    setProofKey('');
-  };
-
   const handleQrCheckout = async (stageId: string) => {
     try {
       const result = await stageCheckout.mutateAsync(stageId);
       window.open(result.checkoutUrl, '_blank');
-      toast.success('QR checkout opened — complete payment in the new tab');
+      toast.success(
+        'QR checkout opened in a new tab. Complete payment there — this page will update automatically once verified.',
+        { duration: 6000 },
+      );
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to create checkout session'));
     }
@@ -177,8 +155,8 @@ export function PaymentsPage() {
 
   const handleSimulate = async (stageId: string) => {
     try {
-      const result = await simulatePayment.mutateAsync(stageId);
-      toast.success(`Payment simulated! Receipt: ${result.receiptNumber}`);
+      await simulatePayment.mutateAsync(stageId);
+      toast.success('Payment simulated — awaiting cashier verification');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Simulation failed'));
     }
@@ -559,6 +537,51 @@ export function PaymentsPage() {
         </Card>
       ) : (
         <>
+          {/* ── Payment Status Banner ── */}
+          {plan && (() => {
+            const awaitingCount = plan.stages.filter(s => s.status === 'proof_submitted').length;
+            const verifiedCount = plan.stages.filter(s => s.status === PaymentStageStatus.VERIFIED).length;
+            const allVerified = verifiedCount === plan.stages.length;
+            if (allVerified) return (
+              <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 bg-emerald-50/50">
+                <CardContent className="flex items-start gap-3 py-3 px-4">
+                  <CreditCard className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-semibold text-emerald-900">All Payments Complete</p>
+                    <p className="text-xs text-emerald-700 mt-0.5">All payment stages have been verified. Your project is fully paid.</p>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+            if (awaitingCount > 0) return (
+              <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
+                <CardContent className="flex items-start gap-3 py-3 px-4">
+                  <Clock className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-blue-900">Payment Awaiting Verification</p>
+                    <p className="text-xs text-blue-700 mt-0.5">
+                      {isCashier
+                        ? `${awaitingCount} payment${awaitingCount > 1 ? 's' : ''} need${awaitingCount === 1 ? 's' : ''} your verification.`
+                        : `${awaitingCount} payment${awaitingCount > 1 ? 's' : ''} received and awaiting cashier verification. This page updates automatically.`}
+                    </p>
+                  </div>
+                  {isCashier && (
+                    <Button
+                      size="sm"
+                      asChild
+                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs shrink-0"
+                    >
+                      <Link to="/cashier-queue">
+                        <CheckCircle className="mr-1 h-3.5 w-3.5" /> Go to Cashier Queue
+                      </Link>
+                    </Button>
+                  )}
+                </CardContent>
+              </Card>
+            );
+            return null;
+          })()}
+
           {/* ── Payment Plan (Table-style) ── */}
           <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 overflow-hidden">
             <CardHeader className="px-4 sm:px-6">
@@ -655,7 +678,7 @@ export function PaymentsPage() {
                         {isDeclined && declineReason && (
                           <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
                             <p className="text-xs font-medium text-red-700">Declined: {declineReason}</p>
-                            <p className="text-xs text-red-600 mt-0.5">Please resubmit your payment proof.</p>
+                            <p className="text-xs text-red-600 mt-0.5">Please pay again via QR.</p>
                           </div>
                         )}
                         {hasPartialPayment && (
@@ -677,20 +700,6 @@ export function PaymentsPage() {
                             >
                               <QrCode className="mr-1 h-3.5 w-3.5" />
                               {isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="border-[#d2d2d7] rounded-lg text-xs h-8"
-                              onClick={() =>
-                                setProofDialog({
-                                  open: true,
-                                  stageId: String(stage.stageId),
-                                  amount: Number(stage.amount),
-                                })
-                              }
-                            >
-                              {isDeclined ? 'Resubmit Proof' : isEarlyPay ? 'Pay Early — Proof' : 'Upload Proof'}
                             </Button>
                             <Button
                               size="sm"
@@ -719,6 +728,19 @@ export function PaymentsPage() {
                               }
                             >
                               <Banknote className="mr-1 h-3.5 w-3.5" /> Record Cash
+                            </Button>
+                          </div>
+                        )}
+                        {isCashier && isProofSubmitted && (
+                          <div className="pt-1">
+                            <Button
+                              size="sm"
+                              asChild
+                              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs h-8"
+                            >
+                              <Link to="/cashier-queue">
+                                <CheckCircle className="mr-1 h-3.5 w-3.5" /> Verify in Cashier Queue
+                              </Link>
                             </Button>
                           </div>
                         )}
@@ -766,20 +788,6 @@ export function PaymentsPage() {
                               </Button>
                               <Button
                                 size="sm"
-                                variant="outline"
-                                className="border-[#d2d2d7] rounded-lg text-xs h-7 px-2"
-                                onClick={() =>
-                                  setProofDialog({
-                                    open: true,
-                                    stageId: String(stage.stageId),
-                                    amount: Number(stage.amount),
-                                  })
-                                }
-                              >
-                                {isDeclined ? 'Resubmit' : 'Proof'}
-                              </Button>
-                              <Button
-                                size="sm"
                                 variant="ghost"
                                 className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-7 px-2"
                                 onClick={() => handleSimulate(String(stage.stageId))}
@@ -804,6 +812,17 @@ export function PaymentsPage() {
                               }
                             >
                               <Banknote className="mr-1 h-3 w-3" /> Cash
+                            </Button>
+                          )}
+                          {isCashier && isProofSubmitted && (
+                            <Button
+                              size="sm"
+                              asChild
+                              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs h-7 px-2"
+                            >
+                              <Link to="/cashier-queue">
+                                <CheckCircle className="mr-1 h-3 w-3" /> Verify
+                              </Link>
                             </Button>
                           )}
                         </div>
@@ -843,6 +862,9 @@ export function PaymentsPage() {
                               {String(p.method || '').replace('_', ' ')}
                               {p.receiptNumber && ` · ${String(p.receiptNumber)}`}
                             </p>
+                            {p.referenceNumber && (
+                              <p className="text-xs text-[#86868b] font-mono mt-0.5">Ref: {String(p.referenceNumber)}</p>
+                            )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <StatusBadge status={String(p.status)} />
@@ -881,6 +903,7 @@ export function PaymentsPage() {
                           </p>
                           <p className="text-xs text-[#86868b]">
                             {p.createdAt ? format(new Date(String(p.createdAt)), 'MMM d, yyyy') : ''}
+                            {p.referenceNumber && ` · Ref: ${String(p.referenceNumber)}`}
                           </p>
                           {p.declineReason && (
                             <p className="text-xs text-red-500 mt-0.5">Declined: {String(p.declineReason)}</p>
@@ -920,102 +943,6 @@ export function PaymentsPage() {
       )}
         </>
       )}
-
-      {/* Submit Proof Dialog */}
-      <Dialog
-        open={proofDialog.open}
-        onOpenChange={(open) => {
-          setProofDialog({
-            open,
-            stageId: open ? proofDialog.stageId : '',
-            amount: open ? proofDialog.amount : 0,
-          });
-          if (!open) resetForm();
-        }}
-      >
-        <DialogContent className="rounded-2xl">
-          <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Submit Payment Proof</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Due</Label>
-              <p className="text-lg font-bold text-[#1d1d1f]">
-                {formatCurrency(proofDialog.amount)}
-              </p>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[#3a3a3e] text-[13px] font-medium">Payment Method</Label>
-              <select
-                value={method}
-                onChange={(e) => setMethod(e.target.value)}
-                className="w-full rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]"
-              >
-                {Object.values(PaymentMethod).map((m) => (
-                  <option key={m} value={m}>
-                    {m.replace('_', ' ').toUpperCase()}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Paid</Label>
-              <Input
-                type="number"
-                step="0.01"
-                value={amountPaid}
-                onChange={(e) => setAmountPaid(e.target.value)}
-                placeholder="0.00"
-                className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
-              />
-            </div>
-
-            {method !== PaymentMethod.CASH && (
-              <div className="space-y-1.5">
-                <Label className="text-[#3a3a3e] text-[13px] font-medium">
-                  Reference Number
-                </Label>
-                <Input
-                  value={refNumber}
-                  onChange={(e) => setRefNumber(e.target.value)}
-                  placeholder="Transaction reference #"
-                  className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
-                />
-              </div>
-            )}
-
-            <FileUpload
-              folder="payment-proofs"
-              accept="image/*,.pdf"
-              maxSizeMB={5}
-              maxFiles={1}
-              label="Upload payment proof"
-              onUploadComplete={(keys) => setProofKey(keys[0] || '')}
-            />
-            {!proofKey && (
-              <p className="text-xs text-amber-600">Please upload your proof image to continue.</p>
-            )}
-          </div>
-          <DialogFooter>
-            <Button
-              variant="outline"
-              className="border-[#d2d2d7] rounded-lg"
-              onClick={() => setProofDialog({ open: false, stageId: '', amount: 0 })}
-            >
-              Cancel
-            </Button>
-            <Button
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] rounded-lg"
-              onClick={handleSubmitProof}
-              disabled={submitProof.isPending || !proofKey}
-            >
-              Submit Proof
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
 
       {/* Cash Recording Dialog (Cashier) */}
       <Dialog

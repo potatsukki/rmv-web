@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Hammer, Plus, Clock, User, Paperclip, Lock, CreditCard, Pencil, Trash2, PackageCheck, CalendarCheck } from 'lucide-react';
+import { Hammer, Plus, Clock, User, Paperclip, Lock, CreditCard, Pencil, Trash2, PackageCheck, CalendarCheck, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
@@ -100,7 +100,7 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
   const handleConfirmInstallation = async () => {
     try {
       await confirmInstallationMutation.mutateAsync(projectId);
-      toast.success('Installation confirmed! The fabrication team has been notified.');
+      toast.success('Installation confirmed! The fabrication team will coordinate delivery and installation.', { duration: 5000 });
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to confirm installation'));
     }
@@ -147,7 +147,12 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
         notes,
         photoKeys: photoKeys.length > 0 ? photoKeys : undefined,
       });
-      toast.success('Update added successfully');
+      toast.success(
+        status === 'done'
+          ? 'Fabrication complete! The project is now finished.'
+          : 'Update added — the customer has been notified of the progress.',
+        { duration: 5000 },
+      );
       setUpdateDialogOpen(false);
       setNotes('');
       setPhotoKeys([]);
@@ -200,6 +205,34 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
 
   return (
     <div className="space-y-4">
+      {/* Customer Fabrication Guide Banner */}
+      {isCustomer && fabricationStatus?.currentStatus && fabricationStatus.currentStatus !== FabricationStatus.READY_FOR_DELIVERY && fabricationStatus.currentStatus !== FabricationStatus.DONE && (
+        <Card className="rounded-xl border-indigo-200 bg-indigo-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Info className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-indigo-900">
+                Fabrication: {fabricationStatus.currentStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
+              </p>
+              <p className="text-xs text-indigo-700 mt-0.5">
+                Your order is being fabricated. The team posts updates with photos below. You&apos;ll be notified when it&apos;s ready for delivery.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isCustomer && fabricationStatus?.currentStatus === FabricationStatus.DONE && (
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <PackageCheck className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-emerald-900">Fabrication Complete</p>
+              <p className="text-xs text-emerald-700 mt-0.5">Your order has been delivered and installed. Thank you!</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Payment Gate Banners */}
       {fabricationStatus?.paymentGate && !fabricationStatus.paymentGate.allPaid && (
         <Card className="rounded-xl border-amber-200 bg-amber-50/50">

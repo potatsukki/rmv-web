@@ -96,6 +96,8 @@ export interface Appointment {
   slotCode: string;
   status: string;
   purpose?: string;
+  serviceType?: string;
+  serviceTypeCustom?: string;
   address?: string;
   formattedAddress?: string;
   addressStructured?: {
@@ -108,6 +110,7 @@ export interface Appointment {
   latitude?: number;
   longitude?: number;
   location?: { lat: number; lng: number };
+  customerLocation?: { lat: number; lng: number };
   distanceKm?: number;
   ocularFee?: number;
   ocularFeeBreakdown?: {
@@ -136,6 +139,7 @@ export interface Appointment {
   internalNotes?: string;
   customerSiteDetails?: CustomerSiteDetails;
   siteDetailsStatus?: 'pending' | 'submitted' | 'skipped';
+  consultationReportSubmitted?: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -431,6 +435,16 @@ export interface VisitReport {
   preferredDesign?: string;
   customerRequirements?: string;
   notes?: string;
+
+  // Consultation-specific fields
+  productsDiscussed?: string;
+  designPreferences?: string;
+  materialOptions?: string;
+  projectScope?: string;
+  recommendedOcularDate?: string;
+  recommendedOcularSlot?: string;
+  linkedProjectId?: string;
+
   photoKeys: string[];
   videoKeys: string[];
   sketchKeys: string[];

@@ -506,7 +506,12 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       { id: blueprintId, component },
       {
         onSuccess: () => {
-          toast.success(`${component === 'blueprint' ? 'Design' : 'Costing'} approved`);
+          toast.success(
+            component === 'blueprint'
+              ? 'Design approved! Next: review and approve the costing breakdown.'
+              : 'Costing approved! You can now accept the full blueprint to proceed.',
+            { duration: 5000 },
+          );
           refetch();
           refetchBlueprint();
         },
@@ -529,7 +534,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       },
       {
         onSuccess: () => {
-          toast.success('Revision requested');
+          toast.success('Revision requested — the engineer has been notified and will upload a revised version.', { duration: 5000 });
           setRevisionDialog({ open: false, blueprintId: '' });
           setRevisionNotes('');
           setRevisionRefKeys([]);
@@ -547,7 +552,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       { id: acceptDialog.blueprint._id, paymentType },
       {
         onSuccess: () => {
-          toast.success('Blueprint accepted! Payment plan created.');
+          toast.success('Blueprint accepted! A payment plan has been created. Next: sign the contract and make the down-payment to start fabrication.', { duration: 6000 });
           setAcceptDialog({ open: false, blueprint: null });
           setPaymentType('full');
           refetch();
@@ -634,7 +639,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           costingKey: costUrl.fileKey,
           quotation,
         });
-        toast.success('Revision uploaded successfully');
+        toast.success('Revision uploaded! The customer will be notified to review the updated version.', { duration: 5000 });
       } else {
         await uploadBlueprint.mutateAsync({
           projectId,
@@ -643,7 +648,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           costingKey: costUrl.fileKey,
           quotation,
         });
-        toast.success('Blueprint uploaded successfully');
+        toast.success('Blueprint uploaded! The customer will be notified to review it.', { duration: 5000 });
       }
       setBlueprintFile(null);
       setDesignFile(null);

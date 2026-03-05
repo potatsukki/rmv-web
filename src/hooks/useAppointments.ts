@@ -59,6 +59,8 @@ export function useRequestAppointment() {
       date: string;
       slotCode: string;
       purpose?: string;
+      serviceType?: string;
+      serviceTypeCustom?: string;
       formattedAddress?: string;
       customerLocation?: { lat: number; lng: number };
       lockId?: string;
@@ -390,6 +392,77 @@ export function useRefundOcularFee() {
       const { data } = await api.post<ApiResponse<Appointment>>(
         `/appointments/${id}/refund-ocular-fee`,
         { reason },
+      );
+      return data.data;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+// ── Agent: Create Ocular (from consultation context) ──
+export function useAgentCreateOcular() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      customerId: string;
+      date: string;
+      slotCode: string;
+      visitReportId?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        '/appointments/agent-create-ocular',
+        body,
+      );
+      return data.data;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+// ── Customer: Submit Ocular Location ──
+export function useCustomerSubmitLocation() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string;
+      customerLocation: { lat: number; lng: number };
+      formattedAddress?: string;
+      addressStructured?: { street: string; barangay: string; city: string; province: string; zip: string };
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/submit-location`,
+        body,
+      );
+      return data.data;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+// ── Agent: Finalize Ocular ──
+export function useAgentFinalizeOcular() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string;
+      salesStaffId?: string;
+      internalNotes?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/finalize-ocular`,
+        body,
       );
       return data.data;
     },

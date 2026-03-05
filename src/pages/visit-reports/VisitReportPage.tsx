@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, addDays, getDay, startOfDay } from 'date-fns';
 import {
   ArrowLeft,
   Save,
@@ -18,7 +18,9 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, cn } from '@/lib/utils';
+import { Calendar as CalendarUI } from '@/components/ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
 import {
   Select,
@@ -58,6 +60,7 @@ import {
   MEASUREMENT_UNIT_LABELS,
   ENVIRONMENT_LABELS,
   Environment,
+  SLOT_CODES,
 } from '@/lib/constants';
 import type { LineItem, SiteConditions } from '@/lib/types';
 
@@ -103,6 +106,15 @@ export function VisitReportPage() {
   const [preferredDesign, setPreferredDesign] = useState('');
   const [customerRequirements, setCustomerRequirements] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Consultation-specific fields
+  const [productsDiscussed, setProductsDiscussed] = useState('');
+  const [designPreferences, setDesignPreferences] = useState('');
+  const [materialOptions, setMaterialOptions] = useState('');
+  const [projectScope, setProjectScope] = useState('');
+  const [recommendedOcularDate, setRecommendedOcularDate] = useState('');
+  const [recommendedOcularSlot, setRecommendedOcularSlot] = useState('');
+  const [ocularDateOpen, setOcularDateOpen] = useState(false);
 
   // Measurements
   const [measurementUnit, setMeasurementUnit] = useState(MeasurementUnit.CM as string);
@@ -153,6 +165,17 @@ export function VisitReportPage() {
     setPreferredDesign(report.preferredDesign || '');
     setCustomerRequirements(report.customerRequirements || '');
     setNotes(report.notes || '');
+
+    // Consultation-specific fields
+    setProductsDiscussed(report.productsDiscussed || '');
+    setDesignPreferences(report.designPreferences || '');
+    setMaterialOptions(report.materialOptions || '');
+    setProjectScope(report.projectScope || '');
+    if (report.recommendedOcularDate) {
+      const d = new Date(report.recommendedOcularDate);
+      setRecommendedOcularDate(format(d, 'yyyy-MM-dd'));
+    }
+    setRecommendedOcularSlot(report.recommendedOcularSlot || '');
 
     // New measurement system
     setMeasurementUnit(report.measurementUnit || MeasurementUnit.CM);
@@ -240,19 +263,33 @@ export function VisitReportPage() {
         actualVisitDateTime: normalizedActualVisitDateTime,
         serviceType: serviceType || undefined,
         serviceTypeCustom: serviceTypeCustom || undefined,
-        measurementUnit,
-        lineItems,
-        measurements,
-        siteConditions,
-        materials: materials || undefined,
-        finishes: finishes || undefined,
-        preferredDesign: preferredDesign || undefined,
         customerRequirements: customerRequirements || undefined,
         notes: notes || undefined,
-        photoKeys,
-        videoKeys,
-        sketchKeys,
-        referenceImageKeys,
+        // Ocular-only fields
+        ...(visitType === 'ocular' && {
+          measurementUnit,
+          lineItems,
+          measurements,
+          siteConditions,
+          materials: materials || undefined,
+          finishes: finishes || undefined,
+          preferredDesign: preferredDesign || undefined,
+          photoKeys,
+          videoKeys,
+          sketchKeys,
+          referenceImageKeys,
+        }),
+        // Consultation-specific fields
+        ...(visitType === 'consultation' && {
+          productsDiscussed: productsDiscussed || undefined,
+          designPreferences: designPreferences || undefined,
+          materialOptions: materialOptions || undefined,
+          projectScope: projectScope || undefined,
+          recommendedOcularDate: recommendedOcularDate
+            ? new Date(`${recommendedOcularDate}T00:00:00`).toISOString()
+            : undefined,
+          recommendedOcularSlot: recommendedOcularSlot || undefined,
+        }),
       });
       if (showSuccessToast) toast.success('Report saved');
       return true;
@@ -274,8 +311,12 @@ export function VisitReportPage() {
   const handleSubmit = async () => {
     try {
       await submitMutation.mutateAsync(id!);
+      const isOcular = report?.visitType === 'ocular';
       toast.success(
-        'Report submitted! A project has been created automatically.',
+        isOcular
+          ? 'Report submitted! The existing project has been updated with your on-site data. An engineer will review it next.'
+          : 'Report submitted! A project has been created. Next: an engineer will be assigned to create the blueprint.',
+        { duration: 5000 },
       );
       setSubmitOpen(false);
     } catch {
@@ -365,8 +406,8 @@ export function VisitReportPage() {
       <ProjectNavigator
         appointmentId={rawId(report.appointmentId)}
         activeReportId={String(report._id)}
-        canAdd={!!isSalesStaff && (isDraft || isReturned)}
-        canEdit={!!isSalesStaff && (isDraft || isReturned)}
+        canAdd={!!isSalesStaff && (isDraft || isReturned) && report.visitType !== 'ocular'}
+        canEdit={!!isSalesStaff && (isDraft || isReturned) && report.visitType !== 'ocular'}
         onBeforeNavigate={handleBeforeProjectSwitch}
       />
 
@@ -431,8 +472,52 @@ export function VisitReportPage() {
             </Card>
           </div>
 
-          {/* Line Items (read-only) */}
-          {report.lineItems && report.lineItems.length > 0 && (
+          {/* Consultation Summary (read-only) */}
+          {report.visitType === 'consultation' && (
+            <Card className="rounded-xl border-blue-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <FolderOpen className="h-5 w-5 text-blue-500" />
+                  Consultation Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {report.productsDiscussed && (
+                  <InfoRow icon={Package} label="Products Discussed" value={report.productsDiscussed} />
+                )}
+                {report.designPreferences && (
+                  <InfoRow icon={Paintbrush} label="Design Preferences" value={report.designPreferences} />
+                )}
+                {report.materialOptions && (
+                  <InfoRow icon={Package} label="Material Options" value={report.materialOptions} />
+                )}
+                {report.projectScope && (
+                  <InfoRow icon={FolderOpen} label="Project Scope" value={report.projectScope} />
+                )}
+                {(report.recommendedOcularDate || report.recommendedOcularSlot) && (
+                  <div className="border-t border-gray-100 pt-3">
+                    <p className="text-[13px] font-semibold text-gray-800 mb-2">Recommended Ocular Schedule</p>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                      {report.recommendedOcularDate && (
+                        <span>Date: <strong>{format(new Date(report.recommendedOcularDate), 'MMMM d, yyyy')}</strong></span>
+                      )}
+                      {report.recommendedOcularSlot && (
+                        <span>Time: <strong>{(() => {
+                          const hour = parseInt(report.recommendedOcularSlot.split(':')[0] ?? '0');
+                          const ampm = hour >= 12 ? 'PM' : 'AM';
+                          const display = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                          return `${display}:00 ${ampm}`;
+                        })()}</strong></span>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Line Items (read-only) — ocular only */}
+          {report.visitType === 'ocular' && report.lineItems && report.lineItems.length > 0 && (
             <Card className="rounded-xl border-gray-100 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
@@ -468,8 +553,8 @@ export function VisitReportPage() {
             </Card>
           )}
 
-          {/* Legacy measurements (read-only) */}
-          {isLegacyReport && report.measurements && (
+          {/* Legacy measurements (read-only) — ocular only */}
+          {report.visitType === 'ocular' && isLegacyReport && report.measurements && (
             <Card className="rounded-xl border-gray-100 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
@@ -499,8 +584,8 @@ export function VisitReportPage() {
             </Card>
           )}
 
-          {/* Site Conditions (read-only) */}
-          {report.siteConditions && (
+          {/* Site Conditions (read-only) — ocular only */}
+          {report.visitType === 'ocular' && report.siteConditions && (
             <Card className="rounded-xl border-gray-100 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
@@ -530,7 +615,8 @@ export function VisitReportPage() {
             </Card>
           )}
 
-          {/* Photos (read-only summary) */}
+          {/* Photos (read-only summary) — ocular only */}
+          {report.visitType === 'ocular' && (
           <PhotoUploadGrid
             photoKeys={report.photoKeys || []}
             videoKeys={report.videoKeys || []}
@@ -542,6 +628,7 @@ export function VisitReportPage() {
             onReferenceImageKeysChange={() => {}}
             disabled
           />
+          )}
         </div>
       )}
 
@@ -564,19 +651,20 @@ export function VisitReportPage() {
                     setServiceType(type);
                     setServiceTypeCustom(custom || '');
                   }}
+                  disabled={report?.visitType === 'ocular'}
                 />
 
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-medium text-gray-700">
                     Visit Type
                   </Label>
-                  <Select value={visitType} onValueChange={setVisitType}>
+                  <Select value={visitType} onValueChange={setVisitType} disabled={report?.visitType === 'ocular'}>
                     <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-[#6e6e73]/20">
                       <SelectValue placeholder="Select visit type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="ocular">Ocular Visit</SelectItem>
                       <SelectItem value="consultation">Consultation</SelectItem>
+                      <SelectItem value="ocular">Ocular Visit</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -610,7 +698,8 @@ export function VisitReportPage() {
                     value={customerRequirements}
                     onChange={(e) => setCustomerRequirements(e.target.value)}
                     placeholder="What the customer needs..."
-                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
+                    disabled={report?.visitType === 'ocular'}
+                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
@@ -622,12 +711,145 @@ export function VisitReportPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Additional observations..."
-                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
+                    disabled={report?.visitType === 'ocular'}
+                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          {/* Consultation Summary (only for consultation visit type) */}
+          {visitType === 'consultation' && (
+            <Card className="rounded-xl border-blue-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <FolderOpen className="h-5 w-5 text-blue-500" />
+                  Consultation Summary
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Products Discussed
+                  </Label>
+                  <Textarea
+                    value={productsDiscussed}
+                    onChange={(e) => setProductsDiscussed(e.target.value)}
+                    placeholder="e.g., Stainless steel railings, kitchen countertop, gate..."
+                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Design Preferences
+                  </Label>
+                  <Textarea
+                    value={designPreferences}
+                    onChange={(e) => setDesignPreferences(e.target.value)}
+                    placeholder="Modern minimalist, classic ornamental, industrial..."
+                    className="min-h-[60px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Material Options
+                  </Label>
+                  <Textarea
+                    value={materialOptions}
+                    onChange={(e) => setMaterialOptions(e.target.value)}
+                    placeholder="Stainless 304, Stainless 316, mild steel, combination..."
+                    className="min-h-[60px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                  />
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-[13px] font-medium text-gray-700">
+                    Project Scope
+                  </Label>
+                  <Textarea
+                    value={projectScope}
+                    onChange={(e) => setProjectScope(e.target.value)}
+                    placeholder="Brief description of the overall project scope and deliverables..."
+                    className="min-h-[60px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                  />
+                </div>
+
+                <div className="border-t border-gray-100 pt-4">
+                  <p className="text-[13px] font-semibold text-gray-800 mb-3">
+                    Recommended Ocular Schedule
+                  </p>
+                  <div className="grid gap-4 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label className="text-[13px] font-medium text-gray-700">
+                        Date
+                      </Label>
+                      <Popover open={ocularDateOpen} onOpenChange={setOcularDateOpen}>
+                        <PopoverTrigger asChild>
+                          <button
+                            type="button"
+                            className={cn(
+                              'flex h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-left text-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300',
+                              !recommendedOcularDate && 'text-gray-400',
+                            )}
+                          >
+                            <CalendarIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                            {recommendedOcularDate
+                              ? format(new Date(`${recommendedOcularDate}T00:00:00`), 'MMMM d, yyyy')
+                              : 'Pick a date'}
+                          </button>
+                        </PopoverTrigger>
+                        <PopoverContent className="w-auto p-0" align="start">
+                          <CalendarUI
+                            mode="single"
+                            selected={recommendedOcularDate ? new Date(`${recommendedOcularDate}T00:00:00`) : undefined}
+                            onSelect={(day) => {
+                              if (day) {
+                                setRecommendedOcularDate(format(day, 'yyyy-MM-dd'));
+                                setOcularDateOpen(false);
+                              }
+                            }}
+                            disabled={(day) => {
+                              const dow = getDay(day);
+                              if (dow === 0 || dow === 6) return true;
+                              if (startOfDay(day) < startOfDay(addDays(new Date(), 3))) return true;
+                              return false;
+                            }}
+                            fromMonth={addDays(new Date(), 3)}
+                            className="rounded-xl"
+                          />
+                        </PopoverContent>
+                      </Popover>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-[13px] font-medium text-gray-700">
+                        Time Slot
+                      </Label>
+                      <Select value={recommendedOcularSlot} onValueChange={setRecommendedOcularSlot}>
+                        <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50">
+                          <SelectValue placeholder="Select a slot" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {SLOT_CODES.map((slot) => {
+                            const hour = parseInt(slot.split(':')[0] ?? '0');
+                            const ampm = hour >= 12 ? 'PM' : 'AM';
+                            const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
+                            return (
+                              <SelectItem key={slot} value={slot}>
+                                {displayHour}:00 {ampm}
+                              </SelectItem>
+                            );
+                          })}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Sections 2-4: Only for ocular visits */}
+          {visitType === 'ocular' && (<>
 
           {/* Section 2: Measurements */}
           <Card className="rounded-xl border-gray-100 shadow-sm">
@@ -752,7 +974,10 @@ export function VisitReportPage() {
             </CardContent>
           </Card>
 
-          {/* Section 5: File Uploads */}
+          </>)}{/* end ocular-only sections */}
+
+          {/* Section 5: File Uploads — ocular only */}
+          {visitType === 'ocular' && (
           <Card className="rounded-xl border-gray-100 shadow-sm">
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
@@ -773,6 +998,7 @@ export function VisitReportPage() {
               />
             </CardContent>
           </Card>
+          )}
         </div>
       )}
 
@@ -827,7 +1053,11 @@ export function VisitReportPage() {
         open={submitOpen}
         onOpenChange={setSubmitOpen}
         title="Submit Visit Report"
-        description="This will create a project for this report. If all reports for this appointment are submitted, the appointment will be marked as completed. Are you sure?"
+        description={
+          report?.visitType === 'ocular'
+            ? 'This will update the existing project with the on-site measurements and details collected during the ocular visit. The appointment will be marked as completed. Are you sure?'
+            : 'This will create a project for this report. If all reports for this appointment are submitted, the appointment will be marked as completed. Are you sure?'
+        }
         confirmLabel="Submit"
         isLoading={submitMutation.isPending}
         onConfirm={handleSubmit}

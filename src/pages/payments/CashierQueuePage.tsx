@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { CreditCard, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
+import { CreditCard, CheckCircle, XCircle, AlertTriangle, QrCode, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
@@ -48,7 +48,7 @@ export function CashierQueuePage() {
   const handleVerify = async () => {
     try {
       await verifyMutation.mutateAsync(verifyId);
-      toast.success('Payment verified');
+      toast.success('Payment verified! The customer has been notified and the project will advance to the next stage.', { duration: 5000 });
       setVerifyId('');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Verification failed'));
@@ -62,7 +62,7 @@ export function CashierQueuePage() {
     }
     try {
       await declineMutation.mutateAsync({ id: declineDialog.id, reason: declineReason });
-      toast.success('Payment declined');
+      toast.success('Payment declined — the customer has been notified and can re-submit.', { duration: 5000 });
       setDeclineDialog({ open: false, id: '' });
       setDeclineReason('');
     } catch (err) {
@@ -112,13 +112,25 @@ export function CashierQueuePage() {
                   </p>
                   <div className="flex items-center gap-2 text-sm">
                     <span className="font-bold text-[#1d1d1f]">{formatCurrency(Number(p.amountPaid))}</span>
-                    <span className="text-[#86868b] capitalize">
-                      {String(p.method || '').replace('_', ' ')}
-                    </span>
-                    {p.referenceNumber && (
-                      <span className="text-[#86868b]">· Ref: {String(p.referenceNumber)}</span>
+                    {String(p.method) === 'qrph' ? (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
+                        <QrCode className="h-3 w-3" /> QR Payment
+                      </span>
+                    ) : (
+                      <span className="text-[#86868b] capitalize">
+                        {String(p.method || '').replace('_', ' ')}
+                      </span>
                     )}
                   </div>
+                  {String(p.method) === 'qrph' && (
+                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-1 text-xs text-emerald-700">
+                      <ShieldCheck className="h-3.5 w-3.5" />
+                      Payment confirmed by PayMongo
+                    </div>
+                  )}
+                  {p.referenceNumber && (
+                    <p className="text-xs text-[#86868b] font-mono">Ref: {String(p.referenceNumber)}</p>
+                  )}
                   <p className="text-xs text-[#86868b]">
                     {p.createdAt
                       ? format(new Date(String(p.createdAt)), 'MMM d, yyyy h:mm a')
@@ -209,15 +221,53 @@ export function CashierQueuePage() {
       )}
 
       {/* Verify Confirm */}
-      <ConfirmDialog
-        open={!!verifyId}
-        onOpenChange={(open) => !open && setVerifyId('')}
-        title="Verify Payment"
-        description="Confirm this payment has been received. A receipt will be generated."
-        confirmLabel="Verify"
-        isLoading={verifyMutation.isPending}
-        onConfirm={handleVerify}
-      />
+      {(() => {
+        const verifyPayment = payments?.find((p) => String(p._id) === verifyId);
+        return (
+          <ConfirmDialog
+            open={!!verifyId}
+            onOpenChange={(open) => !open && setVerifyId('')}
+            title="Verify Payment"
+            description="Review the details below, then confirm to mark this payment as verified. A receipt will be generated."
+            confirmLabel="Verify Payment"
+            isLoading={verifyMutation.isPending}
+            onConfirm={handleVerify}
+          >
+            {verifyPayment && (
+              <div className="rounded-xl border border-[#e8e8ed] bg-[#f5f5f7]/50 p-4 space-y-2.5 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-[#86868b]">Customer</span>
+                  <span className="font-medium text-[#1d1d1f]">{getPaymentContext(verifyPayment).customerName}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#86868b]">Project</span>
+                  <span className="font-medium text-[#1d1d1f]">{getPaymentContext(verifyPayment).projectTitle}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#86868b]">Amount</span>
+                  <span className="font-bold text-[#1d1d1f]">{formatCurrency(Number(verifyPayment.amountPaid))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-[#86868b]">Method</span>
+                  <span className="capitalize text-[#1d1d1f]">{String(verifyPayment.method || '').replace('_', ' ')}</span>
+                </div>
+                {verifyPayment.referenceNumber && (
+                  <div className="flex justify-between">
+                    <span className="text-[#86868b]">Reference</span>
+                    <span className="font-mono text-xs text-[#1d1d1f]">{String(verifyPayment.referenceNumber)}</span>
+                  </div>
+                )}
+                {String(verifyPayment.method) === 'qrph' && (
+                  <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 text-xs text-emerald-700">
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    This payment was confirmed by PayMongo
+                  </div>
+                )}
+              </div>
+            )}
+          </ConfirmDialog>
+        );
+      })()}
 
       {/* Decline Dialog */}
       <Dialog
