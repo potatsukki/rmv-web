@@ -23,7 +23,7 @@ import { useGetDownloadUrl, openAuthenticatedFile } from '@/hooks/useUploads';
 import { useUsers, useSignature } from '@/hooks/useUsers';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
-import { cn } from '@/lib/utils';
+import { cn, extractErrorMessage } from '@/lib/utils';
 import type { VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
@@ -93,8 +93,8 @@ function MediaThumbnail({ fileKey, type, onPreview }: { fileKey: string; type: '
       const res = await getDownloadUrl.mutateAsync(fileKey);
       setUrl(res.downloadUrl);
       window.open(res.downloadUrl, '_blank');
-    } catch {
-      toast.error('Failed to load media');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to load media'));
     } finally {
       setLoading(false);
     }
@@ -233,8 +233,8 @@ export function ProjectDetailPage() {
       await generateContract.mutateAsync(id!);
       toast.success('Contract generated successfully');
       refetch();
-    } catch {
-      toast.error('Failed to generate contract');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to generate contract'));
     }
   };
 
@@ -254,8 +254,8 @@ export function ProjectDetailPage() {
       setTimeout(() => {
         navigate('/payments', { state: { projectId: id } });
       }, 1200);
-    } catch {
-      toast.error('Failed to sign contract');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to sign contract'));
     }
   };
 
@@ -269,8 +269,7 @@ export function ProjectDetailPage() {
         refetch(); // refresh project to update originalContractDownloadedAt
       }
     } catch (err: any) {
-      const msg = err?.response?.data?.message || 'Failed to get download link';
-      toast.error(msg);
+      toast.error(extractErrorMessage(err, 'Failed to get download link'));
     }
   };
 
@@ -280,8 +279,8 @@ export function ProjectDetailPage() {
       await assignEngineers.mutateAsync({ id: id!, engineerIds: [user._id] });
       toast.success('You have been assigned to this project');
       refetch();
-    } catch {
-      toast.error('Failed to claim project');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to claim project'));
     }
   };
 
@@ -301,8 +300,8 @@ export function ProjectDetailPage() {
       setFabLeadId('');
       setFabAssistantIds([]);
       refetch();
-    } catch {
-      toast.error('Failed to assign fabrication team');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to assign fabrication team'));
     }
   };
 
@@ -1103,9 +1102,9 @@ export function ProjectDetailPage() {
       )}
 
       {/* ════════════════  BLUEPRINT TAB  ════════════════ */}
-      {activeTab === 'blueprint' && (
+      <div className={activeTab === 'blueprint' ? '' : 'hidden'}>
         <BlueprintTab projectId={id!} onNavigateToDetails={() => setActiveTab('details')} />
-      )}
+      </div>
 
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
       {activeTab === 'payments' && isCustomer && !project?.contractSignedAt && (

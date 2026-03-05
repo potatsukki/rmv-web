@@ -4,6 +4,7 @@ import { CreditCard, CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -49,8 +50,8 @@ export function CashierQueuePage() {
       await verifyMutation.mutateAsync(verifyId);
       toast.success('Payment verified');
       setVerifyId('');
-    } catch {
-      toast.error('Verification failed');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Verification failed'));
     }
   };
 
@@ -64,8 +65,8 @@ export function CashierQueuePage() {
       toast.success('Payment declined');
       setDeclineDialog({ open: false, id: '' });
       setDeclineReason('');
-    } catch {
-      toast.error('Decline failed');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Decline failed'));
     }
   };
 

@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Plus, Trash2, Settings, Calendar, Power, RefreshCw, Save, CreditCard } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -135,8 +136,8 @@ export function SettingsPage() {
         }),
       ]);
       toast.success('Payment settings saved');
-    } catch {
-      toast.error('Failed to save payment settings');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to save payment settings'));
     }
   };
 
@@ -170,8 +171,8 @@ export function SettingsPage() {
       });
       toast.success('Config updated');
       setEditConfig(null);
-    } catch {
-      toast.error('Failed to update config');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to update config'));
     }
   };
 
@@ -179,8 +180,8 @@ export function SettingsPage() {
     try {
       await toggleMaintenance.mutateAsync(!maintenanceEnabled);
       toast.success(maintenanceEnabled ? 'Maintenance mode disabled' : 'Maintenance mode enabled');
-    } catch {
-      toast.error('Failed to toggle maintenance');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to toggle maintenance'));
     }
   };
 
@@ -190,8 +191,8 @@ export function SettingsPage() {
       toast.success('Holiday added');
       setAddHolidayOpen(false);
       holidayForm.reset();
-    } catch {
-      toast.error('Failed to add holiday');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to add holiday'));
     }
   };
 
@@ -201,8 +202,8 @@ export function SettingsPage() {
       await deleteHolidayMut.mutateAsync(deleteHoliday.holiday._id);
       toast.success('Holiday removed');
       setDeleteHoliday({ open: false, holiday: null });
-    } catch {
-      toast.error('Failed to delete holiday');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to delete holiday'));
     }
   };
 

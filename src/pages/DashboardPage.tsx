@@ -25,6 +25,7 @@ import {
   Bell,
   Eye,
   ShieldCheck,
+  PackageCheck,
 } from 'lucide-react';
 import { formatDistanceToNowStrict } from 'date-fns';
 
@@ -361,6 +362,28 @@ export function DashboardPage() {
             <ArrowRight className="h-4 w-4 text-amber-500" />
           </div>
         </Link>
+      )}
+
+      {/* Installation Confirmation Banner (customers with projects ready for delivery) */}
+      {isCustomerRole && (data as any)?.pendingInstallationConfirmations?.length > 0 && (
+        (data as any).pendingInstallationConfirmations.map((proj: { _id: string; title: string }) => (
+          <Link key={proj._id} to={`/projects/${proj._id}/fabrication`}>
+            <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50/80 p-4 hover:bg-blue-50 transition-colors cursor-pointer">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
+                <PackageCheck className="h-5 w-5 text-blue-600" />
+              </div>
+              <div className="flex-1">
+                <p className="font-semibold text-blue-800 text-sm">
+                  Your product is ready for installation!
+                </p>
+                <p className="text-xs text-blue-600">
+                  &quot;{proj.title}&quot; fabrication is complete. Tap here to confirm your installation schedule.
+                </p>
+              </div>
+              <ArrowRight className="h-4 w-4 text-blue-500" />
+            </div>
+          </Link>
+        ))
       )}
 
       {/* KPI Cards */}

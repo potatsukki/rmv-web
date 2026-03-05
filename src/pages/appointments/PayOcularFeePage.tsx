@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -48,8 +49,8 @@ export function PayOcularFeePage() {
       } else {
         toast.error('Payment not yet confirmed. Please wait a moment and try again.');
       }
-    } catch {
-      toast.error('Failed to verify payment. Please try again.');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to verify payment. Please try again.'));
     }
   }, [id, verifyMutation, refetch]);
 
@@ -93,8 +94,8 @@ export function PayOcularFeePage() {
       const result = await checkoutMutation.mutateAsync(id!);
       // Redirect to PayMongo checkout page
       window.location.href = result.checkoutUrl;
-    } catch {
-      toast.error('Failed to create payment session. Please try again.');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to create payment session. Please try again.'));
     }
   };
 
@@ -104,8 +105,8 @@ export function PayOcularFeePage() {
       await simulateMutation.mutateAsync(id!);
       toast.success('Payment simulated!');
       refetch();
-    } catch {
-      toast.error('Simulation failed.');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Simulation failed.'));
     }
   };
   // ⚠️ END TESTING ONLY

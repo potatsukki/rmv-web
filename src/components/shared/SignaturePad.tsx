@@ -2,6 +2,7 @@ import { useRef, useEffect, useState, useCallback } from 'react';
 import { Eraser, Check, RotateCcw, AlertTriangle, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { useGetUploadUrl, uploadFileToR2, useAuthenticatedUrl } from '@/hooks/useUploads';
 
@@ -198,8 +199,8 @@ export function SignaturePad({
 
       onSave(fileKey);
       toast.success('Signature saved');
-    } catch {
-      toast.error('Failed to save signature');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to save signature'));
     } finally {
       setIsUploading(false);
     }

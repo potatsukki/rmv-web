@@ -17,6 +17,7 @@ interface DashboardSummary {
   pendingCashPayments: number;
   totalUsers: number;
   pendingBlueprints: number;
+  pendingInstallationConfirmations: { _id: string; title: string }[];
 }
 
 export function useDashboardSummary() {

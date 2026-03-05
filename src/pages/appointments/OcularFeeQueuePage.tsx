@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { QrCode, CheckCircle, XCircle, Eye, MapPin, Calendar } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -75,8 +76,8 @@ export function OcularFeeQueuePage() {
       await verifyMutation.mutateAsync(verifyId);
       toast.success('Ocular fee verified');
       setVerifyId('');
-    } catch {
-      toast.error('Verification failed');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Verification failed'));
     }
   };
 
@@ -93,8 +94,8 @@ export function OcularFeeQueuePage() {
       toast.success('Ocular fee declined');
       setDeclineDialog({ open: false, id: '' });
       setDeclineReason('');
-    } catch {
-      toast.error('Decline failed');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Decline failed'));
     }
   };
 
@@ -103,8 +104,8 @@ export function OcularFeeQueuePage() {
       const result = await getDownloadUrl.mutateAsync(proofKey);
       setProofImageUrl(result.downloadUrl);
       setProofViewOpen(true);
-    } catch {
-      toast.error('Failed to load proof image');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to load proof image'));
     }
   };
 

@@ -4,6 +4,7 @@ import { format } from 'date-fns';
 import { Hammer, Plus, Clock, User, Paperclip, Lock, CreditCard, Pencil, Trash2, PackageCheck, CalendarCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { AuthImage } from '@/components/shared/AuthImage';
@@ -100,8 +101,8 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
     try {
       await confirmInstallationMutation.mutateAsync(projectId);
       toast.success('Installation confirmed! The fabrication team has been notified.');
-    } catch {
-      toast.error('Failed to confirm installation');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to confirm installation'));
     }
   };
 
@@ -150,8 +151,8 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
       setUpdateDialogOpen(false);
       setNotes('');
       setPhotoKeys([]);
-    } catch {
-      toast.error('Failed to add update');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to add update'));
     }
   };
 
@@ -169,8 +170,8 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
       });
       toast.success('Update saved');
       setEditingUpdate(null);
-    } catch {
-      toast.error('Failed to save update');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to save update'));
     }
   };
 
@@ -180,8 +181,8 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
       await deleteMutation.mutateAsync(deletingUpdateId);
       toast.success('Update deleted');
       setDeletingUpdateId(null);
-    } catch {
-      toast.error('Failed to delete update');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to delete update'));
     }
   };
 

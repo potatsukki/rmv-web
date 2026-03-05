@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -216,8 +217,8 @@ export function UsersPage() {
       }
       toast.success(disableDialog.user.isActive ? 'User disabled' : 'User enabled');
       setDisableDialog({ open: false, user: null });
-    } catch {
-      toast.error('Failed to update user status');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to update user status'));
     }
   };
 

@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -141,8 +142,7 @@ export function SlotManagementPage() {
       setBlockDialog({ open: false, slotCode: '' });
       setReason('');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Failed to block slot');
+      toast.error(extractErrorMessage(err, 'Failed to block slot'));
     }
   };
 
@@ -152,8 +152,8 @@ export function SlotManagementPage() {
       await deleteBlock.mutateAsync(deleteConfirm.slot._id);
       toast.success('Slot unblocked');
       setDeleteConfirm({ open: false, slot: null });
-    } catch {
-      toast.error('Failed to unblock slot');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to unblock slot'));
     }
   };
 
@@ -180,8 +180,7 @@ export function SlotManagementPage() {
       setBlockDayReason('');
       setBlockDayType('both');
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Failed to block day');
+      toast.error(extractErrorMessage(err, 'Failed to block day'));
     }
   };
 
@@ -205,8 +204,7 @@ export function SlotManagementPage() {
       setBulkBlockReason('');
       clearSelections();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Failed to block slots');
+      toast.error(extractErrorMessage(err, 'Failed to block slots'));
     }
   };
 
@@ -218,8 +216,7 @@ export function SlotManagementPage() {
       setBulkUnblockConfirm(false);
       clearSelections();
     } catch (err: unknown) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;
-      toast.error(msg || 'Failed to unblock slots');
+      toast.error(extractErrorMessage(err, 'Failed to unblock slots'));
     }
   };
 

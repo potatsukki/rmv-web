@@ -4,6 +4,7 @@ import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Scr
 import { Link, useLocation } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
@@ -153,8 +154,7 @@ export function PaymentsPage() {
       setProofDialog({ open: false, stageId: '', amount: 0 });
       resetForm();
     } catch (err: unknown) {
-      const error = err as { response?: { data?: { error?: { message?: string } } } };
-      toast.error(error.response?.data?.error?.message || 'Submission failed');
+      toast.error(extractErrorMessage(err, 'Submission failed'));
     }
   };
 
@@ -170,8 +170,8 @@ export function PaymentsPage() {
       const result = await stageCheckout.mutateAsync(stageId);
       window.open(result.checkoutUrl, '_blank');
       toast.success('QR checkout opened — complete payment in the new tab');
-    } catch {
-      toast.error('Failed to create checkout session');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to create checkout session'));
     }
   };
 
@@ -179,8 +179,8 @@ export function PaymentsPage() {
     try {
       const result = await simulatePayment.mutateAsync(stageId);
       toast.success(`Payment simulated! Receipt: ${result.receiptNumber}`);
-    } catch {
-      toast.error('Simulation failed');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Simulation failed'));
     }
   };
 
@@ -198,8 +198,8 @@ export function PaymentsPage() {
       toast.success(`Cash recorded! Receipt: ${result.receiptNumber}`);
       setCashDialog({ open: false, stageId: '', amount: 0 });
       setCashAmount('');
-    } catch {
-      toast.error('Failed to record cash payment');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to record cash payment'));
     }
   };
 
@@ -855,8 +855,8 @@ export function PaymentsPage() {
                                   try {
                                     const { data } = await api.get(`/payments/${p._id}/receipt-url`);
                                     window.open(data.data.url, '_blank');
-                                  } catch {
-                                    toast.error('Failed to get receipt');
+                                  } catch (err) {
+                                    toast.error(extractErrorMessage(err, 'Failed to get receipt'));
                                   }
                                 }}
                               >
@@ -900,8 +900,8 @@ export function PaymentsPage() {
                                 try {
                                   const { data } = await api.get(`/payments/${p._id}/receipt-url`);
                                   window.open(data.data.url, '_blank');
-                                } catch {
-                                  toast.error('Failed to get receipt');
+                                } catch (err) {
+                                  toast.error(extractErrorMessage(err, 'Failed to get receipt'));
                                 }
                               }}
                             >

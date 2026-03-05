@@ -3,6 +3,7 @@ import { api } from '@/lib/api';
 import type { ApiResponse, User } from '@/lib/types';
 import { useAuthStore } from '@/stores/auth.store';
 import toast from 'react-hot-toast';
+import { extractErrorMessage } from '@/lib/utils';
 
 const KEYS = {
   all: ['users'] as const,
@@ -148,8 +149,8 @@ export function useUpdateProfile() {
     onSuccess: async () => {
       await fetchMe();
     },
-    onError: () => {
-      toast.error('Failed to update profile');
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'Failed to update profile'));
     },
   });
 }

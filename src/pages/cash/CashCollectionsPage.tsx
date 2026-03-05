@@ -3,6 +3,7 @@ import { format } from 'date-fns';
 import { Wallet, AlertTriangle, Banknote, Loader2, MapPin, Clock, User, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -31,20 +32,6 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-
-function extractErrorMessage(error: unknown, fallback: string): string {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof (error as Record<string, unknown>).response === 'object' &&
-    (error as Record<string, unknown>).response !== null
-  ) {
-    const resp = (error as { response: { data?: { error?: { message?: string } } } }).response;
-    if (resp.data?.error?.message) return resp.data.error.message;
-  }
-  return fallback;
-}
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);

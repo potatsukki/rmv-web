@@ -4,6 +4,7 @@ import { RotateCcw, CheckCircle, XCircle, Clock, User, Phone, Building2, Filter,
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -61,8 +62,8 @@ export function RefundQueuePage() {
       await approveMutation.mutateAsync(approveId);
       toast.success('Refund approved');
       setApproveId('');
-    } catch {
-      toast.error('Failed to approve refund');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to approve refund'));
     }
   };
 
@@ -76,8 +77,8 @@ export function RefundQueuePage() {
       toast.success('Refund denied');
       setDenyDialog({ open: false, id: '' });
       setDenialReason('');
-    } catch {
-      toast.error('Failed to deny refund');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to deny refund'));
     }
   };
 

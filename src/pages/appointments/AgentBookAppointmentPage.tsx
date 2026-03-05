@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { LocationPicker } from '@/components/maps/LocationPicker';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -47,27 +48,6 @@ function currency(amount: number): string {
     currency: 'PHP',
     maximumFractionDigits: 0,
   }).format(amount);
-}
-
-function extractErrorMessage(error: unknown, fallback: string): string {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof error.response === 'object' &&
-    error.response !== null &&
-    'data' in error.response &&
-    typeof error.response.data === 'object' &&
-    error.response.data !== null &&
-    'error' in error.response.data &&
-    typeof error.response.data.error === 'object' &&
-    error.response.data.error !== null &&
-    'message' in error.response.data.error &&
-    typeof error.response.data.error.message === 'string'
-  ) {
-    return error.response.data.error.message;
-  }
-  return fallback;
 }
 
 /* ── Schema ── */

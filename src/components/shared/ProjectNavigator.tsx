@@ -24,7 +24,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { cn } from '@/lib/utils';
+import { cn, extractErrorMessage } from '@/lib/utils';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
   ServiceType,
@@ -114,8 +114,8 @@ function InlineRename({
         serviceTypeCustom: trimmed,
       });
       toast.success('Renamed');
-    } catch {
-      toast.error('Failed to rename');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to rename'));
     }
     onDone();
   }, [value, currentLabel, reportId, updateMutation, onDone]);
@@ -241,8 +241,8 @@ export function ProjectNavigator({
           navigate('/visit-reports');
         }
       }
-    } catch {
-      toast.error('Failed to remove project');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to remove project'));
     }
   };
 

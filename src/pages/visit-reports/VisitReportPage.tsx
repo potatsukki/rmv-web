@@ -18,6 +18,8 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
+
 import {
   Select,
   SelectContent,
@@ -254,8 +256,8 @@ export function VisitReportPage() {
       });
       if (showSuccessToast) toast.success('Report saved');
       return true;
-    } catch {
-      if (showErrorToast) toast.error('Failed to save report');
+    } catch (err) {
+      if (showErrorToast) toast.error(extractErrorMessage(err, 'Failed to save report'));
       return false;
     }
   };
@@ -308,8 +310,8 @@ export function VisitReportPage() {
       toast.success('Report returned to sales staff');
       setReturnOpen(false);
       setReturnReason('');
-    } catch {
-      toast.error('Failed to return report');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to return report'));
     }
   };
 

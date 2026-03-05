@@ -3,27 +3,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, AlertTriangle, Camera, Image, Loader2, RotateCcw, Mail, Banknote } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-function extractErrorMessage(error: unknown, fallback: string): string {
-  if (
-    typeof error === 'object' &&
-    error !== null &&
-    'response' in error &&
-    typeof error.response === 'object' &&
-    error.response !== null &&
-    'data' in error.response &&
-    typeof error.response.data === 'object' &&
-    error.response.data !== null &&
-    'error' in error.response.data &&
-    typeof error.response.data.error === 'object' &&
-    error.response.data.error !== null &&
-    'message' in error.response.data.error &&
-    typeof error.response.data.error.message === 'string'
-  ) {
-    return error.response.data.error.message;
-  }
-  return fallback;
-}
-
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import {

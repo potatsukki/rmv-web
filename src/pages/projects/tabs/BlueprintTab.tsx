@@ -8,11 +8,13 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
+import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { AuthImage } from '@/components/shared/AuthImage';
 import { openAuthenticatedFile, useAuthenticatedUrl } from '@/hooks/useUploads';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
@@ -508,7 +510,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           refetch();
           refetchBlueprint();
         },
-        onError: () => toast.error('Approval failed'),
+        onError: (err) => toast.error(extractErrorMessage(err, 'Approval failed')),
         onSettled: () => setApprovingComponent(null),
       },
     );
@@ -534,7 +536,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           refetch();
           refetchBlueprint();
         },
-        onError: () => toast.error('Failed to request revision'),
+        onError: (err) => toast.error(extractErrorMessage(err, 'Failed to request revision')),
       },
     );
   };
@@ -552,7 +554,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           refetchBlueprint();
           refetchProject();
         },
-        onError: () => toast.error('Failed to accept blueprint'),
+        onError: (err) => toast.error(extractErrorMessage(err, 'Failed to accept blueprint')),
       },
     );
   };
@@ -562,16 +564,19 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     try {
       const res = await api.post('/uploads/signed-download-url', { key: fileKey });
       window.open(res.data.data.downloadUrl, '_blank');
-    } catch {
-      toast.error('Failed to get download link');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to get download link'));
     }
   };
 
+  const uploadInProgressRef = useRef(false);
   const handleBlueprintUpload = async () => {
+    if (uploadInProgressRef.current) return;
     if (!blueprintFile || !designFile || !costingFile) {
       toast.error('Please select blueprint, design, and costing files');
       return;
     }
+    uploadInProgressRef.current = true;
     setUploading(true);
     try {
       const [bpUrl, designUrl, costUrl] = await Promise.all([
@@ -653,9 +658,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       setQuotInitialized(false);
       refetchBlueprint();
       refetchProject();
-    } catch {
-      toast.error('Failed to upload blueprint');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to upload blueprint'));
     } finally {
+      uploadInProgressRef.current = false;
       setUploading(false);
     }
   };
@@ -728,10 +734,31 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                   </Button>
                 </div>
               </div>
-              {blueprint.revisionNotes && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+              {(blueprint.revisionNotes || (blueprint.revisionRefKeys && blueprint.revisionRefKeys.length > 0)) && (
+                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
                   <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Revision Notes</p>
-                  <p className="text-sm text-amber-800 mt-1">{blueprint.revisionNotes}</p>
+                  {blueprint.revisionNotes && (
+                    <p className="text-sm text-amber-800">{blueprint.revisionNotes}</p>
+                  )}
+                  {blueprint.revisionRefKeys && blueprint.revisionRefKeys.length > 0 && (
+                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                      {blueprint.revisionRefKeys.map((key, idx) => (
+                        <button
+                          key={idx}
+                          type="button"
+                          onClick={() => openAuthenticatedFile(key)}
+                          className="group relative aspect-[4/3] bg-white rounded-lg overflow-hidden border border-amber-200 block"
+                        >
+                          <AuthImage
+                            fileKey={key}
+                            alt={`Reference ${idx + 1}`}
+                            className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               )}
               <p className="text-xs text-[#86868b]">
@@ -943,10 +970,31 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
         </div>
 
         {/* Revision notes if any */}
-        {blueprint.revisionNotes && (
-          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4">
+        {(blueprint.revisionNotes || (blueprint.revisionRefKeys && blueprint.revisionRefKeys.length > 0)) && (
+          <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
             <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Revision Notes from Customer</p>
-            <p className="text-sm text-amber-800 mt-1">{blueprint.revisionNotes}</p>
+            {blueprint.revisionNotes && (
+              <p className="text-sm text-amber-800">{blueprint.revisionNotes}</p>
+            )}
+            {blueprint.revisionRefKeys && blueprint.revisionRefKeys.length > 0 && (
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
+                {blueprint.revisionRefKeys.map((key, idx) => (
+                  <button
+                    key={idx}
+                    type="button"
+                    onClick={() => openAuthenticatedFile(key)}
+                    className="group relative aspect-[4/3] bg-white rounded-lg overflow-hidden border border-amber-200 block"
+                  >
+                    <AuthImage
+                      fileKey={key}
+                      alt={`Reference ${idx + 1}`}
+                      className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -1243,13 +1291,34 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           )}
 
           {/* Revision Notes Banner */}
-          {bp.revisionNotes && (
-            <div className="bg-red-50 border border-red-100 rounded-xl p-4 flex gap-3 text-sm text-red-800">
-              <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
-              <div>
-                <p className="font-semibold text-red-900">Revision Requested</p>
-                <p className="mt-1">{bp.revisionNotes}</p>
+          {(bp.revisionNotes || (bp.revisionRefKeys && bp.revisionRefKeys.length > 0)) && (
+            <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-3 text-sm text-red-800">
+              <div className="flex gap-3">
+                <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+                <div>
+                  <p className="font-semibold text-red-900">Revision Requested</p>
+                  {bp.revisionNotes && <p className="mt-1">{bp.revisionNotes}</p>}
+                </div>
               </div>
+              {bp.revisionRefKeys && bp.revisionRefKeys.length > 0 && (
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-1">
+                  {bp.revisionRefKeys.map((key, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => openAuthenticatedFile(key)}
+                      className="group relative aspect-[4/3] bg-white rounded-lg overflow-hidden border border-red-200 block"
+                    >
+                      <AuthImage
+                        fileKey={key}
+                        alt={`Reference ${idx + 1}`}
+                        className="absolute inset-0 w-full h-full object-cover transition-transform group-hover:scale-105"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
