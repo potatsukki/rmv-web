@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
 import { LocationPicker } from '@/components/maps/LocationPicker';
+import { LocationView } from '@/components/maps/LocationView';
 import { reverseGeocodeLocation, fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -406,6 +407,22 @@ export function AppointmentDetailPage() {
               <div>
                 <p className="text-[13px] font-medium text-[#3a3a3e]">Distance</p>
                 <p className="text-sm text-[#6e6e73]">{appt.distanceKm.toFixed(1)} km</p>
+              </div>
+            )}
+
+            {/* Customer pin location map — visible to staff/admin */}
+            {!isCustomer && appt.customerLocation && (
+              <div>
+                <p className="text-[13px] font-medium text-[#3a3a3e] mb-2">Customer Pin Location</p>
+                <LocationView lat={appt.customerLocation.lat} lng={appt.customerLocation.lng} />
+                <a
+                  href={`https://www.google.com/maps?q=${appt.customerLocation.lat},${appt.customerLocation.lng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:underline"
+                >
+                  <MapPin className="h-3 w-3" /> Open in Google Maps
+                </a>
               </div>
             )}
           </CardContent>
