@@ -47,11 +47,11 @@ export function LineItemsEditor({
   return (
     <div className="space-y-4">
       {/* Unit selector */}
-      <div className="flex items-center gap-3">
+      <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
         <Label className="text-[13px] font-medium text-gray-700 whitespace-nowrap">
           Measurement Unit
         </Label>
-        <div className="flex gap-1.5">
+        <div className="flex flex-wrap gap-1.5">
           {Object.values(MeasurementUnit).map((u) => (
             <button
               key={u}
@@ -81,7 +81,7 @@ export function LineItemsEditor({
               <GripVertical className="h-4 w-4 text-gray-300 mt-3 shrink-0" />
               <div className="flex-1 space-y-3">
                 {/* Label + Quantity row */}
-                <div className="flex gap-3">
+                <div className="flex flex-col gap-3 sm:flex-row">
                   <div className="flex-1 space-y-1">
                     <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                       Component / Section
@@ -96,7 +96,7 @@ export function LineItemsEditor({
                       className="h-9 rounded-lg border-gray-200 text-sm"
                     />
                   </div>
-                  <div className="w-20 space-y-1">
+                  <div className="w-full space-y-1 sm:w-20">
                     <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
                       Qty
                     </Label>
@@ -114,7 +114,7 @@ export function LineItemsEditor({
                 </div>
 
                 {/* Dimensions row */}
-                <div className="grid grid-cols-2 min-[420px]:grid-cols-3 sm:grid-cols-5 gap-2">
+                <div className="grid grid-cols-1 min-[360px]:grid-cols-2 lg:grid-cols-5 gap-2">
                   {(['length', 'width', 'height', 'thickness', 'area'] as const).map(
                     (dim) => (
                       <div key={dim} className="space-y-1">

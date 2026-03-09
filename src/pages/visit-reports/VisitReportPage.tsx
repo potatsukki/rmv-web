@@ -15,6 +15,8 @@ import {
   MapPin,
   Layers,
   FolderOpen,
+  AlertTriangle,
+  Wrench,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -42,12 +44,14 @@ import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { SiteConditionsPanel } from '@/components/shared/SiteConditionsPanel';
 import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
+import { FileUpload } from '@/components/shared/FileUpload';
 import { ProjectNavigator } from '@/components/shared/ProjectNavigator';
 import {
   useVisitReport,
   useUpdateVisitReport,
   useSubmitVisitReport,
   useReturnVisitReport,
+  useReopenVisitReportForRepair,
 } from '@/hooks/useVisitReports';
 import { useProjectByVisitReport } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
@@ -86,15 +90,18 @@ export function VisitReportPage() {
   const updateMutation = useUpdateVisitReport();
   const submitMutation = useSubmitVisitReport();
   const returnMutation = useReturnVisitReport();
+  const reopenMutation = useReopenVisitReportForRepair();
 
   // Fetch the linked project (only when report is submitted/completed)
   const { data: linkedProject } = useProjectByVisitReport(
-    report?.status === VisitReportStatus.SUBMITTED ? id : undefined,
+    report && report.status !== VisitReportStatus.DRAFT ? id : undefined,
   );
 
   const [submitOpen, setSubmitOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
+  const [reopenOpen, setReopenOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
+  const [repairReason, setRepairReason] = useState('');
 
   // ── Form state ──
   const [visitType, setVisitType] = useState('');
@@ -112,6 +119,9 @@ export function VisitReportPage() {
   const [designPreferences, setDesignPreferences] = useState('');
   const [materialOptions, setMaterialOptions] = useState('');
   const [projectScope, setProjectScope] = useState('');
+  const [initialDesignKeys, setInitialDesignKeys] = useState<string[]>([]);
+  const [initialDesignNotes, setInitialDesignNotes] = useState('');
+  const [initialDesignUploading, setInitialDesignUploading] = useState(false);
   const [recommendedOcularDate, setRecommendedOcularDate] = useState('');
   const [recommendedOcularSlot, setRecommendedOcularSlot] = useState('');
   const [ocularDateOpen, setOcularDateOpen] = useState(false);
@@ -144,8 +154,12 @@ export function VisitReportPage() {
   }, [id]);
 
   const isSalesStaff = user?.roles.includes(Role.SALES_STAFF);
+  const isEngineer = user?.roles.includes(Role.ENGINEER);
+  const isAdmin = user?.roles.includes(Role.ADMIN);
   const isEngineerOrAdmin =
     user?.roles.includes(Role.ENGINEER) || user?.roles.includes(Role.ADMIN);
+  const isConsultationDraftProject =
+    report?.visitType === 'consultation' && linkedProject?.status === 'draft';
 
   // Pre-fill form when data arrives
   if (report && !formLoaded) {
@@ -171,6 +185,8 @@ export function VisitReportPage() {
     setDesignPreferences(report.designPreferences || '');
     setMaterialOptions(report.materialOptions || '');
     setProjectScope(report.projectScope || '');
+    setInitialDesignKeys(report.initialDesignKeys || []);
+    setInitialDesignNotes(report.initialDesignNotes || '');
     if (report.recommendedOcularDate) {
       const d = new Date(report.recommendedOcularDate);
       setRecommendedOcularDate(format(d, 'yyyy-MM-dd'));
@@ -209,9 +225,36 @@ export function VisitReportPage() {
 
   const isDraft = report.status === VisitReportStatus.DRAFT;
   const isReturned = report.status === VisitReportStatus.RETURNED;
+  const isSubmitted = report.status === VisitReportStatus.SUBMITTED;
+  const isCompleted = report.status === VisitReportStatus.COMPLETED;
   const canEdit = isSalesStaff && (isDraft || isReturned);
   const canReturn =
-    isEngineerOrAdmin && report.status === VisitReportStatus.SUBMITTED;
+    isEngineerOrAdmin && isSubmitted;
+  const reportHasMeasuredLineItems = Boolean(report.lineItems?.some((item) =>
+    item.length != null ||
+    item.width != null ||
+    item.height != null ||
+    item.area != null ||
+    item.thickness != null,
+  ));
+  const reportHasLegacyMeasurements = Boolean(
+    report.measurements && (
+      report.measurements.length != null ||
+      report.measurements.width != null ||
+      report.measurements.height != null ||
+      report.measurements.area != null ||
+      report.measurements.thickness != null ||
+      report.measurements.raw
+    ),
+  );
+  const reportHasMeasurements = reportHasMeasuredLineItems || reportHasLegacyMeasurements;
+  const canReopenForRepair = Boolean(
+    report.visitType === 'ocular' &&
+    !canEdit &&
+    !reportHasMeasurements &&
+    (isSalesStaff || isAdmin) &&
+    (isSubmitted || isCompleted)
+  );
 
   // Detect if this is an old-style report (has legacy measurements but no lineItems)
   const isLegacyReport = !!(
@@ -226,6 +269,18 @@ export function VisitReportPage() {
     serviceType === ServiceType.CUSTOM
       ? serviceTypeCustom || 'Custom'
       : SERVICE_TYPE_LABELS[serviceType] || serviceType;
+
+  const hasMeasuredLineItems = lineItems.some((item) =>
+    item.length != null ||
+    item.width != null ||
+    item.height != null ||
+    item.area != null ||
+    item.thickness != null,
+  );
+
+  const hasLegacyMeasurements = Boolean(
+    legacyLength || legacyWidth || legacyHeight || legacyThickness || legacyMeasurementNotes,
+  );
 
   const saveDraft = async ({
     showSuccessToast = false,
@@ -285,6 +340,8 @@ export function VisitReportPage() {
           designPreferences: designPreferences || undefined,
           materialOptions: materialOptions || undefined,
           projectScope: projectScope || undefined,
+          initialDesignKeys,
+          initialDesignNotes: initialDesignNotes || undefined,
           recommendedOcularDate: recommendedOcularDate
             ? new Date(`${recommendedOcularDate}T00:00:00`).toISOString()
             : undefined,
@@ -309,18 +366,37 @@ export function VisitReportPage() {
   };
 
   const handleSubmit = async () => {
+    const isOcular = report?.visitType === 'ocular';
+
+    if (isOcular && !hasMeasuredLineItems && !hasLegacyMeasurements) {
+      toast.error('Add at least one measured line item or legacy measurement before submitting an ocular report.');
+      setSubmitOpen(false);
+      return;
+    }
+
     try {
+      const saved = await saveDraft({ showSuccessToast: false, showErrorToast: true });
+      if (!saved) {
+        setSubmitOpen(false);
+        return;
+      }
+
       await submitMutation.mutateAsync(id!);
-      const isOcular = report?.visitType === 'ocular';
+      await refetch();
       toast.success(
         isOcular
           ? 'Report submitted! The existing project has been updated with your on-site data. An engineer will review it next.'
-          : 'Report submitted! A project has been created. Next: an engineer will be assigned to create the blueprint.',
+          : 'Report submitted! A draft project has been created. Next: the appointment agent should finalize the ocular visit before engineering begins.',
         { duration: 5000 },
       );
       setSubmitOpen(false);
-    } catch {
+    } catch (err) {
       setSubmitOpen(false);
+      const message = extractErrorMessage(err, 'Failed to submit report');
+      if (!message.includes('appointment must be marked as complete')) {
+        toast.error(message);
+        return;
+      }
       const apptId = report ? rawId(report.appointmentId) : null;
       toast((t) => (
         <div className="flex flex-col gap-1.5">
@@ -348,11 +424,28 @@ export function VisitReportPage() {
     }
     try {
       await returnMutation.mutateAsync({ id: id!, reason: returnReason });
+      await refetch();
       toast.success('Report returned to sales staff');
       setReturnOpen(false);
       setReturnReason('');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to return report'));
+    }
+  };
+
+  const handleReopenForRepair = async () => {
+    if (!repairReason.trim()) {
+      toast.error('Please explain why this ocular report needs repair.');
+      return;
+    }
+    try {
+      await reopenMutation.mutateAsync({ id: id!, reason: repairReason.trim() });
+      await refetch();
+      toast.success('Ocular report reopened for repair. Sales can now correct and resubmit it.');
+      setReopenOpen(false);
+      setRepairReason('');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to reopen report for repair'));
     }
   };
 
@@ -418,6 +511,29 @@ export function VisitReportPage() {
             Report Returned
           </p>
           <p className="text-sm text-orange-700 mt-1">{report.returnReason}</p>
+        </div>
+      )}
+
+      {report.visitType === 'ocular' && !reportHasMeasurements && !canEdit && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+          <div className="flex items-start gap-3">
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Measurements are missing from this ocular report</p>
+              <p className="mt-1 text-sm text-amber-800">
+                The engineer can still see the rest of the ocular notes and attachments, but this report does not contain measured line items or legacy dimensions yet.
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {isConsultationDraftProject && (
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-semibold text-blue-900">Ocular visit is still required</p>
+          <p className="mt-1 text-sm text-blue-700">
+            This consultation created a draft project, but engineering cannot start until the ocular visit is finalized and its report is submitted.
+          </p>
         </div>
       )}
 
@@ -493,6 +609,23 @@ export function VisitReportPage() {
                 )}
                 {report.projectScope && (
                   <InfoRow icon={FolderOpen} label="Project Scope" value={report.projectScope} />
+                )}
+                {(report.initialDesignKeys?.length || report.initialDesignNotes) && (
+                  <div className="border-t border-gray-100 pt-3 space-y-3">
+                    <p className="text-[13px] font-semibold text-gray-800">Initial Design Package</p>
+                    {!!report.initialDesignKeys?.length && (
+                      <FileUpload
+                        folder="visit-reports/initial-design"
+                        existingKeys={report.initialDesignKeys}
+                        onUploadComplete={() => {}}
+                        readOnly
+                        label="Initial design files"
+                      />
+                    )}
+                    {report.initialDesignNotes && (
+                      <InfoRow icon={Paintbrush} label="Initial Design Notes" value={report.initialDesignNotes} />
+                    )}
+                  </div>
                 )}
                 {(report.recommendedOcularDate || report.recommendedOcularSlot) && (
                   <div className="border-t border-gray-100 pt-3">
@@ -774,6 +907,36 @@ export function VisitReportPage() {
                   />
                 </div>
 
+                <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-4">
+                  <div>
+                    <p className="text-[13px] font-semibold text-gray-800">Initial Design Package</p>
+                    <p className="mt-1 text-sm text-gray-600">
+                      Upload the rough sketch, inspiration images, PDFs, or reference files gathered during the consultation before the ocular visit.
+                    </p>
+                  </div>
+                  <FileUpload
+                    folder="visit-reports/initial-design"
+                    accept="image/*,.pdf"
+                    maxSizeMB={5}
+                    maxFiles={10}
+                    label="Upload initial design files"
+                    existingKeys={initialDesignKeys}
+                    onUploadComplete={setInitialDesignKeys}
+                    onUploadingChange={setInitialDesignUploading}
+                  />
+                  <div className="space-y-1.5">
+                    <Label className="text-[13px] font-medium text-gray-700">
+                      Initial Design Notes
+                    </Label>
+                    <Textarea
+                      value={initialDesignNotes}
+                      onChange={(e) => setInitialDesignNotes(e.target.value)}
+                      placeholder="Explain the concept, customer references, or assumptions behind the uploaded design package..."
+                      className="min-h-[80px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                    />
+                  </div>
+                </div>
+
                 <div className="border-t border-gray-100 pt-4">
                   <p className="text-[13px] font-semibold text-gray-800 mb-3">
                     Recommended Ocular Schedule
@@ -1008,7 +1171,7 @@ export function VisitReportPage() {
           <>
             <Button
               onClick={handleSave}
-              disabled={updateMutation.isPending}
+              disabled={updateMutation.isPending || initialDesignUploading}
               className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
             >
               <Save className="mr-2 h-4 w-4" />
@@ -1016,7 +1179,7 @@ export function VisitReportPage() {
             </Button>
             <Button
               onClick={() => setSubmitOpen(true)}
-              disabled={submitMutation.isPending}
+              disabled={submitMutation.isPending || initialDesignUploading}
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
             >
               <Send className="mr-2 h-4 w-4" />
@@ -1037,13 +1200,39 @@ export function VisitReportPage() {
           </Button>
         )}
 
-        {linkedProject?._id && (
+        {canReopenForRepair && (
+          <Button
+            onClick={() => {
+              setRepairReason('Reopened for repair because required ocular measurements were missing from the submitted report.');
+              setReopenOpen(true);
+            }}
+            disabled={reopenMutation.isPending}
+            variant="outline"
+            className="border-amber-300 text-amber-900 hover:bg-amber-50 rounded-xl"
+          >
+            <Wrench className="mr-2 h-4 w-4" />
+            Reopen for Repair
+          </Button>
+        )}
+
+        {linkedProject?._id && (!isConsultationDraftProject || !isEngineer) && (
           <Button
             onClick={() => navigate(`/projects/${linkedProject._id}`)}
             className="bg-[#0066cc] hover:bg-[#0055b3] text-white rounded-xl"
           >
             <FolderOpen className="mr-2 h-4 w-4" />
-            Go to Project
+            {isConsultationDraftProject ? 'View Draft Project' : 'Go to Project'}
+          </Button>
+        )}
+
+        {isConsultationDraftProject && (
+          <Button
+            onClick={() => navigate(`/appointments/${rawId(report.appointmentId)}`)}
+            variant="outline"
+            className="rounded-xl border-[#c8c8cd] text-[#1d1d1f] hover:bg-[#f0f0f5]"
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            Go to Appointment
           </Button>
         )}
       </div>
@@ -1056,7 +1245,7 @@ export function VisitReportPage() {
         description={
           report?.visitType === 'ocular'
             ? 'This will update the existing project with the on-site measurements and details collected during the ocular visit. The appointment will be marked as completed. Are you sure?'
-            : 'This will create a project for this report. If all reports for this appointment are submitted, the appointment will be marked as completed. Are you sure?'
+            : 'This will create a draft project from the consultation and hand the workflow to ocular scheduling. Engineering starts only after the ocular visit is completed. Are you sure?'
         }
         confirmLabel="Submit"
         isLoading={submitMutation.isPending}
@@ -1083,6 +1272,28 @@ export function VisitReportPage() {
             onChange={(e) => setReturnReason(e.target.value)}
             placeholder="Explain what needs to be corrected..."
             className="min-h-[80px] rounded-xl border-gray-200"
+          />
+        </div>
+      </ConfirmDialog>
+
+      <ConfirmDialog
+        open={reopenOpen}
+        onOpenChange={setReopenOpen}
+        title="Reopen Ocular Report for Repair"
+        description="This will move the report back to Returned so sales staff can correct the site data and resubmit it. The linked project stays visible, but engineers should wait for the repaired report."
+        confirmLabel="Reopen Report"
+        isLoading={reopenMutation.isPending}
+        onConfirm={handleReopenForRepair}
+      >
+        <div className="space-y-2 mt-2">
+          <Label className="text-[13px] font-medium text-gray-700">
+            Repair reason
+          </Label>
+          <Textarea
+            value={repairReason}
+            onChange={(e) => setRepairReason(e.target.value)}
+            placeholder="Explain what needs to be fixed before engineering relies on this report..."
+            className="min-h-[96px] rounded-xl border-gray-200"
           />
         </div>
       </ConfirmDialog>

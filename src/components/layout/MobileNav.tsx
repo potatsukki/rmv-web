@@ -1,4 +1,6 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { Role } from '@/lib/constants';
@@ -132,6 +134,7 @@ export function MobileNav() {
   const { unreadCount } = useNotificationStore();
   const location = useLocation();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [menuOpen, setMenuOpen] = useState(false);
   const drawerRef = useRef<HTMLDivElement>(null);
 
@@ -202,9 +205,20 @@ export function MobileNav() {
 
   const [showLogoutModal, setShowLogoutModal] = useState(false);
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
+  const handleLogout = async () => {
+    const result = await logout();
+    queryClient.clear();
+    useNotificationStore.setState({ notifications: [], unreadCount: 0 });
+    sessionStorage.removeItem('seen_pendingAppointments');
+    sessionStorage.removeItem('seen_pendingPayments');
+    navigate('/login', { replace: true, state: { from: location } });
+
+    if (result.success) {
+      toast.success('Logged out successfully');
+      return;
+    }
+
+    toast.error(result.message || 'You were signed out locally, but the server session could not be closed.');
   };
 
   return (

@@ -2,6 +2,9 @@ import { useQuery } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, AuditLogListResponse } from '@/lib/types';
 
+const getActiveTabRefetchInterval = (ms: number) =>
+  typeof document === 'undefined' || document.visibilityState === 'visible' ? ms : false;
+
 // Dashboard
 interface DashboardSummary {
   totalAppointmentsToday: number;
@@ -20,14 +23,15 @@ interface DashboardSummary {
   pendingInstallationConfirmations: { _id: string; title: string }[];
 }
 
-export function useDashboardSummary() {
+export function useDashboardSummary(enabled = true) {
   return useQuery({
     queryKey: ['reports', 'dashboard'],
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<DashboardSummary>>('/reports/dashboard');
       return data.data;
     },
-    refetchInterval: 30_000,
+    enabled,
+    refetchInterval: () => getActiveTabRefetchInterval(60_000),
   });
 }
 
@@ -54,7 +58,10 @@ export interface RevenueReport {
   totalPayments: number;
 }
 
-export function useRevenueReport(params?: { groupBy?: string; from?: string; to?: string }) {
+export function useRevenueReport(
+  params?: { groupBy?: string; from?: string; to?: string },
+  enabled = true,
+) {
   return useQuery({
     queryKey: ['reports', 'revenue', params],
     queryFn: async () => {
@@ -76,6 +83,7 @@ export function useRevenueReport(params?: { groupBy?: string; from?: string; to?
         totalPayments: data.data.totalPayments ?? 0,
       } as RevenueReport;
     },
+    enabled,
   });
 }
 
@@ -101,7 +109,7 @@ export interface PaymentStageReport {
   totalOutstanding: number;
 }
 
-export function usePaymentStageReport() {
+export function usePaymentStageReport(enabled = true) {
   return useQuery({
     queryKey: ['reports', 'payment-stages'],
     queryFn: async () => {
@@ -116,6 +124,7 @@ export function usePaymentStageReport() {
         totalOutstanding: data.data.totalOutstanding ?? 0,
       } as PaymentStageReport;
     },
+    enabled,
   });
 }
 
@@ -151,13 +160,14 @@ interface PipelineApiResponse {
   byStatus: PipelineStage[];
 }
 
-export function useProjectPipelineReport() {
+export function useProjectPipelineReport(enabled = true) {
   return useQuery({
     queryKey: ['reports', 'pipeline'],
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<PipelineApiResponse>>('/reports/pipeline');
       return data.data.byStatus || [];
     },
+    enabled,
   });
 }
 
@@ -182,7 +192,7 @@ interface WorkloadApiResponse {
   sales: WorkloadApiEntry[];
 }
 
-export function useWorkloadReport() {
+export function useWorkloadReport(enabled = true) {
   return useQuery({
     queryKey: ['reports', 'workload'],
     queryFn: async () => {
@@ -208,6 +218,7 @@ export function useWorkloadReport() {
 
       return [...engineers, ...fabrication, ...sales] as WorkloadEntry[];
     },
+    enabled,
   });
 }
 
@@ -234,7 +245,7 @@ export interface ConversionData {
   byType: { office: number; ocular: number };
 }
 
-export function useConversionReport() {
+export function useConversionReport(enabled = true) {
   return useQuery({
     queryKey: ['reports', 'conversion'],
     queryFn: async () => {
@@ -250,6 +261,7 @@ export function useConversionReport() {
         byType: data.data.byType ?? { office: 0, ocular: 0 },
       } as ConversionData;
     },
+    enabled,
   });
 }
 

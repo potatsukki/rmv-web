@@ -1,4 +1,4 @@
-import { useState, useRef, useMemo } from 'react';
+import { useState, useRef, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -29,13 +29,12 @@ import {
   useLatestBlueprint,
   useApproveComponent,
   useRequestBlueprintRevision,
-  useAcceptBlueprint,
   useUploadBlueprint,
   useUploadRevision,
 } from '@/hooks/useBlueprints';
 import { useConfigs } from '@/hooks/useConfig';
-import { useGetUploadUrl, uploadFileToR2 } from '@/hooks/useUploads';
-import { useProject } from '@/hooks/useProjects';
+import { uploadFileToR2 } from '@/hooks/useUploads';
+import { useProject, useSelectProjectPaymentPlan } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
 import { Role } from '@/lib/constants';
@@ -44,6 +43,61 @@ import type { Blueprint, VisitReport } from '@/lib/types';
 interface BlueprintTabProps {
   projectId: string;
   onNavigateToDetails?: () => void;
+}
+
+interface BlueprintDraftLineItem {
+  label: string;
+  quantity: number;
+  materials: string;
+  labor: string;
+}
+
+interface BlueprintDraftMilestone {
+  label: string;
+  description: string;
+}
+
+interface BlueprintDraftState {
+  blueprintFileMeta: { name: string; type: string } | null;
+  designFileMeta: { name: string; type: string } | null;
+  costingFileMeta: { name: string; type: string } | null;
+  quotLineItems: BlueprintDraftLineItem[];
+  quotFees: string;
+  quotValidityDays: string;
+  quotBreakdown: string;
+  quotDuration: string;
+  quotNotes: string;
+  quotMilestones: BlueprintDraftMilestone[];
+}
+
+interface BlueprintDraftCacheEntry {
+  blueprintFile: File | null;
+  designFile: File | null;
+  costingFile: File | null;
+}
+
+const buildBlueprintDraftKey = (projectId: string) => `rmv:blueprint-draft:${projectId}`;
+const blueprintDraftFileCache = new Map<string, BlueprintDraftCacheEntry>();
+
+function getFileMeta(file: File | null) {
+  return file ? { name: file.name, type: file.type } : null;
+}
+
+function requestSignedUploadUrl(body: {
+  folder: string;
+  fileName: string;
+  contentType: string;
+}) {
+  return api
+    .post('/uploads/signed-upload-url', {
+      folder: body.folder,
+      filename: body.fileName,
+      contentType: body.contentType,
+    })
+    .then((res) => ({
+      uploadUrl: res.data.data.uploadUrl as string,
+      fileKey: res.data.data.key as string,
+    }));
 }
 
 // ── File Picker with Preview ──
@@ -215,12 +269,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   // Engineer-specific mutations
   const uploadBlueprint = useUploadBlueprint();
   const uploadRevision = useUploadRevision();
-  const getUploadUrl = useGetUploadUrl();
-
   // Customer-specific mutations
   const approveMutation = useApproveComponent();
   const revisionMutation = useRequestBlueprintRevision();
-  const acceptMutation = useAcceptBlueprint();
+  const selectPaymentPlanMutation = useSelectProjectPaymentPlan();
   const [approvingComponent, setApprovingComponent] = useState<'blueprint' | 'costing' | null>(null);
 
   const { data: configs } = useConfigs();
@@ -270,6 +322,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const [quotNotes, setQuotNotes] = useState('');
   const [quotMilestones, setQuotMilestones] = useState<{ label: string; description: string }[]>([]);
   const [quotInitialized, setQuotInitialized] = useState(false);
+  const blueprintDraftKey = useMemo(() => buildBlueprintDraftKey(projectId), [projectId]);
 
   // ── Derive visit report line items ──
   const visitReport: VisitReport | null = useMemo(() => {
@@ -277,12 +330,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     return project.visitReportId as VisitReport;
   }, [project]);
 
-  // Pre-populate quotation line items from visit report (once)
   const vrLineItems = visitReport?.lineItems;
-  if (!quotInitialized && vrLineItems && vrLineItems.length > 0 && quotLineItems.length === 0) {
-    setQuotLineItems(vrLineItems.map(li => ({ label: li.label, quantity: li.quantity || 1, materials: '', labor: '' })));
-    setQuotInitialized(true);
-  }
 
   // Pre-populate installment milestones from config defaults (once)
   const cfgSplit: number[] = (() => {
@@ -297,12 +345,112 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     const c = configs?.find(cfg => cfg.key === 'installment_stage_descriptions');
     return Array.isArray(c?.value) ? (c.value as string[]) : ['Due upon contract signing', 'Due when fabrication is complete', 'Due after installation & acceptance'];
   })();
-  if (!quotInitialized && quotMilestones.length === 0 && cfgSplit.length > 0) {
-    setQuotMilestones(cfgSplit.map((_, idx) => ({
-      label: cfgLabels[idx] || `Stage ${idx + 1}`,
-      description: cfgDescriptions[idx] || '',
-    })));
-  }
+
+  useEffect(() => {
+    const cachedFiles = blueprintDraftFileCache.get(projectId);
+    if (cachedFiles) {
+      setBlueprintFile(cachedFiles.blueprintFile);
+      setDesignFile(cachedFiles.designFile);
+      setCostingFile(cachedFiles.costingFile);
+    }
+
+    if (quotInitialized) return;
+
+    const storedDraftRaw = sessionStorage.getItem(blueprintDraftKey);
+    if (storedDraftRaw) {
+      try {
+        const storedDraft = JSON.parse(storedDraftRaw) as BlueprintDraftState;
+        setQuotLineItems(storedDraft.quotLineItems || []);
+        setQuotFees(storedDraft.quotFees || '');
+        setQuotValidityDays(storedDraft.quotValidityDays || '30');
+        setQuotBreakdown(storedDraft.quotBreakdown || '');
+        setQuotDuration(storedDraft.quotDuration || '');
+        setQuotNotes(storedDraft.quotNotes || '');
+        setQuotMilestones(storedDraft.quotMilestones || []);
+        setQuotInitialized(true);
+        return;
+      } catch {
+        sessionStorage.removeItem(blueprintDraftKey);
+      }
+    }
+
+    if (vrLineItems && vrLineItems.length > 0) {
+      setQuotLineItems(vrLineItems.map((li) => ({
+        label: li.label,
+        quantity: li.quantity || 1,
+        materials: '',
+        labor: '',
+      })));
+    }
+
+    if (cfgSplit.length > 0) {
+      setQuotMilestones(cfgSplit.map((_, idx) => ({
+        label: cfgLabels[idx] || `Stage ${idx + 1}`,
+        description: cfgDescriptions[idx] || '',
+      })));
+    }
+
+    setQuotInitialized(true);
+  }, [blueprintDraftKey, cfgDescriptions, cfgLabels, cfgSplit, quotInitialized, vrLineItems]);
+
+  useEffect(() => {
+    blueprintDraftFileCache.set(projectId, {
+      blueprintFile,
+      designFile,
+      costingFile,
+    });
+
+    if (!quotInitialized) return;
+
+    const draft: BlueprintDraftState = {
+      blueprintFileMeta: getFileMeta(blueprintFile),
+      designFileMeta: getFileMeta(designFile),
+      costingFileMeta: getFileMeta(costingFile),
+      quotLineItems,
+      quotFees,
+      quotValidityDays,
+      quotBreakdown,
+      quotDuration,
+      quotNotes,
+      quotMilestones,
+    };
+
+    const hasDraft = Boolean(
+      draft.blueprintFileMeta
+      || draft.designFileMeta
+      || draft.costingFileMeta
+      || draft.quotLineItems.length
+      || draft.quotFees
+      || draft.quotBreakdown
+      || draft.quotDuration
+      || draft.quotNotes
+      || draft.quotMilestones.length,
+    );
+
+    if (!hasDraft) {
+      sessionStorage.removeItem(blueprintDraftKey);
+      if (!blueprintFile && !designFile && !costingFile) {
+        blueprintDraftFileCache.delete(projectId);
+      }
+      return;
+    }
+
+    sessionStorage.setItem(blueprintDraftKey, JSON.stringify(draft));
+  }, [
+    blueprintDraftKey,
+    blueprintFile,
+    costingFile,
+    designFile,
+    projectId,
+    quotBreakdown,
+    quotDuration,
+    quotFees,
+    quotInitialized,
+    quotLineItems,
+    quotMilestones,
+    quotNotes,
+    quotValidityDays,
+  ]);
 
   // Computed totals
   const quotItemTotals = quotLineItems.map(li => {
@@ -546,20 +694,20 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     );
   };
 
-  const handleAcceptBlueprint = () => {
+  const handleChoosePaymentPlan = () => {
     if (!acceptDialog.blueprint) return;
-    acceptMutation.mutate(
-      { id: acceptDialog.blueprint._id, paymentType },
+    selectPaymentPlanMutation.mutate(
+      { id: projectId, paymentType },
       {
         onSuccess: () => {
-          toast.success('Blueprint accepted! A payment plan has been created. Next: sign the contract and make the down-payment to start fabrication.', { duration: 6000 });
+          toast.success('Payment plan created. Your contract is now ready for signing.', { duration: 6000 });
           setAcceptDialog({ open: false, blueprint: null });
           setPaymentType('full');
           refetch();
           refetchBlueprint();
           refetchProject();
         },
-        onError: (err) => toast.error(extractErrorMessage(err, 'Failed to accept blueprint')),
+        onError: (err) => toast.error(extractErrorMessage(err, 'Failed to create payment plan')),
       },
     );
   };
@@ -585,17 +733,17 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     setUploading(true);
     try {
       const [bpUrl, designUrl, costUrl] = await Promise.all([
-        getUploadUrl.mutateAsync({
+        requestSignedUploadUrl({
           folder: 'blueprints',
           fileName: blueprintFile.name,
           contentType: blueprintFile.type,
         }),
-        getUploadUrl.mutateAsync({
+        requestSignedUploadUrl({
           folder: 'blueprints',
           fileName: designFile.name,
           contentType: designFile.type,
         }),
-        getUploadUrl.mutateAsync({
+        requestSignedUploadUrl({
           folder: 'blueprints',
           fileName: costingFile.name,
           contentType: costingFile.type,
@@ -661,6 +809,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       setQuotNotes('');
       setQuotMilestones([]);
       setQuotInitialized(false);
+      sessionStorage.removeItem(blueprintDraftKey);
+      blueprintDraftFileCache.delete(projectId);
       refetchBlueprint();
       refetchProject();
     } catch (err) {
@@ -1263,11 +1413,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                       </Button>
                     </>
                   ) : (
-                    /* Contract not generated yet — waiting for staff */
+                    /* Payment plan selected but contract still syncing */
                     <>
                       <div className="flex-1 text-center sm:text-left">
                         <p className="text-sm font-semibold text-emerald-900">Payment Plan Created!</p>
-                        <p className="text-xs text-emerald-700 mt-0.5">Waiting for the contract to be generated by our team. You&apos;ll be able to sign it once ready.</p>
+                        <p className="text-xs text-emerald-700 mt-0.5">Your contract is being finalized. Refresh in a moment if the signing prompt doesn&apos;t appear right away.</p>
                       </div>
                       <div className="flex items-center gap-2 text-emerald-600 px-4">
                         <Clock className="h-4 w-4 animate-pulse" />
@@ -1276,18 +1426,18 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                     </>
                   )
                 ) : (
-                  /* No plan yet — show accept CTA */
+                  /* No plan yet — show payment-plan CTA */
                   <>
                     <div className="flex-1 text-center sm:text-left">
-                      <p className="text-sm font-semibold text-emerald-900">Both Design & Costing Approved!</p>
-                      <p className="text-xs text-emerald-700 mt-0.5">You&apos;re all set. Accept the blueprint and choose your payment method to proceed.</p>
+                      <p className="text-sm font-semibold text-emerald-900">Blueprint Approved</p>
+                      <p className="text-xs text-emerald-700 mt-0.5">Choose your payment plan to generate the contract and move into signing.</p>
                     </div>
                     <Button
                       className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
                       onClick={() => setAcceptDialog({ open: true, blueprint: bp })}
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
-                      Accept & Choose Payment
+                      Choose Payment Plan
                     </Button>
                   </>
                 )}
@@ -1596,6 +1746,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       </Dialog>
 
       {/* Accept Blueprint & Payment Selection Dialog */}
+      {/* Payment Selection Dialog */}
       <Dialog
         open={acceptDialog.open}
         onOpenChange={(open) => {
@@ -1607,9 +1758,9 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       >
         <DialogContent className="sm:max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Accept Blueprint & Choose Payment</DialogTitle>
+            <DialogTitle className="text-gray-900">Choose Payment Plan</DialogTitle>
             <DialogDescription className="text-gray-500">
-              Review the quotation and select your preferred payment method.
+              Select how you want to pay. This generates your contract for signing.
             </DialogDescription>
           </DialogHeader>
 
@@ -1734,11 +1885,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
               Cancel
             </Button>
             <Button
-              onClick={handleAcceptBlueprint}
-              disabled={acceptMutation.isPending}
+              onClick={handleChoosePaymentPlan}
+              disabled={selectPaymentPlanMutation.isPending}
               className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
             >
-              {acceptMutation.isPending ? 'Processing...' : 'Confirm & Accept'}
+              {selectPaymentPlanMutation.isPending ? 'Creating Plan...' : 'Create Plan & Generate Contract'}
             </Button>
           </DialogFooter>
         </DialogContent>

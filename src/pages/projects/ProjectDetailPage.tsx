@@ -1,15 +1,18 @@
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
   ArrowLeft, FileText, CreditCard, Hammer, Image, ScrollText,
   Download, Loader2, Phone, UserPlus, Upload, Camera, Video,
   PenTool, ChevronDown, ChevronUp, Users, Eye, Check, X, ExternalLink,
-  Info, CheckCircle2,
+  Info, CheckCircle2, AlertTriangle,
+  RotateCcw,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Textarea } from '@/components/ui/textarea';
+import { FileUpload } from '@/components/shared/FileUpload';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -17,13 +20,24 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
 import { AuthImage } from '@/components/shared/AuthImage';
-import { useProject, useGenerateContract, useSignContract, useAssignEngineers, useAssignFabrication } from '@/hooks/useProjects';
+import {
+  useProject,
+  useGenerateContract,
+  useSignContract,
+  useAssignEngineers,
+  useAssignFabrication,
+  useReviewInitialDesign,
+  useResubmitInitialDesign,
+  useBackfillInitialDesign,
+} from '@/hooks/useProjects';
 import { useLatestBlueprint } from '@/hooks/useBlueprints';
 import { usePaymentPlan, usePaymentsByProject } from '@/hooks/usePayments';
 import { useGetDownloadUrl, openAuthenticatedFile } from '@/hooks/useUploads';
 import { useUsers, useSignature } from '@/hooks/useUsers';
 import { useAuthStore } from '@/stores/auth.store';
 import { api } from '@/lib/api';
+import { Role } from '@/lib/constants';
+import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
 import { cn, extractErrorMessage } from '@/lib/utils';
 import type { VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
@@ -185,14 +199,19 @@ export function ProjectDetailPage() {
   const signContractMutation = useSignContract();
   const assignEngineers = useAssignEngineers();
   const assignFabrication = useAssignFabrication();
+  const reviewInitialDesign = useReviewInitialDesign();
+  const resubmitInitialDesign = useResubmitInitialDesign();
+  const backfillInitialDesign = useBackfillInitialDesign();
 
   // ── Auth ──
   const user = useAuthStore((s) => s.user);
-  const isEngineer = user?.roles?.some((r: string) => r === 'engineer');
-  const isCustomer = user?.roles?.some((r: string) => r === 'customer');
+  const isEngineer = user?.roles?.some((r: string) => r === Role.ENGINEER);
+  const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
+  const isAdmin = user?.roles?.some((r: string) => r === Role.ADMIN);
+  const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
   const isStaff = !isCustomer; // any non-customer role
   const canGenerate = user?.roles?.some((r: string) =>
-    ['admin', 'cashier', 'sales_staff'].includes(r),
+    [Role.ADMIN, Role.CASHIER, Role.SALES_STAFF].includes(r as Role),
   );
 
   // ── Fabrication staff list (only fetch when engineer is on the page) ──
@@ -205,6 +224,11 @@ export function ProjectDetailPage() {
   const [showFabForm, setShowFabForm] = useState(false);
   const [fabLeadId, setFabLeadId] = useState('');
   const [fabAssistantIds, setFabAssistantIds] = useState<string[]>([]);
+  const [designReviewNotes, setDesignReviewNotes] = useState('');
+  const [initialDesignKeys, setInitialDesignKeys] = useState<string[]>([]);
+  const [initialDesignNotes, setInitialDesignNotes] = useState('');
+  const [initialDesignBackfillReason, setInitialDesignBackfillReason] = useState('Synthetic demo backfill for a historical project that originally skipped the initial design step.');
+  const [initialDesignUploading, setInitialDesignUploading] = useState(false);
 
   // ── Derived ──
   const visitReport: VisitReport | null = useMemo(() => {
@@ -217,11 +241,59 @@ export function ProjectDetailPage() {
   const currentStepIndex = LIFECYCLE_STEPS.findIndex((s) => s.key === project?.status);
 
   const isAssignedEngineer = useMemo(() => {
-    if (!user?._id || !project) return false;
-    return project.engineerIds.some(
-      (e: any) => (typeof e === 'string' ? e : e._id) === user._id,
-    );
+    if (!project) return false;
+    return isProjectEngineerAssigned(project, user?._id);
   }, [user, project]);
+  const isAssignedFabrication = useMemo(() => {
+    if (!project) return false;
+    return isAssignedFabricationMember(project, user?._id);
+  }, [project, user]);
+  const isAssignedSales = useMemo(() => {
+    if (!user?._id || !project?.salesStaffId) return false;
+    return (typeof project.salesStaffId === 'string' ? project.salesStaffId : project.salesStaffId._id) === user._id;
+  }, [project, user]);
+  const hasInitialDesign = Boolean(project?.initialDesignKeys?.length || project?.initialDesignNotes);
+  const initialDesignBackfill = project?.initialDesignBackfill;
+  const hasBackfilledInitialDesign = Boolean(initialDesignBackfill?.backfilledAt);
+  const hasVisitMeasurements = Boolean(
+    visitReport?.lineItems?.some((item) =>
+      item.length != null ||
+      item.width != null ||
+      item.height != null ||
+      item.area != null ||
+      item.thickness != null,
+    ) ||
+    visitReport?.measurements?.length != null ||
+    visitReport?.measurements?.width != null ||
+    visitReport?.measurements?.height != null ||
+    visitReport?.measurements?.area != null ||
+    visitReport?.measurements?.thickness != null ||
+    visitReport?.measurements?.raw,
+  );
+  const canReviewInitialDesign = Boolean((isAdmin || isAssignedEngineer) && hasInitialDesign && !hasBackfilledInitialDesign);
+  const canManageInitialDesign = Boolean((isAdmin || isAssignedSales) && !blueprint && !hasBackfilledInitialDesign);
+  const canBackfillInitialDesign = Boolean(
+    isAdmin &&
+    !hasInitialDesign &&
+    project &&
+    project.status !== 'draft' &&
+    (Boolean(blueprint) || ['approved', 'payment_pending', 'fabrication', 'completed'].includes(project.status)),
+  );
+  const canViewFabrication = Boolean(project && canViewFabricationUpdates(project, user));
+  const canManageFabrication = Boolean(project && canManageFabricationUpdates(project, user));
+  const showFabricationAssignmentNotice = Boolean(isFabricationStaff && !isAssignedFabrication && !isAdmin);
+  const canEngineerClaimProject = Boolean(
+    isEngineer && project?.status === 'submitted' && project.engineerIds.length === 0 && !isAssignedEngineer,
+  );
+
+  useEffect(() => {
+    setInitialDesignKeys(project?.initialDesignKeys || []);
+    setInitialDesignNotes(project?.initialDesignNotes || '');
+    setInitialDesignBackfillReason(
+      project?.initialDesignBackfill?.reason ||
+      'Synthetic demo backfill for a historical project that originally skipped the initial design step.',
+    );
+  }, [project?.initialDesignKeys, project?.initialDesignNotes, project?.initialDesignBackfill?.reason]);
 
   // ── Handlers ──
   const [contractSignatureKey, setContractSignatureKey] = useState('');
@@ -236,6 +308,76 @@ export function ProjectDetailPage() {
       refetch();
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to generate contract'));
+    }
+  };
+
+  const handleReviewInitialDesign = async (decision: 'approved' | 'declined') => {
+    if (!project) return;
+    if (decision === 'declined' && !designReviewNotes.trim()) {
+      toast.error('Add review notes before declining the initial design.');
+      return;
+    }
+
+    try {
+      await reviewInitialDesign.mutateAsync({
+        id: project._id,
+        decision,
+        notes: designReviewNotes.trim() || undefined,
+      });
+      toast.success(
+        decision === 'approved'
+          ? 'Initial design approved for engineering handoff.'
+          : 'Initial design declined. Sales staff has been notified.',
+      );
+      setDesignReviewNotes('');
+      refetch();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to submit design review'));
+    }
+  };
+
+  const handleResubmitInitialDesign = async () => {
+    if (!project) return;
+    if (initialDesignKeys.length === 0 && !initialDesignNotes.trim()) {
+      toast.error('Add at least one design file or a note before saving.');
+      return;
+    }
+
+    try {
+      await resubmitInitialDesign.mutateAsync({
+        id: project._id,
+        initialDesignKeys,
+        initialDesignNotes: initialDesignNotes.trim() || undefined,
+      });
+      toast.success('Initial design updated and sent back for engineer review.');
+      refetch();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to update initial design'));
+    }
+  };
+
+  const handleBackfillInitialDesign = async () => {
+    if (!project) return;
+    if (initialDesignKeys.length === 0 && !initialDesignNotes.trim()) {
+      toast.error('Add at least one design file or a note before backfilling.');
+      return;
+    }
+    if (!initialDesignBackfillReason.trim()) {
+      toast.error('Add a reason so this historical backfill stays traceable.');
+      return;
+    }
+
+    try {
+      await backfillInitialDesign.mutateAsync({
+        id: project._id,
+        initialDesignKeys,
+        initialDesignNotes: initialDesignNotes.trim() || undefined,
+        backfillReason: initialDesignBackfillReason.trim(),
+      });
+      toast.success('Synthetic demo initial design backfill saved for this historical project.');
+      refetch();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to backfill initial design'));
     }
   };
 
@@ -422,6 +564,21 @@ export function ProjectDetailPage() {
       )}
 
       {/* ── Customer Status Guide Banner ── */}
+      {project.status === 'draft' && visitReport?.visitType === 'consultation' && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-blue-900">Awaiting ocular visit</p>
+              <p className="text-xs text-blue-700 mt-0.5">
+                {isEngineer
+                  ? 'Engineering work starts after the ocular visit is finalized and its report moves this project into the submitted stage.'
+                  : 'This draft came from the consultation stage. The next step is to finalize the ocular visit before engineering begins.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
       {isCustomer && project.status === 'submitted' && (
         <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
           <CardContent className="flex items-start gap-3 py-3 px-4">
@@ -444,18 +601,29 @@ export function ProjectDetailPage() {
           </CardContent>
         </Card>
       )}
-      {isCustomer && project.status === 'approved' && !project.contractSignedAt && (
+      {isCustomer && project.status === 'approved' && !paymentPlan && (
         <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 bg-emerald-50/50">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <PenTool className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <CreditCard className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-emerald-900">Ready for Contract Signing</p>
-              <p className="text-xs text-emerald-700 mt-0.5">Your blueprint has been approved! Scroll down to review and sign the contract, then proceed to payment.</p>
+              <p className="text-sm font-semibold text-emerald-900">Choose Your Payment Plan</p>
+              <p className="text-xs text-emerald-700 mt-0.5">Your blueprint is approved. Open the Blueprint tab to choose full payment or installment, then your contract will be generated for signing.</p>
             </div>
           </CardContent>
         </Card>
       )}
-      {isCustomer && project.status === 'payment_pending' && (
+      {isCustomer && project.status === 'payment_pending' && !project.contractSignedAt && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <PenTool className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900">Contract Ready for Signature</p>
+              <p className="text-xs text-amber-700 mt-0.5">Your payment plan is set. Review and sign the contract before making your first payment.</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isCustomer && project.status === 'payment_pending' && !!project.contractSignedAt && (
         <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
           <CardContent className="flex items-start gap-3 py-3 px-4">
             <CreditCard className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
@@ -492,7 +660,7 @@ export function ProjectDetailPage() {
       {/* ── Contextual Action Banner (engineer) ── */}
       {isEngineer && (
         <>
-          {project.status === 'submitted' && project.engineerIds.length === 0 && (
+          {canEngineerClaimProject && (
             <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-[#c8c8cd] bg-[#f0f0f5]/50">
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
@@ -626,6 +794,233 @@ export function ProjectDetailPage() {
             </CardContent>
           </Card>
 
+          {isStaff && !hasInitialDesign && project.status !== 'draft' && (
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 bg-amber-50/60">
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900">
+                  <AlertTriangle className="h-5 w-5" />
+                  Initial Design Missing
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 px-4 sm:px-6">
+                <p className="text-sm text-amber-900">
+                  No initial design package was submitted by sales staff for this project.
+                </p>
+                <p className="text-sm text-amber-800">
+                  Because there was nothing to review, engineering approval for the initial design was skipped on this record.
+                </p>
+                {canBackfillInitialDesign && (
+                  <div className="space-y-3 rounded-xl border border-amber-200 bg-white/80 p-4">
+                    <div>
+                      <p className="text-sm font-medium text-amber-950">Admin Historical Backfill</p>
+                      <p className="mt-1 text-xs text-amber-800">
+                        Add synthetic demo-only initial design data for reference without pretending the original workflow happened on time.
+                      </p>
+                    </div>
+                    <FileUpload
+                      folder="projects/initial-design"
+                      accept="image/*,.pdf"
+                      maxSizeMB={5}
+                      maxFiles={10}
+                      label="Upload synthetic demo initial design files"
+                      existingKeys={initialDesignKeys}
+                      onUploadComplete={setInitialDesignKeys}
+                      onUploadingChange={setInitialDesignUploading}
+                    />
+                    <Textarea
+                      value={initialDesignNotes}
+                      onChange={(e) => setInitialDesignNotes(e.target.value)}
+                      placeholder="Describe the synthetic reference package, intended visual direction, or demo assumptions."
+                      className="min-h-[96px] rounded-xl border-amber-200 bg-white"
+                    />
+                    <Textarea
+                      value={initialDesignBackfillReason}
+                      onChange={(e) => setInitialDesignBackfillReason(e.target.value)}
+                      placeholder="Explain why this historical backfill is being added now."
+                      className="min-h-[96px] rounded-xl border-amber-200 bg-white"
+                    />
+                    <Button
+                      className="w-full bg-amber-900 text-white hover:bg-amber-950 sm:w-auto"
+                      onClick={handleBackfillInitialDesign}
+                      disabled={backfillInitialDesign.isPending || initialDesignUploading}
+                    >
+                      {backfillInitialDesign.isPending || initialDesignUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RotateCcw className="mr-2 h-4 w-4" />}
+                      Save Demo Backfill
+                    </Button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {isStaff && hasInitialDesign && hasBackfilledInitialDesign && (
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 bg-amber-50/80">
+              <CardHeader className="px-4 sm:px-6">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900">
+                  <AlertTriangle className="h-5 w-5" />
+                  Historical Initial Design Backfill
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 px-4 sm:px-6">
+                <p className="text-sm text-amber-900">
+                  This project originally skipped the initial design submission and engineer review step.
+                </p>
+                <p className="text-sm text-amber-800">
+                  An admin later attached synthetic demo reference data on {initialDesignBackfill?.backfilledAt ? format(new Date(initialDesignBackfill.backfilledAt), 'MMM d, yyyy h:mm a') : 'a later date'} so the historical record is easier to demo and inspect.
+                </p>
+                {initialDesignBackfill?.reason && (
+                  <p className="text-sm text-amber-800">
+                    Reason: {initialDesignBackfill.reason}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {isStaff && hasInitialDesign && (
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+              <CardHeader className="px-4 sm:px-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                  <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Initial Design Review</CardTitle>
+                  <span className={cn(
+                    'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium w-fit capitalize',
+                    project.designReviewStatus === 'approved' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
+                    project.designReviewStatus === 'declined' && 'border-red-200 bg-red-50 text-red-700',
+                    project.designReviewStatus === 'pending' && 'border-amber-200 bg-amber-50 text-amber-700',
+                    (!project.designReviewStatus || project.designReviewStatus === 'not_required') && 'border-gray-200 bg-gray-50 text-gray-600',
+                  )}>
+                    {(project.designReviewStatus || 'not_required').replace('_', ' ')}
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-4 px-4 sm:px-6">
+                <p className="text-sm text-[#6e6e73]">
+                  {hasBackfilledInitialDesign
+                    ? 'This package was added later as synthetic demo reference data. It documents a backfill for this historical record and does not mean the original review step happened on time.'
+                    : 'Sales uploaded the rough sketch, inspiration, or reference files collected before the ocular visit. Engineering should review this package before continuing.'}
+                </p>
+
+                {!!project.initialDesignKeys?.length && (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                    {project.initialDesignKeys.map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => openAuthenticatedFile(key)}
+                        className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]"
+                      >
+                        <AuthImage
+                          fileKey={key}
+                          alt={key.split('/').pop() || 'Initial design'}
+                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
+                          fallback={
+                            <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center">
+                              <Image className="h-7 w-7 text-[#86868b]" />
+                              <span className="line-clamp-2 break-all text-[11px] text-[#6e6e73]">
+                                {key.split('/').pop()}
+                              </span>
+                            </div>
+                          }
+                        />
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {project.initialDesignNotes && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73]">
+                      {hasBackfilledInitialDesign ? 'Backfill Notes' : 'Sales Notes'}
+                    </p>
+                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] bg-[#f5f5f7] p-3 text-sm text-[#3a3a3e]">
+                      {project.initialDesignNotes}
+                    </p>
+                  </div>
+                )}
+
+                {project.designReviewNotes && (
+                  <div>
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73]">Latest Review Notes</p>
+                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] bg-white p-3 text-sm text-[#3a3a3e]">
+                      {project.designReviewNotes}
+                    </p>
+                  </div>
+                )}
+
+                {canManageInitialDesign && (
+                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] bg-[#fbfbfd] p-4">
+                    <div>
+                      <p className="text-sm font-medium text-[#1d1d1f]">Sales Resubmission</p>
+                      <p className="mt-1 text-xs text-[#6e6e73]">
+                        {project.designReviewStatus === 'declined'
+                          ? 'Engineering requested changes. Update the files or notes here and resubmit for review.'
+                          : 'You can refine the initial design package before the engineer uploads the first blueprint.'}
+                      </p>
+                    </div>
+                    <FileUpload
+                      folder="projects/initial-design"
+                      accept="image/*,.pdf"
+                      maxSizeMB={5}
+                      maxFiles={10}
+                      label="Upload revised initial design files"
+                      existingKeys={initialDesignKeys}
+                      onUploadComplete={setInitialDesignKeys}
+                      onUploadingChange={setInitialDesignUploading}
+                    />
+                    <Textarea
+                      value={initialDesignNotes}
+                      onChange={(e) => setInitialDesignNotes(e.target.value)}
+                      placeholder="Add sales notes, clarified customer preferences, or engineer-requested adjustments."
+                      className="min-h-[96px] rounded-xl border-[#d2d2d7] bg-white"
+                    />
+                    <Button
+                      className="w-full bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] sm:w-auto"
+                      onClick={handleResubmitInitialDesign}
+                      disabled={resubmitInitialDesign.isPending || initialDesignUploading}
+                    >
+                      {resubmitInitialDesign.isPending || initialDesignUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                      Save & Resubmit Initial Design
+                    </Button>
+                  </div>
+                )}
+
+                {canReviewInitialDesign && (
+                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] bg-[#fbfbfd] p-4">
+                    <div>
+                      <p className="text-sm font-medium text-[#1d1d1f]">Engineer Decision</p>
+                      <p className="mt-1 text-xs text-[#6e6e73]">Approve if the reference is sufficient to proceed, or decline it with notes for sales staff.</p>
+                    </div>
+                    <Textarea
+                      value={designReviewNotes}
+                      onChange={(e) => setDesignReviewNotes(e.target.value)}
+                      placeholder="Add internal review notes. Required when declining."
+                      className="min-h-[96px] rounded-xl border-[#d2d2d7] bg-white"
+                    />
+                    <div className="flex flex-col gap-2 sm:flex-row">
+                      <Button
+                        className="w-full bg-emerald-600 text-white hover:bg-emerald-700 sm:w-auto"
+                        onClick={() => handleReviewInitialDesign('approved')}
+                        disabled={reviewInitialDesign.isPending}
+                      >
+                        {reviewInitialDesign.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                        Approve Initial Design
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="w-full border-red-200 text-red-700 hover:bg-red-50 sm:w-auto"
+                        onClick={() => handleReviewInitialDesign('declined')}
+                        disabled={reviewInitialDesign.isPending}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Decline Initial Design
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {/* Team (internal staff only — customers see simplified view) */}
           {isStaff ? (
           <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
@@ -658,21 +1053,6 @@ export function ProjectDetailPage() {
                 ) : (
                   <div className="mt-2">
                     <p className="text-sm text-[#86868b] italic">Not assigned yet</p>
-                    {isEngineer && project.status === 'submitted' && (
-                      <Button
-                        size="sm"
-                        className="mt-2 bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
-                        onClick={handleClaimProject}
-                        disabled={assignEngineers.isPending}
-                      >
-                        {assignEngineers.isPending ? (
-                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                        ) : (
-                          <UserPlus className="mr-1.5 h-4 w-4" />
-                        )}
-                        Claim This Project
-                      </Button>
-                    )}
                   </div>
                 )}
               </div>
@@ -837,6 +1217,51 @@ export function ProjectDetailPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 px-4 sm:px-6">
+                {visitReport.visitType === 'ocular' && !hasVisitMeasurements && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-900">Measurements Missing</p>
+                        <p className="mt-1 text-sm text-amber-800">
+                          This ocular report was submitted without measured line items or legacy dimensions. Engineering can only see the notes and attachments currently saved on the report.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {visitReport.status === 'returned' && visitReport.returnReason && (
+                  <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <RotateCcw className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
+                      <div>
+                        <p className="text-sm font-semibold text-orange-900">Report Under Repair</p>
+                        <p className="mt-1 text-sm text-orange-800">{visitReport.returnReason}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                    <p className="text-[10px] uppercase text-[#86868b] font-medium">Report Status</p>
+                    <p className="text-sm text-[#3a3a3e] capitalize">{visitReport.status}</p>
+                  </div>
+                  {visitReport.actualVisitDateTime && (
+                    <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                      <p className="text-[10px] uppercase text-[#86868b] font-medium">Actual Visit Date</p>
+                      <p className="text-sm text-[#3a3a3e]">{format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')}</p>
+                    </div>
+                  )}
+                  {(visitReport.measurementUnit || visitReport.measurements?.unit) && (
+                    <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
+                      <p className="text-[10px] uppercase text-[#86868b] font-medium">Measurement Unit</p>
+                      <p className="text-sm text-[#3a3a3e]">{visitReport.measurementUnit || visitReport.measurements?.unit}</p>
+                    </div>
+                  )}
+                </div>
+
                 {/* Media Gallery */}
                 <CollapsibleSection title="Photos" icon={Camera} count={visitReport.photoKeys?.length || 0} defaultOpen>
                   {visitReport.photoKeys?.map((key) => (
@@ -865,7 +1290,9 @@ export function ProjectDetailPage() {
                 {/* Line Items */}
                 {visitReport.lineItems && visitReport.lineItems.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">Line Items</p>
+                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">
+                      Line Items ({visitReport.measurementUnit || visitReport.measurements?.unit || 'cm'})
+                    </p>
                     <div className="-mx-4 sm:mx-0 overflow-x-auto sm:rounded-lg sm:border border-y sm:border-x border-[#d2d2d7]">
                       <table className="min-w-full text-sm">
                         <thead className="bg-[#f5f5f7]/80">
@@ -1160,7 +1587,9 @@ export function ProjectDetailPage() {
                 </div>
               ) : (
                 <p className="text-sm text-[#6e6e73] py-2">
-                  {['payment_pending', 'fabrication', 'completed'].includes(project.status)
+                  {project.status === 'approved'
+                    ? 'Contract will be generated after the customer chooses a payment plan.'
+                    : ['payment_pending', 'fabrication', 'completed'].includes(project.status)
                     ? 'No contract generated yet.'
                     : 'Contract will be available after blueprint acceptance.'}
                 </p>
@@ -1185,11 +1614,21 @@ export function ProjectDetailPage() {
               </div>
               <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">Sign Your Contract First</h3>
               <p className="text-sm text-[#6e6e73] max-w-sm mb-6">
-                {project?.contractKey
+                {project?.status === 'approved' && !project?.contractKey
+                  ? 'Choose your payment plan in the Blueprint tab first. That step generates the contract you need to sign.'
+                  : project?.contractKey
                   ? 'Your contract has been generated and is ready for signing. Please read and sign it before making any payments.'
                   : 'Your contract is being prepared by our team. Once it\'s ready, you\'ll be able to read and sign it here.'}
               </p>
-              {project?.contractKey && (
+              {project?.status === 'approved' && !project?.contractKey ? (
+                <Button
+                  className="bg-[#1d1d1f] hover:bg-[#3a3a3e] text-white rounded-xl px-6"
+                  onClick={() => setActiveTab('blueprint')}
+                >
+                  <CreditCard className="mr-2 h-4 w-4" />
+                  Choose Payment Plan
+                </Button>
+              ) : project?.contractKey && (
                 <Button
                   className="bg-[#1d1d1f] hover:bg-[#3a3a3e] text-white rounded-xl px-6"
                   onClick={() => setActiveTab('details')}
@@ -1270,7 +1709,16 @@ export function ProjectDetailPage() {
       )}
 
       {/* ════════════════  FABRICATION TAB  ════════════════ */}
-      {activeTab === 'fabrication' && <FabricationTab projectId={id!} installationConfirmedAt={project?.installationConfirmedAt} />}
+      {activeTab === 'fabrication' && (
+        <FabricationTab
+          projectId={id!}
+          projectStatus={project.status}
+          installationConfirmedAt={project?.installationConfirmedAt}
+          canViewUpdates={canViewFabrication}
+          canManageUpdates={canManageFabrication}
+          showAssignmentNotice={showFabricationAssignmentNotice}
+        />
+      )}
 
       {/* ── Lightbox Preview ── */}
       {lightboxKey && (

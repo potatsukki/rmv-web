@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, Notification, PaginatedResponse } from '@/lib/types';
 
+const getActiveTabRefetchInterval = (ms: number) =>
+  typeof document === 'undefined' || document.visibilityState === 'visible' ? ms : false;
+
 const KEYS = {
   all: ['notifications'] as const,
   list: (params?: Record<string, unknown>) => [...KEYS.all, 'list', params] as const,
@@ -18,7 +21,7 @@ export function useNotifications(params?: Record<string, string>, enabled = true
       return data.data;
     },
     enabled,
-    refetchInterval: 30_000, // Poll every 30s as fallback for missed WebSocket events
+    refetchInterval: () => getActiveTabRefetchInterval(60_000),
   });
 }
 

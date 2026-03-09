@@ -45,7 +45,7 @@ function normalizeUpdate(update: FabricationApiUpdate): FabricationUpdate {
   };
 }
 
-export function useFabricationUpdates(projectId: string) {
+export function useFabricationUpdates(projectId: string, enabled = true) {
   return useQuery({
     queryKey: KEYS.byProject(projectId),
     queryFn: async () => {
@@ -54,7 +54,7 @@ export function useFabricationUpdates(projectId: string) {
       );
       return (data.data || []).map(normalizeUpdate);
     },
-    enabled: !!projectId,
+    enabled: !!projectId && enabled,
   });
 }
 
@@ -76,7 +76,7 @@ interface FabricationStatusResponse {
   };
 }
 
-export function useFabricationStatus(projectId: string) {
+export function useFabricationStatus(projectId: string, enabled = true) {
   return useQuery({
     queryKey: KEYS.status(projectId),
     queryFn: async () => {
@@ -93,7 +93,7 @@ export function useFabricationStatus(projectId: string) {
         paymentGate: data.data.paymentGate,
       };
     },
-    enabled: !!projectId,
+    enabled: !!projectId && enabled,
   });
 }
 

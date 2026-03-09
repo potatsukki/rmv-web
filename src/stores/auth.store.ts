@@ -2,6 +2,13 @@ import { create } from 'zustand';
 import type { User } from '@/lib/types';
 import { api } from '@/lib/api';
 import { disconnectSocket } from '@/lib/socket';
+import {
+  clearStoredAuthSession,
+  getStoredAccessToken,
+  getStoredRefreshToken,
+  setStoredAccessToken,
+  setStoredRefreshToken,
+} from '@/lib/auth-session';
 
 interface AuthStore {
   user: User | null;
@@ -9,10 +16,13 @@ interface AuthStore {
   isLoading: boolean;
   csrfToken: string | null;
   accessToken: string | null;
+  refreshToken: string | null;
   setUser: (user: User) => void;
   setCsrfToken: (token: string) => void;
   setAccessToken: (token: string) => void;
-  logout: () => void;
+  setRefreshToken: (token: string) => void;
+  clearAuthState: () => void;
+  logout: () => Promise<{ success: boolean; message: string | null }>;
   fetchMe: () => Promise<void>;
 }
 
@@ -21,7 +31,8 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   isAuthenticated: false,
   isLoading: true,
   csrfToken: null,
-  accessToken: sessionStorage.getItem('accessToken'),
+  accessToken: getStoredAccessToken(),
+  refreshToken: getStoredRefreshToken(),
 
   setUser: (user: User) =>
     set({ user, isAuthenticated: true, isLoading: false }),
@@ -29,18 +40,45 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   setCsrfToken: (token: string) => set({ csrfToken: token }),
 
   setAccessToken: (token: string) => {
-    sessionStorage.setItem('accessToken', token);
+    setStoredAccessToken(token);
     set({ accessToken: token });
   },
 
-  logout: () => {
-    const wasAuthenticated = get().isAuthenticated;
+  setRefreshToken: (token: string) => {
+    setStoredRefreshToken(token);
+    set({ refreshToken: token });
+  },
+
+  clearAuthState: () => {
     disconnectSocket();
-    sessionStorage.removeItem('accessToken');
-    set({ user: null, isAuthenticated: false, isLoading: false, csrfToken: null, accessToken: null });
-    if (wasAuthenticated) {
-      api.post('/auth/logout').catch(() => {});
+    clearStoredAuthSession();
+    set({
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+      csrfToken: null,
+      accessToken: null,
+      refreshToken: null,
+    });
+  },
+
+  logout: async () => {
+    const { isAuthenticated, accessToken, clearAuthState } = get();
+    let message: string | null = null;
+
+    if (isAuthenticated && accessToken) {
+      try {
+        await api.post('/auth/logout');
+      } catch (error: unknown) {
+        const err = error as { response?: { data?: { error?: { message?: string } } } };
+        message =
+          err.response?.data?.error?.message ||
+          'You were signed out on this tab, but we could not fully close the server session.';
+      }
     }
+
+    clearAuthState();
+    return { success: message === null, message };
   },
 
   fetchMe: async () => {
@@ -48,8 +86,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
       const { data } = await api.get('/auth/me');
       set({ user: data.data, isAuthenticated: true, isLoading: false });
     } catch {
-      sessionStorage.removeItem('accessToken');
-      set({ user: null, isAuthenticated: false, isLoading: false, accessToken: null });
+      get().clearAuthState();
     }
   },
 }));

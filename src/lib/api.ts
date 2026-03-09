@@ -2,6 +2,10 @@ import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
 import { useAuthStore } from '@/stores/auth.store';
 import { disconnectSocket } from '@/lib/socket';
+import {
+  getStoredRefreshToken,
+  setAuthRedirectReason,
+} from '@/lib/auth-session';
 
 const API_BASE = '/api/v1';
 
@@ -27,9 +31,14 @@ let csrfRefreshPromise: Promise<string> | null = null;
  * All concurrent 401 callers await the same promise.
  */
 function doRefresh(): Promise<string | null> {
+  const refreshToken = useAuthStore.getState().refreshToken || getStoredRefreshToken();
+  if (!refreshToken) {
+    return Promise.resolve(null);
+  }
+
   if (!refreshPromise) {
     refreshPromise = api
-      .post('/auth/refresh-token')
+      .post('/auth/refresh-token', { refreshToken })
       .then((res) => {
         const newToken = res.data?.data?.accessToken as string | undefined;
         if (newToken) {
@@ -66,12 +75,17 @@ function doCsrfRefresh(): Promise<string> {
 
 // Request interceptor: attach Bearer token + CSRF token
 api.interceptors.request.use((config) => {
-  const { csrfToken, accessToken } = useAuthStore.getState();
+  const { csrfToken, accessToken, refreshToken } = useAuthStore.getState();
 
   // Attach access token as Authorization header (per-tab isolation)
   if (accessToken) {
     config.headers = config.headers ?? {};
     config.headers['Authorization'] = `Bearer ${accessToken}`;
+  }
+
+  if (refreshToken) {
+    config.headers = config.headers ?? {};
+    config.headers['X-Refresh-Token'] = refreshToken;
   }
 
   // Attach CSRF token on mutating requests
@@ -126,22 +140,18 @@ api.interceptors.response.use(
 
       try {
         const newAccessToken = await doRefresh();
-        if (newAccessToken) {
-          originalRequest.headers = originalRequest.headers ?? {};
-          originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
+        if (!newAccessToken) {
+          throw new Error('Missing refresh token');
         }
+
+        originalRequest.headers = originalRequest.headers ?? {};
+        originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
         return api(originalRequest);
       } catch {
         // Refresh failed — clear local auth without triggering another logout request
         disconnectSocket();
-        sessionStorage.removeItem('accessToken');
-        useAuthStore.setState({
-          user: null,
-          isAuthenticated: false,
-          isLoading: false,
-          csrfToken: null,
-          accessToken: null,
-        });
+        useAuthStore.getState().clearAuthState();
+        setAuthRedirectReason('Your session expired or was replaced. Please sign in again.');
         window.location.href = '/login';
         return Promise.reject(error);
       }

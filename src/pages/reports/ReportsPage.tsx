@@ -159,18 +159,19 @@ function KpiCard({
 export function ReportsPage() {
   const { user } = useAuthStore();
   const isAdmin = user?.roles?.includes(Role.ADMIN);
+  const canAccessCashierReports = user?.roles?.some((role) => [Role.CASHIER, Role.ADMIN].includes(role));
   const [revenueGroupBy, setRevenueGroupBy] = useState<GroupBy>('month');
 
   const { data: revenue, isLoading: revLoading } = useRevenueReport({
     groupBy: revenueGroupBy,
-  });
-  const { data: pipeline, isLoading: pipeLoading } = useProjectPipelineReport();
-  const { data: paymentStages, isLoading: psLoading } = usePaymentStageReport();
-  const { data: workload, isLoading: wlLoading } = useWorkloadReport();
-  const { data: conversion, isLoading: convLoading } = useConversionReport();
-  const { data: dashboard, isLoading: dashLoading } = useDashboardSummary();
+  }, !!canAccessCashierReports);
+  const { data: pipeline, isLoading: pipeLoading } = useProjectPipelineReport(!!isAdmin);
+  const { data: paymentStages, isLoading: psLoading } = usePaymentStageReport(!!canAccessCashierReports);
+  const { data: workload, isLoading: wlLoading } = useWorkloadReport(!!isAdmin);
+  const { data: conversion, isLoading: convLoading } = useConversionReport(!!isAdmin);
+  const { data: dashboard, isLoading: dashLoading } = useDashboardSummary(!!isAdmin);
 
-  const anyKpiLoading = revLoading || psLoading || convLoading || dashLoading;
+  const anyKpiLoading = revLoading || psLoading || (isAdmin ? convLoading || dashLoading : false);
 
   return (
     <div className="space-y-6">

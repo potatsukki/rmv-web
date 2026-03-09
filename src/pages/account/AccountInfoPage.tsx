@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { Mail, Shield, Copy, CalendarDays, UserCircle, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -14,11 +15,13 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth.store';
+import { useNotificationStore } from '@/stores/notification.store';
 import { api } from '@/lib/api';
 
 export function AccountInfoPage() {
   const { user, logout } = useAuthStore();
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
 
   const [showDeleteForm, setShowDeleteForm] = useState(false);
   const [confirmation, setConfirmation] = useState('');
@@ -37,7 +40,11 @@ export function AccountInfoPage() {
         data: { confirmation, ...(isGoogleUser ? {} : { password }) },
       });
       toast.success('Your account has been deleted.');
-      logout();
+      await logout();
+      queryClient.clear();
+      useNotificationStore.setState({ notifications: [], unreadCount: 0 });
+      sessionStorage.removeItem('seen_pendingAppointments');
+      sessionStorage.removeItem('seen_pendingPayments');
       navigate('/', { replace: true });
     } catch (err: unknown) {
       const msg =

@@ -2,6 +2,9 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, Payment, PaymentPlan } from '@/lib/types';
 
+const getActiveTabRefetchInterval = (ms: number) =>
+  typeof document === 'undefined' || document.visibilityState === 'visible' ? ms : false;
+
 export interface PaymentHistoryItem {
   _id: string;
   type: 'project_payment' | 'ocular_fee';
@@ -36,7 +39,7 @@ export function usePaymentPlan(projectId: string) {
       return data.data;
     },
     enabled: !!projectId,
-    refetchInterval: 10_000,
+    refetchInterval: () => getActiveTabRefetchInterval(30_000),
   });
 }
 
@@ -50,7 +53,7 @@ export function usePaymentsByProject(projectId: string) {
       return data.data;
     },
     enabled: !!projectId,
-    refetchInterval: 10_000,
+    refetchInterval: () => getActiveTabRefetchInterval(30_000),
   });
 }
 
@@ -61,7 +64,7 @@ export function usePendingPayments() {
       const { data } = await api.get<ApiResponse<Payment[]>>('/payments/pending');
       return data.data;
     },
-    refetchInterval: 30_000,
+    refetchInterval: () => getActiveTabRefetchInterval(60_000),
   });
 }
 

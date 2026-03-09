@@ -9,6 +9,14 @@ const KEYS = {
   byAppointment: (appointmentId: string) => [...KEYS.all, 'appointment', appointmentId] as const,
 };
 
+function rawId(field: unknown): string | null {
+  if (typeof field === 'string') return field;
+  if (field && typeof field === 'object' && '_id' in (field as Record<string, unknown>)) {
+    return String((field as Record<string, unknown>)._id);
+  }
+  return null;
+}
+
 export function useVisitReports(params?: Record<string, string>) {
   return useQuery({
     queryKey: KEYS.list(params),
@@ -75,8 +83,11 @@ export function useCreateVisitReport() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (report) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
+      const appointmentId = rawId(report.appointmentId);
+      if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
     },
   });
 }
@@ -106,6 +117,14 @@ export function useUpdateVisitReport() {
       videoKeys?: string[];
       sketchKeys?: string[];
       referenceImageKeys?: string[];
+      productsDiscussed?: string;
+      designPreferences?: string;
+      materialOptions?: string;
+      projectScope?: string;
+      initialDesignKeys?: string[];
+      initialDesignNotes?: string;
+      recommendedOcularDate?: string;
+      recommendedOcularSlot?: string;
     }) => {
       const { data } = await api.put<ApiResponse<VisitReport>>(
         `/visit-reports/${id}`,
@@ -113,8 +132,11 @@ export function useUpdateVisitReport() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (report) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
+      const appointmentId = rawId(report.appointmentId);
+      if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
     },
   });
 }
@@ -128,8 +150,12 @@ export function useSubmitVisitReport() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (report) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
+      const appointmentId = rawId(report.appointmentId);
+      if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
+      qc.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }
@@ -144,8 +170,31 @@ export function useReturnVisitReport() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (report) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
+      const appointmentId = rawId(report.appointmentId);
+      if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
+    },
+  });
+}
+
+export function useReopenVisitReportForRepair() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { data } = await api.post<ApiResponse<VisitReport>>(
+        `/visit-reports/${id}/reopen-for-repair`,
+        { reason },
+      );
+      return data.data;
+    },
+    onSuccess: (report) => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
+      const appointmentId = rawId(report.appointmentId);
+      if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
+      qc.invalidateQueries({ queryKey: ['projects'] });
     },
   });
 }

@@ -36,7 +36,7 @@ export function useProjectByVisitReport(visitReportId: string | undefined) {
   return useQuery({
     queryKey: KEYS.byVisitReport(visitReportId!),
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<{ _id: string } | null>>(
+      const { data } = await api.get<ApiResponse<Pick<Project, '_id' | 'title' | 'serviceType' | 'status'> | null>>(
         `/projects/by-visit-report/${visitReportId}`,
       );
       return data.data;
@@ -116,6 +116,107 @@ export function useAssignFabrication() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useReviewInitialDesign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      decision,
+      notes,
+    }: {
+      id: string;
+      decision: 'approved' | 'declined';
+      notes?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Project>>(
+        `/projects/${id}/review-initial-design`,
+        { decision, notes },
+      );
+      return data.data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
+    },
+  });
+}
+
+export function useResubmitInitialDesign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      initialDesignKeys,
+      initialDesignNotes,
+    }: {
+      id: string;
+      initialDesignKeys?: string[];
+      initialDesignNotes?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Project>>(
+        `/projects/${id}/resubmit-initial-design`,
+        { initialDesignKeys, initialDesignNotes },
+      );
+      return data.data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
+    },
+  });
+}
+
+export function useBackfillInitialDesign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      initialDesignKeys,
+      initialDesignNotes,
+      backfillReason,
+    }: {
+      id: string;
+      initialDesignKeys?: string[];
+      initialDesignNotes?: string;
+      backfillReason: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Project>>(
+        `/projects/${id}/backfill-initial-design`,
+        { initialDesignKeys, initialDesignNotes, backfillReason },
+      );
+      return data.data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
+    },
+  });
+}
+
+export function useSelectProjectPaymentPlan() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      paymentType,
+    }: {
+      id: string;
+      paymentType: 'full' | 'installment';
+    }) => {
+      const { data } = await api.post<ApiResponse<{ paymentPlan: unknown; contractKey: string; project: Project }>>(
+        `/projects/${id}/select-payment-plan`,
+        { paymentType },
+      );
+      return data.data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
+      qc.invalidateQueries({ queryKey: ['payment-plans'] });
     },
   });
 }

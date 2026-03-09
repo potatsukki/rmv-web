@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
+import { resolvePostLoginPath } from '@/lib/auth-routing';
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60;
@@ -16,17 +17,19 @@ interface VerifyTwoFactorState {
   tempToken: string;
   email: string;
   firstName?: string;
+  from?: string;
 }
 
 export function VerifyTwoFactorPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();
+  const { fetchMe, setCsrfToken, setAccessToken, setRefreshToken } = useAuthStore();
 
   const state = location.state as VerifyTwoFactorState | null;
   const tempToken = state?.tempToken || '';
   const email = state?.email || '';
   const firstName = state?.firstName;
+  const from = state?.from;
 
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -86,6 +89,7 @@ export function VerifyTwoFactorPage() {
       const csrfToken = response.data.data.csrfToken;
       setCsrfToken(csrfToken);
       if (response.data.data.accessToken) setAccessToken(response.data.data.accessToken);
+      if (response.data.data.refreshToken) setRefreshToken(response.data.data.refreshToken);
 
       await fetchMe();
       toast.success('Welcome back!');
@@ -96,7 +100,12 @@ export function VerifyTwoFactorPage() {
         return;
       }
 
-      navigate('/dashboard', { replace: true });
+      const destination = resolvePostLoginPath(from, response.data.data.user.roles);
+      if (destination.redirectReason) {
+        toast(destination.redirectReason, { icon: 'ℹ️' });
+      }
+
+      navigate(destination.path, { replace: true });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string; code?: string } } } };
       const code = error.response?.data?.error?.code;

@@ -111,8 +111,9 @@ export function useConfirmAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/confirm`, body);
       return data.data;
     },
-    onSettled: () => {
+    onSettled: (_result, _error, variables) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
     },
   });
 }
@@ -124,8 +125,9 @@ export function useCompleteAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/complete`);
       return data.data;
     },
-    onSettled: () => {
+    onSettled: (_result, _error, id) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(id) });
     },
   });
 }
@@ -360,6 +362,30 @@ export function useSubmitSiteDetails() {
       const { data } = await api.post<ApiResponse<Appointment>>(
         `/appointments/${id}/site-details`,
         body,
+      );
+      return data.data;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useSubmitInitialDesign() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      initialDesignKeys,
+      initialDesignNotes,
+    }: {
+      id: string;
+      initialDesignKeys?: string[];
+      initialDesignNotes?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/initial-design`,
+        { initialDesignKeys, initialDesignNotes },
       );
       return data.data;
     },

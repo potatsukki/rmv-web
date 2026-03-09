@@ -148,7 +148,7 @@ export function RegisterPage() {
     }
   }, [attempts]);
 
-  const { setCsrfToken } = useAuthStore();
+  const { setCsrfToken, setAccessToken, setRefreshToken } = useAuthStore();
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const { fetchMe } = useAuthStore();
@@ -194,6 +194,8 @@ export function RegisterPage() {
       // User already exists — logged in
       const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
+      if (responseData.accessToken) setAccessToken(responseData.accessToken);
+      if (responseData.refreshToken) setRefreshToken(responseData.refreshToken);
       await fetchMe();
       toast.success('Welcome back!');
       navigate('/dashboard', { replace: true });
@@ -221,9 +223,12 @@ export function RegisterPage() {
       });
       setAttemptData(0, null);
       setAttempts(0);
-      toast.success('Registration successful! Check your email for the OTP.');
-      navigate('/verify-otp', {
-        state: { email: data.email, purpose: 'email_verification' },
+      navigate('/login', {
+        replace: true,
+        state: {
+          registeredEmail: data.email,
+          registrationComplete: true,
+        },
       });
     } catch (err: unknown) {
       const error = err as {

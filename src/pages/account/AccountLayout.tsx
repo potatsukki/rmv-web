@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { User as UserIcon, Shield, Bell, Info, Mail, Phone, LogOut } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -9,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Card, CardContent } from '@/components/ui/card';
 import { useAuthStore } from '@/stores/auth.store';
+import { useNotificationStore } from '@/stores/notification.store';
 import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
 import { cn } from '@/lib/utils';
 
@@ -20,15 +22,27 @@ const tabs = [
 ];
 
 export function AccountLayout() {
+  const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuthStore();
+  const queryClient = useQueryClient();
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const userInitials = `${user?.firstName?.[0] || ''}${user?.lastName?.[0] || ''}`;
 
-  const handleLogout = () => {
-    logout();
-    navigate('/login');
-    toast.success('Logged out successfully');
+  const handleLogout = async () => {
+    const result = await logout();
+    queryClient.clear();
+    useNotificationStore.setState({ notifications: [], unreadCount: 0 });
+    sessionStorage.removeItem('seen_pendingAppointments');
+    sessionStorage.removeItem('seen_pendingPayments');
+    navigate('/login', { replace: true, state: { from: location } });
+
+    if (result.success) {
+      toast.success('Logged out successfully');
+      return;
+    }
+
+    toast.error(result.message || 'You were signed out locally, but the server session could not be closed.');
   };
 
   return (

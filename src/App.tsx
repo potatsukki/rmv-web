@@ -2,6 +2,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { api, fetchCsrfToken } from '@/lib/api';
+import { getStoredRefreshToken } from '@/lib/auth-session';
 
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
@@ -217,16 +218,25 @@ export default function App() {
         return;
       }
 
-      // If no access token in sessionStorage, try to get one via refresh cookie
-      if (!sessionStorage.getItem('accessToken')) {
+      // If no access token in sessionStorage, try to restore from the per-tab refresh token.
+      if (!getStoredRefreshToken()) {
+        useAuthStore.setState({ isLoading: false });
+        return;
+      }
+
+      if (!useAuthStore.getState().accessToken) {
         try {
-          const { data } = await api.post('/auth/refresh-token');
+          const { data } = await api.post('/auth/refresh-token', {
+            refreshToken: getStoredRefreshToken(),
+          });
           const newToken = data?.data?.accessToken;
           if (newToken) {
             setAccessToken(newToken);
           }
         } catch {
-          // No valid refresh token — user will be redirected to login by fetchMe
+          // Invalid refresh token — the interceptor will clear auth on the next protected request.
+          useAuthStore.setState({ isLoading: false });
+          return;
         }
       }
 

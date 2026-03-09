@@ -139,6 +139,9 @@ export interface Appointment {
   internalNotes?: string;
   customerSiteDetails?: CustomerSiteDetails;
   siteDetailsStatus?: 'pending' | 'submitted' | 'skipped';
+  initialDesignKeys?: string[];
+  initialDesignNotes?: string;
+  initialDesignStatus?: 'pending' | 'submitted' | 'skipped';
   consultationReportSubmitted?: boolean;
   createdAt: string;
   updatedAt: string;
@@ -187,6 +190,18 @@ export interface Project {
   finishColor?: string;
   quantity?: number;
   notes?: string;
+  initialDesignKeys?: string[];
+  initialDesignNotes?: string;
+  initialDesignBackfill?: {
+    isSyntheticDemo: boolean;
+    reason: string;
+    backfilledAt: string;
+    backfilledBy?: string | { _id: string; firstName: string; lastName: string };
+  };
+  designReviewStatus?: 'pending' | 'approved' | 'declined' | 'not_required';
+  designReviewedBy?: string | { _id: string; firstName: string; lastName: string };
+  designReviewedAt?: string;
+  designReviewNotes?: string;
   status: string;
   engineerIds: (string | { _id: string; firstName: string; lastName: string; phone?: string })[];
   fabricationLeadId?: string | { _id: string; firstName: string; lastName: string };
@@ -441,6 +456,8 @@ export interface VisitReport {
   designPreferences?: string;
   materialOptions?: string;
   projectScope?: string;
+  initialDesignKeys?: string[];
+  initialDesignNotes?: string;
   recommendedOcularDate?: string;
   recommendedOcularSlot?: string;
   linkedProjectId?: string;

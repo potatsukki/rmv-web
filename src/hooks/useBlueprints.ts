@@ -176,7 +176,7 @@ export function useAcceptBlueprint() {
       id: string;
       paymentType: 'full' | 'installment';
     }) => {
-      const { data } = await api.post<ApiResponse<{ blueprint: Blueprint; paymentPlan: unknown }>>(
+      const { data } = await api.post<ApiResponse<{ blueprint: Blueprint }>>(
         `/blueprints/${id}/accept`,
         { paymentType },
       );

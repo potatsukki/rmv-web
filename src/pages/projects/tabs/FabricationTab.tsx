@@ -35,10 +35,21 @@ import { FabricationStatus, Role } from '@/lib/constants';
 
 interface FabricationTabProps {
   projectId: string;
+  projectStatus: string;
   installationConfirmedAt?: string;
+  canViewUpdates: boolean;
+  canManageUpdates: boolean;
+  showAssignmentNotice: boolean;
 }
 
-export function FabricationTab({ projectId, installationConfirmedAt }: FabricationTabProps) {
+export function FabricationTab({
+  projectId,
+  projectStatus,
+  installationConfirmedAt,
+  canViewUpdates,
+  canManageUpdates,
+  showAssignmentNotice,
+}: FabricationTabProps) {
   const { user } = useAuthStore();
   const queryClient = useQueryClient();
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
@@ -63,8 +74,8 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
     isLoading,
     isError,
     refetch,
-  } = useFabricationUpdates(projectId);
-  const { data: fabricationStatus } = useFabricationStatus(projectId);
+  } = useFabricationUpdates(projectId, canViewUpdates);
+  const { data: fabricationStatus } = useFabricationStatus(projectId, canViewUpdates);
 
   // ── Live updates via WebSocket ──
   useEffect(() => {
@@ -88,11 +99,30 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
   const updateMutation = useUpdateFabricationUpdate(projectId);
   const deleteMutation = useDeleteFabricationUpdate(projectId);
   const confirmInstallationMutation = useConfirmInstallation();
+  const isProjectInFabrication = projectStatus === 'fabrication';
 
-  const canAddUpdate = user?.roles.some((r: string) =>
-    [Role.FABRICATION_STAFF, Role.ENGINEER, Role.ADMIN].includes(r as Role),
-  );
+  const canAddUpdate = isProjectInFabrication && canManageUpdates;
   const isCustomer = user?.roles.some((r: string) => r === Role.CUSTOMER);
+
+  if (!canViewUpdates) {
+    return (
+      <Card className="rounded-xl border-amber-200 bg-amber-50/50">
+        <CardContent className="p-4 flex items-start gap-3">
+          <Lock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+          <div>
+            <p className="text-sm font-semibold text-amber-800">
+              {showAssignmentNotice ? 'You are not assigned to this project' : 'Fabrication updates are unavailable'}
+            </p>
+            <p className="text-xs text-amber-700 mt-0.5">
+              {showAssignmentNotice
+                ? 'Only the assigned fabrication team can view or post workshop updates for this project.'
+                : 'You do not currently have access to this project’s fabrication timeline.'}
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
 
   const isReadyForDelivery = fabricationStatus?.currentStatus === FabricationStatus.READY_FOR_DELIVERY;
   const installationConfirmed = !!installationConfirmedAt;
@@ -132,6 +162,11 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
     e.preventDefault();
     if (!notes.trim()) {
       toast.error('Please enter update notes');
+      return;
+    }
+
+    if (!isProjectInFabrication) {
+      toast.error('Fabrication updates can only be posted after the project enters the fabrication phase');
       return;
     }
 
@@ -234,6 +269,20 @@ export function FabricationTab({ projectId, installationConfirmedAt }: Fabricati
       )}
 
       {/* Payment Gate Banners */}
+      {!isProjectInFabrication && (
+        <Card className="rounded-xl border-slate-200 bg-slate-50/60">
+          <CardContent className="p-4 flex items-start gap-3">
+            <Info className="h-5 w-5 text-slate-600 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-slate-800">Fabrication has not started yet</p>
+              <p className="text-xs text-slate-700 mt-0.5">
+                Progress updates become available once the required payment is verified and the project moves into fabrication.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {fabricationStatus?.paymentGate && !fabricationStatus.paymentGate.allPaid && (
         <Card className="rounded-xl border-amber-200 bg-amber-50/50">
           <CardContent className="p-4 flex items-start gap-3">

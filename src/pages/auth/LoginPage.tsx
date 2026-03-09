@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -14,6 +14,8 @@ import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api, fetchCsrfToken } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { auth, googleProvider } from '@/lib/firebase';
+import { consumeAuthRedirectReason } from '@/lib/auth-session';
+import { resolvePostLoginPath } from '@/lib/auth-routing';
 
 const loginSchema = z.object({
   email: z.string().email('Invalid email address'),
@@ -27,10 +29,25 @@ export function LoginPage() {
   const [googleLoading, setGoogleLoading] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-  const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();
+  const { fetchMe, setCsrfToken, setAccessToken, setRefreshToken } = useAuthStore();
+  const locationState = (location.state as {
+    from?: { pathname: string };
+    registeredEmail?: string;
+    registrationComplete?: boolean;
+  } | null) ?? null;
 
-  const from =
-    (location.state as { from?: { pathname: string } })?.from?.pathname || '/dashboard';
+  const from = locationState?.from?.pathname || '/dashboard';
+
+  useEffect(() => {
+    const redirectReason = consumeAuthRedirectReason();
+    if (redirectReason) {
+      toast.error(redirectReason);
+    }
+
+    if (locationState?.registrationComplete) {
+      toast.success('Registration successful. Sign in when you are ready. If your email is still unverified, we will send you to OTP verification next.');
+    }
+  }, []);
 
   const {
     register,
@@ -38,6 +55,10 @@ export function LoginPage() {
     formState: { errors, isSubmitting },
   } = useForm<LoginForm>({
     resolver: zodResolver(loginSchema),
+    defaultValues: {
+      email: locationState?.registeredEmail ?? '',
+      password: '',
+    },
   });
 
   const handleGoogleSignIn = async () => {
@@ -73,6 +94,7 @@ export function LoginPage() {
             tempToken: responseData.tempToken,
             email: responseData.user.email,
             firstName: responseData.user.firstName,
+            from,
           },
           replace: true,
         });
@@ -83,9 +105,16 @@ export function LoginPage() {
       const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
       if (responseData.accessToken) setAccessToken(responseData.accessToken);
+      if (responseData.refreshToken) setRefreshToken(responseData.refreshToken);
       await fetchMe();
       toast.success('Welcome back!');
-      navigate(from, { replace: true });
+
+      const destination = resolvePostLoginPath(from, responseData.user.roles);
+      if (destination.redirectReason) {
+        toast(destination.redirectReason, { icon: 'ℹ️' });
+      }
+
+      navigate(destination.path, { replace: true });
     } catch (err: unknown) {
       const error = err as { code?: string; response?: { data?: { error?: { message?: string } } } };
       if (error.code === 'auth/popup-closed-by-user') return;
@@ -110,6 +139,7 @@ export function LoginPage() {
             tempToken: responseData.tempToken,
             email: responseData.user.email,
             firstName: responseData.user.firstName,
+            from,
           },
           replace: true,
         });
@@ -119,6 +149,7 @@ export function LoginPage() {
       const newCsrfToken = responseData.csrfToken;
       setCsrfToken(newCsrfToken);
       if (responseData.accessToken) setAccessToken(responseData.accessToken);
+      if (responseData.refreshToken) setRefreshToken(responseData.refreshToken);
       
       await fetchMe();
       toast.success('Welcome back!');
@@ -130,7 +161,12 @@ export function LoginPage() {
         return;
       }
 
-      navigate(from, { replace: true });
+      const destination = resolvePostLoginPath(from, responseData.user.roles);
+      if (destination.redirectReason) {
+        toast(destination.redirectReason, { icon: 'ℹ️' });
+      }
+
+      navigate(destination.path, { replace: true });
     } catch (err: unknown) {
       const error = err as {
         response?: { data?: { error?: { message?: string; code?: string } } };
