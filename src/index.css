@@ -318,6 +318,62 @@ a, button, input, select, textarea,
   background: linear-gradient(180deg, rgba(241, 245, 249, 0.78) 0%, rgba(171, 183, 195, 0.88) 100%);
 }
 
+html.landing-page-scrollbar,
+body.landing-page-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(118, 128, 142, 0.9) rgba(5, 8, 12, 0.96);
+}
+
+html.landing-page-scrollbar::-webkit-scrollbar,
+body.landing-page-scrollbar::-webkit-scrollbar {
+  width: 11px;
+}
+
+html.landing-page-scrollbar::-webkit-scrollbar-track,
+body.landing-page-scrollbar::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, rgba(7, 10, 14, 0.98) 0%, rgba(14, 19, 26, 0.98) 100%);
+}
+
+html.landing-page-scrollbar::-webkit-scrollbar-thumb,
+body.landing-page-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(115, 126, 140, 0.96) 0%, rgba(59, 68, 80, 0.98) 100%);
+  border: 2px solid rgba(8, 12, 17, 0.98);
+  border-radius: 999px;
+}
+
+html.landing-page-scrollbar::-webkit-scrollbar-thumb:hover,
+body.landing-page-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(138, 149, 165, 0.98) 0%, rgba(76, 87, 101, 1) 100%);
+}
+
+html.auth-page-scrollbar,
+body.auth-page-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(108, 119, 133, 0.94) rgba(6, 9, 13, 0.98);
+}
+
+html.auth-page-scrollbar::-webkit-scrollbar,
+body.auth-page-scrollbar::-webkit-scrollbar {
+  width: 11px;
+}
+
+html.auth-page-scrollbar::-webkit-scrollbar-track,
+body.auth-page-scrollbar::-webkit-scrollbar-track {
+  background: linear-gradient(180deg, rgba(6, 9, 13, 0.98) 0%, rgba(12, 16, 22, 0.98) 100%);
+}
+
+html.auth-page-scrollbar::-webkit-scrollbar-thumb,
+body.auth-page-scrollbar::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(109, 120, 135, 0.96) 0%, rgba(53, 61, 72, 0.98) 100%);
+  border: 2px solid rgba(8, 12, 17, 0.98);
+  border-radius: 999px;
+}
+
+html.auth-page-scrollbar::-webkit-scrollbar-thumb:hover,
+body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(132, 144, 160, 0.98) 0%, rgba(71, 81, 95, 1) 100%);
+}
+
 /* ─── Decorative float animations (GPU-composited via translate3d) ─── */
 @keyframes float-slow {
   0%, 100% { transform: translate3d(0, 0, 0); }

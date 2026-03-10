@@ -14,6 +14,7 @@ import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api, fetchCsrfToken } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { auth, googleProvider } from '@/lib/firebase';
+import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -81,6 +82,7 @@ export function RegisterPage() {
   const [attempts, setAttempts] = useState(0);
   const [lockedUntil, setLockedUntil] = useState<number | null>(null);
   const [lockCountdown, setLockCountdown] = useState('');
+  useAuthPageScrollbar();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -242,56 +244,59 @@ export function RegisterPage() {
     }
   };
 
-  const inputClasses = 'metal-input h-10 text-sm rounded-xl';
+  const inputClasses =
+    'metal-input h-10 rounded-xl border-white/10 bg-white/[0.05] text-sm text-[#f5f7fa] placeholder:text-[#7f8895] shadow-none focus-visible:ring-[#d6b36a]/35';
 
   return (
-    <div className="flex min-h-screen">
+    <div className="relative flex min-h-screen overflow-hidden bg-[#05070a]">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(117,144,171,0.18)_0%,transparent_26%),radial-gradient(circle_at_bottom_right,rgba(177,137,73,0.15)_0%,transparent_30%)]" />
       {/* Left Side - Form */}
-      <div className="relative z-10 flex w-full flex-1 flex-col justify-center bg-[radial-gradient(circle_at_top_left,#f4f6f8_0%,#e4e8ed_52%,#d4dae1_100%)] px-6 py-12 lg:w-[48%] lg:flex-none lg:px-20 xl:px-28">
-        <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-        <div className="metal-panel relative mx-auto w-full max-w-[440px] rounded-[2rem] p-8 sm:p-10">
+      <div className="relative z-10 flex w-full flex-1 flex-col justify-center bg-[radial-gradient(circle_at_top_left,#1a2430_0%,#0d1218_50%,#05070a_100%)] px-6 py-8 lg:w-[54%] lg:flex-none lg:px-14 lg:py-6 xl:px-20 xl:py-8">
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-44 bg-[radial-gradient(circle_at_top,rgba(214,179,106,0.18)_0%,transparent_70%)]" />
+        <div className="relative mx-auto w-full max-w-[520px] rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,23,30,0.94)_0%,rgba(7,10,14,0.98)_100%)] p-7 shadow-[0_30px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl sm:p-8 lg:max-w-[540px]">
           {/* Back link */}
           <Link
             to="/"
-            className="inline-flex items-center gap-2 mb-8 text-sm font-medium text-[#86868b] hover:text-[#1d1d1f] transition-colors group"
+            className="group mb-6 inline-flex items-center gap-2 text-sm font-medium text-[#9ca7b5] transition-colors hover:text-[#f2f5f7]"
           >
             <ArrowLeft className="h-4 w-4 group-hover:-translate-x-0.5 transition-transform" />
             Back to Home
           </Link>
 
           {/* Brand */}
-          <div className="flex items-center gap-2.5 mb-6">
-            <BrandLogo className="h-9 w-9 ring-2 ring-[#b8b8bd]/50 shadow-lg shadow-black/10" />
-            <span className="font-bold text-[#1d1d1f] tracking-tight">RMV Stainless</span>
+          <div className="mb-4 flex items-center gap-2.5">
+            <BrandLogo className="h-9 w-9 ring-2 ring-white/12 shadow-lg shadow-black/30" />
+            <span className="font-bold tracking-tight text-[#f5f7fa]">RMV Stainless</span>
           </div>
 
-          <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+          <h2 className="text-2xl font-bold tracking-tight text-[#f5f7fa]">
             Create account
           </h2>
-          <p className="mt-1 text-sm text-[#6e6e73]">
+          <p className="mt-1 text-sm text-[#98a3b2]">
             Already have an account?{' '}
-            <Link to="/login" className="font-semibold text-[#1d1d1f] hover:text-[#6e6e73] underline underline-offset-4">
+            <Link to="/login" className="font-semibold text-[#d6b36a] underline underline-offset-4 transition-colors hover:text-[#f0d28f]">
               Sign in
             </Link>
           </p>
 
           {/* Lockout Banner */}
           {isLocked && (
-            <div className="mt-6 flex items-start gap-3 rounded-xl border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] p-4">
-              <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#87544f]" />
+            <div className="mt-4 flex items-start gap-3 rounded-xl border border-[#8b4b49]/70 bg-[linear-gradient(180deg,rgba(71,24,24,0.88)_0%,rgba(42,15,15,0.96)_100%)] p-3.5">
+              <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#f0aaa3]" />
               <div>
-                <p className="text-sm font-semibold text-[#87544f]">Account Locked</p>
-                <p className="mt-0.5 text-sm text-[#9a625c]">
+                <p className="text-sm font-semibold text-[#f3c2bc]">Account Locked</p>
+                <p className="mt-0.5 text-sm text-[#d4a09a]">
                   Too many failed attempts. Try again in {lockCountdown}.
                 </p>
               </div>
             </div>
           )}
 
-          <form onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-            <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
+          <form onSubmit={handleSubmit(onSubmit)} className="mt-4 space-y-3.5 lg:space-y-3">
+            <div className="grid grid-cols-1 gap-3 min-[400px]:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="firstName" className="text-[#3a3a3e] text-[13px] font-medium">
+                <Label htmlFor="firstName" className="text-[13px] font-medium text-[#d8dee6]">
                   First Name
                 </Label>
                 <Input
@@ -306,7 +311,7 @@ export function RegisterPage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="lastName" className="text-[#3a3a3e] text-[13px] font-medium">
+                <Label htmlFor="lastName" className="text-[13px] font-medium text-[#d8dee6]">
                   Last Name
                 </Label>
                 <Input
@@ -323,7 +328,7 @@ export function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="email" className="text-[13px] font-medium text-[#d8dee6]">
                 Email Address
               </Label>
               <Input
@@ -340,7 +345,7 @@ export function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="phone" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="phone" className="text-[13px] font-medium text-[#d8dee6]">
                 Mobile Number
               </Label>
               <Input
@@ -357,7 +362,7 @@ export function RegisterPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="password" className="text-[13px] font-medium text-[#d8dee6]">
                 Password
               </Label>
               <div className="relative">
@@ -371,7 +376,7 @@ export function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-0 top-0 h-full px-3 text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+                  className="absolute right-0 top-0 h-full px-3 text-[#8993a1] transition-colors hover:text-[#f5f7fa]"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
@@ -381,9 +386,9 @@ export function RegisterPage() {
 
               {/* Strength Meter */}
               {passwordValue.length > 0 && strength && (
-                <div className="metal-panel mt-2 rounded-xl p-3">
-                  <div className="flex items-center justify-between mb-2">
-                    <span className="text-[11px] font-medium text-[#86868b]">Strength</span>
+                <div className="mt-2 rounded-xl border border-white/8 bg-white/[0.04] p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-[11px] font-medium text-[#97a2b0]">Strength</span>
                     <span
                       className={`text-[11px] font-bold ${
                         strength.score <= 1
@@ -396,7 +401,7 @@ export function RegisterPage() {
                       {strength.label}
                     </span>
                   </div>
-                  <div className="flex h-1 gap-0.5 rounded-full overflow-hidden bg-[#d8d8de]">
+                  <div className="flex h-1 gap-0.5 overflow-hidden rounded-full bg-white/10">
                     {[1, 2, 3, 4, 5].map((i) => (
                       <div
                         key={i}
@@ -406,20 +411,20 @@ export function RegisterPage() {
                       />
                     ))}
                   </div>
-                  <div className="grid grid-cols-2 min-[400px]:grid-cols-3 gap-x-2 gap-y-1 mt-2">
+                  <div className="mt-2 grid grid-cols-2 gap-x-2 gap-y-1 min-[400px]:grid-cols-3">
                     {passwordRules.map((rule) => {
                       const passed = rule.test(passwordValue);
                       return (
                         <div
                           key={rule.label}
                           className={`flex items-center text-[10px] gap-1 ${
-                            passed ? 'text-emerald-600' : 'text-[#86868b]'
+                            passed ? 'text-emerald-400' : 'text-[#8c97a6]'
                           }`}
                         >
                           {passed ? (
                             <Check className="w-3 h-3" />
                           ) : (
-                            <div className="w-3 h-3 rounded-full border border-[#c8c8cd]" />
+                            <div className="h-3 w-3 rounded-full border border-white/15" />
                           )}
                           {rule.label}
                         </div>
@@ -429,12 +434,12 @@ export function RegisterPage() {
                 </div>
               )}
               {errors.password && (
-                <p className="text-xs text-red-500 mt-1">{errors.password.message}</p>
+                <p className="mt-1 text-xs text-red-500">{errors.password.message}</p>
               )}
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="confirmPassword" className="text-[13px] font-medium text-[#d8dee6]">
                 Confirm Password
               </Label>
               <div className="relative">
@@ -448,7 +453,7 @@ export function RegisterPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-0 top-0 h-full px-3 text-[#86868b] hover:text-[#1d1d1f] transition-colors"
+                  className="absolute right-0 top-0 h-full px-3 text-[#8993a1] transition-colors hover:text-[#f5f7fa]"
                   onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                   aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
                 >
@@ -465,32 +470,32 @@ export function RegisterPage() {
             </div>
 
             {/* Terms & Privacy agreement */}
-            <div className="mt-1">
+            <div>
               <label className="flex items-start gap-2.5 cursor-pointer group">
                 <input
                   type="checkbox"
                   {...register('agreeToTerms')}
-                  className="mt-0.5 h-4 w-4 cursor-pointer rounded border-[#c8c8cd] text-[#1d1d1f] accent-[#1d1d1f] focus:ring-[#1d1d1f]"
+                  className="mt-0.5 h-4 w-4 cursor-pointer rounded border-white/15 bg-white/5 text-[#d6b36a] accent-[#d6b36a] focus:ring-[#d6b36a]"
                 />
-                <span className="text-xs text-[#6e6e73] leading-relaxed">
+                <span className="text-xs leading-relaxed text-[#98a3b2]">
                   I agree to the{' '}
-                  <Link to="/terms" target="_blank" className="text-[#1d1d1f] font-medium underline underline-offset-2 hover:text-[#0071e3] transition-colors">
+                  <Link to="/terms" target="_blank" className="font-medium text-[#d6b36a] underline underline-offset-2 transition-colors hover:text-[#f0d28f]">
                     Terms of Service
                   </Link>{' '}
                   and{' '}
-                  <Link to="/privacy" target="_blank" className="text-[#1d1d1f] font-medium underline underline-offset-2 hover:text-[#0071e3] transition-colors">
+                  <Link to="/privacy" target="_blank" className="font-medium text-[#d6b36a] underline underline-offset-2 transition-colors hover:text-[#f0d28f]">
                     Privacy Policy
                   </Link>
                 </span>
               </label>
               {errors.agreeToTerms && (
-                <p className="text-xs text-red-500 mt-1 ml-6.5">{errors.agreeToTerms.message}</p>
+                <p className="mt-1 ml-6.5 text-xs text-red-500">{errors.agreeToTerms.message}</p>
               )}
             </div>
 
             <Button
               type="submit"
-              className="mt-2 h-11 w-full rounded-xl font-semibold transition-all active:scale-[0.98]"
+              className="mt-1 h-11 w-full rounded-xl bg-[linear-gradient(135deg,#e2c98f_0%,#c69b4e_45%,#8f6a2f_100%)] font-semibold text-[#14181d] shadow-[0_20px_40px_rgba(148,112,47,0.28)] transition-all hover:bg-[linear-gradient(135deg,#ead39d_0%,#d2ab60_45%,#9f7739_100%)] active:scale-[0.98]"
               disabled={isSubmitting || isLocked}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -499,17 +504,17 @@ export function RegisterPage() {
 
             <div className="relative my-1">
               <div className="absolute inset-0 flex items-center">
-                <span className="w-full border-t border-[#c8c8cd]/60" />
+                <span className="w-full border-t border-white/10" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[rgba(235,239,244,0.95)] px-2 text-[#86868b]">or</span>
+                <span className="bg-[#0d1218] px-2 text-[#748090]">or</span>
               </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full rounded-xl border-[#cfd6dd] bg-white/40 font-medium text-[#171b21] transition-all active:scale-[0.98] hover:bg-white/65"
+              className="h-11 w-full rounded-xl border-[#d6dde6]/70 bg-[linear-gradient(180deg,rgba(245,247,250,0.98)_0%,rgba(222,228,235,0.94)_100%)] font-medium text-[#14181d] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_12px_24px_rgba(0,0,0,0.12)] transition-all hover:bg-[linear-gradient(180deg,rgba(250,251,253,1)_0%,rgba(228,233,239,0.98)_100%)] hover:text-[#14181d] active:scale-[0.98]"
               onClick={handleGoogleSignUp}
               disabled={googleLoading || isSubmitting || isLocked}
             >
@@ -539,7 +544,7 @@ export function RegisterPage() {
             </Button>
 
             {!isLocked && attempts > 0 && attempts < MAX_ATTEMPTS && (
-              <div className="metal-pill flex items-center justify-center gap-2 rounded-xl p-2.5 text-xs text-[#616a74]">
+              <div className="flex items-center justify-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-2.5 text-xs text-[#a8b3c0]">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {MAX_ATTEMPTS - attempts} attempt{MAX_ATTEMPTS - attempts === 1 ? '' : 's'}{' '}
                 remaining
@@ -551,31 +556,71 @@ export function RegisterPage() {
 
       {/* Right Side - Visual */}
       <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1a1a1c] via-[#111113] to-[#0d0d0f]" />
-        <img
-          className="absolute inset-0 h-full w-full object-cover opacity-25 mix-blend-overlay"
-          src="https://images.unsplash.com/photo-1531834685032-c34bf0d84c77?ixlib=rb-4.0.3&auto=format&fit=crop&w=1997&q=80"
-          alt="Stainless steel fabrication"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-[#0d0d0f] via-transparent to-[#0d0d0f]/60" />
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(38,61,84,0.58)_0%,transparent_32%),radial-gradient(circle_at_bottom_right,rgba(176,133,68,0.18)_0%,transparent_24%),linear-gradient(160deg,#080b10_0%,#0c1016_44%,#121821_100%)]" />
+        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+        <div className="absolute inset-y-0 left-0 w-px bg-white/6" />
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,12,0.04)_0%,rgba(5,8,12,0.26)_100%)]" />
 
-        <div className="absolute inset-0 opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+        <div className="absolute inset-0 flex items-center justify-center px-12 py-16 lg:px-16">
+          <div className="w-full max-w-[30rem] rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(19,25,33,0.84)_0%,rgba(10,13,18,0.92)_100%)] p-8 shadow-[0_32px_90px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+            <div className="mb-6 flex items-center justify-between">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#d6b36a]/25 bg-[linear-gradient(180deg,rgba(214,179,106,0.16)_0%,rgba(214,179,106,0.05)_100%)]">
+                <Check className="h-6 w-6 text-[#e2c98f]" />
+              </div>
+              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#93a0af]">
+                Project Access
+              </span>
+            </div>
 
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[radial-gradient(circle,rgba(180,180,190,0.06)_0%,transparent_60%)] pointer-events-none" />
+            <div className="rounded-[1.5rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0.02)_100%)] p-5">
+              <div className="mb-5 flex items-center justify-between">
+                <div>
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8894a3]">
+                    RMV Client Setup
+                  </p>
+                  <h3 className="mt-1 text-xl font-bold text-[#f5f7fa]">Account Activation</h3>
+                </div>
+                <div className="rounded-2xl border border-[#d6b36a]/20 bg-[#d6b36a]/10 px-3 py-1.5 text-right">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#d9bf84]">Status</p>
+                  <p className="text-sm font-bold text-[#f2d9a1]">Ready</p>
+                </div>
+              </div>
 
-        <div className="absolute bottom-0 left-0 right-0 p-12 lg:p-16">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 backdrop-blur-sm border border-white/15 mb-6">
-            <Check className="h-6 w-6 text-[#d2d2d7]" />
+              <div className="grid gap-3 sm:grid-cols-3">
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b96a3]">Portal</p>
+                  <p className="mt-2 text-base font-bold text-[#f5f7fa]">Client Access</p>
+                </div>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b96a3]">Verification</p>
+                  <p className="mt-2 text-base font-bold text-[#f5f7fa]">Email Secure</p>
+                </div>
+                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
+                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b96a3]">Tracking</p>
+                  <p className="mt-2 text-base font-bold text-[#f5f7fa]">Live Updates</p>
+                </div>
+              </div>
+
+              <div className="mt-5 rounded-2xl border border-white/8 bg-[#0a0d12]/70 p-4">
+                <div className="mb-2 flex items-center justify-between text-sm">
+                  <span className="font-medium text-[#d7dee6]">Onboarding flow</span>
+                  <span className="font-semibold text-[#e2c98f]">3 steps</span>
+                </div>
+                <div className="h-2 rounded-full bg-white/8">
+                  <div className="h-2 w-[68%] rounded-full bg-[linear-gradient(90deg,#f0d08f_0%,#b9873c_100%)]" />
+                </div>
+              </div>
+            </div>
+
+            <blockquote className="mt-6">
+              <p className="max-w-lg text-lg font-medium leading-relaxed text-[#d2d9e1]">
+                &ldquo;Create your account once and keep approvals, project updates, and billing visibility in one secure place.&rdquo;
+              </p>
+              <footer className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-[#6f7b89]">
+                RMV Management System
+              </footer>
+            </blockquote>
           </div>
-          <blockquote>
-            <p className="text-lg font-medium text-[#d2d2d7] leading-relaxed max-w-md">
-              &ldquo;Quality is never an accident. It is always the result of intelligent
-              effort.&rdquo;
-            </p>
-            <footer className="mt-4 text-xs font-bold text-[#6e6e73] uppercase tracking-[0.2em]">
-              RMV Stainless Steel
-            </footer>
-          </blockquote>
         </div>
       </div>
     </div>

@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api } from '@/lib/api';
+import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 
 const schema = z
   .object({
@@ -38,10 +39,12 @@ const passwordRules = [
   { label: 'Special character', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
 ];
 
-const inputClasses = 'metal-input h-11 rounded-xl';
+const inputClasses =
+  'metal-input h-11 rounded-xl border-white/10 bg-white/[0.05] text-[#f5f7fa] placeholder:text-[#7f8895] shadow-none focus-visible:ring-[#d6b36a]/35';
 
 export function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
+  useAuthPageScrollbar();
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -84,26 +87,37 @@ export function ResetPasswordPage() {
   if (!email || !otp) return null;
 
   return (
-    <div className="metal-shell relative flex min-h-screen items-center justify-center px-4">
-      <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+    <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#05070a] px-4">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(117,144,171,0.18)_0%,transparent_26%),radial-gradient(circle_at_bottom_right,rgba(177,137,73,0.15)_0%,transparent_30%)]" />
+      <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+      <div className="pointer-events-none absolute left-10 top-20 hidden h-48 w-48 rounded-full bg-[radial-gradient(circle,rgba(118,144,171,0.18)_0%,transparent_68%)] blur-2xl lg:block" />
+      <div className="pointer-events-none absolute right-10 bottom-20 hidden h-56 w-56 rounded-full bg-[radial-gradient(circle,rgba(214,179,106,0.14)_0%,transparent_72%)] blur-2xl lg:block" />
+      <div className="pointer-events-none absolute left-[10%] top-1/2 hidden w-[15rem] -translate-y-1/2 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-md xl:block">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8c97a5]">Reset Flow</p>
+        <h3 className="mt-3 text-lg font-bold text-[#f5f7fa]">Choose a stronger replacement password.</h3>
+        <div className="mt-4 space-y-3 text-sm text-[#a6b0bd]">
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">Use a password you have not used before.</div>
+          <div className="rounded-2xl border border-white/8 bg-white/[0.03] p-3">Mix letters, numbers, and symbols for better security.</div>
+        </div>
+      </div>
       <div className="relative w-full max-w-md">
         {/* Brand */}
-        <div className="flex items-center justify-center gap-2.5 mb-8">
-          <BrandLogo className="h-10 w-10 ring-2 ring-[#b8b8bd]/50 shadow-lg shadow-black/10" />
+        <div className="mb-8 flex items-center justify-center gap-2.5">
+          <BrandLogo className="h-10 w-10 ring-2 ring-white/12 shadow-lg shadow-black/30" />
         </div>
 
-        <div className="metal-panel rounded-[2rem] p-8 shadow-[0_28px_60px_rgba(18,22,27,0.1)]">
-          <div className="text-center mb-8">
-            <div className="silver-sheen mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
-              <ShieldCheck className="h-6 w-6 text-[#2b3138]" />
+        <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,23,30,0.94)_0%,rgba(7,10,14,0.98)_100%)] p-8 shadow-[0_30px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-[#d6b36a]/30 bg-[linear-gradient(180deg,rgba(214,179,106,0.18)_0%,rgba(214,179,106,0.06)_100%)]">
+              <ShieldCheck className="h-6 w-6 text-[#e2c98f]" />
             </div>
-            <h1 className="text-xl font-bold text-[#1d1d1f]">Reset password</h1>
-            <p className="mt-2 text-sm text-[#6e6e73]">Choose a new password for your account.</p>
+            <h1 className="text-xl font-bold text-[#f5f7fa]">Reset password</h1>
+            <p className="mt-2 text-sm text-[#98a3b2]">Choose a new password for your account.</p>
           </div>
 
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-5">
             <div className="space-y-1.5">
-              <Label htmlFor="newPassword" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="newPassword" className="text-[13px] font-medium text-[#d8dee6]">
                 New Password
               </Label>
               <div className="relative">
@@ -117,7 +131,7 @@ export function ResetPasswordPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#1d1d1f]"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#8993a1] transition-colors hover:text-[#f5f7fa]"
                   onClick={() => setShowPassword(!showPassword)}
                   aria-label={showPassword ? 'Hide password' : 'Show password'}
                 >
@@ -129,7 +143,7 @@ export function ResetPasswordPage() {
               )}
 
               {passwordValue.length > 0 && (
-                <div className="metal-panel mt-2 rounded-xl p-3">
+                <div className="mt-2 rounded-xl border border-white/8 bg-white/[0.04] p-3">
                   <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1.5">
                     {passwordRules.map((rule) => {
                       const passed = rule.test(passwordValue);
@@ -137,7 +151,7 @@ export function ResetPasswordPage() {
                         <div
                           key={rule.label}
                           className={`flex items-center gap-1.5 text-xs ${
-                            passed ? 'text-emerald-600' : 'text-[#86868b]'
+                            passed ? 'text-emerald-400' : 'text-[#8c97a6]'
                           }`}
                         >
                           {passed ? (
@@ -155,7 +169,7 @@ export function ResetPasswordPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="confirmPassword" className="text-[13px] font-medium text-[#d8dee6]">
                 Confirm Password
               </Label>
               <Input
@@ -173,7 +187,7 @@ export function ResetPasswordPage() {
 
             <Button
               type="submit"
-              className="h-11 w-full rounded-xl font-semibold"
+              className="h-11 w-full rounded-xl bg-[linear-gradient(135deg,#e2c98f_0%,#c69b4e_45%,#8f6a2f_100%)] font-semibold text-[#14181d] shadow-[0_20px_40px_rgba(148,112,47,0.28)] hover:bg-[linear-gradient(135deg,#ead39d_0%,#d2ab60_45%,#9f7739_100%)]"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -182,11 +196,18 @@ export function ResetPasswordPage() {
           </form>
         </div>
 
-        <p className="text-center mt-6 text-sm text-[#86868b]">
-          <Link to="/login" className="hover:text-[#1d1d1f] transition-colors underline underline-offset-4">
+        <p className="mt-6 text-center text-sm text-[#98a3b2]">
+          <Link to="/login" className="text-[#d6b36a] underline underline-offset-4 transition-colors hover:text-[#f0d28f]">
             Back to sign in
           </Link>
         </p>
+      </div>
+      <div className="pointer-events-none absolute right-[9%] top-1/2 hidden w-[14rem] -translate-y-1/2 rounded-[1.75rem] border border-white/8 bg-white/[0.03] p-5 text-left shadow-[0_20px_60px_rgba(0,0,0,0.22)] backdrop-blur-md xl:block">
+        <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-[#8c97a5]">Security Check</p>
+        <div className="mt-4 rounded-2xl border border-[#d6b36a]/18 bg-[#d6b36a]/8 p-3">
+          <p className="text-sm font-semibold text-[#f2d9a1]">Step 3 of 3</p>
+          <p className="mt-1 text-xs leading-5 text-[#c2cbd6]">Once saved, your new password becomes the only valid credential for future sign-ins.</p>
+        </div>
       </div>
     </div>
   );
