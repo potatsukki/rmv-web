@@ -27,6 +27,18 @@ export const api = axios.create({
 let refreshPromise: Promise<string | null> | null = null;
 let csrfRefreshPromise: Promise<string> | null = null;
 let lastTransientSessionToastAt = 0;
+const PUBLIC_AUTH_PATHS = [
+  '/auth/login',
+  '/auth/register',
+  '/auth/google',
+  '/auth/google/complete',
+  '/auth/verify-email',
+  '/auth/verify-2fa',
+  '/auth/resend-otp',
+  '/auth/resend-2fa',
+  '/auth/forgot-password',
+  '/auth/reset-password',
+];
 
 function notifyTransientSessionIssue(message: string) {
   const now = Date.now();
@@ -48,6 +60,10 @@ function isTerminalRefreshFailure(error: unknown) {
   }
 
   return isTerminalAuthStatus(error.response?.status);
+}
+
+function isPublicAuthRequest(requestUrl: string) {
+  return PUBLIC_AUTH_PATHS.some((path) => requestUrl.includes(path));
 }
 
 /**
@@ -130,6 +146,7 @@ api.interceptors.response.use(
     const isRefreshRequest = requestUrl.includes('/auth/refresh-token');
     const isLogoutRequest = requestUrl.includes('/auth/logout');
     const isCsrfRequest = requestUrl.includes('/csrf-token');
+    const isPublicAuth = isPublicAuthRequest(requestUrl);
 
     // ── 403: CSRF token missing or stale — refresh once and retry ──
     // Handle 403 BEFORE 401 because a failed refresh-token POST due to
@@ -157,6 +174,7 @@ api.interceptors.response.use(
       status === 401 &&
       originalRequest &&
       !originalRequest._retry &&
+      !isPublicAuth &&
       !isRefreshRequest &&
       !isLogoutRequest
     ) {
