@@ -1,5 +1,6 @@
 import axios from 'axios';
 import type { AxiosRequestConfig } from 'axios';
+import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/auth.store';
 import { disconnectSocket } from '@/lib/socket';
 import {
@@ -25,6 +26,29 @@ export const api = axios.create({
 // ── Shared in-flight promises to prevent thundering-herd on concurrent 401/403 ──
 let refreshPromise: Promise<string | null> | null = null;
 let csrfRefreshPromise: Promise<string> | null = null;
+let lastTransientSessionToastAt = 0;
+
+function notifyTransientSessionIssue(message: string) {
+  const now = Date.now();
+  if (now - lastTransientSessionToastAt < 5000) {
+    return;
+  }
+
+  lastTransientSessionToastAt = now;
+  toast.error(message, { duration: 5000 });
+}
+
+function isTerminalAuthStatus(status?: number) {
+  return status === 401 || status === 403;
+}
+
+function isTerminalRefreshFailure(error: unknown) {
+  if (!axios.isAxiosError(error)) {
+    return true;
+  }
+
+  return isTerminalAuthStatus(error.response?.status);
+}
 
 /**
  * Deduplicated token refresh — only one POST /auth/refresh-token at a time.
@@ -147,8 +171,14 @@ api.interceptors.response.use(
         originalRequest.headers = originalRequest.headers ?? {};
         originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`;
         return api(originalRequest);
-      } catch {
-        // Refresh failed — clear local auth without triggering another logout request
+      } catch (refreshError) {
+        // Only hard-logout on real auth loss. Transient network/server issues should
+        // leave the current session intact and surface as normal request failures.
+        if (!isTerminalRefreshFailure(refreshError)) {
+          notifyTransientSessionIssue('Temporary connection issue. Your session is still active. Please try again.');
+          return Promise.reject(error);
+        }
+
         disconnectSocket();
         useAuthStore.getState().clearAuthState();
         setAuthRedirectReason('Your session expired or was replaced. Please sign in again.');

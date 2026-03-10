@@ -1,3 +1,4 @@
+import { useEffect, useState } from 'react';
 import { useAuthenticatedUrl, openAuthenticatedFile } from '@/hooks/useUploads';
 
 interface AuthImageProps {
@@ -31,8 +32,13 @@ export function AuthImage({
   onError,
 }: AuthImageProps) {
   const { url, isLoading, error } = useAuthenticatedUrl(fileKey);
+  const [hasRenderError, setHasRenderError] = useState(false);
 
-  if (error) {
+  useEffect(() => {
+    setHasRenderError(false);
+  }, [fileKey, url]);
+
+  if (error || hasRenderError) {
     onError?.();
     return fallback ? <>{fallback}</> : null;
   }
@@ -44,7 +50,12 @@ export function AuthImage({
   }
 
   const img = (
-    <img src={url} alt={alt} className={className} />
+    <img
+      src={url}
+      alt={alt}
+      className={className}
+      onError={() => setHasRenderError(true)}
+    />
   );
 
   if (clickable) {

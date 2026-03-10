@@ -9,6 +9,34 @@ const KEYS = {
   byVisitReport: (visitReportId: string) => [...KEYS.all, 'by-visit-report', visitReportId] as const,
 };
 
+function syncProjectCaches(qc: ReturnType<typeof useQueryClient>, project: Project) {
+  qc.setQueryData(KEYS.detail(project._id), project);
+
+  qc.setQueriesData(
+    { queryKey: KEYS.all },
+    (existing: PaginatedResponse<Project> | Project[] | Project | undefined) => {
+      if (!existing) return existing;
+
+      if (Array.isArray(existing)) {
+        return existing.map((item) => (item._id === project._id ? project : item));
+      }
+
+      if ('items' in existing && Array.isArray(existing.items)) {
+        return {
+          ...existing,
+          items: existing.items.map((item) => (item._id === project._id ? project : item)),
+        };
+      }
+
+      if ('_id' in existing && existing._id === project._id) {
+        return project;
+      }
+
+      return existing;
+    },
+  );
+}
+
 export function useProjects(params?: Record<string, string>) {
   return useQuery({
     queryKey: KEYS.list(params),
@@ -76,7 +104,8 @@ export function useUpdateProject() {
       const { data } = await api.patch<ApiResponse<Project>>(`/projects/${id}`, body);
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (project) => {
+      syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -91,7 +120,8 @@ export function useAssignEngineers() {
       });
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (project) => {
+      syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -114,7 +144,8 @@ export function useAssignFabrication() {
       );
       return data.data;
     },
-    onSuccess: () => {
+    onSuccess: (project) => {
+      syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -138,7 +169,8 @@ export function useReviewInitialDesign() {
       );
       return data.data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (project, variables) => {
+      syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
     },
@@ -163,7 +195,8 @@ export function useResubmitInitialDesign() {
       );
       return data.data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (project, variables) => {
+      syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
     },
@@ -190,7 +223,8 @@ export function useBackfillInitialDesign() {
       );
       return data.data;
     },
-    onSuccess: (_data, variables) => {
+    onSuccess: (project, variables) => {
+      syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
     },

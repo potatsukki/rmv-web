@@ -67,6 +67,18 @@ const LIFECYCLE_STEPS = [
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
+const IMAGE_FILE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif']);
+
+const getFileName = (fileKey: string) => fileKey.split('/').pop() || fileKey;
+
+const getFileExtension = (fileKey: string) => {
+  const fileName = getFileName(fileKey);
+  const extension = fileName.split('.').pop();
+  return extension ? extension.toLowerCase() : '';
+};
+
+const isImageFileKey = (fileKey: string) => IMAGE_FILE_EXTENSIONS.has(getFileExtension(fileKey));
+
 // ── Media Thumbnail Component (shows real image thumbnail) ──
 function MediaThumbnail({ fileKey, type, onPreview }: { fileKey: string; type: 'image' | 'video'; onPreview?: (key: string) => void }) {
   if (type === 'image') {
@@ -270,7 +282,12 @@ export function ProjectDetailPage() {
     visitReport?.measurements?.thickness != null ||
     visitReport?.measurements?.raw,
   );
-  const canReviewInitialDesign = Boolean((isAdmin || isAssignedEngineer) && hasInitialDesign && !hasBackfilledInitialDesign);
+  const canReviewInitialDesign = Boolean(
+    (isAdmin || isAssignedEngineer)
+    && hasInitialDesign
+    && !hasBackfilledInitialDesign
+    && project?.designReviewStatus === 'pending',
+  );
   const canManageInitialDesign = Boolean((isAdmin || isAssignedSales) && !blueprint && !hasBackfilledInitialDesign);
   const canBackfillInitialDesign = Boolean(
     isAdmin &&
@@ -897,31 +914,60 @@ export function ProjectDetailPage() {
                 <p className="text-sm text-[#6e6e73]">
                   {hasBackfilledInitialDesign
                     ? 'This package was added later as synthetic demo reference data. It documents a backfill for this historical record and does not mean the original review step happened on time.'
-                    : 'Sales uploaded the rough sketch, inspiration, or reference files collected before the ocular visit. Engineering should review this package before continuing.'}
+                    : 'Sales uploaded the rough sketch, inspiration, or reference files collected during and after the ocular visit. Engineering should review this package before continuing.'}
                 </p>
 
                 {!!project.initialDesignKeys?.length && (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+                  <div className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
                     {project.initialDesignKeys.map((key) => (
                       <button
                         key={key}
                         type="button"
                         onClick={() => openAuthenticatedFile(key)}
-                        className="group relative aspect-[4/3] overflow-hidden rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]"
+                        className="group relative w-full overflow-hidden rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] text-left"
                       >
-                        <AuthImage
-                          fileKey={key}
-                          alt={key.split('/').pop() || 'Initial design'}
-                          className="h-full w-full object-cover transition-transform group-hover:scale-105"
-                          fallback={
-                            <div className="flex h-full w-full flex-col items-center justify-center gap-2 p-3 text-center">
-                              <Image className="h-7 w-7 text-[#86868b]" />
-                              <span className="line-clamp-2 break-all text-[11px] text-[#6e6e73]">
-                                {key.split('/').pop()}
+                        {isImageFileKey(key) ? (
+                          <div className="relative aspect-[4/3]">
+                            <AuthImage
+                              fileKey={key}
+                              alt={getFileName(key) || 'Initial design'}
+                              className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
+                              fallback={
+                                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#f5f5f7] px-4 py-5 text-center">
+                                  <Image className="h-8 w-8 text-[#86868b]" />
+                                  <span className="line-clamp-2 break-words text-xs font-medium text-[#3a3a3e]">
+                                    {getFileName(key)}
+                                  </span>
+                                  <span className="text-[11px] uppercase tracking-[0.2em] text-[#86868b]">
+                                    {getFileExtension(key) || 'file'}
+                                  </span>
+                                </div>
+                              }
+                            />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-3 py-2">
+                              <span className="block truncate text-xs font-medium text-white">
+                                {getFileName(key)}
                               </span>
                             </div>
-                          }
-                        />
+                          </div>
+                        ) : (
+                          <div className="flex min-h-[112px] items-center gap-3 px-4 py-4 sm:min-h-[132px]">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#6e6e73] shadow-sm">
+                              <FileText className="h-6 w-6" />
+                            </div>
+                            <div className="min-w-0">
+                              <p className="truncate text-sm font-medium text-[#1d1d1f]">
+                                {getFileName(key)}
+                              </p>
+                              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#86868b]">
+                                {getFileExtension(key) || 'file'}
+                              </p>
+                              <p className="mt-2 text-xs text-[#6e6e73]">
+                                Tap to open this reference file.
+                              </p>
+                            </div>
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>

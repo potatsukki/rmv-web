@@ -66,11 +66,13 @@ import {
   Environment,
   SLOT_CODES,
 } from '@/lib/constants';
-import type { LineItem, SiteConditions } from '@/lib/types';
+import type { LineItem, SiteConditions, VisitReport } from '@/lib/types';
 
 
 const DEFAULT_SITE_CONDITIONS: SiteConditions = {
   environment: Environment.INDOOR,
+  hasElectrical: false,
+  hasPlumbing: false,
 };
 
 /** Mongoose populate may return an object with _id; this always gives the raw string ID. */
@@ -79,6 +81,90 @@ function rawId(field: unknown): string {
   if (field && typeof field === 'object' && '_id' in (field as Record<string, unknown>))
     return String((field as Record<string, unknown>)._id);
   return String(field);
+}
+
+function isNonEmptyString(value?: string | null) {
+  return Boolean(value?.trim());
+}
+
+function getIncompleteOcularFields(report: {
+  actualVisitDateTime?: string;
+  lineItems?: LineItem[];
+  measurements?: {
+    length?: number;
+    width?: number;
+    height?: number;
+    area?: number;
+    thickness?: number;
+    raw?: string;
+  };
+  siteConditions?: SiteConditions;
+  materials?: string;
+  finishes?: string;
+  preferredDesign?: string;
+  photoKeys?: string[];
+  initialDesignKeys?: string[];
+  initialDesignNotes?: string;
+}) {
+  const missing: string[] = [];
+
+  if (!isNonEmptyString(report.actualVisitDateTime)) {
+    missing.push('actual visit date and time');
+  }
+
+  const lineItems = report.lineItems || [];
+  if (lineItems.length > 0) {
+    lineItems.forEach((item, index) => {
+      const isComplete = isNonEmptyString(item.label)
+        && item.quantity >= 1
+        && item.length != null
+        && item.width != null
+        && item.height != null
+        && item.thickness != null
+        && item.area != null
+        && isNonEmptyString(item.notes);
+
+      if (!isComplete) {
+        missing.push(`complete measurement details for line item ${index + 1}`);
+      }
+    });
+  } else {
+    const legacy = report.measurements;
+    const hasCompleteLegacyMeasurements = Boolean(
+      legacy
+      && legacy.length != null
+      && legacy.width != null
+      && legacy.height != null
+      && legacy.thickness != null
+      && legacy.area != null
+      && isNonEmptyString(legacy.raw),
+    );
+
+    if (!hasCompleteLegacyMeasurements) {
+      missing.push('at least one complete measurement item');
+    }
+  }
+
+  if (!isNonEmptyString(report.siteConditions?.environment)) missing.push('site environment');
+  if (!isNonEmptyString(report.siteConditions?.floorType)) missing.push('floor type');
+  if (!isNonEmptyString(report.siteConditions?.wallMaterial)) missing.push('wall material');
+  if (report.siteConditions?.hasElectrical === undefined) missing.push('electrical nearby status');
+  if (report.siteConditions?.hasPlumbing === undefined) missing.push('plumbing nearby status');
+  if (!isNonEmptyString(report.siteConditions?.accessNotes)) missing.push('access notes');
+  if (!isNonEmptyString(report.siteConditions?.obstaclesOrConstraints)) missing.push('obstacles or constraints');
+
+  if (!isNonEmptyString(report.materials)) missing.push('materials');
+  if (!isNonEmptyString(report.finishes)) missing.push('finishes');
+  if (!isNonEmptyString(report.preferredDesign)) missing.push('preferred design');
+  if ((report.photoKeys?.length || 0) === 0) missing.push('site photos');
+  if ((report.initialDesignKeys?.length || 0) === 0) missing.push('initial design files');
+  if (!isNonEmptyString(report.initialDesignNotes)) missing.push('initial design notes');
+
+  return [...new Set(missing)];
+}
+
+function formatIncompleteOcularMessage(missingFields: string[]) {
+  return `You have not yet provided information on: ${missingFields.join(', ')}.`;
 }
 
 export function VisitReportPage() {
@@ -270,32 +356,20 @@ export function VisitReportPage() {
       ? serviceTypeCustom || 'Custom'
       : SERVICE_TYPE_LABELS[serviceType] || serviceType;
 
-  const hasMeasuredLineItems = lineItems.some((item) =>
-    item.length != null ||
-    item.width != null ||
-    item.height != null ||
-    item.area != null ||
-    item.thickness != null,
-  );
-
-  const hasLegacyMeasurements = Boolean(
-    legacyLength || legacyWidth || legacyHeight || legacyThickness || legacyMeasurementNotes,
-  );
-
   const saveDraft = async ({
     showSuccessToast = false,
     showErrorToast = true,
   }: {
     showSuccessToast?: boolean;
     showErrorToast?: boolean;
-  } = {}) => {
+  } = {}): Promise<VisitReport | null> => {
     try {
       let normalizedActualVisitDateTime: string | undefined;
       if (actualVisitDateTime) {
         const parsedDate = new Date(actualVisitDateTime);
         if (Number.isNaN(parsedDate.getTime())) {
           if (showErrorToast) toast.error('Invalid visit date/time');
-          return false;
+          return null;
         }
         normalizedActualVisitDateTime = parsedDate.toISOString();
       }
@@ -312,7 +386,7 @@ export function VisitReportPage() {
         if (!Object.keys(measurements).length) measurements = undefined;
       }
 
-      await updateMutation.mutateAsync({
+      const savedReport = await updateMutation.mutateAsync({
         id: id!,
         visitType: visitType || undefined,
         actualVisitDateTime: normalizedActualVisitDateTime,
@@ -340,19 +414,21 @@ export function VisitReportPage() {
           designPreferences: designPreferences || undefined,
           materialOptions: materialOptions || undefined,
           projectScope: projectScope || undefined,
-          initialDesignKeys,
-          initialDesignNotes: initialDesignNotes || undefined,
           recommendedOcularDate: recommendedOcularDate
             ? new Date(`${recommendedOcularDate}T00:00:00`).toISOString()
             : undefined,
           recommendedOcularSlot: recommendedOcularSlot || undefined,
         }),
+        ...(visitType === 'ocular' && {
+          initialDesignKeys,
+          initialDesignNotes: initialDesignNotes || undefined,
+        }),
       });
       if (showSuccessToast) toast.success('Report saved');
-      return true;
+      return savedReport;
     } catch (err) {
       if (showErrorToast) toast.error(extractErrorMessage(err, 'Failed to save report'));
-      return false;
+      return null;
     }
   };
 
@@ -362,16 +438,40 @@ export function VisitReportPage() {
 
   const handleBeforeProjectSwitch = async () => {
     if (!canEdit) return true;
-    return saveDraft({ showSuccessToast: false, showErrorToast: true });
+    const saved = await saveDraft({ showSuccessToast: false, showErrorToast: true });
+    return Boolean(saved);
   };
 
   const handleSubmit = async () => {
     const isOcular = report?.visitType === 'ocular';
 
-    if (isOcular && !hasMeasuredLineItems && !hasLegacyMeasurements) {
-      toast.error('Add at least one measured line item or legacy measurement before submitting an ocular report.');
-      setSubmitOpen(false);
-      return;
+    if (isOcular) {
+      const missingFields = getIncompleteOcularFields({
+        actualVisitDateTime,
+        lineItems,
+        measurements: isLegacyReport
+          ? {
+            length: legacyLength ? parseFloat(legacyLength) : undefined,
+            width: legacyWidth ? parseFloat(legacyWidth) : undefined,
+            height: legacyHeight ? parseFloat(legacyHeight) : undefined,
+            thickness: legacyThickness ? parseFloat(legacyThickness) : undefined,
+            raw: legacyMeasurementNotes || undefined,
+          }
+          : undefined,
+        siteConditions,
+        materials,
+        finishes,
+        preferredDesign,
+        photoKeys,
+        initialDesignKeys,
+        initialDesignNotes,
+      });
+
+      if (missingFields.length > 0) {
+        toast.error(formatIncompleteOcularMessage(missingFields), { duration: 7000 });
+        setSubmitOpen(false);
+        return;
+      }
     }
 
     try {
@@ -379,6 +479,28 @@ export function VisitReportPage() {
       if (!saved) {
         setSubmitOpen(false);
         return;
+      }
+
+      if (isOcular) {
+        const missingPersistedFields = getIncompleteOcularFields({
+          actualVisitDateTime: saved.actualVisitDateTime,
+          lineItems: saved.lineItems,
+          measurements: saved.measurements,
+          siteConditions: saved.siteConditions,
+          materials: saved.materials,
+          finishes: saved.finishes,
+          preferredDesign: saved.preferredDesign,
+          photoKeys: saved.photoKeys,
+          initialDesignKeys: saved.initialDesignKeys,
+          initialDesignNotes: saved.initialDesignNotes,
+        });
+
+        if (missingPersistedFields.length > 0) {
+          setSubmitOpen(false);
+          toast.error(formatIncompleteOcularMessage(missingPersistedFields), { duration: 7000 });
+          await refetch();
+          return;
+        }
       }
 
       await submitMutation.mutateAsync(id!);
@@ -610,23 +732,6 @@ export function VisitReportPage() {
                 {report.projectScope && (
                   <InfoRow icon={FolderOpen} label="Project Scope" value={report.projectScope} />
                 )}
-                {(report.initialDesignKeys?.length || report.initialDesignNotes) && (
-                  <div className="border-t border-gray-100 pt-3 space-y-3">
-                    <p className="text-[13px] font-semibold text-gray-800">Initial Design Package</p>
-                    {!!report.initialDesignKeys?.length && (
-                      <FileUpload
-                        folder="visit-reports/initial-design"
-                        existingKeys={report.initialDesignKeys}
-                        onUploadComplete={() => {}}
-                        readOnly
-                        label="Initial design files"
-                      />
-                    )}
-                    {report.initialDesignNotes && (
-                      <InfoRow icon={Paintbrush} label="Initial Design Notes" value={report.initialDesignNotes} />
-                    )}
-                  </div>
-                )}
                 {(report.recommendedOcularDate || report.recommendedOcularSlot) && (
                   <div className="border-t border-gray-100 pt-3">
                     <p className="text-[13px] font-semibold text-gray-800 mb-2">Recommended Ocular Schedule</p>
@@ -744,6 +849,31 @@ export function VisitReportPage() {
                   {report.siteConditions.hasElectrical && <span>Electrical nearby</span>}
                   {report.siteConditions.hasPlumbing && <span>Plumbing nearby</span>}
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {report.visitType === 'ocular' && (report.initialDesignKeys?.length || report.initialDesignNotes) && (
+            <Card className="rounded-xl border-gray-100 shadow-sm">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                  <Paintbrush className="h-5 w-5 text-gray-400" />
+                  Initial Design
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!!report.initialDesignKeys?.length && (
+                  <FileUpload
+                    folder="visit-reports/initial-design"
+                    existingKeys={report.initialDesignKeys}
+                    onUploadComplete={() => {}}
+                    readOnly
+                    label="Initial design files"
+                  />
+                )}
+                {report.initialDesignNotes && (
+                  <InfoRow icon={Paintbrush} label="Initial Design Notes" value={report.initialDesignNotes} />
+                )}
               </CardContent>
             </Card>
           )}
@@ -905,36 +1035,6 @@ export function VisitReportPage() {
                     placeholder="Brief description of the overall project scope and deliverables..."
                     className="min-h-[60px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
                   />
-                </div>
-
-                <div className="rounded-xl border border-blue-100 bg-blue-50/40 p-4 space-y-4">
-                  <div>
-                    <p className="text-[13px] font-semibold text-gray-800">Initial Design Package</p>
-                    <p className="mt-1 text-sm text-gray-600">
-                      Upload the rough sketch, inspiration images, PDFs, or reference files gathered during the consultation before the ocular visit.
-                    </p>
-                  </div>
-                  <FileUpload
-                    folder="visit-reports/initial-design"
-                    accept="image/*,.pdf"
-                    maxSizeMB={5}
-                    maxFiles={10}
-                    label="Upload initial design files"
-                    existingKeys={initialDesignKeys}
-                    onUploadComplete={setInitialDesignKeys}
-                    onUploadingChange={setInitialDesignUploading}
-                  />
-                  <div className="space-y-1.5">
-                    <Label className="text-[13px] font-medium text-gray-700">
-                      Initial Design Notes
-                    </Label>
-                    <Textarea
-                      value={initialDesignNotes}
-                      onChange={(e) => setInitialDesignNotes(e.target.value)}
-                      placeholder="Explain the concept, customer references, or assumptions behind the uploaded design package..."
-                      className="min-h-[80px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
-                    />
-                  </div>
                 </div>
 
                 <div className="border-t border-gray-100 pt-4">
@@ -1132,6 +1232,41 @@ export function VisitReportPage() {
                   onChange={(e) => setPreferredDesign(e.target.value)}
                   placeholder="e.g., Modern minimalist"
                   className="h-11 rounded-xl border-gray-200"
+                />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="rounded-xl border-gray-100 shadow-sm">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
+                <Paintbrush className="h-5 w-5 text-gray-400" />
+                Initial Design
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-gray-600">
+                After capturing the site measurements and ocular findings, attach the initial design references or sketch notes that engineering should review next.
+              </p>
+              <FileUpload
+                folder="visit-reports/initial-design"
+                accept="image/*,.pdf"
+                maxSizeMB={5}
+                maxFiles={10}
+                label="Upload initial design files"
+                existingKeys={initialDesignKeys}
+                onUploadComplete={setInitialDesignKeys}
+                onUploadingChange={setInitialDesignUploading}
+              />
+              <div className="space-y-1.5">
+                <Label className="text-[13px] font-medium text-gray-700">
+                  Initial Design Notes
+                </Label>
+                <Textarea
+                  value={initialDesignNotes}
+                  onChange={(e) => setInitialDesignNotes(e.target.value)}
+                  placeholder="Explain the design direction, references, or assumptions based on the actual ocular findings."
+                  className="min-h-[80px] rounded-xl border-gray-200"
                 />
               </div>
             </CardContent>

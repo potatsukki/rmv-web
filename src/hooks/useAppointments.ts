@@ -11,6 +11,11 @@ const KEYS = {
   slots: (date: string, type: string) => [...KEYS.all, 'slots', date, type] as const,
 };
 
+function syncAppointmentCaches(qc: ReturnType<typeof useQueryClient>, appointment: Appointment) {
+  qc.setQueryData(KEYS.detail(appointment._id), appointment);
+  qc.invalidateQueries({ queryKey: KEYS.all });
+}
+
 // ── Queries ──
 export function useAppointments(params?: Record<string, string>) {
   return useQuery({
@@ -111,9 +116,8 @@ export function useConfirmAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/confirm`, body);
       return data.data;
     },
-    onSettled: (_result, _error, variables) => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
-      qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }
@@ -125,9 +129,8 @@ export function useCompleteAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/complete`);
       return data.data;
     },
-    onSettled: (_result, _error, id) => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
-      qc.invalidateQueries({ queryKey: KEYS.detail(id) });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }
@@ -139,8 +142,8 @@ export function useUpdateVisitStatus() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/visit-status/${status}`);
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }
@@ -152,8 +155,8 @@ export function useCancelAppointment() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/cancel`, { reason });
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }
@@ -165,8 +168,8 @@ export function useMarkNoShow() {
       const { data } = await api.post<ApiResponse<Appointment>>(`/appointments/${id}/no-show`, {});
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }
@@ -301,8 +304,8 @@ export function useVerifyOcularFee() {
       );
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
       qc.invalidateQueries({ queryKey: ['ocular-fee-queue'] });
     },
   });
@@ -318,8 +321,8 @@ export function useDeclineOcularFee() {
       );
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
       qc.invalidateQueries({ queryKey: ['ocular-fee-queue'] });
     },
   });
@@ -371,30 +374,6 @@ export function useSubmitSiteDetails() {
   });
 }
 
-export function useSubmitInitialDesign() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      initialDesignKeys,
-      initialDesignNotes,
-    }: {
-      id: string;
-      initialDesignKeys?: string[];
-      initialDesignNotes?: string;
-    }) => {
-      const { data } = await api.post<ApiResponse<Appointment>>(
-        `/appointments/${id}/initial-design`,
-        { initialDesignKeys, initialDesignNotes },
-      );
-      return data.data;
-    },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
-    },
-  });
-}
-
 export function useSkipSiteDetails() {
   const qc = useQueryClient();
   return useMutation({
@@ -421,8 +400,8 @@ export function useRefundOcularFee() {
       );
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }
@@ -468,8 +447,8 @@ export function useCustomerSubmitLocation() {
       );
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }
@@ -492,8 +471,8 @@ export function useAgentFinalizeOcular() {
       );
       return data.data;
     },
-    onSettled: () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
     },
   });
 }

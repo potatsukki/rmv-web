@@ -1,4 +1,6 @@
 import { create } from 'zustand';
+import axios from 'axios';
+import toast from 'react-hot-toast';
 import type { User } from '@/lib/types';
 import { api } from '@/lib/api';
 import { disconnectSocket } from '@/lib/socket';
@@ -85,8 +87,18 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
     try {
       const { data } = await api.get('/auth/me');
       set({ user: data.data, isAuthenticated: true, isLoading: false });
-    } catch {
-      get().clearAuthState();
+    } catch (error) {
+      const status = axios.isAxiosError(error) ? error.response?.status : undefined;
+
+      if (status === 401 || status === 403) {
+        get().clearAuthState();
+        return;
+      }
+
+      toast.error('Temporary connection issue. We could not refresh your account details, but your session is still active.', {
+        duration: 5000,
+      });
+      set({ isLoading: false });
     }
   },
 }));

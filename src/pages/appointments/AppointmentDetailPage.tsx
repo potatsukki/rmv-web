@@ -23,7 +23,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { FileUpload } from '@/components/shared/FileUpload';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
@@ -37,7 +36,6 @@ import {
   useRefundOcularFee,
   useAgentFinalizeOcular,
   useCustomerSubmitLocation,
-  useSubmitInitialDesign,
 } from '@/hooks/useAppointments';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { useSubmitRefundRequest, useMyRefundRequests } from '@/hooks/useRefunds';
@@ -62,7 +60,6 @@ export function AppointmentDetailPage() {
   const refundMutation = useRefundOcularFee();
   const finalizeMutation = useAgentFinalizeOcular();
   const submitLocationMutation = useCustomerSubmitLocation();
-  const submitInitialDesignMutation = useSubmitInitialDesign();
 
   // Customer location submission state
   const [customerLocationPin, setCustomerLocationPin] = useState<MapPoint | null>(null);
@@ -108,17 +105,12 @@ export function AppointmentDetailPage() {
   const [customerRefundAccountName, setCustomerRefundAccountName] = useState('');
   const [customerRefundAccountNumber, setCustomerRefundAccountNumber] = useState('');
   const [customerRefundBankName, setCustomerRefundBankName] = useState('');
-  const [initialDesignKeys, setInitialDesignKeys] = useState<string[]>([]);
-  const [initialDesignNotes, setInitialDesignNotes] = useState('');
-  const [initialDesignUploading, setInitialDesignUploading] = useState(false);
 
   const canConfirmAppointment = !!(isAgent || isAdmin);
   const canCompleteAppointment = !!user?.roles.includes(Role.SALES_STAFF);
   const isStaff = user?.roles.some((r) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(r),
   );
-  const isAssignedSalesStaff = isSalesStaff && appt?.salesStaffId === user?._id;
-
   // Philippines bounding box (rough)
   const PH_BOUNDS = { latMin: 4.5, latMax: 21.5, lngMin: 116.0, lngMax: 127.0 };
 
@@ -162,11 +154,6 @@ export function AppointmentDetailPage() {
         .catch(() => {});
     }
   }, [canConfirmAppointment]);
-
-  useEffect(() => {
-    setInitialDesignKeys(appt?.initialDesignKeys || []);
-    setInitialDesignNotes(appt?.initialDesignNotes || '');
-  }, [appt?.initialDesignKeys, appt?.initialDesignNotes]);
 
   // Auto-detect previous consultation's sales staff for ocular appointments
   useEffect(() => {
@@ -241,25 +228,6 @@ export function AppointmentDetailPage() {
       toast.success('Marked as no-show');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to mark as no-show'));
-    }
-  };
-
-  const handleSubmitInitialDesign = async () => {
-    if (initialDesignKeys.length === 0 && !initialDesignNotes.trim()) {
-      toast.error('Add at least one design file or a note before submitting');
-      return;
-    }
-
-    try {
-      await submitInitialDesignMutation.mutateAsync({
-        id: id!,
-        initialDesignKeys,
-        initialDesignNotes: initialDesignNotes.trim() || undefined,
-      });
-      toast.success('Initial design submitted. This draft is now attached to the appointment.', { duration: 5000 });
-      refetch();
-    } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to submit initial design'));
     }
   };
 
@@ -966,65 +934,6 @@ export function AppointmentDetailPage() {
                 </span>
               )}
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {(isAssignedSalesStaff || ((isAgent || isAdmin || isSalesStaff) && appt.initialDesignStatus === 'submitted')) && (
-        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-lg text-[#1d1d1f] flex items-center gap-2">
-              <Image className="h-5 w-5 text-[#6e6e73]" />
-              Sales Initial Design
-              {appt.initialDesignStatus === 'submitted' && (
-                <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
-                  <CheckCircle2 className="h-3 w-3" /> Submitted
-                </span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-[#6e6e73]">
-              Upload the rough sketches or reference images collected during the initial customer conversation before the ocular visit.
-            </p>
-
-            <FileUpload
-              folder="appointments/initial-design"
-              accept="image/*,.pdf"
-              maxSizeMB={5}
-              maxFiles={10}
-              label="Upload initial design files"
-              existingKeys={initialDesignKeys}
-              onUploadComplete={setInitialDesignKeys}
-              onUploadingChange={setInitialDesignUploading}
-              readOnly={!isAssignedSalesStaff || ![AppointmentStatus.CONFIRMED, AppointmentStatus.ON_THE_WAY].includes(appt.status as AppointmentStatus)}
-            />
-
-            <div>
-              <Label htmlFor="initial-design-notes" className="text-sm font-medium text-[#3a3a3e]">Design Notes</Label>
-              <Textarea
-                id="initial-design-notes"
-                value={initialDesignNotes}
-                onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setInitialDesignNotes(e.target.value)}
-                placeholder="Describe the customer's initial preferences, style direction, or clarifications for engineering."
-                className="mt-2 min-h-[100px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
-                disabled={!isAssignedSalesStaff || ![AppointmentStatus.CONFIRMED, AppointmentStatus.ON_THE_WAY].includes(appt.status as AppointmentStatus)}
-              />
-            </div>
-
-            {isAssignedSalesStaff && [AppointmentStatus.CONFIRMED, AppointmentStatus.ON_THE_WAY].includes(appt.status as AppointmentStatus) && (
-              <Button
-                onClick={handleSubmitInitialDesign}
-                disabled={submitInitialDesignMutation.isPending || initialDesignUploading}
-                className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl w-full sm:w-auto"
-              >
-                {submitInitialDesignMutation.isPending || initialDesignUploading ? (
-                  <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Saving...</>
-                ) : (
-                  <><Image className="mr-2 h-4 w-4" />Save Initial Design</>
-                )}
-              </Button>
-            )}
           </CardContent>
         </Card>
       )}
