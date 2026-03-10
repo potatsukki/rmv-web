@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, Appointment, PaginatedResponse, CustomerSiteDetails } from '@/lib/types';
 import type { SlotCode } from '@/lib/constants';
+import { extractItems } from '@/lib/utils';
 
 // ── Keys ──
 const KEYS = {
@@ -335,7 +336,7 @@ export function usePendingOcularFees() {
       const { data } = await api.get<ApiResponse<Appointment[]>>(
         '/appointments/ocular-fee-queue',
       );
-      return data.data;
+      return extractItems<Appointment>(data.data);
     },
   });
 }
@@ -348,7 +349,7 @@ export function useUnpaidOcularFees() {
         '/appointments',
         { params: { type: 'ocular', ocularFeeStatus: 'pending', limit: '50' } },
       );
-      return data.data.items;
+      return extractItems<Appointment>(data.data);
     },
   });
 }

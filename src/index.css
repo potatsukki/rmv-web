@@ -250,6 +250,31 @@ a, button, input, select, textarea,
   backface-visibility: hidden;
 }
 
+/* Dark gallery scrollbar for modal image previews */
+.modal-gallery-scroll {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(196, 204, 214, 0.42) rgba(255, 255, 255, 0.04);
+}
+
+.modal-gallery-scroll::-webkit-scrollbar {
+  width: 10px;
+}
+
+.modal-gallery-scroll::-webkit-scrollbar-track {
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 999px;
+}
+
+.modal-gallery-scroll::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, rgba(231, 236, 242, 0.64) 0%, rgba(150, 160, 173, 0.72) 100%);
+  border: 2px solid rgba(17, 20, 26, 0.88);
+  border-radius: 999px;
+}
+
+.modal-gallery-scroll::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, rgba(241, 245, 249, 0.78) 0%, rgba(171, 183, 195, 0.88) 100%);
+}
+
 /* ─── Decorative float animations (GPU-composited via translate3d) ─── */
 @keyframes float-slow {
   0%, 100% { transform: translate3d(0, 0, 0); }

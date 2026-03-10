@@ -138,6 +138,8 @@ interface KpiItem {
   value: string | number;
   icon: React.ElementType;
   description?: string;
+  detail?: string;
+  path: string;
   trend?: 'up' | 'down' | 'neutral';
   color: string;
 }
@@ -163,6 +165,34 @@ function getRoleGreeting(role: Role): string {
   return greetings[role] || 'Welcome to your dashboard.';
 }
 
+function getRoleWorkspaceLabel(role: Role): string {
+  const labels: Partial<Record<Role, string>> = {
+    [Role.CUSTOMER]: 'Customer workspace',
+    [Role.APPOINTMENT_AGENT]: 'Scheduling workspace',
+    [Role.SALES_STAFF]: 'Sales workspace',
+    [Role.ENGINEER]: 'Engineering workspace',
+    [Role.CASHIER]: 'Cashiering workspace',
+    [Role.FABRICATION_STAFF]: 'Fabrication workspace',
+    [Role.ADMIN]: 'Operations workspace',
+  };
+
+  return labels[role] || 'Workspace';
+}
+
+function getRoleActionHeading(role: Role): { title: string; description: string } {
+  const headings: Partial<Record<Role, { title: string; description: string }>> = {
+    [Role.CUSTOMER]: { title: 'Your next steps', description: 'The fastest paths for booking, tracking work, and paying dues.' },
+    [Role.APPOINTMENT_AGENT]: { title: 'Scheduling actions', description: 'Prioritize booking flow and pending appointment requests first.' },
+    [Role.SALES_STAFF]: { title: 'Sales actions', description: 'Focus on visits, reports, and cash handoff tasks tied to active customers.' },
+    [Role.ENGINEER]: { title: 'Engineering actions', description: 'Review incoming technical work before project execution slows down.' },
+    [Role.CASHIER]: { title: 'Finance actions', description: 'Handle proofs, collections, and refund queues before reporting.' },
+    [Role.FABRICATION_STAFF]: { title: 'Workshop actions', description: 'Stay on top of active fabrication jobs and today’s completions.' },
+    [Role.ADMIN]: { title: 'Operational actions', description: 'Use these shortcuts to resolve system bottlenecks quickly.' },
+  };
+
+  return headings[role] || { title: 'Quick Actions', description: 'Primary actions for this workspace.' };
+}
+
 function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): KpiItem[] {
   const d = data as Record<string, number> | undefined;
 
@@ -171,58 +201,60 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     value: d?.activeProjects ?? 0,
     icon: FolderOpen,
     description: 'In progress',
+    detail: 'Projects that are still moving through design, payment, fabrication, or delivery.',
+    path: '/projects',
     color: 'text-[#1d1d1f] bg-[#f0f0f5]',
   };
 
   switch (role) {
     case Role.CUSTOMER:
       return [
-        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', detail: 'Visit requests you submitted that are still waiting for the team to confirm a schedule.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         activeProjects,
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Invoices due', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Invoices due', detail: 'Payments that still need your action before the project can move forward.', path: '/payments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently in the workshop and not yet ready for installation or handover.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.APPOINTMENT_AGENT:
       return [
-        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Scheduled for today', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Need action', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Scheduled for today', detail: 'Appointments already booked for today that you may need to monitor or coordinate.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Need action', detail: 'New visit requests waiting for assignment, confirmation, or follow-up.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.SALES_STAFF:
       return [
-        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Visits for today', detail: 'Customer visits assigned to you today, including office and ocular appointments.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', detail: 'Visit reports that still need to be completed or corrected before project handoff.', path: '/visit-reports', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', detail: 'Cash-based ocular fees you still need to collect and turn over.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.ENGINEER:
       return [
         activeProjects,
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'In workshop', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Review', value: d?.pendingBlueprints ?? 0, icon: FileText, description: 'Blueprints', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'In workshop', detail: 'Projects that already left engineering review and are now being built by fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Review', value: d?.pendingBlueprints ?? 0, icon: FileText, description: 'Blueprints', detail: 'Blueprint packages waiting for your review, approval, or revision request.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.CASHIER:
       return [
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', detail: 'Submitted payment proofs that still need cashier review before they can be marked paid.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash transactions that still need collection, confirmation, or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         activeProjects,
       ];
     case Role.FABRICATION_STAFF:
       return [
         activeProjects,
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Active jobs', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Completed Today', value: d?.completedToday ?? 0, icon: Activity, description: 'Finished', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Active jobs', detail: 'Projects currently assigned to the workshop and still under fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Completed Today', value: d?.completedToday ?? 0, icon: Activity, description: 'Finished', detail: 'Fabrication tasks or project stages marked complete today.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.ADMIN:
       return [
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
         activeProjects,
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Proofs to verify', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Appointment requests', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Team Members', value: d?.totalUsers ?? 0, icon: Users, description: 'Active accounts', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Proofs to verify', detail: 'Payment submissions waiting for cashier review or admin visibility.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', detail: 'All appointments scheduled for today across the operation.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently active in the workshop.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Appointment requests', detail: 'Customer appointment requests still waiting for scheduling action.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash-linked payments still waiting for collection or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Team Members', value: d?.totalUsers ?? 0, icon: Users, description: 'Active accounts', detail: 'User accounts currently active in the system.', path: '/users', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     default:
       return [activeProjects];
@@ -279,7 +311,7 @@ function getRoleActions(role: Role): QuickAction[] {
         { label: 'Appointments', path: '/appointments', icon: CalendarDays, description: 'Manage schedule', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
         { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'All projects', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
         { label: 'Cashier Queue', path: '/cashier-queue', icon: CreditCard, description: 'Verify proofs', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
-        { label: 'Team', path: '/users', icon: Users, description: 'Manage staff', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
+        { label: 'Manage Accounts', path: '/users', icon: Users, description: 'User access and roles', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
         { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Analytics', color: 'from-[#5a5a5e] to-[#4a4a4e]' },
         { label: 'Settings', path: '/settings', icon: Settings, description: 'System config', color: 'from-[#6a6a6e] to-[#5a5a5e]' },
       );
@@ -313,6 +345,9 @@ export function DashboardPage() {
     data as Record<string, unknown> | undefined,
   );
   const actions = getRoleActions(primaryRole as Role);
+  const featuredKpis = kpis.slice(0, Math.min(2, kpis.length));
+  const secondaryKpis = kpis.slice(featuredKpis.length);
+  const actionHeading = getRoleActionHeading(primaryRole as Role);
 
   const greeting = () => {
     const hour = new Date().getHours();
@@ -322,11 +357,17 @@ export function DashboardPage() {
   };
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a8a93]">
+            Overview
+          </p>
+          <div className="mt-2 inline-flex items-center rounded-full bg-[#f0f0f5] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#4b4b53]">
+            {getRoleWorkspaceLabel(primaryRole as Role)}
+          </div>
+          <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f] sm:text-[2rem]">
             {greeting()}, {user?.firstName}
           </h2>
           <p className="text-[#6e6e73] mt-1 text-sm">
@@ -387,62 +428,103 @@ export function DashboardPage() {
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-4 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-2">
         {isLoading
-          ? Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="border-[#c8c8cd]/50 shadow-sm">
-                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <Skeleton className="h-4 w-24" />
-                  <Skeleton className="h-8 w-8 rounded-lg" />
-                </CardHeader>
-                <CardContent>
-                  <Skeleton className="h-7 w-16" />
-                  <Skeleton className="mt-2 h-3 w-24" />
+          ? Array.from({ length: 2 }).map((_, i) => (
+              <Card key={i} className="overflow-hidden border-[#c8c8cd]/50 bg-white/90 shadow-sm">
+                <CardContent className="p-4 sm:p-5">
+                  <div className="h-10 w-10 rounded-2xl bg-[#f0f0f5] sm:h-11 sm:w-11" />
+                  <Skeleton className="mt-4 h-8 w-20 sm:mt-5 sm:h-9 sm:w-32" />
+                  <Skeleton className="mt-2 h-4 w-16 sm:w-40" />
                 </CardContent>
               </Card>
             ))
-          : kpis.map((item, i) => {
+          : featuredKpis.map((item, i) => {
               const colorParts = item.color.split(' ');
               const textColor = colorParts[0] || '';
               const bgColor = colorParts[1] || '';
 
               return (
-                <Card
-                  key={i}
-                  className="border-[#c8c8cd]/50 bg-white/70 backdrop-blur-sm shadow-sm hover:shadow-md transition-shadow group"
-                >
-                  <CardContent className="p-3 sm:p-5">
-                    <div className="flex items-start justify-between mb-2 sm:mb-3">
-                      <div
-                        className={`flex h-8 w-8 sm:h-10 sm:w-10 items-center justify-center rounded-lg sm:rounded-xl ${bgColor}`}
-                      >
-                        <item.icon className={`h-4 w-4 sm:h-5 sm:w-5 ${textColor}`} />
+                <Link key={i} to={item.path} className="block">
+                  <Card
+                    className="group relative overflow-hidden border-[#c8c8cd]/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(246,246,249,0.96)_100%)] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-[#d7d7df]"
+                  >
+                    <div className="absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.95),transparent_68%)] sm:hidden" />
+                    <CardContent className="relative flex min-h-[176px] flex-col p-4 sm:min-h-0 sm:p-6">
+                      <div className="mb-4 flex items-start justify-between sm:mb-4">
+                        <div
+                          className={`flex h-12 w-12 items-center justify-center rounded-[1.35rem] ${bgColor} ring-1 ring-black/5 transition-transform group-hover:scale-[1.03] sm:h-11 sm:w-11 sm:rounded-2xl`}
+                        >
+                          <item.icon className={`h-5 w-5 ${textColor}`} />
+                        </div>
+                        {item.description && (
+                          <span className="self-start rounded-full border border-white/70 bg-white/80 px-2.5 py-1 text-[10px] font-medium text-[#6e6e73] shadow-[0_1px_2px_rgba(0,0,0,0.04)] sm:self-auto sm:border-0 sm:bg-[#f5f5f7] sm:px-2.5 sm:text-[11px] sm:shadow-none">
+                            {item.description}
+                          </span>
+                        )}
                       </div>
-                      {/* Trend indicator — only show when data is available */}
-                    </div>
-                    <div className="text-lg sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
-                      {item.value}
-                    </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mt-1">
-                      <p className="text-[11px] sm:text-xs text-[#6e6e73] font-medium leading-tight">{item.label}</p>
-                      {item.description && (
-                        <span className="text-[9px] sm:text-[10px] text-[#86868b] mt-0.5 sm:mt-0">
-                          {item.description}
-                        </span>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a8a93] sm:text-[11px]">
+                        {item.label}
+                      </p>
+                      <div className="mt-3 text-[2.2rem] font-bold tracking-[-0.03em] text-[#1d1d1f] sm:mt-2 sm:text-4xl">
+                        {item.value}
+                      </div>
+                      <div className="mt-auto pt-3 sm:mt-0 sm:pt-0">
+                        <div className="h-px w-full bg-[linear-gradient(90deg,rgba(29,29,31,0.08),rgba(29,29,31,0))] sm:hidden" />
+                      </div>
+                      <p className="mt-2 hidden max-w-sm text-sm leading-6 text-[#6e6e73] sm:block">
+                        {item.detail || (item.trend === 'up'
+                          ? 'Healthy movement compared with the rest of the current reporting window.'
+                          : 'This number highlights the main work queue or customer action that currently needs attention.')}
+                      </p>
+                    </CardContent>
+                  </Card>
+                </Link>
               );
             })}
       </div>
 
+      {secondaryKpis.length > 0 && (
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
+          {secondaryKpis.map((item, i) => {
+            const colorParts = item.color.split(' ');
+            const textColor = colorParts[0] || '';
+            const bgColor = colorParts[1] || '';
+
+            return (
+              <Link key={`${item.label}-${i}`} to={item.path} className="block">
+                <Card
+                  className="group relative overflow-hidden border-[#c8c8cd]/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(246,246,249,0.94)_100%)] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-[#d7d7df]"
+                >
+                  <div className="absolute inset-x-0 top-0 h-14 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),transparent_70%)] sm:hidden" />
+                  <CardContent className="relative flex min-h-[152px] flex-col p-4 sm:min-h-0 sm:p-4">
+                    <div className="mb-4 flex items-start justify-between">
+                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${bgColor} ring-1 ring-black/5 transition-transform group-hover:scale-[1.03] sm:h-9 sm:w-9 sm:rounded-xl`}>
+                        <item.icon className={`h-4.5 w-4.5 ${textColor} sm:h-4 sm:w-4`} />
+                      </div>
+                    </div>
+                    <div className="text-[2rem] font-bold tracking-[-0.03em] text-[#1d1d1f] sm:text-2xl">{item.value}</div>
+                    <div className="mt-auto pt-4">
+                      <p className="text-[12px] font-semibold text-[#3f3f46] sm:text-[11px]">{item.label}</p>
+                      {item.description && <p className="mt-1 text-[11px] leading-5 text-[#8a8a93] sm:text-[10px]">{item.description}</p>}
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
+        </div>
+      )}
+
       {/* Quick Actions */}
       <div>
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="text-base font-semibold text-[#1d1d1f]">Quick Actions</h3>
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h3 className="text-base font-semibold text-[#1d1d1f]">{actionHeading.title}</h3>
+            <p className="mt-1 text-xs text-[#86868b]">{actionHeading.description}</p>
+          </div>
         </div>
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3">
+        <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {actions.map((action) => (
             <Link key={action.label} to={action.path} className="group">
               <div className="flex items-center gap-2 sm:gap-4 rounded-xl border border-[#c8c8cd]/50 bg-white/70 backdrop-blur-sm p-2.5 sm:p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[#b8b8bd] hover:-translate-y-0.5">
@@ -465,7 +547,7 @@ export function DashboardPage() {
       </div>
 
       {/* Activity Section */}
-      <Card className="border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+      <Card className="overflow-hidden border-[#c8c8cd]/50 shadow-sm">
         <CardHeader className="border-b border-[#e8e8ed] bg-[#f5f5f7]/50 flex flex-row items-center justify-between">
           <CardTitle className="text-base font-semibold text-[#1d1d1f]">
             Recent Activity
@@ -542,7 +624,10 @@ export function DashboardPage() {
                 })}
               </div>
             ) : (
-              <EmptyActivityState />
+              <EmptyActivityState
+                title="No recent system activity"
+                description="Audit events and staff actions will appear here as the day progresses."
+              />
             )
           ) : (
             /* Non-admin: Notifications */
@@ -588,7 +673,10 @@ export function DashboardPage() {
                 })}
               </div>
             ) : (
-              <EmptyActivityState />
+              <EmptyActivityState
+                title="No recent updates"
+                description="Notifications tied to your work will appear here as soon as something needs attention."
+              />
             )
           )}
         </CardContent>
@@ -597,17 +685,15 @@ export function DashboardPage() {
   );
 }
 
-function EmptyActivityState() {
+function EmptyActivityState({ title, description }: { title: string; description: string }) {
   return (
     <div className="flex h-44 items-center justify-center">
       <div className="text-center">
         <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#f0f0f5] mx-auto mb-3">
           <Activity className="h-5 w-5 text-[#c8c8cd]" />
         </div>
-        <p className="text-sm font-medium text-[#86868b]">No recent activity</p>
-        <p className="text-xs text-[#c8c8cd] mt-1">
-          Activity will appear here as things happen
-        </p>
+        <p className="text-sm font-medium text-[#86868b]">{title}</p>
+        <p className="text-xs text-[#c8c8cd] mt-1">{description}</p>
       </div>
     </div>
   );

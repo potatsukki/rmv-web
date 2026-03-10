@@ -1,15 +1,8 @@
 import { useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import {
-  Search,
-  ClipboardList,
-  Filter,
-  ChevronRight,
-  Layers,
-} from 'lucide-react';
+import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -20,6 +13,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import { useVisitReports } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
@@ -177,37 +172,16 @@ export function VisitReportsListPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-          <Input
-            placeholder="Search by customer name or report ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
-          />
-        </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
-          {STATUS_FILTERS.map((f) => (
-            <button
-              type="button"
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              aria-pressed={statusFilter === f.value}
-              className={`
-                whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                ${statusFilter === f.value
-                  ? 'bg-[#1d1d1f] text-white shadow-sm'
-                  : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
-                }
-              `}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <CollectionToolbar
+        title="Find the right report faster"
+        description="Search by customer name or report ID, then narrow the queue by review state."
+        searchPlaceholder="Search by customer name or report ID"
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={STATUS_FILTERS}
+        activeFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+      />
 
       {/* Content */}
       {isLoading ? (
@@ -246,17 +220,13 @@ export function VisitReportsListPage() {
           </div>
         </>
       ) : !groups.length ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50 px-4">
-          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
-            <ClipboardList className="h-5 w-5 sm:h-6 sm:w-6 text-[#c8c8cd]" />
-          </div>
-          <h3 className="text-sm sm:text-base font-semibold text-[#1d1d1f]">No visit reports found</h3>
-          <p className="text-xs sm:text-sm text-[#86868b] max-w-sm mt-1.5 mb-6">
-            {search || statusFilter
-              ? 'Try adjusting your search or filters.'
-              : 'Visit reports will appear here after appointments are confirmed.'}
-          </p>
-          {(search || statusFilter) && (
+        <EmptyState
+          icon={<ClipboardList className="h-6 w-6" />}
+          title="No visit reports found"
+          description={search || statusFilter
+            ? 'Try adjusting the search terms or review-state filter.'
+            : 'Visit reports will appear here after appointments are confirmed and inspections begin.'}
+          action={(search || statusFilter) ? (
             <Button
               variant="outline"
               className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7]"
@@ -267,8 +237,8 @@ export function VisitReportsListPage() {
             >
               Clear Filters
             </Button>
-          )}
-        </div>
+          ) : undefined}
+        />
       ) : (
         <>
           {/* ── Mobile list (< md) ── */}

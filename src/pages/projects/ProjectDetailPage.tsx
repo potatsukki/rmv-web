@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo, useEffect } from 'react';
+import { Suspense, lazy, useState, useCallback, useMemo, useEffect } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { format } from 'date-fns';
 import {
@@ -42,8 +42,14 @@ import { cn, extractErrorMessage } from '@/lib/utils';
 import type { VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
-import { BlueprintTab } from './tabs/BlueprintTab';
-import { FabricationTab } from './tabs/FabricationTab';
+
+const LazyBlueprintTab = lazy(() =>
+  import('./tabs/BlueprintTab').then((module) => ({ default: module.BlueprintTab })),
+);
+
+const LazyFabricationTab = lazy(() =>
+  import('./tabs/FabricationTab').then((module) => ({ default: module.FabricationTab })),
+);
 
 // ── Types ──
 type TabKey = 'details' | 'blueprint' | 'payments' | 'fabrication';
@@ -183,6 +189,33 @@ function CollapsibleSection({
   );
 }
 
+function SummaryMetricCard({
+  label,
+  value,
+  accent = false,
+}: {
+  label: string;
+  value: string;
+  accent?: boolean;
+}) {
+  return (
+    <div className={accent ? 'rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm' : 'rounded-2xl border border-[#d2d2d7] bg-white/80 p-4 shadow-sm'}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-[#1d1d1f] sm:text-base">{value}</p>
+    </div>
+  );
+}
+
+function TabPanelFallback({ message }: { message: string }) {
+  return (
+    <div className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7]/80 px-5 py-8 text-center">
+      <Loader2 className="h-5 w-5 animate-spin text-[#6e6e73]" />
+      <p className="mt-3 text-sm font-medium text-[#1d1d1f]">Loading section</p>
+      <p className="mt-1 max-w-sm text-xs text-[#6e6e73]">{message}</p>
+    </div>
+  );
+}
+
 // ── Main Component ──
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -199,6 +232,31 @@ export function ProjectDetailPage() {
   }, [location.pathname]);
 
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+
+  const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, currentKey: TabKey) => {
+    const currentIndex = ALL_TABS.findIndex((tab) => tab.key === currentKey);
+    if (currentIndex === -1) return;
+
+    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+      event.preventDefault();
+      const direction = event.key === 'ArrowRight' ? 1 : -1;
+      const nextIndex = (currentIndex + direction + ALL_TABS.length) % ALL_TABS.length;
+      const nextTab = ALL_TABS[nextIndex];
+      if (nextTab) setActiveTab(nextTab.key);
+    }
+
+    if (event.key === 'Home') {
+      event.preventDefault();
+      const firstTab = ALL_TABS[0];
+      if (firstTab) setActiveTab(firstTab.key);
+    }
+
+    if (event.key === 'End') {
+      event.preventDefault();
+      const lastTab = ALL_TABS[ALL_TABS.length - 1];
+      if (lastTab) setActiveTab(lastTab.key);
+    }
+  };
 
   // ── Data queries ──
   const { data: project, isLoading, isError, refetch } = useProject(id!);
@@ -674,6 +732,32 @@ export function ProjectDetailPage() {
         </Card>
       )}
 
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryMetricCard
+          label="Project Stage"
+          value={LIFECYCLE_STEPS[currentStepIndex]?.label || project.status.replace('_', ' ')}
+          accent
+        />
+        <SummaryMetricCard
+          label="Customer"
+          value={project.customerName || 'Customer record attached'}
+        />
+        <SummaryMetricCard
+          label="Engineering"
+          value={project.engineerIds.length > 0 ? `${project.engineerIds.length} assigned` : 'Waiting for engineer'}
+        />
+        <SummaryMetricCard
+          label="Commercial Status"
+          value={project.contractSignedAt
+            ? 'Contract signed'
+            : paymentPlan
+              ? 'Payment plan ready'
+              : blueprint
+                ? 'Blueprint under review'
+                : 'Pre-contract'}
+        />
+      </div>
+
       {/* ── Contextual Action Banner (engineer) ── */}
       {isEngineer && (
         <>
@@ -750,13 +834,22 @@ export function ProjectDetailPage() {
 
       {/* Tabs */}
       <div className="-mx-3 sm:mx-0">
-        <div className="flex overflow-x-auto border-b border-[#d2d2d7] px-3 sm:px-0 no-scrollbar">
+        <div
+          className="flex overflow-x-auto border-b border-[#d2d2d7] px-3 sm:px-0 no-scrollbar"
+          role="tablist"
+          aria-label="Project detail sections"
+        >
           {tabs.map((tab) => (
             <button
               type="button"
               key={tab.key}
               onClick={() => setActiveTab(tab.key)}
-              aria-pressed={activeTab === tab.key}
+              onKeyDown={(event) => handleTabKeyDown(event, tab.key)}
+              role="tab"
+              id={`project-tab-${tab.key}`}
+              aria-selected={activeTab === tab.key}
+              aria-controls={`project-panel-${tab.key}`}
+              tabIndex={activeTab === tab.key ? 0 : -1}
               className={cn(
                 'flex items-center gap-1.5 sm:gap-2 whitespace-nowrap border-b-2 px-3.5 sm:px-4 py-3 text-sm font-medium transition-colors',
                 activeTab === tab.key
@@ -773,7 +866,12 @@ export function ProjectDetailPage() {
 
       {/* ════════════════  DETAILS TAB  ════════════════ */}
       {activeTab === 'details' && (
-        <div className="grid gap-6 lg:grid-cols-2 -mx-3 sm:mx-0">
+        <div
+          className="grid gap-6 lg:grid-cols-2 -mx-3 sm:mx-0"
+          role="tabpanel"
+          id="project-panel-details"
+          aria-labelledby="project-tab-details"
+        >
           {/* Project Info */}
           <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
             <CardHeader className="px-4 sm:px-6">
@@ -1646,13 +1744,27 @@ export function ProjectDetailPage() {
       )}
 
       {/* ════════════════  BLUEPRINT TAB  ════════════════ */}
-      <div className={activeTab === 'blueprint' ? '' : 'hidden'}>
-        <BlueprintTab projectId={id!} onNavigateToDetails={() => setActiveTab('details')} />
+      <div
+        className={activeTab === 'blueprint' ? '' : 'hidden'}
+        role="tabpanel"
+        id="project-panel-blueprint"
+        aria-labelledby="project-tab-blueprint"
+      >
+        {activeTab === 'blueprint' && (
+          <Suspense fallback={<TabPanelFallback message="Loading the blueprint workspace and costing details." />}>
+            <LazyBlueprintTab projectId={id!} onNavigateToDetails={() => setActiveTab('details')} />
+          </Suspense>
+        )}
       </div>
 
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
       {activeTab === 'payments' && isCustomer && !project?.contractSignedAt && (
-        <div className="-mx-3 sm:mx-0">
+        <div
+          className="-mx-3 sm:mx-0"
+          role="tabpanel"
+          id="project-panel-payments"
+          aria-labelledby="project-tab-payments"
+        >
           <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
             <CardContent className="flex flex-col items-center text-center py-12 px-6">
               <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f5f7] mb-4">
@@ -1688,7 +1800,12 @@ export function ProjectDetailPage() {
         </div>
       )}
       {activeTab === 'payments' && (!isCustomer || project?.contractSignedAt) && (
-        <div className="space-y-4 -mx-3 sm:mx-0">
+        <div
+          className="space-y-4 -mx-3 sm:mx-0"
+          role="tabpanel"
+          id="project-panel-payments"
+          aria-labelledby="project-tab-payments"
+        >
           {paymentPlan && (
             <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
               <CardHeader className="px-4 sm:px-6">
@@ -1756,14 +1873,22 @@ export function ProjectDetailPage() {
 
       {/* ════════════════  FABRICATION TAB  ════════════════ */}
       {activeTab === 'fabrication' && (
-        <FabricationTab
-          projectId={id!}
-          projectStatus={project.status}
-          installationConfirmedAt={project?.installationConfirmedAt}
-          canViewUpdates={canViewFabrication}
-          canManageUpdates={canManageFabrication}
-          showAssignmentNotice={showFabricationAssignmentNotice}
-        />
+        <div
+          role="tabpanel"
+          id="project-panel-fabrication"
+          aria-labelledby="project-tab-fabrication"
+        >
+          <Suspense fallback={<TabPanelFallback message="Loading fabrication updates, assignments, and delivery milestones." />}>
+            <LazyFabricationTab
+              projectId={id!}
+              projectStatus={project.status}
+              installationConfirmedAt={project?.installationConfirmedAt}
+              canViewUpdates={canViewFabrication}
+              canManageUpdates={canManageFabrication}
+              showAssignmentNotice={showFabricationAssignmentNotice}
+            />
+          </Suspense>
+        </div>
       )}
 
       {/* ── Lightbox Preview ── */}

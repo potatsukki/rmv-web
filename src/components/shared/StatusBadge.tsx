@@ -30,10 +30,14 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   requested: 'yellow',
   pending: 'yellow',
   confirmed: 'blue',
+  preparing: 'indigo',
+  on_the_way: 'cyan',
   completed: 'green',
   cancelled: 'red',
   no_show: 'gray',
   reschedule_requested: 'orange',
+  ready_for_ocular: 'purple',
+  awaiting_payment: 'orange',
 
   // Project
   draft: 'gray',
@@ -42,6 +46,7 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   approved: 'green',
   payment_pending: 'yellow',
   fabrication: 'orange',
+  active: 'blue',
 
   // Blueprint
   uploaded: 'yellow',
@@ -52,6 +57,8 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   proof_submitted: 'blue',
   verified: 'green',
   declined: 'red',
+  awaiting_proof: 'yellow',
+  refunded: 'purple',
 
   // Fabrication
   queued: 'gray',
@@ -66,6 +73,7 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   // Cash
   received: 'green',
   discrepancy: 'red',
+  cash_pending: 'yellow',
 
   // Visit Report
   returned: 'orange',
@@ -74,6 +82,16 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
 
 const STATUS_LABEL_OVERRIDE: Record<string, string> = {
   proof_submitted: 'Awaiting Verification',
+  requested: 'Awaiting Confirmation',
+  payment_pending: 'Payment Required',
+  fabrication: 'In Fabrication',
+  cash_pending: 'Cash to Collect',
+  awaiting_payment: 'Awaiting Ocular Fee',
+  ready_for_ocular: 'Ready for Ocular',
+  reschedule_requested: 'Reschedule Requested',
+  no_show: 'No Show',
+  returned: 'Returned for Revision',
+  awaiting_proof: 'Waiting for Proof',
 };
 
 function formatStatus(status: string): string {
@@ -84,14 +102,15 @@ function formatStatus(status: string): string {
 interface StatusBadgeProps {
   status: string;
   className?: string;
+  label?: string;
 }
 
-export function StatusBadge({ status, className }: StatusBadgeProps) {
+export function StatusBadge({ status, className, label }: StatusBadgeProps) {
   const color = STATUS_COLOR_MAP[status] || 'gray';
 
   return (
     <span className={cn(statusBadgeVariants({ color }), className)}>
-      {formatStatus(status)}
+      {label || formatStatus(status)}
     </span>
   );
 }

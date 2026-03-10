@@ -4,7 +4,7 @@ import { CreditCard, CheckCircle, XCircle, AlertTriangle, QrCode, ShieldCheck } 
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -44,6 +44,9 @@ export function CashierQueuePage() {
   const [verifyId, setVerifyId] = useState('');
   const [declineDialog, setDeclineDialog] = useState({ open: false, id: '' });
   const [declineReason, setDeclineReason] = useState('');
+
+  const paymentList = extractItems<any>(payments);
+  const overduePaymentList = extractItems<any>(overduePayments);
 
   const handleVerify = async () => {
     try {
@@ -89,7 +92,7 @@ export function CashierQueuePage() {
             </Card>
           ))}
         </div>
-      ) : !payments?.length ? (
+      ) : paymentList.length === 0 ? (
         <EmptyState
           icon={<CreditCard className="h-16 w-16" />}
           title="No pending payments"
@@ -97,7 +100,7 @@ export function CashierQueuePage() {
         />
       ) : (
         <div className="space-y-3">
-          {payments.map((p) => (
+          {paymentList.map((p) => (
             <Card
               key={String(p._id)}
               className="rounded-xl border-[#c8c8cd]/50 hover:shadow-md transition-shadow"
@@ -169,18 +172,18 @@ export function CashierQueuePage() {
       )}
 
       {/* ── Overdue Payments Section ── */}
-      {!overdueLoading && overduePayments && overduePayments.length > 0 && (
+      {!overdueLoading && overduePaymentList.length > 0 && (
         <Card className="rounded-xl border-red-200 bg-red-50/30">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-red-700">
               <AlertTriangle className="h-5 w-5" />
-              Overdue Payments ({overduePayments.length})
+              Overdue Payments ({overduePaymentList.length})
             </CardTitle>
             <p className="text-xs text-red-600/70">Customers who have not paid after their stage was activated</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {overduePayments.map((item) => (
+              {overduePaymentList.map((item) => (
                 <div
                   key={`${item.projectId}-${item.stageId}`}
                   className="flex items-center justify-between rounded-lg border border-red-100 bg-white p-3"
@@ -222,7 +225,7 @@ export function CashierQueuePage() {
 
       {/* Verify Confirm */}
       {(() => {
-        const verifyPayment = payments?.find((p) => String(p._id) === verifyId);
+        const verifyPayment = paymentList.find((p) => String(p._id) === verifyId);
         return (
           <ConfirmDialog
             open={!!verifyId}

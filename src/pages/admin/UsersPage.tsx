@@ -4,20 +4,18 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
   Plus,
-  Search,
   UserCog,
   MoreVertical,
   Edit2,
   CheckCircle2,
   XCircle,
-  Filter,
   Eye,
   EyeOff,
   Wand2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -54,7 +52,9 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import {
   useUsers,
@@ -227,6 +227,8 @@ export function UsersPage() {
       .replace(/_/g, ' ')
       .replace(/\b\w/g, (l) => l.toUpperCase());
 
+  const userList = extractItems<User>(users);
+
   if (error) return <PageError message="Failed to load users" onRetry={refetch} />;
 
   const inputClasses =
@@ -252,37 +254,25 @@ export function UsersPage() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-          <Input
-            placeholder="Search users..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
-          />
-        </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
-          {[{ value: 'all', label: 'All' }, ...ROLES].map((r) => (
-            <button
-              type="button"
-              key={r.value}
-              onClick={() => setRoleFilter(r.value)}
-              aria-pressed={roleFilter === r.value}
-              className={`
-                whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                ${roleFilter === r.value
-                  ? 'bg-[#1d1d1f] text-white shadow-sm'
-                  : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
-                }
-              `}
-            >
-              {r.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <CollectionToolbar
+        title="Find the right account fast"
+        description="Search staff records and narrow by role before making access changes."
+        searchPlaceholder="Search users"
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={[{ value: 'all', label: 'All' }, ...ROLES]}
+        activeFilter={roleFilter}
+        onFilterChange={setRoleFilter}
+        action={
+          <Button
+            onClick={openCreate}
+            className="h-11 bg-[#1d1d1f] px-4 text-white shadow-sm hover:bg-[#2d2d2f]"
+          >
+            <Plus className="mr-2 h-4 w-4" />
+            Add User
+          </Button>
+        }
+      />
 
       {/* Users */}
       {isLoading ? (
@@ -317,21 +307,17 @@ export function UsersPage() {
             </div>
           </div>
         </>
-      ) : !users || users.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50 px-4">
-          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
-            <UserCog className="h-5 w-5 sm:h-6 sm:w-6 text-[#c8c8cd]" />
-          </div>
-          <h3 className="text-sm sm:text-base font-semibold text-[#1d1d1f]">No users found</h3>
-          <p className="text-xs sm:text-sm text-[#86868b] max-w-sm mt-1.5">
-            Try adjusting your search criteria.
-          </p>
-        </div>
+      ) : userList.length === 0 ? (
+        <EmptyState
+          icon={<UserCog className="h-6 w-6" />}
+          title="No users found"
+          description="Try adjusting the search terms or role filter to find the staff account you need."
+        />
       ) : (
         <>
           {/* ── Mobile list (< md) ── */}
           <div className="md:hidden space-y-2">
-            {users.map((u: User) => (
+            {userList.map((u) => (
               <div
                 key={u._id}
                 className={`bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 transition-colors ${
@@ -405,7 +391,7 @@ export function UsersPage() {
             ))}
             <div className="px-1 pt-1">
               <p className="text-[11px] text-[#86868b]">
-                {users.length} user{users.length !== 1 ? 's' : ''}
+                {userList.length} user{userList.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
@@ -424,7 +410,7 @@ export function UsersPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.map((u: User) => (
+                {userList.map((u) => (
                   <TableRow
                     key={u._id}
                     className={`border-b border-[#f0f0f5] transition-colors hover:bg-[#f9f9fb] group ${
@@ -523,7 +509,7 @@ export function UsersPage() {
             </Table>
             <div className="px-5 py-3 border-t border-[#f0f0f5] bg-[#fafafa]">
               <p className="text-xs text-[#86868b]">
-                {users.length} user{users.length !== 1 ? 's' : ''}
+                {userList.length} user{userList.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>

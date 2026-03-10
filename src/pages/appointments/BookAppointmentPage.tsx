@@ -14,6 +14,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
 import { useAvailableSlots, useRequestAppointment, useRequestReschedule } from '@/hooks/useAppointments';
+import { useAppointments } from '@/hooks/useAppointments';
 import { SLOT_CODES, ServiceType } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 
@@ -78,6 +79,7 @@ export function BookAppointmentPage() {
     selectedDate,
     'office', // always office
   );
+  const activeAppointmentsQuery = useAppointments();
 
   const requestMutation = useRequestAppointment();
   const rescheduleMutation = useRequestReschedule();
@@ -96,6 +98,21 @@ export function BookAppointmentPage() {
       ];
 
   const [currentStep, setCurrentStep] = useState(0);
+  const activeAppointment = useMemo(() => {
+    if (rescheduleId) return undefined;
+
+    return activeAppointmentsQuery.data?.items.find((appointment) => {
+      if (appointment._id === rescheduleId) return false;
+
+      return [
+        'requested',
+        'confirmed',
+        'preparing',
+        'on_the_way',
+        'reschedule_requested',
+      ].includes(appointment.status);
+    });
+  }, [activeAppointmentsQuery.data?.items, rescheduleId]);
 
   const canProceed = useMemo(() => {
     const stepKey = steps[currentStep]?.key;
@@ -228,6 +245,51 @@ export function BookAppointmentPage() {
           );
         })}
       </div>
+
+      {!rescheduleId && activeAppointment && (
+        <Card className="rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm">
+          <CardContent className="space-y-4 p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-white shadow-sm">
+                <Calendar className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">You already have an active appointment</p>
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#b42318] ring-1 ring-[#f3c7cf]">
+                    Booking blocked
+                  </span>
+                </div>
+                <p className="text-sm leading-6 text-[#6e6e73]">
+                  View or manage your current appointment before starting a new booking. This saves you from choosing dates and slots you cannot submit anyway.
+                </p>
+                <p className="text-xs text-[#86868b]">
+                  Current status: <span className="font-semibold capitalize text-[#1d1d1f]">{activeAppointment.status.replace(/_/g, ' ')}</span>
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
+              <Button
+                asChild
+                variant="outline"
+                className="h-11 rounded-xl border-white/80 bg-white/80 text-[#3a3a3e] shadow-sm hover:bg-white"
+              >
+                <button type="button" onClick={() => navigate(`/appointments/${activeAppointment._id}`)}>
+                  View Active Appointment
+                </button>
+              </Button>
+              <Button
+                asChild
+                className="h-11 rounded-xl bg-[#1d1d1f] text-white shadow-sm hover:bg-[#2d2d2f]"
+              >
+                <button type="button" onClick={() => navigate(`/appointments/book?reschedule=${activeAppointment._id}`)}>
+                  Reschedule Instead
+                </button>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
         {/* Step: Service & Notes */}

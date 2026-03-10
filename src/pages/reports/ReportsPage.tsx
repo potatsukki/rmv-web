@@ -174,15 +174,23 @@ export function ReportsPage() {
   const anyKpiLoading = revLoading || psLoading || (isAdmin ? convLoading || dashLoading : false);
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* ── Header ── */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
-          Reports
-        </h1>
-        <p className="text-[#6e6e73] text-sm mt-1">
-          Business analytics and insights
-        </p>
+      <div className="rounded-2xl border border-[#d9d9e0] bg-[linear-gradient(135deg,rgba(255,255,255,0.88)_0%,rgba(245,245,248,0.92)_100%)] p-5 shadow-sm">
+        <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a8a93]">Analytics</p>
+        <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+              Reports
+            </h1>
+            <p className="mt-1 text-sm text-[#6e6e73]">
+              Track revenue, workload, project movement, and payment pressure from one place.
+            </p>
+          </div>
+          <div className="rounded-xl bg-[#f3f3f7] px-3 py-2 text-xs text-[#5f5f68]">
+            Use the summary cards for fast scanning, then validate trends in the charts below.
+          </div>
+        </div>
       </div>
 
       {/* ── KPI Cards ── */}
@@ -375,7 +383,7 @@ export function ReportsPage() {
       </Card>
 
       {/* ── Pipeline + Payment Stages ── */}
-      <div className={`grid gap-6 ${isAdmin ? 'lg:grid-cols-2' : ''}`}>
+      <div className={`grid gap-5 ${isAdmin ? 'lg:grid-cols-2' : ''}`}>
         {/* Project Pipeline — admin only */}
         {isAdmin && (
           <Card className="rounded-xl border-[#e8e8ed] bg-white/70 backdrop-blur-sm shadow-sm">

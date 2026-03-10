@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { Wallet, AlertTriangle, Banknote, Loader2, MapPin, Clock, User, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -21,9 +21,10 @@ import {
   useRecordCashCollection,
   usePendingCashAppointments,
 } from '@/hooks/useCash';
-import type { PendingCashAppointment } from '@/hooks/useCash';
+import type { CashDiscrepancy, PendingCashAppointment } from '@/hooks/useCash';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, CashCollectionStatus, AppointmentStatus } from '@/lib/constants';
+import type { CashCollection } from '@/lib/types';
 import {
   Dialog,
   DialogContent,
@@ -66,6 +67,10 @@ export function CashCollectionsPage() {
   const receiveMutation = useReceiveCash();
   const resolveMutation = useResolveDiscrepancy();
   const recordMutation = useRecordCashCollection();
+
+  const pendingCashList = extractItems<PendingCashAppointment>(pendingAppointments);
+  const collectionList = extractItems<CashCollection>(collections);
+  const discrepancyList = extractItems<CashDiscrepancy>(discrepancies);
 
   const openRecordDialog = (appt: PendingCashAppointment) => {
     setRecordDialog({
@@ -145,9 +150,9 @@ export function CashCollectionsPage() {
         <div className="flex items-center gap-2">
           <Banknote className="h-5 w-5 text-[#6e6e73]" />
           <h2 className="text-lg font-semibold text-[#1d1d1f]">Pending Cash Payments</h2>
-          {pendingAppointments && pendingAppointments.length > 0 && (
+          {pendingCashList.length > 0 && (
             <span className="ml-1 rounded-full bg-[#1d1d1f] px-2.5 py-0.5 text-xs font-medium text-white">
-              {pendingAppointments.length}
+              {pendingCashList.length}
             </span>
           )}
         </div>
@@ -162,7 +167,7 @@ export function CashCollectionsPage() {
               </Card>
             ))}
           </div>
-        ) : !pendingAppointments?.length ? (
+          ) : pendingCashList.length === 0 ? (
           <EmptyState
             icon={<Banknote className="h-8 w-8" />}
             title="No pending cash payments"
@@ -170,7 +175,7 @@ export function CashCollectionsPage() {
           />
         ) : (
           <div className="space-y-3">
-            {pendingAppointments.map((appt) => {
+              {pendingCashList.map((appt) => {
               const isExpanded = expandedId === appt._id;
               const canRecord =
                 appt.status === AppointmentStatus.ON_THE_WAY ||
@@ -315,6 +320,11 @@ export function CashCollectionsPage() {
         <div className="flex items-center gap-2">
           <Wallet className="h-5 w-5 text-[#6e6e73]" />
           <h2 className="text-lg font-semibold text-[#1d1d1f]">Recorded Collections</h2>
+          {collectionList.length > 0 && (
+            <span className="ml-1 rounded-full bg-[#f0f0f5] px-2.5 py-0.5 text-xs font-medium text-[#3a3a3e]">
+              {collectionList.length}
+            </span>
+          )}
         </div>
 
         {collectionsLoading ? (
@@ -327,17 +337,17 @@ export function CashCollectionsPage() {
               </Card>
             ))}
           </div>
-        ) : !collections?.length ? (
-          <Card className="rounded-xl border-[#e5e5ea]">
-            <CardContent className="p-6 text-center text-sm text-[#8e8e93]">
-              No collections recorded yet.
-            </CardContent>
-          </Card>
+          ) : collectionList.length === 0 ? (
+            <EmptyState
+              icon={<Wallet className="h-8 w-8" />}
+              title="No collections recorded yet"
+              description="Collected cash receipts will appear here once field payments are logged and handed off."
+            />
         ) : (
           <Card className="rounded-xl border-[#e5e5ea]">
             <CardContent className="p-0">
               <div className="divide-y divide-[#e5e5ea]">
-                {collections.map((c) => (
+                  {collectionList.map((c) => (
                   <div
                     key={String(c._id)}
                     className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-[#f5f5f7]/50 transition-colors"
@@ -381,16 +391,19 @@ export function CashCollectionsPage() {
       </div>
 
       {/* ═══ Discrepancies ═══ */}
-      {isAdmin && discrepancies && discrepancies.length > 0 && (
+      {isAdmin && discrepancyList.length > 0 && (
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />
             <h2 className="text-lg font-semibold text-[#1d1d1f]">Discrepancies</h2>
+            <span className="ml-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600">
+              {discrepancyList.length}
+            </span>
           </div>
           <Card className="rounded-xl border-red-100">
             <CardContent className="p-0">
               <div className="divide-y divide-red-100">
-                {discrepancies.map((d) => (
+                {discrepancyList.map((d) => (
                   <div
                     key={String(d._id)}
                     className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between"

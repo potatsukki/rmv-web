@@ -1,10 +1,9 @@
 ﻿import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Search, FolderOpen, Filter, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
+import { FolderOpen, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Badge } from '@/components/ui/badge';
 import {
@@ -15,6 +14,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
@@ -100,35 +101,16 @@ export function ProjectsPage() {
       </div>
 
       {/* Controls */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-          <Input
-            placeholder="Search by project name or ID..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-[#d2d2d7] focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
-          />
-        </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
-          {STATUS_FILTERS.map((f) => (
-            <button
-              type="button"
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              aria-pressed={statusFilter === f.value}
-              className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                statusFilter === f.value
-                  ? 'bg-[#1d1d1f] text-white shadow-sm'
-                  : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
-              }`}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <CollectionToolbar
+        title="Find a project faster"
+        description="Search by project name or ID, then narrow the list by stage."
+        searchPlaceholder="Search by project name or ID"
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={STATUS_FILTERS}
+        activeFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+      />
 
       {/* Loading skeleton */}
       {isLoading ? (
@@ -148,26 +130,22 @@ export function ProjectsPage() {
           </div>
         </div>
       ) : !projects.length ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50">
-          <div className="bg-white p-4 rounded-2xl mb-4 shadow-sm">
-            <FolderOpen className="h-8 w-8 text-[#c8c8cd]" />
-          </div>
-          <h3 className="text-lg font-semibold text-[#1d1d1f]">No projects found</h3>
-          <p className="text-[#6e6e73] max-w-sm mt-1 text-sm">
-            {search || statusFilter
-              ? 'Try adjusting your search or filters.'
-              : 'New projects will appear here once appointed.'}
-          </p>
-          {(search || statusFilter) && (
+        <EmptyState
+          icon={<FolderOpen className="h-6 w-6" />}
+          title="No projects found"
+          description={search || statusFilter
+            ? 'Try adjusting your search terms or status filter.'
+            : 'New projects will appear here once appointments turn into active work.'}
+          action={(search || statusFilter) ? (
             <Button
               variant="outline"
-              className="mt-4 border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-lg"
+              className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-lg"
               onClick={() => { setSearch(''); setStatusFilter(''); }}
             >
               Clear Filters
             </Button>
-          )}
-        </div>
+          ) : undefined}
+        />
       ) : (
         <>
           {/* â”€â”€ Desktop table (md+) â”€â”€ */}

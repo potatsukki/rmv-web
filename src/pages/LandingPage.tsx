@@ -7,10 +7,7 @@ import {
   CheckCircle,
   Clock,
   Settings,
-  PenTool,
   Flame,
-  ShieldCheck,
-  Wind,
   Utensils,
 
   ShoppingBag,
@@ -27,8 +24,7 @@ import {
   Maximize,
   Layers,
   Star,
-  Eye,
-  ChevronRight
+  Sparkles
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useState, useRef } from 'react';
@@ -39,63 +35,193 @@ import { motion, LazyMotion, domAnimation, AnimatePresence, useScroll, useTransf
 // Ultra-smooth 240Hz-optimized ease — gentle acceleration, long organic deceleration
 const SMOOTH_240: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
-interface ProjectData {
+interface CollectionProject {
   title: string;
-  loc: string;
-  tag: string;
-  img: string;
+  location: string;
+  image: string;
   description: string;
-  highlights: string[];
 }
 
-const PROJECTS: ProjectData[] = [
+interface CollectionData {
+  id: string;
+  label: string;
+  headline: string;
+  shortDescription: string;
+  capabilityDescription: string;
+  bestFor: string;
+  scopeNote: string;
+  coverImage: string;
+  tags: string[];
+  systems: string[];
+  icon: React.ElementType;
+  projects: CollectionProject[];
+}
+
+const SHOWCASE_COLLECTIONS: CollectionData[] = [
   {
-    title: "Le Grand Prei",
-    loc: "General Santos City",
-    tag: "Full Kitchen Fabrication",
-    img: "https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2932&auto=format&fit=crop",
-    description: "Complete commercial kitchen fabrication for Le Grand Prei, featuring custom stainless steel countertops, exhaust hoods, and full kitchen equipment layout designed for high-volume restaurant operations.",
-    highlights: ["Custom SS Countertops", "Exhaust Hood System", "Full Equipment Layout", "High-Volume Design"]
+    id: 'commercial-kitchens',
+    label: 'Commercial Kitchens',
+    headline: 'Kitchen Stainless Steel Fabrication',
+    shortDescription: 'Food-grade counters, prep lines, sinks, and service stations built for heavy daily operations.',
+    capabilityDescription: 'This collection focuses on full stainless-steel kitchen packages for restaurants and production spaces, combining layout planning, custom fabrication, and workflow-ready installation.',
+    bestFor: 'Restaurants, commissaries, and high-volume prep kitchens.',
+    scopeNote: 'Built around clean zoning, durable surfaces, and efficient service circulation.',
+    coverImage: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2932&auto=format&fit=crop',
+    tags: ['Food Grade', 'Custom Fit', 'Production Ready'],
+    systems: ['Custom counters', 'Prep tables', 'Sink systems', 'Service lines'],
+    icon: Layers,
+    projects: [
+      {
+        title: 'Le Grand Prei',
+        location: 'General Santos City',
+        image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?q=80&w=2932&auto=format&fit=crop',
+        description: 'Complete commercial kitchen fabrication for Le Grand Prei, featuring custom stainless steel countertops, exhaust hoods, and a full equipment layout designed for fast restaurant operations.',
+      },
+      {
+        title: "Primo's Restaurant",
+        location: 'Ligao, Albay',
+        image: 'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=2874&auto=format&fit=crop',
+        description: 'End-to-end kitchen design and stainless steel fabrication for Primo\'s Restaurant, using a tighter prep-to-plating flow that improves daily kitchen movement without sacrificing build quality.',
+      },
+      {
+        title: 'Production Kitchen Line',
+        location: 'Metro Manila',
+        image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2940&auto=format&fit=crop',
+        description: 'A commercial kitchen line arranged for volume cooking, built with coordinated prep zones, washable stainless worktops, and durable service counters for continuous use.',
+      },
+    ],
   },
   {
-    title: "Kko Kko Korean Restaurant",
-    loc: "Cubao, Quezon City",
-    tag: "Kitchen Stainless Steel",
-    img: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2940&auto=format&fit=crop",
-    description: "Full stainless steel kitchen fit-out for Kko Kko Korean Restaurant. Includes grilling stations, prep tables, cold storage units, and ventilation systems specifically designed for Korean BBQ operations.",
-    highlights: ["Grilling Stations", "Prep Tables", "Cold Storage Units", "Ventilation Systems"]
+    id: 'grill-concepts',
+    label: 'Grill Concepts',
+    headline: 'Kitchen Planning, Ventilation, and Hot-Line Buildouts',
+    shortDescription: 'Purpose-built stainless packages for grill-heavy concepts that need airflow, heat control, and tough prep zones.',
+    capabilityDescription: 'Focused on Korean BBQ, grill restaurants, and high-heat concepts where stainless fabrication, exhaust routing, and cooking flow need to work together as one system.',
+    bestFor: 'Korean BBQ, grill houses, and smoke-heavy kitchens.',
+    scopeNote: 'Combines fabrication, hood planning, duct support, and prep-line organization.',
+    coverImage: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2940&auto=format&fit=crop',
+    tags: ['Ventilation', 'High Heat', 'Workflow Driven'],
+    systems: ['Exhaust hood runs', 'Grilling stations', 'Cold storage fit-outs', 'Drainage planning'],
+    icon: Flame,
+    projects: [
+      {
+        title: 'Kko Kko Korean Restaurant',
+        location: 'Cubao, Quezon City',
+        image: 'https://images.unsplash.com/photo-1414235077428-338989a2e8c0?q=80&w=2940&auto=format&fit=crop',
+        description: 'A full stainless kitchen fit-out with grilling stations, prep tables, cold storage, and ventilation support designed for Korean BBQ service.',
+      },
+      {
+        title: '8 Danji Korean Resto',
+        location: 'Araneta, Cubao',
+        image: 'https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2940&auto=format&fit=crop',
+        description: 'Custom fabrication for specialized prep stations, dual-purpose cooking areas, and integrated drainage that supports a compact but busy grill concept.',
+      },
+      {
+        title: 'Open Grill Service Line',
+        location: 'Quezon City',
+        image: 'https://images.unsplash.com/photo-1552566626-52f8b828add9?q=80&w=2940&auto=format&fit=crop',
+        description: 'An open-kitchen grill line with stainless surrounds, coordinated hood coverage, and durable prep surfaces designed for front-facing service.',
+      },
+    ],
   },
   {
-    title: "Primo's Restaurant",
-    loc: "Ligao, Albay",
-    tag: "Kitchen Equipment & Layout",
-    img: "https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?q=80&w=2874&auto=format&fit=crop",
-    description: "End-to-end kitchen design and stainless steel fabrication for Primo's Restaurant. The space-optimized layout maximizes workflow efficiency while maintaining premium build quality throughout the kitchen.",
-    highlights: ["Space-Optimized Layout", "Workflow Efficiency", "Premium Build Quality", "End-to-End Design"]
+    id: 'hotel-banquet',
+    label: 'Hotel Kitchens',
+    headline: 'Banquet Production and Back-of-House Systems',
+    shortDescription: 'Larger stainless packages for hotels and hospitality kitchens that need separate zones and dependable throughput.',
+    capabilityDescription: 'Designed for back-of-house teams that operate at banquet scale, with stainless work lines, dedicated prep areas, and production layouts that stay manageable under pressure.',
+    bestFor: 'Hotels, resorts, and large hospitality food operations.',
+    scopeNote: 'Supports plating, wash, prep, and cooking zones without crowding the kitchen core.',
+    coverImage: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940&auto=format&fit=crop',
+    tags: ['Banquet Ready', 'Zone Planning', 'Heavy Duty'],
+    systems: ['Prep zoning', 'Wash areas', 'Large cooklines', 'Holding stations'],
+    icon: Hotel,
+    projects: [
+      {
+        title: 'Elkan Hotel',
+        location: 'Ligao, Albay',
+        image: 'https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940&auto=format&fit=crop',
+        description: 'Large-scale hotel kitchen fabrication designed for banquet-level production with separated prep, cooking, plating, and wash zones in premium stainless steel.',
+      },
+      {
+        title: 'Hospitality Service Kitchen',
+        location: 'Bicol Region',
+        image: 'https://images.unsplash.com/photo-1520250497591-112f2f40a3f4?q=80&w=2940&auto=format&fit=crop',
+        description: 'A hospitality-focused kitchen layout built for steady daily output, with cleaner movement between receiving, prep, plating, and washdown spaces.',
+      },
+      {
+        title: 'Banquet Prep Line',
+        location: 'South Luzon',
+        image: 'https://images.unsplash.com/photo-1519167758481-83f550bb49b3?q=80&w=2940&auto=format&fit=crop',
+        description: 'A banquet support line configured for larger batch work, featuring expanded stainless prep surfaces and clearer service transitions during peak events.',
+      },
+    ],
   },
   {
-    title: "8 Danji Korean Resto",
-    loc: "Araneta, Cubao",
-    tag: "Full Kitchen Setup",
-    img: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?q=80&w=2940&auto=format&fit=crop",
-    description: "Complete kitchen setup for 8 Danji Korean Resto at Araneta, Cubao. Custom fabrication includes specialized kimchi prep stations, dual-purpose cooking areas, and integrated drainage systems.",
-    highlights: ["Specialized Prep Stations", "Dual-Purpose Cooking", "Integrated Drainage", "Custom Fabrication"]
+    id: 'food-stall-systems',
+    label: 'Food Stall Systems',
+    headline: 'Compact Counters and Service-Focused Fabrication',
+    shortDescription: 'Smart stainless assemblies for smaller footprints where every surface has to work harder.',
+    capabilityDescription: 'Built for food stalls and service counters that need efficient prep, storage, and customer-facing presentation without wasting floor area.',
+    bestFor: 'Food courts, kiosks, and compact retail food spaces.',
+    scopeNote: 'Compact layouts with storage, service counters, and durable stainless finishes.',
+    coverImage: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=2874&auto=format&fit=crop',
+    tags: ['Compact Layout', 'Fast Service', 'Flexible Build'],
+    systems: ['Serving counters', 'Storage integration', 'Compact cook stations', 'Washable finishes'],
+    icon: Store,
+    projects: [
+      {
+        title: 'Food Stall Works',
+        location: 'Fairview, Quezon City',
+        image: 'https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=2874&auto=format&fit=crop',
+        description: 'Multiple compact stall fabrication packages featuring stainless service counters, storage, and cooking stations tailored for high-turnover food court operations.',
+      },
+      {
+        title: 'Mall Kiosk Counter',
+        location: 'Metro Manila',
+        image: 'https://images.unsplash.com/photo-1520607162513-77705c0f0d4a?q=80&w=2940&auto=format&fit=crop',
+        description: 'A compact kiosk fit-out with durable stainless worktops, built-in storage, and a frontage designed to support fast service in a tight retail footprint.',
+      },
+      {
+        title: 'Quick-Service Stall Line',
+        location: 'Quezon City',
+        image: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836?q=80&w=2940&auto=format&fit=crop',
+        description: 'A quick-service line organized around order flow, with stainless workstations arranged to reduce congestion between prep, cook, and handoff areas.',
+      },
+    ],
   },
   {
-    title: "Elkan Hotel",
-    loc: "Ligao, Albay",
-    tag: "Hotel Kitchen Fabrication",
-    img: "https://images.unsplash.com/photo-1566073771259-6a8506099945?q=80&w=2940&auto=format&fit=crop",
-    description: "Large-scale hotel kitchen fabrication for Elkan Hotel. Designed to handle banquet-level food production with separate prep, cooking, plating, and wash zones all built in premium stainless steel.",
-    highlights: ["Banquet-Level Production", "Zone Separation", "Premium Stainless Steel", "Large-Scale Build"]
-  },
-  {
-    title: "Food Stall Works",
-    loc: "Fairview, Quezon City",
-    tag: "Multiple Food Stalls",
-    img: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?q=80&w=2874&auto=format&fit=crop",
-    description: "Multiple food stall fabrication projects across Fairview, Quezon City. Each stall features compact yet highly functional SS setups with serving counters, storage, and cooking stations.",
-    highlights: ["Compact Functional Design", "Serving Counters", "Storage Solutions", "Cooking Stations"]
+    id: 'custom-metalworks',
+    label: 'Custom Metalworks',
+    headline: 'Railings, Architectural Stainless, and Bespoke Fabrication',
+    shortDescription: 'Beyond kitchens: polished stainless details and architectural fabrications for commercial and residential spaces.',
+    capabilityDescription: 'This collection covers stainless railings and custom-built metal elements where finish, detailing, and visual presence matter as much as durability.',
+    bestFor: 'Commercial lobbies, staircases, balconies, and premium residential work.',
+    scopeNote: 'Ideal when the project needs both structural confidence and a cleaner modern finish.',
+    coverImage: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?q=80&w=2940&auto=format&fit=crop',
+    tags: ['Architectural', 'Polished Finish', 'Bespoke'],
+    systems: ['Railing fabrication', 'Stair details', 'Custom brackets', 'Architectural trim'],
+    icon: Maximize,
+    projects: [
+      {
+        title: 'Lobby Stair Rail System',
+        location: 'Davao Region',
+        image: 'https://images.unsplash.com/photo-1511818966892-d7d671e672a2?q=80&w=2940&auto=format&fit=crop',
+        description: 'A polished stainless stair rail package designed for a modern lobby setting, balancing visual refinement with long-term durability in a high-traffic interior.',
+      },
+      {
+        title: 'Balcony Guardrail Collection',
+        location: 'South Cotabato',
+        image: 'https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?q=80&w=2940&auto=format&fit=crop',
+        description: 'Custom stainless guardrails fabricated for a residential project, emphasizing clean lines, stable hand feel, and a brighter architectural finish.',
+      },
+      {
+        title: 'Commercial Entry Detail',
+        location: 'General Santos City',
+        image: 'https://images.unsplash.com/photo-1494526585095-c41746248156?q=80&w=2940&auto=format&fit=crop',
+        description: 'A bespoke stainless entry detail package with coordinated rails and trim elements that sharpen the visual identity of the space while staying easy to maintain.',
+      },
+    ],
   }
 ];
 
@@ -103,7 +229,12 @@ export function LandingPage() {
   const { user } = useAuthStore();
   const isLoggedIn = !!user;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [selectedProject, setSelectedProject] = useState<ProjectData | null>(null);
+  const [activeCollectionIndex, setActiveCollectionIndex] = useState<number | null>(null);
+  const [activeProjectIndex, setActiveProjectIndex] = useState<number | null>(null);
+  const activeCollection = activeCollectionIndex !== null ? SHOWCASE_COLLECTIONS[activeCollectionIndex] ?? null : null;
+  const activeProject = activeCollection
+    ? activeCollection.projects[activeProjectIndex ?? 0] ?? activeCollection.projects[0] ?? null
+    : null;
 
   // Sticky hero scroll tracking
   const heroWrapperRef = useRef<HTMLDivElement>(null);
@@ -159,31 +290,33 @@ export function LandingPage() {
     };
   }, [mobileMenuOpen]);
 
-  // Lock body scroll & handle Escape for project modal
   useEffect(() => {
-    if (!selectedProject) return;
+    if (!activeCollection) return;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') setSelectedProject(null);
+      if (event.key === 'Escape') {
+        setActiveCollectionIndex(null);
+        setActiveProjectIndex(null);
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', onKeyDown);
     };
-  }, [selectedProject]);
+  }, [activeCollection]);
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <div className="min-h-screen bg-[#e0e0e5] font-sans text-[#1d1d1f] selection:bg-[#1d1d1f] selection:text-white">
+      <div className="min-h-screen bg-[#dde2e8] font-sans text-[#1d1d1f] selection:bg-[#1d1d1f] selection:text-white">
         
         {/* Navigation */}
         <motion.header
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 1, ease: SMOOTH_240 }}
-          className="fixed top-0 z-50 w-full bg-gradient-to-b from-[#ececf0]/92 to-[#dcdce0]/85 backdrop-blur-2xl border-b border-[#b0b0b6]/40 shadow-[0_1px_6px_rgba(0,0,0,0.06)] gpu-reveal"
+          className="fixed top-0 z-50 w-full border-b border-[#aab2bc]/35 bg-gradient-to-b from-[#f0f3f7]/92 to-[#d6dbe2]/84 backdrop-blur-2xl shadow-[0_1px_8px_rgba(9,12,18,0.08)] gpu-reveal"
         >
           <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link to="/" className="flex items-center gap-2 group">
@@ -281,7 +414,7 @@ export function LandingPage() {
         )}
 
         {/* Hero Section */}
-        <section ref={heroWrapperRef} id="hero" className="relative h-svh flex items-center justify-center pt-20 pb-12 overflow-hidden bg-gradient-to-b from-[#e6e6ea] via-[#dcdce0] to-[#d0d0d5]">
+        <section ref={heroWrapperRef} id="hero" className="relative h-svh flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#eef2f6] via-[#d7dde5] to-[#c9d0d8] pt-20 pb-12">
           {/* Subtle noise texture */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Soft center glow — parallax layer */}
@@ -447,7 +580,7 @@ export function LandingPage() {
         </section>
 
         {/* Built on Trust Section */}
-        <section ref={aboutRef} id="about" className="relative -mt-10 md:-mt-16 pt-20 pb-16 md:pt-40 md:pb-32 rounded-t-[40px] md:rounded-t-[80px] bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d4d4d9] overflow-hidden z-10">
+        <section ref={aboutRef} id="about" className="relative z-10 -mt-10 overflow-hidden rounded-t-[40px] bg-gradient-to-br from-[#d8dee5] via-[#e7ebf0] to-[#d2d8df] pt-20 pb-16 md:-mt-16 md:rounded-t-[80px] md:pt-40 md:pb-32">
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Blueprint corner decoration */}
           <div className="absolute top-8 right-8 w-[200px] md:w-[280px] pointer-events-none hidden md:block">
@@ -639,72 +772,171 @@ export function LandingPage() {
           </div>
         </section>
 
-        {/* Fabrication Capabilities (Bento) */}
-        <section ref={capabilitiesRef} id="capabilities" className="relative py-16 md:py-32 bg-gradient-to-br from-[#e4e4e9] via-[#eeeef2] to-[#d8d8de] overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#b0b0b6] to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#b0b0b6] to-transparent" />
-          {/* Blueprint measurement decoration */}
-          <div className="absolute bottom-10 left-6 w-[160px] md:w-[200px] pointer-events-none hidden md:block">
-            <svg viewBox="0 0 200 160" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.06]">
-              <rect x="10" y="10" width="180" height="120" rx="2" stroke="#5a5a60" strokeWidth="0.8" fill="none" />
-              <line x1="10" y1="70" x2="190" y2="70" stroke="#5a5a60" strokeWidth="0.4" strokeDasharray="5 3" />
-              <line x1="100" y1="10" x2="100" y2="130" stroke="#5a5a60" strokeWidth="0.4" strokeDasharray="5 3" />
-              <path d="M55 35 L55 105 M145 35 L145 105" stroke="#5a5a60" strokeWidth="0.5" strokeDasharray="3 3" />
-              <text x="100" y="150" textAnchor="middle" fill="#5a5a60" fontSize="7" fontFamily="monospace">SECTION C-C</text>
-            </svg>
-          </div>
+        {/* Fabrication Collections */}
+        <section ref={capabilitiesRef} id="capabilities" className="relative overflow-hidden bg-[linear-gradient(160deg,#d7dde5_0%,#e8edf2_28%,#c9d0da_60%,#dde3ea_100%)] py-16 md:py-32">
+          <div ref={projectsRef} id="projects" className="absolute inset-x-0 top-20 h-px" />
+          <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute -top-28 right-0 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.6)_0%,rgba(255,255,255,0)_68%)] blur-3xl" />
+          <div className="absolute -bottom-28 left-0 h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgba(93,104,118,0.2)_0%,rgba(93,104,118,0)_70%)] blur-3xl" />
+          <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#9aa4b0] to-transparent" />
+          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#9aa4b0] to-transparent" />
+
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 70 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true, amount: 0.15 }}
               transition={{ duration: 1.1, ease: SMOOTH_240 }}
-              className="text-center mb-20 gpu-reveal"
+              className="mb-10 text-center md:mb-12 gpu-reveal"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter mb-4"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #4a4a4e 0%, #1d1d1f 15%, #6e6e73 30%, #2d2d2f 45%, #8e8e93 55%, #3a3a3e 65%, #1d1d1f 80%, #5a5a5e 90%, #2d2d2f 100%)' }}>Fabrication Capabilities</span></h2>
-              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#6e6e73]">Complete stainless steel fabrication services from design to installation.</p>
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#aeb7c1]/70 bg-white/45 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.24em] text-[#46515d] shadow-sm shadow-white/20 backdrop-blur-md">
+                <Sparkles className="h-3.5 w-3.5" />
+                Collections
+              </div>
+              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-6xl">
+                <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #526071 0%, #15181d 18%, #738091 38%, #2f3640 55%, #c4ccd6 72%, #2a3039 88%, #6e7a89 100%)' }}>Fabrication Collections</span>
+              </h2>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {[
-                { icon: Layers, title: "Kitchen Stainless Steel Fabrication", desc: "Custom food-grade stainless steel counters, sinks, shelving, and equipment for restaurants, hotels, and food courts.", tags: ["Food Grade", "Custom Fit", "Durable"] },
-                { icon: PenTool, title: "Kitchen Planning & Remodeling", desc: "End-to-end kitchen layout planning and remodeling designed for optimal workflow and compliance.", tags: ["Layout Design", "Remodeling", "Compliant"] },
-                { icon: Flame, title: "LPG Gas Pipeline", desc: "Professional LPG gas pipeline installation for commercial kitchens with strict safety standards.", tags: ["Safety First", "Commercial", "Certified"] },
-                { icon: ShieldCheck, title: "Fire Suppression System", desc: "Kitchen fire suppression system installation to keep your commercial establishment safe and up to code.", tags: ["Fire Safety", "Compliant", "Reliable"] },
-                { icon: Wind, title: "Exhaust & Fresh Air System", desc: "Mechanical works for exhaust hoods, ductwork, and fresh air systems for proper kitchen ventilation.", tags: ["Ventilation", "Ductwork", "Airflow"] },
-                { icon: Maximize, title: "Railings & Custom Fabrication", desc: "Custom-designed stainless steel railings and bespoke fabrication for residential and commercial projects.", tags: ["Residential", "Commercial", "Custom"] }
-              ].map((cap, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 70 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  whileHover={{ rotateX: -3, rotateY: 3, z: 20, y: -4, transition: { type: 'spring', stiffness: 260, damping: 20 } }}
-                  viewport={{ once: true, amount: 0.1 }}
-                  transition={{ duration: 1, delay: 0.12 * i, ease: SMOOTH_240 }}
-                  style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                  className="gpu-reveal bg-gradient-to-br from-[#f0f0f4] via-[#e6e6eb] to-[#d8d8dd] border border-[#bbbbc0]/70 rounded-2xl md:rounded-[2rem] p-6 md:p-8 hover:from-[#eaeaef] hover:via-[#e0e0e5] hover:to-[#d2d2d7] transition-[border-color,background] duration-500 group flex flex-col hover:shadow-[0_16px_40px_rgba(0,0,0,0.12)] shadow-sm shadow-black/5"
-                >
-                  <div className="w-12 h-12 md:w-14 md:h-14 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] border border-[#b0b0b5] rounded-full flex items-center justify-center mb-6 md:mb-8 group-hover:scale-110 transition-transform duration-500 shadow-md shadow-black/8">
-                    <cap.icon className="h-5 w-5 md:h-6 md:w-6 text-[#1d1d1f]" />
-                  </div>
-                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f] mb-3 md:mb-4 leading-tight">{cap.title}</h3>
-                  <p className="text-[#6e6e73] font-medium leading-relaxed mb-6 md:mb-8 flex-grow text-sm md:text-base">{cap.desc}</p>
-                  <div className="flex flex-wrap gap-2 mt-auto">
-                    {cap.tags.map(tag => (
-                      <span key={tag} className="text-[10px] font-bold uppercase tracking-widest text-[#555558] bg-gradient-to-r from-white/90 to-[#e0e0e4] border border-[#b8b8bd] px-3 py-1.5 rounded-full shadow-sm">
-                        {tag}
-                      </span>
-                    ))}
-                  </div>
-                </motion.div>
-              ))}
-            </div>
+            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+                {SHOWCASE_COLLECTIONS.map((collection, index) => {
+                  const isActiveCollection = index === activeCollectionIndex;
+
+                  return (
+                    <motion.button
+                      key={collection.id}
+                      type="button"
+                      initial={{ opacity: 0, y: 60 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true, amount: 0.12 }}
+                      transition={{ duration: 0.9, delay: index * 0.08, ease: SMOOTH_240 }}
+                      onClick={() => {
+                        setActiveCollectionIndex(index);
+                        setActiveProjectIndex(0);
+                      }}
+                      className={`group relative aspect-[16/11] overflow-hidden rounded-[2rem] border text-left shadow-[0_22px_50px_rgba(14,18,23,0.16)] transition-all duration-500 will-change-transform ${isActiveCollection ? 'border-[#f1f4f8]/70 ring-2 ring-white/55' : 'border-white/25 hover:-translate-y-1 hover:border-white/45'}`}
+                    >
+                      <img src={collection.coverImage} alt={collection.label} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] transform-gpu will-change-transform" />
+                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(14,18,23,0.04)_0%,rgba(14,18,23,0.1)_45%,rgba(14,18,23,0.48)_100%)]" />
+                      <div className="absolute left-5 bottom-5 rounded-full border border-white/20 bg-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/92 backdrop-blur-sm md:left-6 md:bottom-6">
+                        {collection.label}
+                      </div>
+                      <div className="absolute right-5 top-5 rounded-full border border-white/16 bg-white/10 p-2 text-white/85 backdrop-blur-sm md:right-6 md:top-6">
+                        <ArrowRight className={`h-4 w-4 transition-transform duration-300 ${isActiveCollection ? 'translate-x-1' : 'group-hover:translate-x-1'}`} />
+                      </div>
+                    </motion.button>
+                  );
+                })}
+              </div>
           </div>
         </section>
 
+        <AnimatePresence initial={false}>
+          {activeCollection && activeProject && (
+            <motion.div
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 lg:p-8"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.22, ease: SMOOTH_240 }}
+              onClick={() => {
+                setActiveCollectionIndex(null);
+                setActiveProjectIndex(null);
+              }}
+            >
+              <motion.div className="absolute inset-0 bg-[rgba(6,8,12,0.78)] backdrop-blur-xl" />
+
+              <motion.div
+                initial={{ opacity: 0, y: 26, scale: 0.985 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: 18, scale: 0.985 }}
+                transition={{ duration: 0.3, ease: SMOOTH_240 }}
+                onClick={(event) => event.stopPropagation()}
+                className="modal-gallery-scroll relative z-10 flex max-h-[94vh] w-full max-w-[72rem] flex-col overflow-y-auto overflow-x-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(88,97,110,0.12),transparent_30%),linear-gradient(160deg,#12161c_0%,#090b10_48%,#171d26_100%)] shadow-[0_36px_120px_rgba(0,0,0,0.56)] transform-gpu will-change-transform"
+              >
+                <button
+                  type="button"
+                  onClick={() => {
+                    setActiveCollectionIndex(null);
+                    setActiveProjectIndex(null);
+                  }}
+                  className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/34 text-white/88 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/50"
+                  aria-label="Close image preview"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+
+                <div className="relative aspect-[16/8.6] overflow-hidden bg-black">
+                  <AnimatePresence mode="wait">
+                    <motion.img
+                      key={activeProject.image}
+                      src={activeProject.image}
+                      alt={activeProject.title}
+                      className="absolute inset-0 h-full w-full object-cover transform-gpu will-change-transform"
+                      initial={{ opacity: 0, scale: 1.018 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.992 }}
+                      transition={{ duration: 0.28, ease: SMOOTH_240 }}
+                    />
+                  </AnimatePresence>
+                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,11,16,0.04)_0%,rgba(9,11,16,0.08)_44%,rgba(9,11,16,0.8)_100%)]" />
+                  <div className="absolute left-4 top-4 rounded-full border border-white/16 bg-black/22 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/88 backdrop-blur-md sm:left-6 sm:top-6">
+                    {activeCollection.label}
+                  </div>
+                </div>
+
+                <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,rgba(255,255,255,0.025)_0%,rgba(255,255,255,0.01)_100%)] p-4 sm:p-5 lg:p-6">
+                  <div className="mb-4 border-b border-white/8 pb-4">
+                    <h3 className="text-[1.7rem] font-bold tracking-tight text-white sm:text-[1.95rem] lg:text-[2.1rem]">{activeProject.title}</h3>
+                    <p className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-[#adb7c3]">
+                      <MapPin className="h-4 w-4" />
+                      {activeProject.location}
+                    </p>
+                    <p className="mt-3 max-w-4xl text-sm font-medium leading-7 text-[#d4dbe3] sm:text-[15px]">
+                      {activeProject.description}
+                    </p>
+                  </div>
+
+                  <div className="min-h-0">
+                    <div className="mb-3 flex items-center justify-between gap-4">
+                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#96a1ad]">Image carousel</p>
+                      <p className="text-xs font-medium text-[#7f8a97]">Select an image to update the preview.</p>
+                    </div>
+                    <div className="grid auto-cols-[78%] grid-flow-col gap-3 overflow-x-auto pb-1 snap-x snap-mandatory no-scrollbar sm:auto-cols-[33%] lg:auto-cols-[24%]">
+                      {activeCollection.projects.map((project, index) => {
+                        const isSelected = activeProjectIndex === index;
+
+                        return (
+                          <button
+                            key={`${activeCollection.id}-${project.title}`}
+                            type="button"
+                            onClick={() => setActiveProjectIndex(index)}
+                            className={`group relative snap-start overflow-hidden rounded-[1.35rem] border text-left transition-all duration-300 transform-gpu will-change-transform ${isSelected ? 'scale-[0.985] border-[#f3f6fb]/60 bg-white/[0.06] shadow-[0_18px_42px_rgba(0,0,0,0.4)] ring-1 ring-white/18' : 'border-white/10 bg-white/[0.02] hover:-translate-y-0.5 hover:border-white/24 hover:bg-white/[0.04]'}`}
+                          >
+                            <div className="relative aspect-video overflow-hidden">
+                              <img src={project.image} alt={project.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 transform-gpu will-change-transform" />
+                              <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-[linear-gradient(180deg,rgba(9,11,16,0.02)_0%,rgba(9,11,16,0.5)_100%)]' : 'bg-[linear-gradient(180deg,rgba(9,11,16,0.08)_0%,rgba(9,11,16,0.64)_100%)]'}`} />
+                              <div className={`absolute inset-0 ring-1 ring-inset transition-opacity duration-300 ${isSelected ? 'ring-white/30' : 'ring-white/0 group-hover:ring-white/12'}`} />
+                              <div className="absolute inset-x-0 bottom-0 p-3">
+                                <div className="flex items-end justify-between gap-3">
+                                  <p className="text-[11px] font-semibold leading-4 text-white/92">{project.title}</p>
+                                  <span className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,0.65)]' : 'bg-white/40'}`} />
+                                </div>
+                              </div>
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+
         {/* Sectors We Serve */}
-        <section ref={sectorsRef} className="relative py-16 md:py-24 bg-gradient-to-br from-[#d0d0d6] via-[#dcdce2] to-[#c8c8ce] overflow-hidden">
+        <section ref={sectorsRef} className="relative overflow-hidden bg-gradient-to-br from-[#cfd6de] via-[#dae1e8] to-[#c7ced8] py-16 md:py-24">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
           {/* Blueprint grid decoration */}
@@ -762,220 +994,6 @@ export function LandingPage() {
             </div>
           </div>
         </section>
-
-        {/* Featured Projects */}
-        <section ref={projectsRef} id="projects" className="relative py-16 md:py-32 bg-gradient-to-br from-[#e0e0e6] via-[#ebebf0] to-[#d6d6dc] overflow-hidden">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-          {/* Blueprint annotation decoration */}
-          <div className="absolute top-10 right-6 w-[140px] md:w-[180px] pointer-events-none hidden md:block">
-            <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.06]">
-              <rect x="15" y="15" width="150" height="150" rx="2" stroke="#5a5a60" strokeWidth="0.6" fill="none" />
-              <line x1="15" y1="90" x2="165" y2="90" stroke="#5a5a60" strokeWidth="0.3" strokeDasharray="4 3" />
-              <line x1="90" y1="15" x2="90" y2="165" stroke="#5a5a60" strokeWidth="0.3" strokeDasharray="4 3" />
-              <circle cx="90" cy="90" r="35" stroke="#5a5a60" strokeWidth="0.5" />
-              <path d="M65 65 L115 115 M115 65 L65 115" stroke="#5a5a60" strokeWidth="0.4" />
-              <text x="90" y="175" textAnchor="middle" fill="#5a5a60" fontSize="6" fontFamily="monospace">ASSEMBLY VIEW</text>
-            </svg>
-          </div>
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 70 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 1.1, ease: SMOOTH_240 }}
-              className="text-center mb-20 gpu-reveal"
-            >
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter mb-4"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #4a4a4e 0%, #1d1d1f 15%, #6e6e73 30%, #2d2d2f 45%, #8e8e93 55%, #3a3a3e 65%, #1d1d1f 80%, #5a5a5e 90%, #2d2d2f 100%)' }}>Featured Projects</span></h2>
-              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#6e6e73]">A selection of completed works across restaurants, hotels, and food establishments.</p>
-            </motion.div>
-
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-              {PROJECTS.map((proj, i) => (
-                <motion.div
-                  key={i}
-                  initial={{ opacity: 0, y: 70 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  whileHover={{ rotateX: -3, rotateY: 3, z: 25, transition: { type: 'spring', stiffness: 260, damping: 20 } }}
-                  viewport={{ once: true, amount: 0.1 }}
-                  transition={{ duration: 1, delay: 0.12 * i, ease: SMOOTH_240 }}
-                  style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                  className="gpu-reveal group relative h-64 sm:h-80 rounded-2xl md:rounded-[2rem] overflow-hidden shadow-xl shadow-black/10 border border-[#b8b8bd]/30 cursor-pointer"
-                  onClick={() => setSelectedProject(proj)}
-                  role="button"
-                  tabIndex={0}
-                  onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setSelectedProject(proj); } }}
-                >
-                  <div className="absolute inset-0 overflow-hidden">
-                    <img src={proj.img} alt={proj.title} className="w-full h-[120%] object-cover transition-transform duration-1000 group-hover:scale-110 grayscale-[50%] group-hover:grayscale-0" style={{ transform: 'translateY(-10%)' }} />
-                  </div>
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1d1d1f] via-black/40 to-transparent opacity-80 group-hover:opacity-90 transition-opacity duration-500" />
-                  
-                  {/* Expand hint */}
-                  <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-all duration-500 group-hover:scale-100 scale-75">
-                    <Eye className="h-4 w-4 text-white" />
-                  </div>
-
-                  <div className="absolute bottom-0 left-0 right-0 p-5 sm:p-8">
-                    <p className="text-[10px] font-bold uppercase tracking-widest text-[#d2d2d7] mb-1.5 sm:mb-2">{proj.tag}</p>
-                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white mb-1.5 sm:mb-2">{proj.title}</h3>
-                    <p className="text-[#a1a1a6] text-sm font-medium flex items-center gap-1.5">
-                      <MapPin className="h-3.5 w-3.5" />
-                      {proj.loc}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ===== PROJECT MODAL ===== */}
-        <AnimatePresence>
-          {selectedProject && (
-            <motion.div
-              key="project-modal-backdrop"
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 md:p-12"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              transition={{ duration: 0.35, ease: SMOOTH_240 }}
-              onClick={() => setSelectedProject(null)}
-            >
-              {/* Backdrop */}
-              <div className="absolute inset-0 bg-black/80 backdrop-blur-xl" />
-
-              {/* Modal Content */}
-              <motion.div
-                key="project-modal-content"
-                className="gpu-reveal relative z-10 w-full max-w-4xl max-h-[90vh] overflow-y-auto rounded-2xl md:rounded-[2rem] bg-gradient-to-br from-[#1a1a1c] via-[#111113] to-[#0d0d0f] border border-[#3a3a3e]/60 shadow-2xl shadow-black/60"
-                initial={{ opacity: 0, y: 80, scale: 0.92 }}
-                animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 60, scale: 0.95 }}
-                transition={{ duration: 0.5, ease: SMOOTH_240 }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                {/* Close button */}
-                <button
-                  onClick={() => setSelectedProject(null)}
-                  className="absolute top-4 right-4 z-20 w-10 h-10 rounded-full bg-white/10 backdrop-blur-md border border-white/15 flex items-center justify-center text-white hover:bg-white/20 transition-all duration-300 hover:scale-110 active:scale-95"
-                  aria-label="Close modal"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-
-                {/* Hero Image */}
-                <div className="relative w-full h-56 sm:h-72 md:h-96 overflow-hidden rounded-t-2xl md:rounded-t-[2rem]">
-                  <motion.img
-                    src={selectedProject.img}
-                    alt={selectedProject.title}
-                    className="w-full h-full object-cover"
-                    initial={{ scale: 1.15 }}
-                    animate={{ scale: 1 }}
-                    transition={{ duration: 0.8, ease: SMOOTH_240 }}
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-[#1a1a1c] via-transparent to-transparent" />
-                  
-                  {/* Floating tag */}
-                  <motion.div
-                    className="absolute bottom-6 left-6 sm:left-8"
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.5, delay: 0.2, ease: SMOOTH_240 }}
-                  >
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold uppercase tracking-widest text-[#d2d2d7]">
-                      <Layers className="h-3 w-3" />
-                      {selectedProject.tag}
-                    </span>
-                  </motion.div>
-                </div>
-
-                {/* Content */}
-                <div className="p-6 sm:p-8 md:p-10 space-y-6 md:space-y-8">
-                  {/* Title & Location */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.15, ease: SMOOTH_240 }}
-                  >
-                    <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tighter text-white mb-3">
-                      {selectedProject.title}
-                    </h2>
-                    <p className="text-[#86868b] font-medium flex items-center gap-2 text-sm sm:text-base">
-                      <MapPin className="h-4 w-4 text-[#6e6e73]" />
-                      {selectedProject.loc}
-                    </p>
-                  </motion.div>
-
-                  {/* Divider */}
-                  <motion.div
-                    className="h-px bg-gradient-to-r from-transparent via-[#3a3a3e] to-transparent"
-                    initial={{ scaleX: 0 }}
-                    animate={{ scaleX: 1 }}
-                    transition={{ duration: 0.7, delay: 0.3, ease: SMOOTH_240 }}
-                  />
-
-                  {/* Description */}
-                  <motion.p
-                    className="text-[#a1a1a6] text-sm sm:text-base md:text-lg leading-relaxed font-medium"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.25, ease: SMOOTH_240 }}
-                  >
-                    {selectedProject.description}
-                  </motion.p>
-
-                  {/* Highlights */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: 0.35, ease: SMOOTH_240 }}
-                  >
-                    <h3 className="text-xs font-bold uppercase tracking-widest text-[#6e6e73] mb-4">Project Highlights</h3>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {selectedProject.highlights.map((h, idx) => (
-                        <motion.div
-                          key={idx}
-                          className="flex items-center gap-3 p-3 sm:p-4 rounded-xl bg-white/[0.03] border border-[#2a2a2e]/80 hover:border-[#4a4a4e]/60 transition-colors duration-300"
-                          initial={{ opacity: 0, x: -15 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ duration: 0.4, delay: 0.4 + idx * 0.08, ease: SMOOTH_240 }}
-                        >
-                          <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#2a2a2e] to-[#1d1d1f] border border-[#3a3a3e]/60 flex items-center justify-center flex-shrink-0">
-                            <ChevronRight className="h-3.5 w-3.5 text-[#86868b]" />
-                          </div>
-                          <span className="text-sm font-semibold text-[#d2d2d7] tracking-tight">{h}</span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </motion.div>
-
-                  {/* Footer CTA */}
-                  <motion.div
-                    className="flex flex-col sm:flex-row items-center gap-3 pt-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.5, delay: 0.5, ease: SMOOTH_240 }}
-                  >
-                    <a
-                      href="#contact"
-                      onClick={() => setSelectedProject(null)}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-white text-[#1d1d1f] font-semibold text-sm tracking-tight hover:bg-[#e8e8ed] transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-white/10"
-                    >
-                      Inquire About This Project
-                      <ArrowRight className="h-4 w-4" />
-                    </a>
-                    <button
-                      onClick={() => setSelectedProject(null)}
-                      className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-3 rounded-full bg-transparent border border-[#3a3a3e] text-[#86868b] font-medium text-sm tracking-tight hover:text-white hover:border-[#5a5a5e] transition-all duration-300"
-                    >
-                      Close
-                    </button>
-                  </motion.div>
-                </div>
-              </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
         {/* Testimonials */}
         <section ref={testimonialsRef} id="testimonials" className="relative py-16 md:py-32 bg-gradient-to-br from-[#1a1a1c] via-[#0d0d0f] to-[#1d1d1f] text-white overflow-hidden">

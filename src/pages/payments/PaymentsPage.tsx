@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, ListFilter, CheckCircle } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle } from 'lucide-react';
 import { Link, useLocation, useSearchParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { useProjects } from '@/hooks/useProjects';
@@ -72,6 +73,10 @@ export function PaymentsPage() {
   const isCustomer = user?.roles.includes(Role.CUSTOMER);
   const isCashier = user?.roles.some((r: string) => [Role.CASHIER, Role.ADMIN].includes(r as Role));
   const { data: unpaidOcularFees } = useUnpaidOcularFees();
+  const actionableOcularFees = useMemo(
+    () => (unpaidOcularFees ?? []).filter((appt) => (appt.ocularFee ?? 0) > 0),
+    [unpaidOcularFees],
+  );
 
   // Unified cross-project payment history (customer only)
   const { data: allHistory, isLoading: historyLoading } = useMyPaymentHistory();
@@ -188,15 +193,15 @@ export function PaymentsPage() {
           ═══════════════════════════════════════════════════════ */}
       {!selectedProjectId ? (
         <>
-          <div>
+          <div className="rounded-2xl border border-[#d9d9e0] bg-[linear-gradient(135deg,rgba(255,255,255,0.88)_0%,rgba(245,245,248,0.92)_100%)] p-5 shadow-sm">
             <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Payments</h1>
-            <p className="text-[#6e6e73] text-sm">
+            <p className="mt-1 text-sm text-[#6e6e73]">
               {isCustomer ? 'Select a project to manage payments' : 'View payment details by project'}
             </p>
           </div>
 
           {/* Unpaid Ocular Fees */}
-          {isCustomer && unpaidOcularFees && unpaidOcularFees.length > 0 && (
+          {isCustomer && actionableOcularFees.length > 0 && (
             <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 bg-amber-50/50 shadow-sm">
               <CardHeader className="pb-2 px-4 sm:px-6">
                 <CardTitle className="flex items-center gap-2 text-base text-amber-800">
@@ -208,7 +213,7 @@ export function PaymentsPage() {
                 <p className="text-xs text-amber-700">
                   Pay before your appointment can be confirmed.
                 </p>
-                {unpaidOcularFees.map((appt) => (
+                {actionableOcularFees.map((appt) => (
                   <div
                     key={String(appt._id)}
                     className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white p-3"
@@ -245,46 +250,25 @@ export function PaymentsPage() {
           {/* ── Projects Table ── */}
           <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 overflow-hidden">
             {/* Search + Filter bar */}
-            <div className="px-4 sm:px-6 pt-4 pb-3 space-y-3">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#86868b]" />
-                <Input
-                  placeholder="Search projects..."
-                  value={projectSearch}
-                  onChange={(e) => setProjectSearch(e.target.value)}
-                  className="pl-8 h-9 bg-[#f5f5f7]/50 border-[#d2d2d7] text-sm rounded-lg"
-                />
-              </div>
-              <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar">
-                <ListFilter className="h-3.5 w-3.5 text-[#86868b] hidden sm:block mr-0.5 flex-shrink-0" />
-                <button
-                  type="button"
-                  onClick={() => setStatusFilter('all')}
-                  aria-pressed={statusFilter === 'all'}
-                  className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                    statusFilter === 'all'
-                      ? 'bg-[#1d1d1f] text-white shadow-sm'
-                      : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
-                  }`}
-                >
-                  All Statuses
-                </button>
-                {projectStatuses.map((s) => (
-                  <button
-                    type="button"
-                    key={s}
-                    onClick={() => setStatusFilter(s)}
-                    aria-pressed={statusFilter === s}
-                    className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                      statusFilter === s
-                        ? 'bg-[#1d1d1f] text-white shadow-sm'
-                        : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
-                    }`}
-                  >
-                    {s.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
-                  </button>
-                ))}
-              </div>
+            <div className="px-4 pb-3 pt-4 sm:px-6">
+              <CollectionToolbar
+                title="Find a payment-ready project"
+                description="Search by project details, then narrow the list by project stage before opening the payment view."
+                searchPlaceholder="Search projects"
+                searchValue={projectSearch}
+                onSearchChange={setProjectSearch}
+                filters={[
+                  { value: 'all', label: 'All Statuses' },
+                  ...projectStatuses.map((status) => ({
+                    value: status,
+                    label: status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase()),
+                  })),
+                ]}
+                activeFilter={statusFilter}
+                onFilterChange={setStatusFilter}
+                className="border-0 bg-transparent p-0 shadow-none"
+                searchWidthClassName="lg:max-w-sm"
+              />
             </div>
 
             {/* Desktop table header */}
@@ -338,16 +322,15 @@ export function PaymentsPage() {
                   </button>
                 ))
               ) : (
-                <div className="py-10 text-center">
-                  <CreditCard className="h-8 w-8 mx-auto text-[#c8c8cd] mb-2" />
-                  <p className="text-sm font-medium text-[#3a3a3e]">
-                    {projectSearch || statusFilter !== 'all' ? 'No matching projects' : 'No projects found'}
-                  </p>
-                  <p className="text-xs text-[#86868b] mt-1">
-                    {projectSearch || statusFilter !== 'all'
-                      ? 'Try adjusting your search or filter.'
-                      : 'Projects with payment plans will appear here.'}
-                  </p>
+                <div className="p-4">
+                  <EmptyState
+                    icon={<CreditCard className="h-6 w-6" />}
+                    title={projectSearch || statusFilter !== 'all' ? 'No matching projects' : 'No projects found'}
+                    description={projectSearch || statusFilter !== 'all'
+                      ? 'Try adjusting the search terms or status filter.'
+                      : 'Projects with payment plans will appear here once payment-ready work is created.'}
+                    className="border-0 bg-transparent py-10 shadow-none"
+                  />
                 </div>
               )}
             </div>
@@ -393,16 +376,15 @@ export function PaymentsPage() {
                 )}
 
                 {!historyLoading && filteredHistory.length === 0 && (
-                  <div className="py-10 text-center">
-                    <Receipt className="h-7 w-7 mx-auto text-[#c8c8cd] mb-2" />
-                    <p className="text-sm font-medium text-[#3a3a3e]">
-                      {historySearch ? 'No results found' : 'No payments yet'}
-                    </p>
-                    <p className="text-xs text-[#86868b] mt-1">
-                      {historySearch
-                        ? 'Try adjusting your search keywords.'
-                        : 'Your payment history will appear here once you make a payment.'}
-                    </p>
+                  <div className="p-4">
+                    <EmptyState
+                      icon={<Receipt className="h-6 w-6" />}
+                      title={historySearch ? 'No results found' : 'No payments yet'}
+                      description={historySearch
+                        ? 'Try adjusting the keywords used in your payment history search.'
+                        : 'Your payment history will appear here after your first verified payment.'}
+                      className="border-0 bg-transparent py-10 shadow-none"
+                    />
                   </div>
                 )}
 

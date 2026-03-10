@@ -1,8 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, CashCollection } from '@/lib/types';
+import { extractItems } from '@/lib/utils';
 
-interface CashDiscrepancy {
+export interface CashDiscrepancy {
   _id: string;
   cashCollectionId: string;
   appointmentId: string;
@@ -57,7 +58,7 @@ export function usePendingCashAppointments() {
     queryKey: KEYS.pendingAppointments,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<PendingCashAppointment[]>>('/cash/pending-appointments');
-      return data.data;
+      return extractItems<PendingCashAppointment>(data.data);
     },
   });
 }
@@ -69,7 +70,7 @@ export function useCashCollections(params?: Record<string, string>) {
       const { data } = await api.get<ApiResponse<CashCollection[]>>('/cash/collections', {
         params,
       });
-      return data.data;
+      return extractItems<CashCollection>(data.data);
     },
   });
 }
@@ -79,7 +80,7 @@ export function useCashDiscrepancies(enabled = true) {
     queryKey: KEYS.discrepancies,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<CashDiscrepancy[]>>('/cash/discrepancies');
-      return data.data;
+      return extractItems<CashDiscrepancy>(data.data);
     },
     enabled,
   });

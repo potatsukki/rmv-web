@@ -1,15 +1,16 @@
 import { useState } from 'react';
 import { format } from 'date-fns';
-import { RotateCcw, CheckCircle, XCircle, Clock, User, Phone, Building2, Filter, Search } from 'lucide-react';
+import { RotateCcw, CheckCircle, XCircle, User, Phone, Building2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Link } from 'react-router-dom';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
-import { Input } from '@/components/ui/input';
+import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageError } from '@/components/shared/PageError';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
@@ -26,12 +27,6 @@ import type { RefundRequest } from '@/lib/types';
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
-
-const statusConfig: Record<string, { label: string; color: string; icon: typeof Clock }> = {
-  pending: { label: 'Pending', color: 'text-amber-700 bg-amber-50 border-amber-200', icon: Clock },
-  approved: { label: 'Approved', color: 'text-green-700 bg-green-50 border-green-200', icon: CheckCircle },
-  denied: { label: 'Denied', color: 'text-red-700 bg-red-50 border-red-200', icon: XCircle },
-};
 
 const STATUS_FILTERS = [
   { label: 'All', value: 'all' },
@@ -56,6 +51,8 @@ export function RefundQueuePage() {
   const [approveId, setApproveId] = useState('');
   const [denyDialog, setDenyDialog] = useState({ open: false, id: '' });
   const [denialReason, setDenialReason] = useState('');
+
+  const refundRequests = extractItems<RefundRequest>(data);
 
   const handleApprove = async () => {
     try {
@@ -105,35 +102,22 @@ export function RefundQueuePage() {
         <p className="text-[#6e6e73] mt-1 text-sm">Review and process customer refund requests</p>
       </div>
 
-      <div className="flex flex-col gap-3 bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-          <Input
-            placeholder="Search by customer name, reason..."
-            value={searchQuery}
-            onChange={(e) => { setSearchQuery(e.target.value); setPage(1); }}
-            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
-          />
-        </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-        <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
-        {STATUS_FILTERS.map((f) => (
-          <button
-            type="button"
-            key={f.value}
-            onClick={() => { setStatusFilter(f.value); setPage(1); }}
-            aria-pressed={statusFilter === f.value}
-            className={`whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-              statusFilter === f.value
-                ? 'bg-[#1d1d1f] text-white shadow-sm'
-                : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
-            }`}
-          >
-            {f.label}
-          </button>
-        ))}
-        </div>
-      </div>
+      <CollectionToolbar
+        title="Find the right refund request"
+        description="Search customers or refund reasons, then narrow the queue by decision state."
+        searchPlaceholder="Search by customer name, reason..."
+        searchValue={searchQuery}
+        onSearchChange={(value) => {
+          setSearchQuery(value);
+          setPage(1);
+        }}
+        filters={STATUS_FILTERS}
+        activeFilter={statusFilter}
+        onFilterChange={(value) => {
+          setStatusFilter(value);
+          setPage(1);
+        }}
+      />
 
       {isLoading ? (
         <div className="space-y-3">
@@ -145,16 +129,19 @@ export function RefundQueuePage() {
             </Card>
           ))}
         </div>
-      ) : !data?.requests?.length ? (
+      ) : refundRequests.length === 0 ? (
         <EmptyState
           icon={<RotateCcw className="h-8 w-8" />}
           title={statusFilter === 'pending' ? 'No pending refund requests' : 'No refund requests found'}
+          description={
+            statusFilter === 'pending'
+              ? 'New customer refund requests will appear here once a payment issue needs review.'
+              : 'Try adjusting the current search or decision filter to find the request you need.'
+          }
         />
       ) : (
         <div className="space-y-3">
-          {data.requests.map((r) => {
-            const config = statusConfig[r.status] ?? statusConfig.pending;
-            const StatusIcon = config!.icon;
+          {refundRequests.map((r) => {
             const contact = getCustomerContact(r);
 
             return (
@@ -167,10 +154,7 @@ export function RefundQueuePage() {
                         <User className="h-4 w-4 text-[#6e6e73] shrink-0" />
                         <span className="font-semibold text-[#1d1d1f] truncate">{getCustomerName(r)}</span>
                       </div>
-                      <div className={`flex items-center gap-1.5 text-xs font-medium px-2.5 py-1 rounded-full border shrink-0 ${config!.color}`}>
-                        <StatusIcon className="h-3.5 w-3.5" />
-                        {config!.label}
-                      </div>
+                      <StatusBadge status={r.status} className="shrink-0 text-[10px]" />
                     </div>
 
                     {/* Details grid */}
@@ -264,7 +248,7 @@ export function RefundQueuePage() {
           })}
 
           {/* Pagination */}
-          {data.totalPages > 1 && (
+          {(data?.totalPages ?? 1) > 1 && (
             <div className="flex justify-center gap-2 pt-4">
               <Button
                 variant="outline"
@@ -276,13 +260,13 @@ export function RefundQueuePage() {
                 Previous
               </Button>
               <span className="flex items-center text-sm text-[#6e6e73]">
-                Page {data.page} of {data.totalPages}
+                Page {data?.page ?? 1} of {data?.totalPages ?? 1}
               </span>
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setPage(p => p + 1)}
-                disabled={page >= data.totalPages}
+                disabled={page >= (data?.totalPages ?? 1)}
                 className="rounded-xl"
               >
                 Next

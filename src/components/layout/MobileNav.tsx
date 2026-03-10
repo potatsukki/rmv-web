@@ -3,40 +3,21 @@ import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
-import { Role } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { mobileBottomTabItems, mobileMenuItems } from './navigation';
 import {
-  Calendar,
-  FolderKanban,
-  CreditCard,
-  Home,
   Bell,
   Menu,
   X,
   LogOut,
-  Settings,
-  BarChart3,
-  Users,
-  Banknote,
-  ReceiptText,
   User,
   Shield,
   ChevronRight,
-  ClipboardList,
-  CalendarOff,
-  CalendarPlus,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useEffect, useRef, useState } from 'react';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
-
-interface NavItem {
-  label: string;
-  path: string;
-  icon: React.ElementType;
-  roles: Role[];
-}
 
 function isNavItemActive(pathname: string, itemPath: string): boolean {
   if (itemPath === '/dashboard') return pathname === '/dashboard';
@@ -51,84 +32,6 @@ function isNavItemActive(pathname: string, itemPath: string): boolean {
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
 
-const bottomTabItems: NavItem[] = [
-  { label: 'Home', path: '/dashboard', icon: Home, roles: Object.values(Role) },
-  {
-    label: 'Visits',
-    path: '/appointments',
-    icon: Calendar,
-    roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN],
-  },
-  {
-    label: 'Reports',
-    path: '/visit-reports',
-    icon: ClipboardList,
-    roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
-  },
-  {
-    label: 'Projects',
-    path: '/projects',
-    icon: FolderKanban,
-    roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
-  },
-  {
-    label: 'Finance',
-    path: '/payments',
-    icon: CreditCard,
-    roles: [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN],
-  },
-  {
-    label: 'Queue',
-    path: '/cashier-queue',
-    icon: ReceiptText,
-    roles: [Role.CASHIER, Role.ADMIN],
-  },
-  {
-    label: 'Cash',
-    path: '/cash',
-    icon: Banknote,
-    roles: [Role.CASHIER],
-  },
-  {
-    label: 'Analytics',
-    path: '/reports',
-    icon: BarChart3,
-    roles: [Role.CASHIER],
-  },
-];
-
-const menuItems: NavItem[] = [
-  {
-    label: 'Visit Reports',
-    path: '/visit-reports',
-    icon: ClipboardList,
-    roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
-  },
-
-  {
-    label: 'Cash Management',
-    path: '/cash',
-    icon: Banknote,
-    roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
-  },
-  {
-    label: 'Cashier Queue',
-    path: '/cashier-queue',
-    icon: CreditCard,
-    roles: [Role.CASHIER, Role.ADMIN],
-  },
-  {
-    label: 'Reports',
-    path: '/reports',
-    icon: BarChart3,
-    roles: [Role.ADMIN, Role.CASHIER],
-  },
-  { label: 'Team', path: '/users', icon: Users, roles: [Role.ADMIN] },
-  { label: 'Slot Management', path: '/slot-management', icon: CalendarOff, roles: [Role.ADMIN, Role.APPOINTMENT_AGENT] },
-  { label: 'Create Appointment', path: '/appointments/create-for-customer', icon: CalendarPlus, roles: [Role.APPOINTMENT_AGENT] },
-  { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
-];
-
 export function MobileNav() {
   const { user, logout } = useAuthStore();
   const { unreadCount } = useNotificationStore();
@@ -140,11 +43,11 @@ export function MobileNav() {
 
   if (!user) return null;
 
-  const filteredTabs = bottomTabItems
+  const filteredTabs = mobileBottomTabItems
     .filter((item) => user.roles.some((r) => item.roles.includes(r)))
     .slice(0, 4);
 
-  const filteredMenu = menuItems.filter((item) =>
+  const filteredMenu = mobileMenuItems.filter((item) =>
     user.roles.some((r) => item.roles.includes(r)),
   );
 

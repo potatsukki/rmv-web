@@ -29,3 +29,31 @@ export function extractErrorMessage(error: unknown, fallback: string): string {
   }
   return fallback;
 }
+
+export function extractItems<T>(value: unknown): T[] {
+  if (Array.isArray(value)) {
+    return value as T[];
+  }
+
+  if (typeof value === 'object' && value !== null) {
+    const record = value as Record<string, unknown>;
+
+    if (Array.isArray(record.items)) {
+      return record.items as T[];
+    }
+
+    if (Array.isArray(record.requests)) {
+      return record.requests as T[];
+    }
+
+    if (Array.isArray(record.results)) {
+      return record.results as T[];
+    }
+
+    if (Array.isArray(record.data)) {
+      return record.data as T[];
+    }
+  }
+
+  return [];
+}

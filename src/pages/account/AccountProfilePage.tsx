@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Check, PenTool, Navigation } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -16,11 +16,22 @@ import {
   CardDescription,
 } from '@/components/ui/card';
 import { SignaturePad } from '@/components/shared/SignaturePad';
-import { LocationPicker } from '@/components/maps/LocationPicker';
 import { useAuthStore } from '@/stores/auth.store';
 import { useUpdateProfile, useSignature, useSaveSignature, useDeleteSignature } from '@/hooks/useUsers';
 import { Role } from '@/lib/constants';
 import type { MapPoint } from '@/lib/maps';
+
+const LocationPicker = lazy(() =>
+  import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
+);
+
+function MapPanelFallback() {
+  return (
+    <div className="flex h-[320px] items-center justify-center rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] px-4 text-center">
+      <p className="text-sm text-[#6e6e73]">Loading map tools...</p>
+    </div>
+  );
+}
 
 // ── Role-aware phone description ──
 const PHONE_DESCRIPTIONS: Partial<Record<Role, string>> = {
@@ -147,8 +158,31 @@ export function AccountProfilePage() {
   const inputClasses =
     'h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl transition-colors';
 
+  const hasPinnedLocation = Boolean(pinnedLocation);
+  const hasSavedSignature = Boolean(signatureData?.signatureKey);
+
   return (
     <div className="space-y-6">
+    <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(248,248,250,0.96)_55%,rgba(243,243,247,0.98)_100%)]">
+      <CardContent className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
+        <div className="rounded-2xl border border-[#d2d2d7]/60 bg-white/85 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">Profile</p>
+          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">Contact details ready</p>
+          <p className="mt-1 text-xs text-[#6e6e73]">Keep your name and phone current so appointment and payment updates reach you.</p>
+        </div>
+        <div className="rounded-2xl border border-[#d2d2d7]/60 bg-white/85 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">Site location</p>
+          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">{hasPinnedLocation ? 'Pinned location saved' : 'Location still missing'}</p>
+          <p className="mt-1 text-xs text-[#6e6e73]">Pinned map coordinates help the team validate ocular visits faster and reduce address ambiguity.</p>
+        </div>
+        <div className="rounded-2xl border border-[#d2d2d7]/60 bg-white/85 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">E-signature</p>
+          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">{hasSavedSignature ? 'Signature on file' : 'Signature not saved yet'}</p>
+          <p className="mt-1 text-xs text-[#6e6e73]">Saving your signature now keeps contract signing quicker later in the project flow.</p>
+        </div>
+      </CardContent>
+    </Card>
+
     <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-[#1d1d1f]">
@@ -160,61 +194,75 @@ export function AccountProfilePage() {
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="grid gap-6 sm:grid-cols-2">
-            <div className="space-y-1.5">
-              <Label htmlFor="firstName" className="text-[#3a3a3e] text-[13px] font-medium">
-                First Name
-              </Label>
-              <Input id="firstName" {...register('firstName')} className={inputClasses} />
-              {errors.firstName && (
-                <p className="text-xs text-red-500">{errors.firstName.message}</p>
-              )}
+          <div className="rounded-2xl border border-[#e8e8ed] bg-[#fbfbfd] p-4 sm:p-5">
+            <div className="mb-4">
+              <p className="text-sm font-semibold text-[#1d1d1f]">Contact details</p>
+              <p className="text-xs text-[#86868b]">These details appear across appointment coordination and account recovery flows.</p>
             </div>
-            <div className="space-y-1.5">
-              <Label htmlFor="lastName" className="text-[#3a3a3e] text-[13px] font-medium">
-                Last Name
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="firstName" className="text-[#3a3a3e] text-[13px] font-medium">
+                  First Name
+                </Label>
+                <Input id="firstName" {...register('firstName')} className={inputClasses} />
+                {errors.firstName && (
+                  <p className="text-xs text-red-500">{errors.firstName.message}</p>
+                )}
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="lastName" className="text-[#3a3a3e] text-[13px] font-medium">
+                  Last Name
+                </Label>
+                <Input id="lastName" {...register('lastName')} className={inputClasses} />
+                {errors.lastName && (
+                  <p className="text-xs text-red-500">{errors.lastName.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div className="mt-6 space-y-1.5">
+              <Label htmlFor="phone" className="text-[#3a3a3e] text-[13px] font-medium">
+                Phone Number
               </Label>
-              <Input id="lastName" {...register('lastName')} className={inputClasses} />
-              {errors.lastName && (
-                <p className="text-xs text-red-500">{errors.lastName.message}</p>
+              <div className="flex h-11 rounded-xl overflow-hidden border border-[#c8c8cd] bg-white/80 focus-within:border-[#6e6e73] focus-within:ring-2 focus-within:ring-[#6e6e73]/20 transition-all">
+                <span className="flex items-center px-3 text-sm font-medium text-[#3a3a3e] bg-gray-100/80 border-r border-[#c8c8cd] select-none shrink-0">+63</span>
+                <input
+                  id="phone"
+                  type="tel"
+                  inputMode="numeric"
+                  maxLength={10}
+                  placeholder="9XXXXXXXXX"
+                  value={(watch('phone') || '').replace(/^\+63/, '')}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10);
+                    setValue('phone', raw ? `+63${raw}` : '', { shouldValidate: true, shouldDirty: true });
+                  }}
+                  className="flex-1 bg-transparent px-3 text-sm text-[#1d1d1f] outline-none placeholder:text-gray-400 min-w-0"
+                />
+              </div>
+              <p className="text-xs text-[#86868b]">{phoneDescription}</p>
+              {errors.phone && (
+                <p className="text-xs text-red-500">{errors.phone.message}</p>
               )}
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="phone" className="text-[#3a3a3e] text-[13px] font-medium">
-              Phone Number
-            </Label>
-            <div className="flex h-11 rounded-xl overflow-hidden border border-[#c8c8cd] bg-white/80 focus-within:border-[#6e6e73] focus-within:ring-2 focus-within:ring-[#6e6e73]/20 transition-all">
-              <span className="flex items-center px-3 text-sm font-medium text-[#3a3a3e] bg-gray-100/80 border-r border-[#c8c8cd] select-none shrink-0">+63</span>
-              <input
-                id="phone"
-                type="tel"
-                inputMode="numeric"
-                maxLength={10}
-                placeholder="9XXXXXXXXX"
-                value={(watch('phone') || '').replace(/^\+63/, '')}
-                onChange={(e) => {
-                  const raw = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10);
-                  setValue('phone', raw ? `+63${raw}` : '', { shouldValidate: true, shouldDirty: true });
-                }}
-                className="flex-1 bg-transparent px-3 text-sm text-[#1d1d1f] outline-none placeholder:text-gray-400 min-w-0"
-              />
+          <div className="space-y-1.5 rounded-2xl border border-[#e8e8ed] bg-[#fbfbfd] p-4 sm:p-5">
+            <div>
+              <Label htmlFor="address" className="text-[#3a3a3e] text-[13px] font-medium">
+                Site Location & Address
+              </Label>
+              <p className="mt-1 text-xs text-[#86868b]">
+                Save both the pinned map point and the structured address so ocular visits and quotations line up with the same site.
+              </p>
             </div>
-            <p className="text-xs text-[#86868b]">{phoneDescription}</p>
-            {errors.phone && (
-              <p className="text-xs text-red-500">{errors.phone.message}</p>
-            )}
-          </div>
-
-          <div className="space-y-1.5">
-            <Label htmlFor="address" className="text-[#3a3a3e] text-[13px] font-medium">
-              Address
-            </Label>
 
             {/* ── Pinned Location Map ── */}
             <div className="rounded-xl border border-[#d2d2d7]">
-              <LocationPicker value={pinnedLocation} onChange={handleLocationPick} />
+              <Suspense fallback={<MapPanelFallback />}>
+                <LocationPicker value={pinnedLocation} onChange={handleLocationPick} />
+              </Suspense>
             </div>
             {pinnedLocation && (
               <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">

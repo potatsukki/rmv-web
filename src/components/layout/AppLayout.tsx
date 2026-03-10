@@ -13,6 +13,7 @@ import {
   Clock,
   Loader2,
   LayoutDashboard,
+  X,
 } from 'lucide-react';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
@@ -20,6 +21,8 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { connectSocket } from '@/lib/socket';
 import { Role } from '@/lib/constants';
 import { api } from '@/lib/api';
+import { canAccessPath } from '@/lib/auth-routing';
+import { getVisibleNavigationPaths } from './navigation';
 import toast from 'react-hot-toast';
 import type { Project, Appointment, User } from '@/lib/types';
 
@@ -32,7 +35,7 @@ const pageMeta: Record<string, { title: string; description: string }> = {
   payments: { title: 'Payments', description: 'Invoices and payment tracking' },
   cash: { title: 'Cash Flow', description: 'Cash collection management' },
   reports: { title: 'Reports', description: 'Analytics and insights' },
-  users: { title: 'Team', description: 'User management' },
+  users: { title: 'Manage Accounts', description: 'User and access management' },
   settings: { title: 'Settings', description: 'System configuration' },
   notifications: { title: 'Notifications', description: 'Updates and alerts' },
   account: { title: 'Account Settings', description: 'Manage your account' },
@@ -120,10 +123,10 @@ const quickSearchItems: QuickSearchItem[] = [
     roles: [Role.ADMIN, Role.CASHIER],
   },
   {
-    title: 'Team',
+    title: 'Manage Accounts',
     path: '/users',
-    description: 'User and access management',
-    keywords: ['users', 'roles', 'staff'],
+    description: 'User accounts, roles, and access control',
+    keywords: ['users', 'roles', 'staff', 'accounts', 'access'],
     roles: [Role.ADMIN],
   },
   {
@@ -181,7 +184,17 @@ interface FlatResult {
   path: string;
 }
 
-const RECENT_KEY = 'rmv_recent';
+const RECENT_KEY_PREFIX = 'rmv_recent';
+const ALWAYS_SEARCHABLE_PATHS = new Set([
+  '/account/profile',
+  '/account/security',
+  '/account/notifications',
+  '/account/info',
+]);
+
+function getRecentStorageKey(userId?: string) {
+  return `${RECENT_KEY_PREFIX}:${userId || 'anonymous'}`;
+}
 
 const STATUS_COLORS: Record<string, string> = {
   draft: 'bg-[#f0f0f5] text-[#6e6e73]',
@@ -242,13 +255,7 @@ export function AppLayout() {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [debouncedQuery, setDebouncedQuery] = useState('');
-  const [recentItems, setRecentItems] = useState<RecentItem[]>(() => {
-    try {
-      return JSON.parse(localStorage.getItem(RECENT_KEY) ?? '[]');
-    } catch {
-      return [];
-    }
-  });
+  const [recentItems, setRecentItems] = useState<RecentItem[]>([]);
   const searchContainerRef = useRef<HTMLDivElement | null>(null);
   const searchInputRef = useRef<HTMLInputElement | null>(null);
 
@@ -260,6 +267,50 @@ export function AppLayout() {
 
   const isAdmin = user?.roles.includes(Role.ADMIN) ?? false;
 
+  const visibleNavigationPaths = useMemo(() => {
+    if (!user) return new Set<string>();
+    return getVisibleNavigationPaths(user.roles);
+  }, [user]);
+
+  const allowedPagePaths = useMemo(() => {
+    if (!user) return new Set<string>();
+
+    return new Set(
+      quickSearchItems
+        .filter((item) => item.roles.some((role) => user.roles.includes(role)))
+        .filter((item) => canAccessPath(item.path, user.roles))
+        .filter((item) => visibleNavigationPaths.has(item.path) || ALWAYS_SEARCHABLE_PATHS.has(item.path))
+        .map((item) => item.path),
+    );
+  }, [user, visibleNavigationPaths]);
+
+  const canSearchProjects = allowedPagePaths.has('/projects');
+  const canSearchAppointments = allowedPagePaths.has('/appointments');
+  const canSearchUsers = allowedPagePaths.has('/users');
+
+  useEffect(() => {
+    if (!user) {
+      setRecentItems([]);
+      return;
+    }
+
+    try {
+      const raw = localStorage.getItem(getRecentStorageKey(user._id));
+      const parsed = raw ? JSON.parse(raw) : [];
+      const filtered = Array.isArray(parsed)
+        ? parsed.filter((item): item is RecentItem => {
+            if (!item || typeof item !== 'object') return false;
+            if (typeof item.path !== 'string' || typeof item.label !== 'string') return false;
+            return canAccessPath(item.path, user.roles)
+              && (visibleNavigationPaths.has(item.path) || ALWAYS_SEARCHABLE_PATHS.has(item.path));
+          })
+        : [];
+      setRecentItems(filtered);
+    } catch {
+      setRecentItems([]);
+    }
+  }, [user, visibleNavigationPaths]);
+
   // ── Live search queries ────────────────────────────────────────────────
   const { data: liveProjects, isFetching: projectsFetching } = useQuery({
     queryKey: ['omnibox', 'projects', debouncedQuery],
@@ -269,7 +320,7 @@ export function AppLayout() {
           params: { search: debouncedQuery, limit: '5' },
         })
         .then((r) => r.data.data.items),
-    enabled: !!debouncedQuery,
+    enabled: !!debouncedQuery && canSearchProjects,
     staleTime: 30_000,
   });
 
@@ -281,7 +332,7 @@ export function AppLayout() {
           params: { search: debouncedQuery, limit: '5' },
         })
         .then((r) => r.data.data.items),
-    enabled: !!debouncedQuery,
+    enabled: !!debouncedQuery && canSearchAppointments,
     staleTime: 30_000,
   });
 
@@ -293,7 +344,7 @@ export function AppLayout() {
           params: { search: debouncedQuery, limit: '5' },
         })
         .then((r) => r.data.data),
-    enabled: !!debouncedQuery && isAdmin,
+    enabled: !!debouncedQuery && isAdmin && canSearchUsers,
     staleTime: 30_000,
   });
 
@@ -320,7 +371,9 @@ export function AppLayout() {
 
   const searchableItems = useMemo(() => {
     if (!user) return [];
-    return quickSearchItems.filter((item) => item.roles.some((role) => user.roles.includes(role)));
+    return quickSearchItems.filter(
+      (item) => item.roles.some((role) => user.roles.includes(role)) && canAccessPath(item.path, user.roles),
+    );
   }, [user]);
 
   // Unified flat results used for both display and keyboard navigation
@@ -360,7 +413,11 @@ export function AppLayout() {
         path: e.item.path,
       }));
 
-    const projects = (liveProjects ?? []).map((p): FlatResult => ({
+    const projectItems = canSearchProjects ? (liveProjects ?? []) : [];
+    const appointmentItems = canSearchAppointments ? (liveAppointments ?? []) : [];
+    const userItems = canSearchUsers ? (liveUsers ?? []) : [];
+
+    const projects = projectItems.map((p): FlatResult => ({
       id: `project-${p._id}`,
       type: 'project',
       title: p.title,
@@ -369,7 +426,7 @@ export function AppLayout() {
       path: `/projects/${p._id}`,
     }));
 
-    const appointments = (liveAppointments ?? []).map((a): FlatResult => ({
+    const appointments = appointmentItems.map((a): FlatResult => ({
       id: `appointment-${a._id}`,
       type: 'appointment',
       title: a.customerName ?? 'Appointment',
@@ -378,7 +435,7 @@ export function AppLayout() {
       path: `/appointments/${a._id}`,
     }));
 
-    const users = (liveUsers ?? []).map((u): FlatResult => ({
+    const users = userItems.map((u): FlatResult => ({
       id: `user-${u._id}`,
       type: 'user',
       title: `${u.firstName} ${u.lastName}`,
@@ -387,7 +444,7 @@ export function AppLayout() {
     }));
 
     return [...pages, ...projects, ...appointments, ...users];
-  }, [searchQuery, searchableItems, liveProjects, liveAppointments, liveUsers, recentItems]);
+  }, [searchQuery, searchableItems, liveProjects, liveAppointments, liveUsers, recentItems, canSearchProjects, canSearchAppointments, canSearchUsers]);
 
   useEffect(() => {
     setSearchQuery('');
@@ -442,11 +499,37 @@ export function AppLayout() {
       };
       const updated = [newItem, ...recentItems.filter((r) => r.path !== result.path)].slice(0, 5);
       setRecentItems(updated);
-      try {
-        localStorage.setItem(RECENT_KEY, JSON.stringify(updated));
-      } catch {}
+      if (user?._id) {
+        try {
+          localStorage.setItem(getRecentStorageKey(user._id), JSON.stringify(updated));
+        } catch {}
+      }
     }
     navigate(result.path);
+  };
+
+  const clearRecentItems = () => {
+    setRecentItems([]);
+    if (!user?._id) return;
+
+    try {
+      localStorage.removeItem(getRecentStorageKey(user._id));
+    } catch {}
+  };
+
+  const removeRecentItem = (path: string) => {
+    const updated = recentItems.filter((item) => item.path !== path);
+    setRecentItems(updated);
+
+    if (!user?._id) return;
+
+    try {
+      if (updated.length === 0) {
+        localStorage.removeItem(getRecentStorageKey(user._id));
+      } else {
+        localStorage.setItem(getRecentStorageKey(user._id), JSON.stringify(updated));
+      }
+    } catch {}
   };
 
   const onSearchKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
@@ -485,12 +568,17 @@ export function AppLayout() {
       <Sidebar />
       <MobileNav />
 
-      <main className="md:pl-64 transition-all duration-300">
-        <header className="hidden md:block sticky top-0 z-30 bg-white/80 backdrop-blur-xl border-b border-border">
-          <div className="flex h-16 items-center justify-between px-8">
-            <div className="flex flex-col justify-center">
-              {breadcrumbs.length > 1 && (
-                <nav className="flex items-center gap-1 text-xs text-muted-foreground mb-0.5">
+      <main className="bg-[linear-gradient(180deg,#f7f7f9_0%,#f4f4f7_100%)] md:pl-64 transition-all duration-300">
+        <header className="hidden md:block sticky top-0 z-30 border-b border-[#e7e7ec] bg-white/80 backdrop-blur-xl">
+          <div className="flex h-14 items-center justify-between px-6 lg:px-8">
+            <div className="flex min-w-0 flex-col justify-center">
+              <div className="mb-0.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8b8b94]">
+                <span>Workspace</span>
+                {breadcrumbs.length > 0 && <span className="h-1 w-1 rounded-full bg-[#c8c8cd]" />}
+                <span className="truncate text-[#5d5d66]">{meta.title}</span>
+              </div>
+              {breadcrumbs.length > 1 ? (
+                <nav className="flex items-center gap-1 text-xs text-muted-foreground">
                   {breadcrumbs.map((crumb, i) => (
                     <span key={crumb.path} className="flex items-center gap-1">
                       {i > 0 && <ChevronRight className="h-3 w-3" />}
@@ -504,8 +592,9 @@ export function AppLayout() {
                     </span>
                   ))}
                 </nav>
+              ) : (
+                <p className="text-xs text-[#8b8b94]">{meta.description}</p>
               )}
-              <h1 className="text-lg font-semibold tracking-tight text-foreground leading-tight">{meta.title}</h1>
             </div>
 
             <div className="flex items-center gap-3">
@@ -524,9 +613,9 @@ export function AppLayout() {
                     onKeyDown={onSearchKeyDown}
                     placeholder="Search anything..."
                     aria-label="Search"
-                    className="h-9 w-[210px] lg:w-[280px] rounded-lg border border-border bg-muted/50 pl-9 pr-16 text-sm text-foreground placeholder:text-muted-foreground focus:border-ring focus:bg-white focus:outline-none focus:ring-2 focus:ring-ring/30"
+                    className="h-9 w-[200px] lg:w-[250px] rounded-xl border border-[#dbdbe2] bg-[#f4f4f7] pl-9 pr-16 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#b9b9c2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#d7d7df]"
                   />
-                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-border bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[#dedee4] bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                     Ctrl+K
                   </kbd>
                 </div>
@@ -550,30 +639,52 @@ export function AppLayout() {
                             <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
                               Recently Visited
                             </span>
+                            <button
+                              type="button"
+                              onClick={clearRecentItems}
+                              className="ml-auto rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                            >
+                              Clear recent
+                            </button>
                           </div>
                           <ul className="pb-2">
                             {displayResults.map((result, index) => (
                               <li key={result.id}>
-                                <button
-                                  type="button"
+                                <div
                                   onMouseEnter={() => setHighlightedIndex(index)}
-                                  onClick={() => openResult(result)}
-                                  className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${
+                                  className={`flex items-center gap-2 px-3 py-2 transition-colors ${
                                     highlightedIndex === index ? 'bg-muted' : 'hover:bg-muted/70'
                                   }`}
                                 >
-                                  <Clock className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
-                                  <div className="min-w-0 flex-1">
-                                    <span className="block truncate text-sm font-medium text-foreground">
-                                      {result.title}
-                                    </span>
-                                    {result.subtitle && (
-                                      <span className="block truncate text-xs text-muted-foreground">
-                                        {result.subtitle}
+                                  <button
+                                    type="button"
+                                    onClick={() => openResult(result)}
+                                    className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                                  >
+                                    <Clock className="h-3.5 w-3.5 flex-shrink-0 text-muted-foreground" />
+                                    <div className="min-w-0 flex-1">
+                                      <span className="block truncate text-sm font-medium text-foreground">
+                                        {result.title}
                                       </span>
-                                    )}
-                                  </div>
-                                </button>
+                                      {result.subtitle && (
+                                        <span className="block truncate text-xs text-muted-foreground">
+                                          {result.subtitle}
+                                        </span>
+                                      )}
+                                    </div>
+                                  </button>
+                                  <button
+                                    type="button"
+                                    aria-label={`Remove ${result.title} from recent items`}
+                                    onClick={(event) => {
+                                      event.stopPropagation();
+                                      removeRecentItem(result.path);
+                                    }}
+                                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white hover:text-foreground"
+                                  >
+                                    <X className="h-3.5 w-3.5" />
+                                  </button>
+                                </div>
                               </li>
                             ))}
                           </ul>
@@ -669,7 +780,7 @@ export function AppLayout() {
 
               <Link
                 to="/notifications"
-                className="relative flex h-9 w-9 items-center justify-center rounded-lg border border-border bg-white text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#e0e0e6] bg-white text-muted-foreground hover:bg-[#f4f4f7] hover:text-foreground transition-colors"
                 aria-label="Open notifications"
               >
                 <Bell className="h-4 w-4" />
@@ -683,7 +794,7 @@ export function AppLayout() {
               {user && (
                 <Link
                   to="/account/profile"
-                  className="flex items-center gap-2.5 rounded-lg border border-border bg-white px-2.5 py-1.5 hover:bg-muted transition-colors"
+                  className="flex items-center gap-2.5 rounded-xl border border-[#e0e0e6] bg-white px-2.5 py-1.5 hover:bg-[#f4f4f7] transition-colors"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
                     {user.firstName[0]}
@@ -701,7 +812,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <div className="px-3 py-4 pt-[4.5rem] sm:px-4 md:p-8 md:pt-8 pb-28 md:pb-8 animate-page">
+        <div className="px-3 py-4 pt-[4.5rem] sm:px-4 md:px-8 md:py-6 md:pt-6 pb-28 md:pb-8 animate-page">
           <Outlet />
         </div>
       </main>

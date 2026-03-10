@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, Payment, PaymentPlan } from '@/lib/types';
+import { extractItems } from '@/lib/utils';
 
 const getActiveTabRefetchInterval = (ms: number) =>
   typeof document === 'undefined' || document.visibilityState === 'visible' ? ms : false;
@@ -50,7 +51,7 @@ export function usePaymentsByProject(projectId: string) {
       const { data } = await api.get<ApiResponse<Payment[]>>(
         `/payments/project/${projectId}`,
       );
-      return data.data;
+      return extractItems<Payment>(data.data);
     },
     enabled: !!projectId,
     refetchInterval: () => getActiveTabRefetchInterval(30_000),
@@ -62,7 +63,7 @@ export function usePendingPayments() {
     queryKey: KEYS.pending,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<Payment[]>>('/payments/pending');
-      return data.data;
+      return extractItems<Payment>(data.data);
     },
     refetchInterval: () => getActiveTabRefetchInterval(60_000),
   });
@@ -170,7 +171,7 @@ export function useMyPaymentHistory() {
     queryKey: KEYS.myHistory,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<PaymentHistoryItem[]>>('/payments/my-history');
-      return data.data;
+      return extractItems<PaymentHistoryItem>(data.data);
     },
   });
 }
@@ -247,7 +248,7 @@ export function useOverduePayments() {
     queryKey: KEYS.overdue,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<OverduePaymentItem[]>>('/payments/overdue');
-      return data.data;
+      return extractItems<OverduePaymentItem>(data.data);
     },
   });
 }

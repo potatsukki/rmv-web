@@ -4,41 +4,16 @@ import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useDashboardSummary } from '@/hooks/useReports';
-import { Role } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { sidebarNavGroups } from './navigation';
 import {
-  Calendar,
-  FolderKanban,
-  CreditCard,
-  BarChart3,
-  Settings,
-  Users,
-  Bell,
   LogOut,
-  Home,
-  Banknote,
   ChevronRight,
-  ClipboardList,
-  CalendarOff,
-  CalendarPlus,
-  RotateCcw,
 } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
-
-interface NavItem {
-  label: string;
-  path: string;
-  icon: React.ElementType;
-  roles: Role[];
-}
-
-interface NavGroup {
-  title: string;
-  items: NavItem[];
-}
 
 function isNavItemActive(pathname: string, itemPath: string): boolean {
   if (itemPath === '/dashboard') return pathname === '/dashboard';
@@ -52,96 +27,6 @@ function isNavItemActive(pathname: string, itemPath: string): boolean {
 
   return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
 }
-
-const navGroups: NavGroup[] = [
-  {
-    title: 'Overview',
-    items: [
-      { label: 'Dashboard', path: '/dashboard', icon: Home, roles: Object.values(Role) },
-      { label: 'Notifications', path: '/notifications', icon: Bell, roles: Object.values(Role) },
-    ],
-  },
-  {
-    title: 'Project Management',
-    items: [
-      {
-        label: 'Appointments',
-        path: '/appointments',
-        icon: Calendar,
-        roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN],
-      },
-      {
-        label: 'Create Appointment',
-        path: '/appointments/create-for-customer',
-        icon: CalendarPlus,
-        roles: [Role.APPOINTMENT_AGENT],
-      },
-      {
-        label: 'Visit Reports',
-        path: '/visit-reports',
-        icon: ClipboardList,
-        roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
-      },
-      {
-        label: 'Projects',
-        path: '/projects',
-        icon: FolderKanban,
-        roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
-      },
-
-    ],
-  },
-  {
-    title: 'Financials',
-    items: [
-      {
-        label: 'Payments',
-        path: '/payments',
-        icon: CreditCard,
-        roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN],
-      },
-
-      {
-        label: 'Cash Flow',
-        path: '/cash',
-        icon: Banknote,
-        roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
-      },
-      {
-        label: 'Cashier Queue',
-        path: '/cashier-queue',
-        icon: CreditCard,
-        roles: [Role.CASHIER, Role.ADMIN],
-      },
-      {
-        label: 'Ocular Fee Queue',
-        path: '/ocular-fee-queue',
-        icon: CreditCard,
-        roles: [Role.CASHIER, Role.ADMIN],
-      },
-      {
-        label: 'Refund Requests',
-        path: '/refund-requests',
-        icon: RotateCcw,
-        roles: [Role.CASHIER, Role.ADMIN],
-      },
-    ],
-  },
-  {
-    title: 'Administration',
-    items: [
-      {
-        label: 'Reports',
-        path: '/reports',
-        icon: BarChart3,
-        roles: [Role.ADMIN, Role.CASHIER],
-      },
-      { label: 'Team', path: '/users', icon: Users, roles: [Role.ADMIN] },
-      { label: 'Slot Management', path: '/slot-management', icon: CalendarOff, roles: [Role.ADMIN, Role.APPOINTMENT_AGENT] },
-      { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
-    ],
-  },
-];
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
@@ -205,12 +90,12 @@ export function Sidebar() {
   return (
     <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col md:flex">
       {/* Background with subtle gradient */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#1a1a1c] via-[#111113] to-[#0d0d0f] border-r border-white/[0.06]" />
+      <div className="absolute inset-0 border-r border-white/[0.06] bg-[linear-gradient(180deg,#17181c_0%,#111216_52%,#0c0d10_100%)]" />
 
       {/* Content */}
       <div className="relative flex flex-col h-full">
         {/* Logo Header */}
-        <Link to="/" className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06] hover:bg-white/[0.03] transition-colors">
+        <Link to="/" className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06] hover:bg-white/[0.025] transition-colors">
           <BrandLogo className="h-9 w-9 ring-2 ring-[#b8b8bd]/40 shadow-lg shadow-black/20" />
           <div className="flex flex-col">
             <span className="text-[13px] font-bold tracking-tight text-white leading-tight">
@@ -223,8 +108,8 @@ export function Sidebar() {
         </Link>
 
         {/* Navigation */}
-        <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6">
-          {navGroups.map((group) => {
+        <div className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
+          {sidebarNavGroups.map((group) => {
             const visibleItems = group.items.filter((item) =>
               item.roles.some((role) => user.roles.includes(role)),
             );
@@ -233,7 +118,7 @@ export function Sidebar() {
 
             return (
               <div key={group.title}>
-                <h3 className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#6e6e73]">
+                <h3 className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#73737d]">
                   {group.title}
                 </h3>
                 <div className="space-y-0.5">
@@ -245,10 +130,10 @@ export function Sidebar() {
                         key={item.path}
                         to={item.path}
                         className={cn(
-                          'group relative flex items-center justify-between rounded-lg px-3 py-2 text-[13px] font-medium transition-all duration-200',
+                          'group relative flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200',
                           isActive
-                            ? 'bg-white/[0.08] text-white'
-                            : 'text-[#86868b] hover:bg-white/[0.04] hover:text-[#d2d2d7]',
+                            ? 'bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
+                            : 'text-[#8c8c96] hover:bg-white/[0.035] hover:text-[#e1e1e8]',
                         )}
                       >
                         {/* Active indicator bar */}
@@ -303,7 +188,7 @@ export function Sidebar() {
         </div>
 
         {/* User Profile Footer */}
-        <div className="border-t border-white/[0.06] p-3 space-y-2">
+        <div className="border-t border-white/[0.06] p-3 space-y-2 bg-black/10">
           <Link
             to="/account/profile"
             className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/[0.04]"

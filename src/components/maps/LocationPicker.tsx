@@ -49,6 +49,10 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
   const [isSearching, setIsSearching] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [mapErrorCount, setMapErrorCount] = useState(0);
+  const [mapReloadKey, setMapReloadKey] = useState(0);
+
+  const mapUnavailable = mapErrorCount >= 3;
 
   useEffect(() => {
     const query = searchInput.trim();
@@ -166,8 +170,10 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
                       onChange(place.location, place.formattedAddress);
                       setSearchInput(place.description);
                       setSuggestions([]);
+                      setErrorMessage(null);
                     }}
-                    className="block w-full rounded-lg px-2 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                          className="block w-full rounded-lg px-2 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e6e73] focus-visible:ring-offset-2"
+                          role="option"
                   >
                     {place.description}
                   </button>
@@ -178,35 +184,66 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
         )}
       </div>
 
-      <div className="overflow-hidden rounded-xl border border-gray-200">
-        <MapContainer
-          center={[markerPosition.lat, markerPosition.lng]}
-          zoom={13}
-          scrollWheelZoom
-          attributionControl={false}
-          className="h-[320px] w-full"
-        >
-          <TileLayer
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
-          <MapClickHandler onPick={(location) => onChange(location)} />
-          <RecenterMap location={markerPosition} />
-          <Marker
-            position={[markerPosition.lat, markerPosition.lng]}
-            icon={markerIcon}
-            draggable
-            eventHandlers={{
-              dragend: (event) => {
-                const nextPoint = (event.target as L.Marker).getLatLng();
-                onChange({ lat: nextPoint.lat, lng: nextPoint.lng });
-              },
-            }}
-          />
-        </MapContainer>
-      </div>
+            {mapUnavailable ? (
+              <div className="space-y-3 rounded-xl border border-amber-200 bg-amber-50/70 p-4">
+                <div>
+                  <p className="text-sm font-semibold text-amber-900">Map preview is temporarily unavailable</p>
+                  <p className="mt-1 text-xs leading-relaxed text-amber-800">
+                    You can still search for a place, use your current location, and save the exact address below. If the map tiles recover, you can retry the preview.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  className="h-10 rounded-xl border-amber-300 bg-white text-amber-800 hover:bg-amber-100"
+                  onClick={() => {
+                    setMapErrorCount(0);
+                    setMapReloadKey((current) => current + 1);
+                    setErrorMessage(null);
+                  }}
+                >
+                  Retry Map Preview
+                </Button>
+              </div>
+            ) : (
+              <div className="overflow-hidden rounded-xl border border-gray-200">
+                <MapContainer
+                  key={mapReloadKey}
+                  center={[markerPosition.lat, markerPosition.lng]}
+                  zoom={13}
+                  scrollWheelZoom
+                  attributionControl={false}
+                  className="h-[320px] w-full"
+                >
+                  <TileLayer
+                    url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+                    eventHandlers={{
+                      tileerror: () => {
+                        setMapErrorCount((count) => count + 1);
+                      },
+                    }}
+                  />
+                  <MapClickHandler onPick={(location) => onChange(location)} />
+                  <RecenterMap location={markerPosition} />
+                  <Marker
+                    position={[markerPosition.lat, markerPosition.lng]}
+                    icon={markerIcon}
+                    draggable
+                    eventHandlers={{
+                      dragend: (event) => {
+                        const nextPoint = (event.target as L.Marker).getLatLng();
+                        onChange({ lat: nextPoint.lat, lng: nextPoint.lng });
+                      },
+                    }}
+                  />
+                </MapContainer>
+              </div>
+            )}
 
       <p className="text-xs text-gray-500">
-        Tap the map or drag the pin to your exact site location.
+              {mapUnavailable
+                ? 'Use search or your current location while the map preview is unavailable.'
+                : 'Tap the map or drag the pin to your exact site location.'}
       </p>
 
       {value && (
@@ -215,7 +252,7 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
         </p>
       )}
 
-      {errorMessage && <p className="text-sm text-red-500">{errorMessage}</p>}
+      {errorMessage && <p className="text-sm text-red-500" aria-live="polite">{errorMessage}</p>}
     </div>
   );
 }

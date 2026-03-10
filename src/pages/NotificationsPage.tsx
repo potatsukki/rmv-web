@@ -5,6 +5,8 @@ import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
+import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import {
   useNotifications,
@@ -14,6 +16,7 @@ import {
 import { formatDistanceToNow } from 'date-fns';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { Notification } from '@/lib/types';
+import { extractItems } from '@/lib/utils';
 
 const CATEGORY_TABS = [
   { label: 'All', value: 'all' },
@@ -32,17 +35,27 @@ export function NotificationsPage() {
   const markAllAsRead = useMarkAllAsRead();
   const setNotifications = useNotificationStore((state) => state.setNotifications);
   const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const notifications: Notification[] =
-    (data as unknown as { items?: Notification[] })?.items ??
-    (Array.isArray(data) ? data : []);
+  const notifications = extractItems<Notification>(data);
 
   const filteredNotifications = useMemo(
-    () =>
-      activeFilter === 'all'
-        ? notifications
-        : notifications.filter((n) => n.category === activeFilter),
-    [notifications, activeFilter],
+    () => {
+      const normalizedQuery = searchQuery.trim().toLowerCase();
+
+      return notifications.filter((notification) => {
+        const matchesCategory =
+          activeFilter === 'all' || notification.category === activeFilter;
+
+        const matchesSearch =
+          normalizedQuery.length === 0 ||
+          notification.title.toLowerCase().includes(normalizedQuery) ||
+          notification.message.toLowerCase().includes(normalizedQuery);
+
+        return matchesCategory && matchesSearch;
+      });
+    },
+    [notifications, activeFilter, searchQuery],
   );
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;
@@ -67,49 +80,42 @@ export function NotificationsPage() {
   if (isError) return <PageError onRetry={refetch} />;
 
   return (
-    <div className="max-w-3xl mx-auto space-y-8">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+    <div className="mx-auto max-w-4xl space-y-8">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-gray-900">Notifications</h1>
-          <p className="text-gray-500 mt-1 text-sm">
+          <p className="mt-1 text-sm text-gray-500">
             Stay updated with project changes and alerts.
           </p>
         </div>
-        {(unreadCount > 0 || notifications.length > 0) && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => markAllAsRead.mutate()}
-            disabled={markAllAsRead.isPending || unreadCount === 0}
-            className="self-start sm:self-auto border-gray-200 text-gray-600 hover:text-[#1d1d1f] hover:border-[#c8c8cd] rounded-lg"
-          >
-            <CheckCheck className="mr-2 h-4 w-4" />
-            Mark all read
-          </Button>
-        )}
+        <div className="text-sm text-[#6e6e73]">
+          {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Everything is read'}
+        </div>
       </div>
 
-      {/* Category filter tabs */}
-      <div className="flex gap-1.5 overflow-x-auto pb-1 scrollbar-hide">
-        {CATEGORY_TABS.map((tab) => (
-          <button
-            key={tab.value}
-            onClick={() => setActiveFilter(tab.value)}
-            className={`px-3.5 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-              activeFilter === tab.value
-                ? 'bg-gray-900 text-white'
-                : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-            }`}
-          >
-            {tab.label}
-            {tab.value !== 'all' && (
-              <span className="ml-1.5 text-xs opacity-70">
-                {notifications.filter((n) => n.category === tab.value).length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+      <CollectionToolbar
+        title="Find the right update fast"
+        description="Search message copy, then narrow the stream by notification category."
+        searchPlaceholder="Search notifications"
+        searchValue={searchQuery}
+        onSearchChange={setSearchQuery}
+        filters={CATEGORY_TABS.map((tab) => ({ label: tab.label, value: tab.value }))}
+        activeFilter={activeFilter}
+        onFilterChange={setActiveFilter}
+        action={
+          (unreadCount > 0 || notifications.length > 0) ? (
+            <Button
+              variant="outline"
+              onClick={() => markAllAsRead.mutate()}
+              disabled={markAllAsRead.isPending || unreadCount === 0}
+              className="h-11 rounded-xl border-gray-200 text-gray-600 hover:border-[#c8c8cd] hover:text-[#1d1d1f]"
+            >
+              <CheckCheck className="mr-2 h-4 w-4" />
+              Mark all read
+            </Button>
+          ) : null
+        }
+      />
 
       {isLoading ? (
         <div className="space-y-3">
@@ -128,19 +134,15 @@ export function NotificationsPage() {
           ))}
         </div>
       ) : filteredNotifications.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-16 text-center border-2 border-dashed border-gray-100 rounded-2xl bg-gray-50/50">
-          <div className="bg-gray-100 p-4 rounded-2xl mb-4">
-            <Bell className="h-8 w-8 text-gray-300" />
-          </div>
-          <h3 className="text-lg font-semibold text-gray-900">
-            {activeFilter === 'all' ? 'All caught up!' : 'No notifications'}
-          </h3>
-          <p className="text-gray-500 max-w-sm mt-1 text-sm">
-            {activeFilter === 'all'
+        <EmptyState
+          icon={<Bell className="h-8 w-8" />}
+          title={activeFilter === 'all' && searchQuery.trim().length === 0 ? 'All caught up' : 'No notifications found'}
+          description={
+            activeFilter === 'all' && searchQuery.trim().length === 0
               ? 'You have no new notifications at the moment.'
-              : `No ${activeFilter} notifications yet.`}
-          </p>
-        </div>
+              : 'Try adjusting the category or search terms to find the update you are looking for.'
+          }
+        />
       ) : (
         <div className="space-y-2.5">
           {filteredNotifications.map((n) => (

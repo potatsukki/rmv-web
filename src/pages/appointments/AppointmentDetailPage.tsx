@@ -4,8 +4,6 @@ import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users,
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
-import { LocationPicker } from '@/components/maps/LocationPicker';
-import { LocationView } from '@/components/maps/LocationView';
 import { reverseGeocodeLocation, fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -42,9 +40,17 @@ import { useSubmitRefundRequest, useMyRefundRequests } from '@/hooks/useRefunds'
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, AppointmentStatus } from '@/lib/constants';
 import { SERVICE_TYPE_LABELS } from '@/lib/constants';
-import { useState, useEffect } from 'react';
+import { Suspense, lazy, useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 import type { ApiResponse, Appointment } from '@/lib/types';
+
+const LazyLocationPicker = lazy(() =>
+  import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
+);
+
+const LazyLocationView = lazy(() =>
+  import('@/components/maps/LocationView').then((module) => ({ default: module.LocationView })),
+);
 
 export function AppointmentDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -271,6 +277,33 @@ export function AppointmentDetailPage() {
     </div>
   );
 
+  const SummaryCard = ({
+    label,
+    value,
+    tone = 'default',
+  }: {
+    label: string;
+    value: string;
+    tone?: 'default' | 'accent';
+  }) => (
+    <div
+      className={tone === 'accent'
+        ? 'rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm'
+        : 'rounded-2xl border border-[#d2d2d7] bg-white/80 p-4 shadow-sm'}
+    >
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-[#1d1d1f] sm:text-base">{value}</p>
+    </div>
+  );
+
+  const MapPanelFallback = ({ message }: { message: string }) => (
+    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7]/80 px-5 py-8 text-center">
+      <Loader2 className="h-5 w-5 animate-spin text-[#6e6e73]" />
+      <p className="mt-3 text-sm font-medium text-[#1d1d1f]">Loading map tools</p>
+      <p className="mt-1 max-w-sm text-xs text-[#6e6e73]">{message}</p>
+    </div>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -363,6 +396,34 @@ export function AppointmentDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <SummaryCard
+          label="Visit Schedule"
+          value={`${format(new Date(appt.date), 'MMM d, yyyy')} • ${formatSlotTime(appt.slotCode)}`}
+          tone="accent"
+        />
+        <SummaryCard
+          label="Appointment Type"
+          value={`${appt.type.charAt(0).toUpperCase() + appt.type.slice(1)} Visit`}
+        />
+        <SummaryCard
+          label={isCustomer ? 'Assigned Staff' : 'Customer'}
+          value={isCustomer ? appt.salesStaffName || 'Pending assignment' : appt.customerName || 'Not yet attached'}
+        />
+        <SummaryCard
+          label="Location & Fee"
+          value={appt.type === 'ocular'
+            ? appt.ocularFeePaid
+              ? `Fee paid • ${appt.customerLocation ? 'Pin saved' : 'No pin yet'}`
+              : appt.ocularFee
+                ? `${formatCurrency(appt.ocularFee)} pending`
+                : appt.customerLocation
+                  ? 'Pin submitted • awaiting fee'
+                  : 'Awaiting site pin'
+            : appt.address || 'Office visit'}
+        />
+      </div>
 
       {customerCanManageAppointment && (
         <Card className="overflow-hidden rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm">
@@ -468,7 +529,9 @@ export function AppointmentDetailPage() {
             {!isCustomer && appt.customerLocation && (
               <div>
                 <p className="text-[13px] font-medium text-[#3a3a3e] mb-2">Customer Pin Location</p>
-                <LocationView lat={appt.customerLocation.lat} lng={appt.customerLocation.lng} />
+                <Suspense fallback={<MapPanelFallback message="Loading the saved site pin preview for staff review." />}>
+                  <LazyLocationView lat={appt.customerLocation.lat} lng={appt.customerLocation.lng} />
+                </Suspense>
                 <a
                   href={`https://www.google.com/maps?q=${appt.customerLocation.lat},${appt.customerLocation.lng}`}
                   target="_blank"
@@ -606,18 +669,20 @@ export function AppointmentDetailPage() {
               <strong>{format(new Date(appt.date), 'MMMM d, yyyy')}</strong>.
               Please pin your site location on the map so we can calculate the visit fee and finalize your appointment.
             </p>
-            <LocationPicker
-              value={customerLocationPin}
-              onChange={(loc, addrHint) => {
-                setCustomerLocationPin(loc);
-                if (addrHint) setCustomerAddress(addrHint);
-                else {
-                  reverseGeocodeLocation(loc)
-                    .then(addr => setCustomerAddress(addr || ''))
-                    .catch(() => {});
-                }
-              }}
-            />
+            <Suspense fallback={<MapPanelFallback message="Loading the site-pin picker so you can submit your visit location." />}>
+              <LazyLocationPicker
+                value={customerLocationPin}
+                onChange={(loc, addrHint) => {
+                  setCustomerLocationPin(loc);
+                  if (addrHint) setCustomerAddress(addrHint);
+                  else {
+                    reverseGeocodeLocation(loc)
+                      .then(addr => setCustomerAddress(addr || ''))
+                      .catch(() => {});
+                  }
+                }}
+              />
+            </Suspense>
             {customerAddress && (
               <div className="rounded-lg border border-blue-200 bg-white p-3">
                 <p className="text-xs font-medium text-blue-700">Resolved Address</p>
@@ -1380,7 +1445,7 @@ export function AppointmentDetailPage() {
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f]">Refund Ocular Fee</DialogTitle>
             <DialogDescription className="text-[#6e6e73]">
-              This will mark the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''} as refunded. The customer will be notified.
+              This will mark the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''} as refunded, record your reason on the appointment timeline, and notify the customer that finance follow-up will continue outside this booking.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
@@ -1433,7 +1498,7 @@ export function AppointmentDetailPage() {
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f]">Request Refund</DialogTitle>
             <DialogDescription className="text-[#6e6e73]">
-              Request a refund for the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''}. A cashier will review your request.
+              Request a refund for the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''}. Your request will be reviewed by the cashier team, and the payout will be sent using the method you provide below if it is approved.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">

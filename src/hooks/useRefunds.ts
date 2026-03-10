@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, RefundRequest } from '@/lib/types';
+import { extractItems } from '@/lib/utils';
 
 // ── Keys ──
 const KEYS = {
@@ -17,7 +18,7 @@ export function useMyRefundRequests(enabled = true) {
     queryKey: KEYS.my,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<RefundRequest[]>>('/refunds/my');
-      return data.data;
+      return extractItems<RefundRequest>(data.data);
     },
     enabled,
   });
@@ -35,7 +36,27 @@ export function useRefundRequests(params?: Record<string, string>) {
         limit: number;
         totalPages: number;
       }>>('/refunds', { params });
-      return data.data;
+      const payload = data.data as unknown;
+      const requests = extractItems<RefundRequest>(payload);
+
+      if (typeof payload === 'object' && payload !== null) {
+        const record = payload as Record<string, unknown>;
+        return {
+          requests,
+          total: typeof record.total === 'number' ? record.total : requests.length,
+          page: typeof record.page === 'number' ? record.page : 1,
+          limit: typeof record.limit === 'number' ? record.limit : requests.length || 20,
+          totalPages: typeof record.totalPages === 'number' ? record.totalPages : 1,
+        };
+      }
+
+      return {
+        requests,
+        total: requests.length,
+        page: 1,
+        limit: requests.length || 20,
+        totalPages: 1,
+      };
     },
   });
 }

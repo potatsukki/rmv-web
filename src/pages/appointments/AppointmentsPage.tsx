@@ -1,12 +1,10 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Plus, Calendar, Search, Filter, FileText, ChevronRight, MapPin } from 'lucide-react';
+import { Plus, Calendar, FileText, ChevronRight, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -15,7 +13,10 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, AppointmentStatus } from '@/lib/constants';
@@ -107,11 +108,18 @@ export function AppointmentsPage() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Appointments</h1>
+          <div className="flex flex-wrap items-center gap-2">
+            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Appointments</h1>
+            {!isLoading && appointments.length > 0 && (
+              <span className="rounded-full bg-[#f0f0f5] px-2.5 py-1 text-[11px] font-semibold text-[#5f5f68]">
+                {appointments.length} visible
+              </span>
+            )}
+          </div>
           <p className="text-[#6e6e73] mt-1 text-sm">
             {isCustomer
               ? 'Schedule and manage your site visits.'
@@ -129,38 +137,16 @@ export function AppointmentsPage() {
       </div>
 
       {/* Filters */}
-      <div className="flex flex-col gap-3 md:flex-row md:items-center bg-white/70 backdrop-blur-sm p-4 rounded-xl border border-[#c8c8cd]/50 shadow-sm">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
-          <Input
-            placeholder="Search bookings..."
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="pl-10 h-10 border-[#d2d2d7] focus-visible:ring-[#6e6e73]"
-          />
-        </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 md:pb-0 no-scrollbar">
-          <Filter className="h-4 w-4 text-[#86868b] hidden md:block mr-1 flex-shrink-0" />
-          {STATUS_FILTERS.map((f) => (
-            <button
-              type="button"
-              key={f.value}
-              onClick={() => setStatusFilter(f.value)}
-              aria-pressed={statusFilter === f.value}
-              className={`
-                whitespace-nowrap px-3 py-1.5 rounded-lg text-xs font-semibold transition-all
-                ${
-                  statusFilter === f.value
-                    ? 'bg-[#1d1d1f] text-white shadow-sm'
-                    : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]'
-                }
-              `}
-            >
-              {f.label}
-            </button>
-          ))}
-        </div>
-      </div>
+      <CollectionToolbar
+        title="Find the right appointment fast"
+        description="Search customers, then narrow the list by lifecycle stage."
+        searchPlaceholder="Search bookings"
+        searchValue={search}
+        onSearchChange={setSearch}
+        filters={STATUS_FILTERS}
+        activeFilter={statusFilter}
+        onFilterChange={setStatusFilter}
+      />
 
       {/* Content */}
       {isLoading ? (
@@ -199,24 +185,20 @@ export function AppointmentsPage() {
           </div>
         </>
       ) : !appointments.length ? (
-        <div className="flex flex-col items-center justify-center py-16 sm:py-20 text-center border border-dashed border-[#d2d2d7] rounded-2xl bg-[#f5f5f7]/50 px-4">
-          <div className="flex h-12 w-12 sm:h-14 sm:w-14 items-center justify-center rounded-2xl bg-white shadow-sm mb-4">
-            <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-[#c8c8cd]" />
-          </div>
-          <h3 className="text-sm sm:text-base font-semibold text-[#1d1d1f]">No appointments found</h3>
-          <p className="text-xs sm:text-sm text-[#86868b] max-w-sm mt-1.5 mb-6">
-            {isCustomer
-              ? 'Book your first appointment to get started with your project.'
-              : 'No appointments match your current filters.'}
-          </p>
-          {isCustomer && (
+        <EmptyState
+          icon={<Calendar className="h-6 w-6" />}
+          title="No appointments found"
+          description={isCustomer
+            ? 'Book your first appointment to get started with your project.'
+            : 'No appointments match your current search or status filters.'}
+          action={isCustomer ? (
             <Button asChild variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7]">
               <Link to="/appointments/book">
                 Book First Appointment
               </Link>
             </Button>
-          )}
-        </div>
+          ) : undefined}
+        />
       ) : (
         <>
           {/* ── Mobile list (< md) ── */}
@@ -241,12 +223,7 @@ export function AppointmentsPage() {
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge
-                          variant="outline"
-                          className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${config.badge}`}
-                        >
-                          {config.label}
-                        </Badge>
+                        <StatusBadge status={statusKey} label={config.label} className="h-5 px-1.5 py-0 text-[9px]" />
                         <ChevronRight className="h-4 w-4 text-[#c8c8cd]" />
                       </div>
                     </div>
@@ -307,7 +284,7 @@ export function AppointmentsPage() {
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Date & Time</TableHead>
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Location</TableHead>
                   <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pr-5 text-right">Open</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -372,17 +349,15 @@ export function AppointmentsPage() {
 
                       {/* Status */}
                       <TableCell className="py-4">
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] font-bold uppercase tracking-wider ${config.badge}`}
-                        >
-                          {config.label}
-                        </Badge>
+                        <StatusBadge status={statusKey} label={config.label} className="text-[10px]" />
                       </TableCell>
 
                       {/* Arrow */}
-                      <TableCell className="py-4 pr-5">
-                        <ChevronRight className="h-4 w-4 text-[#c8c8cd] group-hover:text-[#86868b] transition-colors" />
+                      <TableCell className="py-4 pr-5 text-right">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#4a4a52] group-hover:text-[#1d1d1f]">
+                          Open
+                          <ChevronRight className="h-4 w-4 text-[#b2b2ba] group-hover:text-[#6e6e73] transition-colors" />
+                        </span>
                       </TableCell>
                     </TableRow>
                   );

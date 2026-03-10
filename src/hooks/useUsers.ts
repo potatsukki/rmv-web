@@ -3,7 +3,7 @@ import { api } from '@/lib/api';
 import type { ApiResponse, User } from '@/lib/types';
 import { useAuthStore } from '@/stores/auth.store';
 import toast from 'react-hot-toast';
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, extractItems } from '@/lib/utils';
 
 const KEYS = {
   all: ['users'] as const,
@@ -16,7 +16,7 @@ export function useUsers(params?: Record<string, string>, options?: { enabled?: 
     queryKey: KEYS.list(params),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<User[]>>('/users/admin/users', { params });
-      return data.data;
+      return extractItems<User>(data.data);
     },
     enabled: options?.enabled ?? true,
   });
@@ -105,7 +105,7 @@ export function useCustomerSearch(search: string) {
       const { data } = await api.get<ApiResponse<CustomerSearchResult[]>>('/users/customers', {
         params: { search },
       });
-      return data.data;
+      return extractItems<CustomerSearchResult>(data.data);
     },
     enabled: search.length >= 2,
     staleTime: 30_000,
