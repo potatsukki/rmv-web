@@ -81,10 +81,10 @@ export function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+      <div className="metal-panel flex flex-col gap-4 rounded-[1.75rem] p-5 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Notifications</h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">Notifications</h1>
+          <p className="mt-1 text-sm text-[#616a74]">
             Stay updated with project changes and alerts.
           </p>
         </div>
@@ -108,7 +108,7 @@ export function NotificationsPage() {
               variant="outline"
               onClick={() => markAllAsRead.mutate()}
               disabled={markAllAsRead.isPending || unreadCount === 0}
-              className="h-11 rounded-xl border-gray-200 text-gray-600 hover:border-[#c8c8cd] hover:text-[#1d1d1f]"
+              className="h-11 rounded-xl text-[#616a74] hover:text-[#171b21]"
             >
               <CheckCheck className="mr-2 h-4 w-4" />
               Mark all read
@@ -120,7 +120,7 @@ export function NotificationsPage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 5 }).map((_, i) => (
-            <Card key={i} className="border-gray-100 shadow-none rounded-xl">
+            <Card key={i} className="rounded-xl shadow-none">
               <CardContent className="p-4">
                 <div className="flex gap-4">
                   <Skeleton className="h-10 w-10 rounded-full" />
@@ -153,16 +153,16 @@ export function NotificationsPage() {
                 n.link ? 'cursor-pointer' : ''
               } ${
                 !n.isRead
-                  ? 'border-[#c8c8cd] bg-[#f0f0f5]/30 shadow-sm'
-                  : 'border-gray-100 bg-white opacity-80 hover:opacity-100'
+                  ? 'metal-panel shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_30px_rgba(18,22,27,0.08)]'
+                  : 'metal-panel opacity-85 hover:opacity-100'
               }`}
             >
               <CardContent className="flex items-start gap-4 p-5">
                 <div
                   className={`mt-0.5 rounded-xl p-2 flex-shrink-0 ${
                     !n.isRead
-                      ? 'bg-[#f0f0f5] text-[#1d1d1f]'
-                      : 'bg-gray-100 text-gray-400'
+                        ? 'silver-sheen text-[#171b21]'
+                      : 'metal-pill text-[#7a838d]'
                   }`}
                 >
                   {!n.isRead ? (
@@ -176,12 +176,12 @@ export function NotificationsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <p
                       className={`text-sm font-medium ${
-                        !n.isRead ? 'text-gray-900' : 'text-gray-600'
+                        !n.isRead ? 'text-[#171b21]' : 'text-[#616a74]'
                       }`}
                     >
                       {String(n.title || '')}
                     </p>
-                    <span className="text-xs text-gray-400 whitespace-nowrap flex items-center gap-1">
+                    <span className="flex items-center gap-1 whitespace-nowrap text-xs text-[#8a939d]">
                       <Clock className="h-3 w-3" />
                       {n.createdAt
                         ? String(formatDistanceToNow(new Date(String(n.createdAt)), {
@@ -190,7 +190,7 @@ export function NotificationsPage() {
                         : null}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500 leading-relaxed">
+                  <p className="mt-1 text-sm leading-relaxed text-[#616a74]">
                     {String(n.message || '')}
                   </p>
                   {n.link && (
@@ -205,7 +205,7 @@ export function NotificationsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-8 w-8 text-gray-400 hover:text-[#1d1d1f] hover:bg-[#f0f0f5] rounded-lg"
+                    className="metal-pill h-8 w-8 rounded-lg text-[#7a838d] hover:text-[#171b21]"
                     onClick={(e) => {
                       e.stopPropagation();
                       markAsRead.mutate(String(n._id));

@@ -203,9 +203,9 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Form */}
-      <div className="relative flex flex-1 flex-col justify-center px-6 py-12 lg:flex-none lg:px-20 xl:px-28 bg-gradient-to-br from-[#eaeaef] via-[#e0e0e6] to-[#d8d8de] z-10 w-full lg:w-[48%]">
+      <div className="relative z-10 flex w-full flex-1 flex-col justify-center bg-[radial-gradient(circle_at_top_left,#f4f6f8_0%,#e4e8ed_52%,#d4dae1_100%)] px-6 py-12 lg:w-[48%] lg:flex-none lg:px-20 xl:px-28">
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-        <div className="relative mx-auto w-full max-w-[380px]">
+        <div className="metal-panel relative mx-auto w-full max-w-[420px] rounded-[2rem] p-8 sm:p-10">
           {/* Back link */}
           <Link
             to="/"
@@ -238,7 +238,7 @@ export function LoginPage() {
                 type="email"
                 placeholder="Enter your email"
                 autoComplete="email"
-                className="h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl"
+                className="metal-input h-11 rounded-xl"
                 {...register('email')}
               />
               {errors.email && (
@@ -264,7 +264,7 @@ export function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   placeholder="Enter your password"
                   autoComplete="current-password"
-                  className="h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 pr-10 rounded-xl"
+                  className="metal-input h-11 rounded-xl pr-10"
                   {...register('password')}
                 />
                 <button
@@ -287,7 +287,7 @@ export function LoginPage() {
 
             <Button
               type="submit"
-              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white font-semibold h-11 transition-all active:scale-[0.98] shadow-lg shadow-black/20 rounded-xl"
+              className="h-11 w-full rounded-xl font-semibold transition-all active:scale-[0.98]"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -299,14 +299,14 @@ export function LoginPage() {
                 <span className="w-full border-t border-[#c8c8cd]/60" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#e4e4e9] px-2 text-[#86868b]">or</span>
+                <span className="bg-[rgba(235,239,244,0.95)] px-2 text-[#86868b]">or</span>
               </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="w-full h-11 font-medium border-[#c8c8cd] bg-white/60 hover:bg-white/90 text-[#1d1d1f] transition-all active:scale-[0.98] rounded-xl"
+              className="h-11 w-full rounded-xl border-[#cfd6dd] bg-white/40 font-medium text-[#171b21] transition-all active:scale-[0.98] hover:bg-white/65"
               onClick={handleGoogleSignIn}
               disabled={googleLoading || isSubmitting}
             >

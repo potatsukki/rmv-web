@@ -32,43 +32,43 @@ const STATUS_FILTERS = [
 const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
   requested: {
     label: 'Requested',
-    dot: 'bg-amber-500',
-    badge: 'border-amber-200 text-amber-700 bg-amber-50',
+    dot: 'bg-[#a97d49]',
+    badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]',
   },
   confirmed: {
     label: 'Confirmed',
-    dot: 'bg-blue-500',
-    badge: 'border-blue-200 text-blue-700 bg-blue-50',
+    dot: 'bg-[#708ca6]',
+    badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]',
   },
   ready_for_ocular: {
     label: 'Ready for Ocular',
-    dot: 'bg-purple-500',
-    badge: 'border-purple-200 text-purple-700 bg-purple-50',
+    dot: 'bg-[#8277a3]',
+    badge: 'border-[#afa7c5] text-[#665d82] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)]',
   },
   completed: {
     label: 'Completed',
-    dot: 'bg-emerald-500',
-    badge: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+    dot: 'bg-[#6c8f7d]',
+    badge: 'border-[#93ad9d] text-[#4e6c5a] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]',
   },
   cancelled: {
     label: 'Cancelled',
-    dot: 'bg-red-500',
-    badge: 'border-red-200 text-red-700 bg-red-50',
+    dot: 'bg-[#b96c66]',
+    badge: 'border-[#cb8b86] text-[#87544f] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)]',
   },
   no_show: {
     label: 'No Show',
-    dot: 'bg-gray-500',
-    badge: 'border-gray-200 text-gray-700 bg-gray-50',
+    dot: 'bg-[#9ca6b1]',
+    badge: 'border-[#c6ccd3] text-[#5b6470] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)]',
   },
   reschedule_requested: {
     label: 'Reschedule',
-    dot: 'bg-violet-500',
-    badge: 'border-violet-200 text-violet-700 bg-violet-50',
+    dot: 'bg-[#8277a3]',
+    badge: 'border-[#afa7c5] text-[#665d82] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)]',
   },
   awaiting_payment: {
     label: 'Awaiting Payment',
-    dot: 'bg-orange-500',
-    badge: 'border-orange-200 text-orange-700 bg-orange-50',
+    dot: 'bg-[#aa7f53]',
+    badge: 'border-[#c4a07d] text-[#7b5d3f] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)]',
   },
 };
 
@@ -113,21 +113,21 @@ export function AppointmentsPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <div className="flex flex-wrap items-center gap-2">
-            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Appointments</h1>
+            <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">Appointments</h1>
             {!isLoading && appointments.length > 0 && (
-              <span className="rounded-full bg-[#f0f0f5] px-2.5 py-1 text-[11px] font-semibold text-[#5f5f68]">
+              <span className="metal-pill rounded-full px-2.5 py-1 text-[11px] font-semibold text-[#5f6872]">
                 {appointments.length} visible
               </span>
             )}
           </div>
-          <p className="text-[#6e6e73] mt-1 text-sm">
+          <p className="mt-1 text-sm text-[#616a74]">
             {isCustomer
               ? 'Schedule and manage your site visits.'
               : 'Manage customer booking requests.'}
           </p>
         </div>
         {isCustomer && (
-          <Button asChild className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white shadow-sm h-10">
+          <Button asChild className="h-10">
             <Link to="/appointments/book">
               <Plus className="mr-2 h-4 w-4" />
               Book Appointment
@@ -154,7 +154,7 @@ export function AppointmentsPage() {
           {/* Mobile skeleton */}
           <div className="space-y-3 md:hidden">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-[#c8c8cd]/50 p-4 space-y-3">
+              <div key={i} className="metal-panel rounded-[1.35rem] p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Skeleton className="h-2 w-2 rounded-full" />
@@ -170,7 +170,7 @@ export function AppointmentsPage() {
             ))}
           </div>
           {/* Desktop skeleton */}
-          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] md:block">
             <div className="p-4 space-y-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
@@ -192,7 +192,7 @@ export function AppointmentsPage() {
             ? 'Book your first appointment to get started with your project.'
             : 'No appointments match your current search or status filters.'}
           action={isCustomer ? (
-            <Button asChild variant="outline" className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7]">
+            <Button asChild variant="outline">
               <Link to="/appointments/book">
                 Book First Appointment
               </Link>
@@ -213,12 +213,12 @@ export function AppointmentsPage() {
                   to={`/appointments/${appt._id}`}
                   className="group block"
                 >
-                  <div className="bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 active:bg-[#f5f5f7] transition-colors">
+                  <div className="metal-panel rounded-[1.35rem] px-4 py-3.5 transition-colors active:bg-white/60">
                     {/* Row 1: Status dot + Name + Badge + Chevron */}
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
-                        <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                        <p className="truncate text-sm font-medium text-[#171b21]">
                           {appt.customerName || 'Appointment'}
                         </p>
                       </div>
@@ -229,14 +229,14 @@ export function AppointmentsPage() {
                     </div>
 
                     {/* Row 2: Meta — type · date · time */}
-                    <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-[11px] text-[#86868b]">
+                    <div className="mt-2 ml-[18px] flex items-center gap-1.5 text-[11px] text-[#68727d]">
                       <span className="capitalize">{appt.type}</span>
-                      <span className="text-[#d2d2d7]">·</span>
+                      <span className="text-[#b8c0c9]">·</span>
                       <span>
                         {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'}
                       </span>
-                      <span className="text-[#d2d2d7]">·</span>
-                      <span className="font-medium text-[#3a3a3e]">
+                      <span className="text-[#b8c0c9]">·</span>
+                      <span className="font-medium text-[#434c56]">
                         {formatSlotTime(appt.slotCode)}
                       </span>
                     </div>
@@ -244,7 +244,7 @@ export function AppointmentsPage() {
                     {/* Row 3 (optional): Site details badge */}
                     {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
                       <div className="ml-[18px] mt-1.5">
-                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-blue-600">
+                        <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#4f6679]">
                           <FileText className="h-3 w-3" />
                           {appt.type === 'office' ? 'Site Details Required' : 'Site Details Optional'}
                         </span>
@@ -253,12 +253,12 @@ export function AppointmentsPage() {
 
                     {/* Row 4 (optional): Location */}
                     {(appt.addressStructured?.city || appt.address) ? (
-                      <div className="flex items-center gap-1.5 ml-[18px] mt-1.5 text-[11px] text-[#86868b]">
+                      <div className="ml-[18px] mt-1.5 flex items-center gap-1.5 text-[11px] text-[#68727d]">
                         <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span className="truncate">{appt.addressStructured?.city || appt.address}</span>
                       </div>
                     ) : (
-                      <div className="flex items-center gap-1.5 ml-[18px] mt-1.5 text-[11px] text-[#c8c8cd]">
+                      <div className="ml-[18px] mt-1.5 flex items-center gap-1.5 text-[11px] text-[#9fa8b3]">
                         <MapPin className="h-3 w-3 flex-shrink-0" />
                         <span>Address not provided</span>
                       </div>
@@ -268,23 +268,23 @@ export function AppointmentsPage() {
               );
             })}
             <div className="px-1 pt-1">
-              <p className="text-[11px] text-[#86868b]">
+              <p className="text-[11px] text-[#68727d]">
                 {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
 
           {/* ── Desktop table (md+) ── */}
-          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] md:block">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pl-5">Customer</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Type</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Date & Time</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Location</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pr-5 text-right">Open</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Customer</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Type</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Date & Time</TableHead>
+                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Location</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="pr-5 text-right text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Open</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -296,18 +296,18 @@ export function AppointmentsPage() {
                     <TableRow
                       key={appt._id}
                       onClick={() => navigate(`/appointments/${appt._id}`)}
-                      className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group"
+                      className="group cursor-pointer border-b border-[#e1e6ec] transition-colors hover:bg-white/45"
                     >
                       {/* Customer */}
                       <TableCell className="pl-5 py-4">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
                           <div className="min-w-0">
-                            <p className="font-medium text-[#1d1d1f] text-sm truncate group-hover:text-[#0066cc] transition-colors">
+                            <p className="truncate text-sm font-medium text-[#171b21] transition-colors group-hover:text-[#4f6679]">
                               {appt.customerName || 'Appointment'}
                             </p>
                             {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
-                              <span className="inline-flex items-center gap-1 mt-1 text-[10px] font-medium text-blue-600">
+                              <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-[#4f6679]">
                                 <FileText className="h-3 w-3" />
                                 {appt.type === 'office' ? 'Site Details Required' : 'Site Details Optional'}
                               </span>
@@ -318,7 +318,7 @@ export function AppointmentsPage() {
 
                       {/* Type */}
                       <TableCell className="py-4">
-                        <span className="inline-flex items-center text-xs font-medium text-[#6e6e73] capitalize">
+                        <span className="inline-flex items-center text-xs font-medium capitalize text-[#616a74]">
                           {appt.type}
                         </span>
                       </TableCell>
@@ -329,7 +329,7 @@ export function AppointmentsPage() {
                           <p className="text-[#1d1d1f] font-medium">
                             {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'}
                           </p>
-                          <p className="text-[#86868b] text-xs mt-0.5">
+                          <p className="mt-0.5 text-xs text-[#68727d]">
                             {formatSlotTime(appt.slotCode)}
                           </p>
                         </div>
@@ -338,12 +338,12 @@ export function AppointmentsPage() {
                       {/* Location — hidden below lg */}
                       <TableCell className="py-4 hidden lg:table-cell">
                         {appt.addressStructured?.city || appt.address ? (
-                          <div className="flex items-center gap-1.5 text-xs text-[#6e6e73] max-w-[200px]">
-                            <MapPin className="h-3 w-3 text-[#86868b] flex-shrink-0" />
+                          <div className="flex max-w-[200px] items-center gap-1.5 text-xs text-[#616a74]">
+                            <MapPin className="h-3 w-3 flex-shrink-0 text-[#8b95a0]" />
                             <span className="truncate">{appt.addressStructured?.city || appt.address}</span>
                           </div>
                         ) : (
-                          <span className="text-xs text-[#c8c8cd]">Address not provided</span>
+                          <span className="text-xs text-[#9fa8b3]">Address not provided</span>
                         )}
                       </TableCell>
 
@@ -354,9 +354,9 @@ export function AppointmentsPage() {
 
                       {/* Arrow */}
                       <TableCell className="py-4 pr-5 text-right">
-                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#4a4a52] group-hover:text-[#1d1d1f]">
+                        <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#4d5660] group-hover:text-[#171b21]">
                           Open
-                          <ChevronRight className="h-4 w-4 text-[#b2b2ba] group-hover:text-[#6e6e73] transition-colors" />
+                          <ChevronRight className="h-4 w-4 text-[#9ca6b1] transition-colors group-hover:text-[#68727d]" />
                         </span>
                       </TableCell>
                     </TableRow>
@@ -364,8 +364,8 @@ export function AppointmentsPage() {
                 })}
               </TableBody>
             </Table>
-            <div className="px-5 py-3 border-t border-[#f0f0f5] bg-[#fafafa]">
-              <p className="text-xs text-[#86868b]">
+            <div className="border-t border-[#dde3ea] bg-white/25 px-5 py-3">
+              <p className="text-xs text-[#68727d]">
                 {appointments.length} appointment{appointments.length !== 1 ? 's' : ''}
               </p>
             </div>

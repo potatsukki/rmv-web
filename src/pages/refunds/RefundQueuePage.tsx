@@ -97,7 +97,7 @@ export function RefundQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="metal-panel rounded-[1.75rem] p-5">
         <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Refund Requests</h1>
         <p className="text-[#6e6e73] mt-1 text-sm">Review and process customer refund requests</p>
       </div>
@@ -122,7 +122,7 @@ export function RefundQueuePage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-            <Card key={i} className="rounded-xl border-[#c8c8cd]/50">
+              <Card key={i} className="rounded-xl">
               <CardContent className="p-4">
                 <Skeleton className="h-24 w-full" />
               </CardContent>
@@ -145,7 +145,7 @@ export function RefundQueuePage() {
             const contact = getCustomerContact(r);
 
             return (
-              <Card key={r._id} className="rounded-xl border-[#c8c8cd]/50 hover:border-[#c8c8cd] transition-colors">
+              <Card key={r._id} className="rounded-xl transition-colors hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_32px_rgba(18,22,27,0.1)]">
                 <CardContent className="p-4">
                   <div className="flex flex-col gap-3">
                     {/* Header row */}
@@ -199,9 +199,9 @@ export function RefundQueuePage() {
 
                     {/* Denial reason if denied */}
                     {r.status === 'denied' && r.denialReason && (
-                      <div className="text-sm bg-red-50 border border-red-200 rounded-lg p-2">
-                        <span className="text-red-700 font-medium">Denial reason: </span>
-                        <span className="text-red-600">{r.denialReason}</span>
+                      <div className="rounded-lg border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] p-2 text-sm">
+                        <span className="font-medium text-[#87544f]">Denial reason: </span>
+                        <span className="text-[#9a625c]">{r.denialReason}</span>
                       </div>
                     )}
 
@@ -225,7 +225,7 @@ export function RefundQueuePage() {
                             size="sm"
                             variant="outline"
                             onClick={() => setDenyDialog({ open: true, id: r._id })}
-                            className="rounded-xl border-red-200 text-red-600 hover:bg-red-50 h-8 text-xs"
+                            className="h-8 rounded-xl border-[#cb8b86] text-[#87544f] hover:bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-xs"
                           >
                             <XCircle className="mr-1 h-3.5 w-3.5" />
                             Deny
@@ -233,7 +233,7 @@ export function RefundQueuePage() {
                           <Button
                             size="sm"
                             onClick={() => setApproveId(r._id)}
-                            className="rounded-xl bg-green-600 hover:bg-green-700 text-white h-8 text-xs"
+                            className="h-8 rounded-xl text-xs"
                           >
                             <CheckCircle className="mr-1 h-3.5 w-3.5" />
                             Approve
@@ -278,7 +278,7 @@ export function RefundQueuePage() {
 
       {/* Approve Confirmation */}
       <Dialog open={!!approveId} onOpenChange={(open) => { if (!open) setApproveId(''); }}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="metal-panel max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f]">Approve Refund</DialogTitle>
             <DialogDescription className="text-[#6e6e73]">
@@ -286,13 +286,13 @@ export function RefundQueuePage() {
             </DialogDescription>
           </DialogHeader>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => setApproveId('')} className="rounded-xl border-[#d2d2d7]">
+            <Button variant="outline" onClick={() => setApproveId('')} className="rounded-xl">
               Cancel
             </Button>
             <Button
               onClick={handleApprove}
               disabled={approveMutation.isPending}
-              className="rounded-xl bg-green-600 hover:bg-green-700 text-white"
+              className="rounded-xl"
             >
               {approveMutation.isPending ? 'Approving...' : 'Confirm Approval'}
             </Button>
@@ -302,7 +302,7 @@ export function RefundQueuePage() {
 
       {/* Deny Dialog */}
       <Dialog open={denyDialog.open} onOpenChange={(open) => { if (!open) { setDenyDialog({ open: false, id: '' }); setDenialReason(''); } }}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="metal-panel max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f]">Deny Refund</DialogTitle>
             <DialogDescription className="text-[#6e6e73]">
@@ -316,11 +316,11 @@ export function RefundQueuePage() {
               placeholder="e.g., Visit already completed, outside refund period..."
               value={denialReason}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setDenialReason(e.target.value)}
-              className="min-h-[80px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
+              className="metal-input min-h-[80px] rounded-xl"
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setDenyDialog({ open: false, id: '' }); setDenialReason(''); }} className="rounded-xl border-[#d2d2d7]">
+            <Button variant="outline" onClick={() => { setDenyDialog({ open: false, id: '' }); setDenialReason(''); }} className="rounded-xl">
               Cancel
             </Button>
             <Button

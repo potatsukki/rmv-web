@@ -89,25 +89,22 @@ export function Sidebar() {
 
   return (
     <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col md:flex">
-      {/* Background with subtle gradient */}
-      <div className="absolute inset-0 border-r border-white/[0.06] bg-[linear-gradient(180deg,#17181c_0%,#111216_52%,#0c0d10_100%)]" />
+      <div className="metal-panel-strong absolute inset-0 border-r border-white/[0.06]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(235,240,245,0.14)_0%,rgba(255,255,255,0)_34%),linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0)_22%)]" />
 
-      {/* Content */}
       <div className="relative flex flex-col h-full">
-        {/* Logo Header */}
-        <Link to="/" className="flex h-16 items-center gap-3 px-5 border-b border-white/[0.06] hover:bg-white/[0.025] transition-colors">
-          <BrandLogo className="h-9 w-9 ring-2 ring-[#b8b8bd]/40 shadow-lg shadow-black/20" />
+        <Link to="/" className="flex h-16 items-center gap-3 border-b border-white/[0.08] px-5 transition-colors hover:bg-white/[0.035]">
+          <BrandLogo className="h-9 w-9 ring-2 ring-[#d8e0e8]/28 shadow-[0_10px_24px_rgba(0,0,0,0.28)]" />
           <div className="flex flex-col">
-            <span className="text-[13px] font-bold tracking-tight text-white leading-tight">
+            <span className="text-[13px] font-bold leading-tight tracking-tight text-[#f5f7fa]">
               RMV Stainless Steel<br/>Fabrication
             </span>
-            <span className="text-[10px] font-semibold text-[#6e6e73] uppercase tracking-[0.15em]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#8f9aa6]">
               Management System
             </span>
           </div>
         </Link>
 
-        {/* Navigation */}
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
           {sidebarNavGroups.map((group) => {
             const visibleItems = group.items.filter((item) =>
@@ -118,7 +115,7 @@ export function Sidebar() {
 
             return (
               <div key={group.title}>
-                <h3 className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#73737d]">
+                <h3 className="mb-1 px-3 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#89939e]">
                   {group.title}
                 </h3>
                 <div className="space-y-0.5">
@@ -132,13 +129,12 @@ export function Sidebar() {
                         className={cn(
                           'group relative flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200',
                           isActive
-                            ? 'bg-white/[0.09] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]'
-                            : 'text-[#8c8c96] hover:bg-white/[0.035] hover:text-[#e1e1e8]',
+                            ? 'bg-[linear-gradient(180deg,rgba(247,249,251,0.17)_0%,rgba(198,206,215,0.09)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(0,0,0,0.18)]'
+                            : 'text-[#9aa4af] hover:bg-white/[0.05] hover:text-[#eef2f6]',
                         )}
                       >
-                        {/* Active indicator bar */}
                         {isActive && (
-                          <div className="absolute left-0 top-1/2 -translate-y-1/2 h-5 w-[3px] rounded-r-full bg-white" />
+                          <div className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[linear-gradient(180deg,#f8fbff_0%,#a9b4bf_100%)]" />
                         )}
 
                         <div className="flex items-center gap-3">
@@ -146,8 +142,8 @@ export function Sidebar() {
                             className={cn(
                               'h-[18px] w-[18px] transition-colors',
                               isActive
-                                ? 'text-white'
-                                : 'text-[#6e6e73] group-hover:text-[#86868b]',
+                                ? 'text-[#f6f8fb]'
+                                : 'text-[#75808c] group-hover:text-[#cfd6dd]',
                             )}
                           />
                           <span>{item.label}</span>
@@ -175,7 +171,7 @@ export function Sidebar() {
                             </span>
                           )}
                           {isActive && (
-                            <ChevronRight className="h-3 w-3 text-[#6e6e73]" />
+                            <ChevronRight className="h-3 w-3 text-[#9aa4af]" />
                           )}
                         </div>
                       </Link>
@@ -187,31 +183,30 @@ export function Sidebar() {
           })}
         </div>
 
-        {/* User Profile Footer */}
-        <div className="border-t border-white/[0.06] p-3 space-y-2 bg-black/10">
+        <div className="space-y-2 border-t border-white/[0.08] bg-black/12 p-3">
           <Link
             to="/account/profile"
-            className="flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors hover:bg-white/[0.04]"
+            className="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors hover:bg-white/[0.05]"
           >
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#2a2a2e] to-[#1a1a1c] text-[12px] font-bold text-[#d2d2d7] ring-1 ring-white/[0.08]">
+            <div className="silver-sheen flex h-9 w-9 items-center justify-center rounded-xl text-[12px] font-bold text-[#2b3138] ring-1 ring-white/[0.12]">
               {user.firstName[0]}
               {user.lastName[0]}
             </div>
             <div className="flex-1 overflow-hidden">
-              <p className="truncate text-[13px] font-medium text-white leading-tight">
+              <p className="truncate text-[13px] font-medium leading-tight text-white">
                 {user.firstName} {user.lastName}
               </p>
-              <p className="truncate text-[10px] text-[#6e6e73] uppercase font-semibold tracking-wide mt-0.5">
+              <p className="mt-0.5 truncate text-[10px] font-semibold uppercase tracking-wide text-[#919ca7]">
                 {user.roles[0]?.replace(/_/g, ' ')}
               </p>
             </div>
-            <ChevronRight className="h-4 w-4 text-[#6e6e73]" />
+            <ChevronRight className="h-4 w-4 text-[#919ca7]" />
           </Link>
 
           <Button
             variant="ghost"
             onClick={() => setShowLogoutModal(true)}
-            className="w-full justify-start gap-3 px-3 h-10 rounded-lg text-[#86868b] hover:bg-white/[0.06] hover:text-red-400"
+            className="h-10 w-full justify-start gap-3 rounded-xl px-3 text-[#a3adb8] hover:bg-white/[0.06] hover:text-[#ef9a92]"
           >
             <LogOut className="h-4 w-4" />
             <span className="text-[13px] font-medium">Sign Out</span>

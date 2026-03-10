@@ -154,7 +154,7 @@ export function VerifyTwoFactorPage() {
   if (!tempToken || !email) return null;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-[#e0e0e6] via-[#d6d6dc] to-[#cbcbd0] px-4">
+    <div className="metal-shell relative flex min-h-screen items-center justify-center px-4">
       <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
       <div className="relative w-full max-w-md">
         {/* Brand */}
@@ -162,10 +162,10 @@ export function VerifyTwoFactorPage() {
           <BrandLogo className="h-10 w-10 ring-2 ring-[#b8b8bd]/50 shadow-lg shadow-black/10" />
         </div>
 
-        <div className="rounded-2xl border border-[#c8c8cd]/50 bg-white/70 backdrop-blur-xl p-5 sm:p-8 shadow-xl shadow-black/5">
+        <div className="metal-panel rounded-[2rem] p-5 shadow-[0_28px_60px_rgba(18,22,27,0.1)] sm:p-8">
           <div className="text-center mb-6 sm:mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1d1d1f] mx-auto mb-4">
-              <ShieldCheck className="h-6 w-6 text-white" />
+            <div className="silver-sheen mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
+              <ShieldCheck className="h-6 w-6 text-[#2b3138]" />
             </div>
             <h1 className="text-lg sm:text-xl font-bold text-[#1d1d1f]">Two-Factor Verification</h1>
             <p className="mt-2 text-sm text-[#6e6e73] leading-relaxed">
@@ -188,7 +188,7 @@ export function VerifyTwoFactorPage() {
                 value={digit}
                 onChange={(e) => handleChange(index, e.target.value)}
                 onKeyDown={(e) => handleKeyDown(index, e)}
-                className="h-12 w-10 min-[360px]:w-11 sm:h-14 sm:w-12 text-center text-lg sm:text-xl font-bold bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-lg sm:rounded-xl transition-colors"
+                className="metal-input h-12 w-10 min-[360px]:w-11 rounded-lg text-center text-lg font-bold transition-colors sm:h-14 sm:w-12 sm:rounded-xl sm:text-xl"
                 disabled={isSubmitting}
                 autoComplete="one-time-code"
               />
@@ -197,7 +197,7 @@ export function VerifyTwoFactorPage() {
 
           <Button
             onClick={handleSubmit}
-            className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white h-11 font-semibold shadow-lg shadow-black/20 rounded-xl"
+            className="h-11 w-full rounded-xl font-semibold"
             disabled={isSubmitting || otp.some((d) => d === '')}
           >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

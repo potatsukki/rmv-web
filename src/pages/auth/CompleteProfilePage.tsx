@@ -88,15 +88,14 @@ export function CompleteProfilePage() {
     }
   };
 
-  const inputClasses =
-    'h-10 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 text-sm rounded-xl';
+  const inputClasses = 'metal-input h-10 text-sm rounded-xl';
 
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Form */}
-      <div className="relative flex flex-1 flex-col justify-center px-6 py-12 lg:flex-none lg:px-20 xl:px-28 bg-gradient-to-br from-[#eaeaef] via-[#e0e0e6] to-[#d8d8de] z-10 w-full lg:w-[48%]">
+      <div className="relative z-10 flex w-full flex-1 flex-col justify-center bg-[radial-gradient(circle_at_top_left,#f4f6f8_0%,#e4e8ed_52%,#d4dae1_100%)] px-6 py-12 lg:w-[48%] lg:flex-none lg:px-20 xl:px-28">
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-        <div className="relative mx-auto w-full max-w-[420px]">
+        <div className="metal-panel relative mx-auto w-full max-w-[440px] rounded-[2rem] p-8 sm:p-10">
           {/* Back link */}
           <button
             onClick={() => navigate('/register')}
@@ -120,7 +119,7 @@ export function CompleteProfilePage() {
           </p>
 
           {/* Google account info */}
-          <div className="mt-6 flex items-center gap-3 rounded-xl bg-white/50 p-4 border border-[#c8c8cd]/50 backdrop-blur-sm">
+          <div className="metal-panel mt-6 flex items-center gap-3 rounded-xl p-4">
             {state.googlePhoto ? (
               <img
                 src={state.googlePhoto}
@@ -129,7 +128,7 @@ export function CompleteProfilePage() {
                 referrerPolicy="no-referrer"
               />
             ) : (
-              <div className="h-10 w-10 rounded-full bg-[#1d1d1f] flex items-center justify-center">
+              <div className="silver-sheen flex h-10 w-10 items-center justify-center rounded-full">
                 <span className="text-white font-bold text-sm">
                   {defaultFirstName.charAt(0).toUpperCase()}
                 </span>
@@ -216,7 +215,7 @@ export function CompleteProfilePage() {
 
             <Button
               type="submit"
-              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white font-semibold h-11 transition-all active:scale-[0.98] shadow-lg shadow-black/20 rounded-xl mt-2"
+              className="mt-2 h-11 w-full rounded-xl font-semibold transition-all active:scale-[0.98]"
               disabled={submitting}
             >
               {submitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

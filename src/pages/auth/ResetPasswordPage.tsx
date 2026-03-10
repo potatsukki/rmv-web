@@ -38,8 +38,7 @@ const passwordRules = [
   { label: 'Special character', test: (v: string) => /[^A-Za-z0-9]/.test(v) },
 ];
 
-const inputClasses =
-  'h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl';
+const inputClasses = 'metal-input h-11 rounded-xl';
 
 export function ResetPasswordPage() {
   const [showPassword, setShowPassword] = useState(false);
@@ -85,7 +84,7 @@ export function ResetPasswordPage() {
   if (!email || !otp) return null;
 
   return (
-    <div className="relative flex min-h-screen items-center justify-center bg-gradient-to-br from-[#e0e0e6] via-[#d6d6dc] to-[#cbcbd0] px-4">
+    <div className="metal-shell relative flex min-h-screen items-center justify-center px-4">
       <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
       <div className="relative w-full max-w-md">
         {/* Brand */}
@@ -93,10 +92,10 @@ export function ResetPasswordPage() {
           <BrandLogo className="h-10 w-10 ring-2 ring-[#b8b8bd]/50 shadow-lg shadow-black/10" />
         </div>
 
-        <div className="rounded-2xl border border-[#c8c8cd]/50 bg-white/70 backdrop-blur-xl p-8 shadow-xl shadow-black/5">
+        <div className="metal-panel rounded-[2rem] p-8 shadow-[0_28px_60px_rgba(18,22,27,0.1)]">
           <div className="text-center mb-8">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#1d1d1f] mx-auto mb-4">
-              <ShieldCheck className="h-6 w-6 text-white" />
+            <div className="silver-sheen mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl">
+              <ShieldCheck className="h-6 w-6 text-[#2b3138]" />
             </div>
             <h1 className="text-xl font-bold text-[#1d1d1f]">Reset password</h1>
             <p className="mt-2 text-sm text-[#6e6e73]">Choose a new password for your account.</p>
@@ -130,7 +129,7 @@ export function ResetPasswordPage() {
               )}
 
               {passwordValue.length > 0 && (
-                <div className="rounded-xl bg-[#f0f0f5] p-3 mt-2">
+                <div className="metal-panel mt-2 rounded-xl p-3">
                   <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-1.5">
                     {passwordRules.map((rule) => {
                       const passed = rule.test(passwordValue);
@@ -174,7 +173,7 @@ export function ResetPasswordPage() {
 
             <Button
               type="submit"
-              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white h-11 font-semibold shadow-lg shadow-black/20 rounded-xl"
+              className="h-11 w-full rounded-xl font-semibold"
               disabled={isSubmitting}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}

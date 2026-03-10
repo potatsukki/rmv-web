@@ -33,21 +33,21 @@ const STATUS_FILTERS = [
 function statusConfig(status: string) {
   switch (status) {
     case ProjectStatus.COMPLETED:
-      return { badge: 'border-emerald-200 text-emerald-700 bg-emerald-50', bar: 'bg-emerald-500' };
+      return { badge: 'border-[#93ad9d] text-[#4e6c5a] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]', bar: 'bg-[#6c8f7d]' };
     case ProjectStatus.FABRICATION:
-      return { badge: 'border-violet-200 text-violet-700 bg-violet-50', bar: 'bg-violet-500' };
+      return { badge: 'border-[#afa7c5] text-[#665d82] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)]', bar: 'bg-[#8277a3]' };
     case ProjectStatus.PAYMENT_PENDING:
-      return { badge: 'border-amber-200 text-amber-700 bg-amber-50', bar: 'bg-amber-500' };
+      return { badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]', bar: 'bg-[#a97d49]' };
     case ProjectStatus.BLUEPRINT:
-      return { badge: 'border-blue-200 text-blue-700 bg-blue-50', bar: 'bg-blue-500' };
+      return { badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]', bar: 'bg-[#708ca6]' };
     case ProjectStatus.APPROVED:
-      return { badge: 'border-cyan-200 text-cyan-700 bg-cyan-50', bar: 'bg-cyan-500' };
+      return { badge: 'border-[#8eafbb] text-[#4f6d78] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)]', bar: 'bg-[#6f919d]' };
     case ProjectStatus.SUBMITTED:
-      return { badge: 'border-orange-200 text-orange-700 bg-orange-50', bar: 'bg-orange-500' };
+      return { badge: 'border-[#c4a07d] text-[#7b5d3f] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)]', bar: 'bg-[#aa7f53]' };
     case ProjectStatus.CANCELLED:
-      return { badge: 'border-red-200 text-red-700 bg-red-50', bar: 'bg-red-500' };
+      return { badge: 'border-[#cb8b86] text-[#87544f] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)]', bar: 'bg-[#b96c66]' };
     default:
-      return { badge: 'border-gray-200 text-gray-600 bg-gray-50', bar: 'bg-gray-200' };
+      return { badge: 'border-[#c6ccd3] text-[#5b6470] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)]', bar: 'bg-[#9ca6b1]' };
   }
 }
 
@@ -96,8 +96,8 @@ export function ProjectsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Projects</h1>
-        <p className="text-[#6e6e73] mt-1 text-sm">Track fabrication progress and project milestones.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">Projects</h1>
+        <p className="mt-1 text-sm text-[#616a74]">Track fabrication progress and project milestones.</p>
       </div>
 
       {/* Controls */}
@@ -114,8 +114,8 @@ export function ProjectsPage() {
 
       {/* Loading skeleton */}
       {isLoading ? (
-        <div className="rounded-xl border border-[#c8c8cd]/50 overflow-hidden bg-white">
-          <div className="divide-y divide-[#f5f5f7]">
+        <div className="metal-panel overflow-hidden rounded-[1.5rem]">
+          <div className="divide-y divide-[#e1e6ec]">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-6 py-4">
                 <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
@@ -139,7 +139,7 @@ export function ProjectsPage() {
           action={(search || statusFilter) ? (
             <Button
               variant="outline"
-              className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-lg"
+              className="text-[#171b21]"
               onClick={() => { setSearch(''); setStatusFilter(''); }}
             >
               Clear Filters
@@ -149,20 +149,20 @@ export function ProjectsPage() {
       ) : (
         <>
           {/* â”€â”€ Desktop table (md+) â”€â”€ */}
-          <div className="hidden md:block rounded-xl border border-[#c8c8cd]/50 overflow-hidden bg-white shadow-sm">
+          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] md:block">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pl-5">Project</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Project</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
                   {isStaff && (
-                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Customer</TableHead>
+                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Customer</TableHead>
                   )}
                   {isStaff && (
-                    <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden xl:table-cell">Engineer</TableHead>
+                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] xl:table-cell">Engineer</TableHead>
                   )}
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Created</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
+                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Created</TableHead>
+                  <TableHead className="w-10 pr-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">View</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -181,7 +181,7 @@ export function ProjectsPage() {
                   return (
                     <TableRow
                       key={String(project._id)}
-                      className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group"
+                      className="group cursor-pointer border-b border-[#e1e6ec] transition-colors hover:bg-white/45"
                       onClick={() => navigate(`/projects/${project._id}`)}
                     >
                       {/* Project info */}
@@ -189,7 +189,7 @@ export function ProjectsPage() {
                         <div className="flex items-center gap-3">
                           <div className={`h-2 w-2 rounded-full flex-shrink-0 ${cfg.bar}`} />
                           <div className="min-w-0">
-                            <p className="font-medium text-sm text-[#1d1d1f] truncate max-w-[220px] group-hover:text-[#0066cc] transition-colors">
+                            <p className="max-w-[220px] truncate text-sm font-medium text-[#171b21] transition-colors group-hover:text-[#4f6679]">
                               {String(project.serviceType || project.title || '')}
                             </p>
                           </div>
@@ -207,14 +207,14 @@ export function ProjectsPage() {
                       {isStaff && (
                         <TableCell className="py-4 hidden lg:table-cell">
                           {customer ? (
-                            <div className="flex items-center gap-1.5 text-xs text-[#6e6e73]">
-                              <User className="h-3 w-3 text-[#86868b] shrink-0" />
+                            <div className="flex items-center gap-1.5 text-xs text-[#616a74]">
+                              <User className="h-3 w-3 shrink-0 text-[#8b95a0]" />
                               <span className="truncate max-w-[140px]">
                                 {customer.firstName} {customer.lastName}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-[#c8c8cd]">â€”</span>
+                            <span className="text-xs text-[#9fa8b3]">—</span>
                           )}
                         </TableCell>
                       )}
@@ -223,22 +223,22 @@ export function ProjectsPage() {
                       {isStaff && (
                         <TableCell className="py-4 hidden xl:table-cell">
                           {engineers.length > 0 ? (
-                            <div className="flex items-center gap-1.5 text-xs text-[#6e6e73]">
-                              <Wrench className="h-3 w-3 text-[#86868b] shrink-0" />
+                            <div className="flex items-center gap-1.5 text-xs text-[#616a74]">
+                              <Wrench className="h-3 w-3 shrink-0 text-[#8b95a0]" />
                               <span className="truncate max-w-[140px]">
                                 {engineers.map((e) => `${e.firstName} ${e.lastName}`).join(', ')}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-[#c8c8cd] italic">No engineer</span>
+                            <span className="text-xs italic text-[#9fa8b3]">No engineer</span>
                           )}
                         </TableCell>
                       )}
 
                       {/* Date */}
                       <TableCell className="py-4 hidden lg:table-cell">
-                        <div className="flex items-center gap-1.5 text-xs text-[#6e6e73]">
-                          <Calendar className="h-3 w-3 text-[#86868b] shrink-0" />
+                        <div className="flex items-center gap-1.5 text-xs text-[#616a74]">
+                          <Calendar className="h-3 w-3 shrink-0 text-[#8b95a0]" />
                           {project.createdAt
                             ? format(new Date(String(project.createdAt)), 'MMM d, yyyy')
                             : ''}
@@ -250,7 +250,7 @@ export function ProjectsPage() {
                         <Link
                           to={`/projects/${project._id}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="flex items-center justify-center h-7 w-7 rounded-lg hover:bg-[#e5e5ea] transition-colors text-[#c8c8cd]"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca6b1] transition-colors hover:bg-white/65 hover:text-[#59626d]"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </Link>
@@ -260,8 +260,8 @@ export function ProjectsPage() {
                 })}
               </TableBody>
             </Table>
-            <div className="px-6 py-2.5 border-t border-[#f0f0f5]">
-              <p className="text-[11px] text-[#86868b]">
+            <div className="border-t border-[#dde3ea] px-6 py-2.5">
+              <p className="text-[11px] text-[#68727d]">
                 {projects.length} project{projects.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -280,12 +280,12 @@ export function ProjectsPage() {
                 <Link
                   key={String(project._id)}
                   to={`/projects/${project._id}`}
-                  className="block bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 hover:shadow-sm transition-shadow"
+                  className="metal-panel block rounded-[1.35rem] px-4 py-3.5 transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_32px_rgba(18,22,27,0.1)]"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`h-2 w-2 rounded-full shrink-0 ${cfg.bar}`} />
-                      <p className="font-semibold text-sm text-[#1d1d1f] truncate">
+                      <p className="truncate text-sm font-semibold text-[#171b21]">
                         {String(project.title || '')}
                       </p>
                     </div>
@@ -295,20 +295,20 @@ export function ProjectsPage() {
                   </div>
 
                   {project.serviceType && (
-                    <span className="ml-4 text-[11px] text-[#6e6e73] bg-[#f0f0f5] px-1.5 py-0.5 rounded mt-1 inline-block">
+                    <span className="metal-pill mt-1 ml-4 inline-block rounded-full px-1.5 py-0.5 text-[11px] text-[#616a74]">
                       {String(project.serviceType)}
                     </span>
                   )}
 
                   <div className="ml-4 mt-2 space-y-1">
                     {isStaff && customer && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-[#86868b]">
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#68727d]">
                         <User className="h-3 w-3 shrink-0" />
                         <span>{customer.firstName} {customer.lastName}</span>
                       </div>
                     )}
                     {project.createdAt && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-[#86868b]">
+                      <div className="flex items-center gap-1.5 text-[11px] text-[#68727d]">
                         <Calendar className="h-3 w-3 shrink-0" />
                         <span>{format(new Date(String(project.createdAt)), 'MMM d, yyyy')}</span>
                       </div>
@@ -317,7 +317,7 @@ export function ProjectsPage() {
                 </Link>
               );
             })}
-            <p className="text-[11px] text-[#86868b] px-1 pt-1">
+            <p className="px-1 pt-1 text-[11px] text-[#68727d]">
               {projects.length} project{projects.length !== 1 ? 's' : ''}
             </p>
           </div>

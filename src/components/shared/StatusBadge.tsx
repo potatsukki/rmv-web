@@ -2,19 +2,19 @@ import { cva, type VariantProps } from 'class-variance-authority';
 import { cn } from '@/lib/utils';
 
 const statusBadgeVariants = cva(
-  'inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px] font-semibold tracking-wide',
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-[11px] font-semibold tracking-wide shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]',
   {
     variants: {
       color: {
-        gray: 'bg-gray-100 text-gray-600',
-        blue: 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-200/50',
-        green: 'bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200/50',
-        yellow: 'bg-amber-50 text-amber-700 ring-1 ring-inset ring-amber-200/50',
-        red: 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-200/50',
-        purple: 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-200/50',
-        orange: 'bg-orange-50 text-orange-700 ring-1 ring-inset ring-orange-200/50',
-        indigo: 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-200/50',
-        cyan: 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-200/50',
+        gray: 'border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470]',
+        blue: 'border-[#8da4b8] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679]',
+        green: 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]',
+        yellow: 'border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239]',
+        red: 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]',
+        purple: 'border-[#afa7c5] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)] text-[#665d82]',
+        orange: 'border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]',
+        indigo: 'border-[#98a6c4] bg-[linear-gradient(180deg,#eff1f9_0%,#dce2f0_100%)] text-[#5b6785]',
+        cyan: 'border-[#8eafbb] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] text-[#4f6d78]',
       },
     },
     defaultVariants: {

@@ -218,15 +218,14 @@ export function SettingsPage() {
 
   if (configsError) return <PageError message="Failed to load settings" onRetry={refetchConfigs} />;
 
-  const inputClasses =
-    'h-11 bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20';
+  const inputClasses = 'metal-input h-11';
 
   return (
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-gray-900">System Settings</h1>
-        <p className="text-gray-500 mt-1 text-sm">
+      <div className="metal-panel rounded-[1.75rem] p-5">
+        <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">System Settings</h1>
+        <p className="mt-1 text-sm text-[#616a74]">
           Manage global configuration, holidays, and maintenance mode.
         </p>
       </div>
@@ -283,13 +282,13 @@ export function SettingsPage() {
 
         {/* Payment Settings */}
         <div className="md:col-span-2">
-          <Card className="rounded-xl border-gray-100">
+          <Card className="rounded-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl text-gray-900">
-                <CreditCard className="h-5 w-5 text-gray-400" />
+              <CardTitle className="flex items-center gap-2 text-xl text-[#171b21]">
+                <CreditCard className="h-5 w-5 text-[#8a939d]" />
                 Payment &amp; Installment Settings
               </CardTitle>
-              <CardDescription className="text-gray-500">
+              <CardDescription className="text-[#616a74]">
                 Configure installment surcharge and stage split for project payments.
               </CardDescription>
             </CardHeader>
@@ -397,7 +396,7 @@ export function SettingsPage() {
                   <Button
                     onClick={handleSavePaymentSettings}
                     disabled={updateConfig.isPending}
-                    className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                    className="rounded-lg"
                     size="sm"
                   >
                     {updateConfig.isPending ? (
@@ -414,13 +413,13 @@ export function SettingsPage() {
         </div>
 
         {/* Config Values */}
-        <Card className="h-full flex flex-col rounded-xl border-gray-100">
+        <Card className="h-full flex flex-col rounded-xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl text-gray-900">
-              <Settings className="h-5 w-5 text-gray-400" />
+            <CardTitle className="flex items-center gap-2 text-xl text-[#171b21]">
+              <Settings className="h-5 w-5 text-[#8a939d]" />
               General Configuration
             </CardTitle>
-            <CardDescription className="text-gray-500">
+            <CardDescription className="text-[#616a74]">
               Technical settings and global constants.
             </CardDescription>
           </CardHeader>
@@ -445,7 +444,7 @@ export function SettingsPage() {
                   .map((cfg) => (
                     <div
                       key={cfg._id}
-                      className="p-4 rounded-xl border border-gray-100 bg-gray-50/50 group hover:border-gray-200 transition-colors"
+                      className="metal-panel group rounded-xl p-4 transition-colors hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_28px_rgba(18,22,27,0.08)]"
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div>
@@ -466,7 +465,7 @@ export function SettingsPage() {
                           <span className="sr-only">Edit</span>
                         </Button>
                       </div>
-                      <div className="bg-white p-2 rounded-lg border border-gray-200 font-mono text-sm text-gray-700 break-all">
+                      <div className="metal-pill break-all rounded-lg border border-[#d6dce3] p-2 font-mono text-sm text-[#434c56]">
                         {typeof cfg.value === 'string' ? cfg.value : JSON.stringify(cfg.value)}
                       </div>
                     </div>
@@ -477,15 +476,15 @@ export function SettingsPage() {
         </Card>
 
         {/* Holidays */}
-        <Card className="h-full flex flex-col rounded-xl border-gray-100">
+        <Card className="h-full flex flex-col rounded-xl">
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-xl text-gray-900">
-                  <Calendar className="h-5 w-5 text-gray-400" />
+                <CardTitle className="flex items-center gap-2 text-xl text-[#171b21]">
+                  <Calendar className="h-5 w-5 text-[#8a939d]" />
                   Holiday Calendar
                 </CardTitle>
-                <CardDescription className="text-gray-500">
+                <CardDescription className="text-[#616a74]">
                   Manage blocked dates for appointments.
                 </CardDescription>
               </div>
@@ -494,7 +493,7 @@ export function SettingsPage() {
                   type="number"
                   value={holidayYear}
                   onChange={(e) => setHolidayYear(e.target.value)}
-                  className="w-20 h-8 text-sm border-gray-200"
+                  className="metal-input h-8 w-20 text-sm"
                   min={2020}
                   max={2050}
                 />
@@ -509,7 +508,7 @@ export function SettingsPage() {
                   holidayForm.reset();
                   setAddHolidayOpen(true);
                 }}
-                className="w-full border-dashed border-2 bg-transparent text-gray-500 hover:bg-gray-50 hover:text-gray-700 border-gray-200 rounded-xl"
+                className="w-full rounded-xl border-2 border-dashed border-[#cfd6dd] bg-transparent text-[#616a74] hover:bg-white/20 hover:text-[#434c56]"
                 variant="outline"
               >
                 <Plus className="mr-2 h-4 w-4" />
@@ -533,10 +532,10 @@ export function SettingsPage() {
                 {holidays.map((h) => (
                   <div
                     key={h._id}
-                    className="flex items-center justify-between p-3 rounded-xl border border-gray-100 hover:border-[#c8c8cd] hover:bg-[#f0f0f5]/30 transition-colors group"
+                    className="metal-panel group flex items-center justify-between rounded-xl p-3 transition-colors hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_28px_rgba(18,22,27,0.08)]"
                   >
                     <div className="flex items-center gap-3">
-                      <div className="flex flex-col items-center justify-center bg-gray-100 rounded-lg h-10 w-10 text-gray-600 font-bold text-xs uppercase">
+                      <div className="metal-pill flex h-10 w-10 flex-col items-center justify-center rounded-lg font-bold text-xs uppercase text-[#616a74]">
                         <span>
                           {new Date(h.date).toLocaleString('default', { month: 'short' })}
                         </span>
@@ -570,10 +569,10 @@ export function SettingsPage() {
           if (!o) setEditConfig(null);
         }}
       >
-        <DialogContent className="max-w-md rounded-2xl">
+        <DialogContent className="metal-panel max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Update Configuration</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className="text-[#171b21]">Update Configuration</DialogTitle>
+            <DialogDescription className="text-[#616a74]">
               Modifying system constants can affect application behavior.
             </DialogDescription>
           </DialogHeader>
@@ -583,7 +582,7 @@ export function SettingsPage() {
               <Input
                 value={editConfig?.key || ''}
                 disabled
-                className="bg-gray-50 font-mono text-sm border-gray-200"
+                className="metal-input bg-white/30 font-mono text-sm"
               />
             </div>
             <div className="space-y-1.5">
@@ -620,14 +619,14 @@ export function SettingsPage() {
               <Button
                 variant="outline"
                 onClick={() => setEditConfig(null)}
-                className="border-gray-200 rounded-lg"
+                className="rounded-lg"
               >
                 Cancel
               </Button>
               <Button
                 onClick={handleSaveConfig}
                 disabled={updateConfig.isPending}
-                className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                className="rounded-lg"
               >
                 {updateConfig.isPending ? (
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
@@ -643,10 +642,10 @@ export function SettingsPage() {
 
       {/* Add Holiday Dialog */}
       <Dialog open={addHolidayOpen} onOpenChange={setAddHolidayOpen}>
-        <DialogContent className="max-w-sm rounded-2xl">
+        <DialogContent className="metal-panel max-w-sm rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Add Holiday</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className="text-[#171b21]">Add Holiday</DialogTitle>
+            <DialogDescription className="text-[#616a74]">
               Block appointments for a specific date.
             </DialogDescription>
           </DialogHeader>
@@ -697,13 +696,13 @@ export function SettingsPage() {
                 type="button"
                 variant="outline"
                 onClick={() => setAddHolidayOpen(false)}
-                className="border-gray-200 rounded-lg"
+                className="rounded-lg"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
-                className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                className="rounded-lg"
                 disabled={createHoliday.isPending}
               >
                 {createHoliday.isPending ? 'Adding...' : 'Add Holiday'}

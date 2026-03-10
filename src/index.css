@@ -14,41 +14,33 @@ html {
 }
 
 @theme {
-  /* RMV Stainless Steel - "Apple-Level" Minimalist Silver Theme
-     High contrast, stark aluminum, deep blacks */
+  --color-primary: #14171b;
+  --color-primary-foreground: #f5f7fa;
 
-  /* Primary: Deep Space Black */
-  --color-primary: #000000;
-  --color-primary-foreground: #ffffff;
+  --color-secondary: #d4d9df;
+  --color-secondary-foreground: #1a1d22;
 
-  /* Secondary: Brushed Silver */
-  --color-secondary: #e8e8ed;
-  --color-secondary-foreground: #1d1d1f;
+  --color-accent: #8d99a6;
+  --color-accent-foreground: #101317;
 
-  /* Accent: Stripped down. Same as primary, enforcing monochrome minimalism. */
-  --color-accent: #1d1d1f;
-  --color-accent-foreground: #ffffff;
+  --color-destructive: #c95b54;
+  --color-destructive-foreground: #fff8f7;
+  --color-muted: #e5e8ed;
+  --color-muted-foreground: #626b76;
+  --color-background: #eceff3;
+  --color-foreground: #171b21;
 
-  /* UI Semantic Colors */
-  --color-destructive: #ff3b30; /* Apple red */
-  --color-destructive-foreground: #ffffff;
-  --color-muted: #f5f5f7;
-  --color-muted-foreground: #86868b;
-  --color-background: #ffffff;
-  --color-foreground: #1d1d1f;
+  --color-card: #f7f8fa;
+  --color-card-foreground: #171b21;
 
-  --color-card: #ffffff;
-  --color-card-foreground: #1d1d1f;
+  --color-border: #c7cdd5;
+  --color-input: #d7dde4;
+  --color-ring: #aeb7c2;
 
-  --color-border: #d2d2d7;
-  --color-input: #e5e5ea;
-  --color-ring: #0071e3; /* Apple focus ring blue */
+  --color-success: #5c8c75;
+  --color-warning: #b88a53;
+  --color-info: #6b869d;
 
-  --color-success: #34c759;
-  --color-warning: #ff9500;
-  --color-info: #0071e3;
-
-  /* Refined radii - softer, Apple-like */
   --radius-sm: 0.5rem;
   --radius-md: 0.75rem;
   --radius-lg: 1.25rem;
@@ -70,6 +62,10 @@ body {
   min-width: 320px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-image:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(180deg, #f4f6f8 0%, #eceff3 48%, #e5e8ec 100%);
+  background-attachment: fixed;
 }
 
 /* Smooth colour transitions on interactive elements only */
@@ -100,17 +96,17 @@ a, button, input, select, textarea,
 
 ::-webkit-scrollbar-thumb {
   @apply rounded-full;
-  background: rgba(107, 114, 128, 0.25);
+  background: linear-gradient(180deg, rgba(167, 176, 186, 0.86) 0%, rgba(109, 118, 129, 0.72) 100%);
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(107, 114, 128, 0.45);
+  background: linear-gradient(180deg, rgba(190, 199, 209, 0.92) 0%, rgba(127, 136, 147, 0.82) 100%);
 }
 
 /* Firefox scrollbar */
 * {
   scrollbar-width: thin;
-  scrollbar-color: rgba(107, 114, 128, 0.25) transparent;
+  scrollbar-color: rgba(127, 136, 147, 0.7) transparent;
 }
 
 /* Focus-visible styling */
@@ -120,8 +116,8 @@ a, button, input, select, textarea,
 
 /* Selection styling */
 ::selection {
-  background: rgba(0, 113, 227, 0.2); /* Apple selection blue */
-  color: #1d1d1f;
+  background: rgba(141, 153, 166, 0.28);
+  color: #101317;
 }
 
 /* Custom utilities */
@@ -155,7 +151,7 @@ a, button, input, select, textarea,
   transition-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
 
   &:hover {
-    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.12);
+    box-shadow: 0 24px 44px rgba(16, 19, 24, 0.15);
     transform: translateY(-4px);
   }
 }
@@ -164,25 +160,24 @@ a, button, input, select, textarea,
 @utility glass {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(200, 200, 210, 0.5);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.06);
+  background: linear-gradient(180deg, rgba(251, 252, 253, 0.74) 0%, rgba(234, 238, 242, 0.68) 100%);
+  border: 1px solid rgba(193, 200, 209, 0.6);
+  box-shadow: 0 12px 28px rgba(18, 23, 29, 0.08);
 }
 
-/* Metallic silver sheen gradient */
 @utility silver-sheen {
-  background: linear-gradient(145deg, #e8e8ed 0%, #cbcbd0 25%, #dddde2 50%, #c0c0c6 75%, #e8e8ed 100%);
+  background: linear-gradient(145deg, #eef2f5 0%, #c8ced5 22%, #f8fafc 48%, #aeb7c2 76%, #eef2f5 100%);
 }
 
 /* Subtle metallic border */
 @utility border-silver {
   border: 1px solid;
-  border-image: linear-gradient(145deg, #a8a8ad, #d0d0d5, #8e8e94) 1;
+  border-image: linear-gradient(145deg, #8a939c, #e1e6eb, #68717b) 1;
 }
 
 /* Gradient text utility - Silver metallic */
 @utility text-gradient {
-  background: linear-gradient(135deg, #1d1d1f 0%, #5a5a5f 30%, #8e8e93 50%, #5a5a5f 70%, #1d1d1f 100%);
+  background: linear-gradient(135deg, #11151a 0%, #4d5660 30%, #bac2cb 52%, #4d5660 74%, #11151a 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -190,10 +185,58 @@ a, button, input, select, textarea,
 
 /* Silver metallic accent text */
 @utility text-silver {
-  background: linear-gradient(135deg, #7a7a80 0%, #c8c8cd 35%, #a1a1a6 50%, #c8c8cd 65%, #7a7a80 100%);
+  background: linear-gradient(135deg, #78828d 0%, #dfe5ea 35%, #a7b0ba 50%, #dfe5ea 65%, #78828d 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
+}
+
+@utility metal-shell {
+  background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 30%),
+    linear-gradient(180deg, rgba(247, 249, 251, 0.98) 0%, rgba(235, 239, 244, 0.96) 100%);
+}
+
+@utility metal-panel {
+  background: linear-gradient(180deg, rgba(251, 252, 253, 0.92) 0%, rgba(236, 240, 244, 0.88) 100%);
+  border: 1px solid rgba(194, 201, 210, 0.68);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 16px 34px rgba(20, 24, 30, 0.08);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+@utility metal-panel-strong {
+  background:
+    linear-gradient(180deg, rgba(26, 29, 34, 0.98) 0%, rgba(15, 18, 23, 0.98) 100%),
+    linear-gradient(135deg, rgba(155, 165, 176, 0.12) 0%, rgba(255, 255, 255, 0) 48%);
+  border: 1px solid rgba(146, 154, 166, 0.24);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 18px 38px rgba(0, 0, 0, 0.34);
+}
+
+@utility metal-pill {
+  background: linear-gradient(180deg, rgba(247, 249, 251, 0.96) 0%, rgba(222, 228, 235, 0.88) 100%);
+  border: 1px solid rgba(193, 200, 209, 0.72);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 22px rgba(18, 22, 27, 0.06);
+}
+
+@utility metal-input {
+  background: linear-gradient(180deg, rgba(241, 244, 247, 0.94) 0%, rgba(231, 236, 241, 0.9) 100%);
+  border: 1px solid rgba(189, 196, 205, 0.76);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+}
+
+@utility metal-divider {
+  border-color: rgba(190, 197, 206, 0.72);
+}
+
+@utility text-metal-muted {
+  color: #5e6671;
 }
 
 /* Page transition */

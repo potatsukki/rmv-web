@@ -97,13 +97,13 @@ const userSchema = z.object({
 type UserFormData = z.infer<typeof userSchema>;
 
 const roleBadgeStyles: Record<string, string> = {
-  [Role.CUSTOMER]: 'border-gray-200 bg-gray-50 text-gray-700',
-  [Role.APPOINTMENT_AGENT]: 'border-teal-200 bg-teal-50 text-teal-700',
-  [Role.SALES_STAFF]: 'border-emerald-200 bg-emerald-50 text-emerald-700',
-  [Role.ENGINEER]: 'border-indigo-200 bg-indigo-50 text-indigo-700',
-  [Role.FABRICATION_STAFF]: 'border-orange-200 bg-orange-50 text-orange-700',
-  [Role.CASHIER]: 'border-amber-200 bg-amber-50 text-amber-700',
-  [Role.ADMIN]: 'border-red-200 bg-red-50 text-red-700',
+  [Role.CUSTOMER]: 'border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470]',
+  [Role.APPOINTMENT_AGENT]: 'border-[#8eafbb] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] text-[#4f6d78]',
+  [Role.SALES_STAFF]: 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]',
+  [Role.ENGINEER]: 'border-[#98a6c4] bg-[linear-gradient(180deg,#eff1f9_0%,#dce2f0_100%)] text-[#5b6785]',
+  [Role.FABRICATION_STAFF]: 'border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]',
+  [Role.CASHIER]: 'border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239]',
+  [Role.ADMIN]: 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]',
 };
 
 export function UsersPage() {
@@ -231,22 +231,21 @@ export function UsersPage() {
 
   if (error) return <PageError message="Failed to load users" onRetry={refetch} />;
 
-  const inputClasses =
-    'h-11 bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20';
+  const inputClasses = 'h-11';
 
   return (
     <div className="space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">User Management</h1>
-          <p className="text-[#6e6e73] text-sm mt-1">
+          <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">User Management</h1>
+          <p className="mt-1 text-sm text-[#616a74]">
             Manage system access and employee roles.
           </p>
         </div>
         <Button
           onClick={openCreate}
-          className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white shadow-sm h-10"
+          className="h-10"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add New User
@@ -266,7 +265,7 @@ export function UsersPage() {
         action={
           <Button
             onClick={openCreate}
-            className="h-11 bg-[#1d1d1f] px-4 text-white shadow-sm hover:bg-[#2d2d2f]"
+            className="h-11 px-4"
           >
             <Plus className="mr-2 h-4 w-4" />
             Add User
@@ -280,7 +279,7 @@ export function UsersPage() {
           {/* Mobile skeleton */}
           <div className="space-y-3 md:hidden">
             {Array.from({ length: 5 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-[#c8c8cd]/50 p-4 space-y-3">
+              <div key={i} className="metal-panel rounded-[1.35rem] p-4 space-y-3">
                 <div className="flex items-center gap-3">
                   <Skeleton className="h-10 w-10 rounded-full" />
                   <div className="flex-1 space-y-1.5">
@@ -293,7 +292,7 @@ export function UsersPage() {
             ))}
           </div>
           {/* Desktop skeleton */}
-          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] md:block">
             <div className="p-4 space-y-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
@@ -320,7 +319,7 @@ export function UsersPage() {
             {userList.map((u) => (
               <div
                 key={u._id}
-                className={`bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 transition-colors ${
+                className={`metal-panel rounded-[1.35rem] px-4 py-3.5 transition-colors ${
                   !u.isActive ? 'opacity-60' : ''
                 }`}
               >
@@ -330,26 +329,26 @@ export function UsersPage() {
                     className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
                       !u.isActive
                         ? 'bg-gray-200 text-gray-400'
-                        : 'bg-gradient-to-br from-[#f0f0f5] to-[#e8e8ed] text-[#3a3a3e]'
+                        : 'silver-sheen text-[#2b3138]'
                     }`}
                   >
                     {u.firstName[0]}{u.lastName[0]}
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                    <p className="truncate text-sm font-medium text-[#171b21]">
                       {u.firstName} {u.lastName}
                     </p>
-                    <p className="text-[11px] text-[#86868b] truncate">{u.email}</p>
+                    <p className="truncate text-[11px] text-[#68727d]">{u.email}</p>
                   </div>
                   {/* Actions */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0 text-[#86868b] hover:text-[#3a3a3e] rounded-lg flex-shrink-0">
+                      <Button variant="ghost" className="h-8 w-8 rounded-lg p-0 text-[#7a838d] hover:text-[#414a54] flex-shrink-0">
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl bg-white shadow-lg border border-[#e8e8ed]">
+                    <DropdownMenuContent align="end" className="rounded-xl border border-[#d6dbe2] bg-[linear-gradient(180deg,rgba(250,251,252,0.98)_0%,rgba(236,240,244,0.96)_100%)] shadow-lg">
                       <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => openEdit(u)}>
                         <Edit2 className="mr-2 h-4 w-4" /> Edit Details
@@ -375,14 +374,14 @@ export function UsersPage() {
                       key={r}
                       variant="outline"
                       className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${
-                        roleBadgeStyles[r] || 'border-gray-200 text-gray-600'
+                        roleBadgeStyles[r] || 'border-[#c6ccd3] text-[#5b6470]'
                       }`}
                     >
                       {formatRole(r)}
                     </Badge>
                   ))}
                   {!u.isActive && (
-                    <Badge variant="outline" className="text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 border-red-200 bg-red-50 text-red-600">
+                    <Badge variant="outline" className="h-5 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]">
                       Disabled
                     </Badge>
                   )}
@@ -390,30 +389,30 @@ export function UsersPage() {
               </div>
             ))}
             <div className="px-1 pt-1">
-              <p className="text-[11px] text-[#86868b]">
+              <p className="text-[11px] text-[#68727d]">
                 {userList.length} user{userList.length !== 1 ? 's' : ''}
               </p>
             </div>
           </div>
 
           {/* ── Desktop table (md+) ── */}
-          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] md:block">
             <Table>
               <TableHeader>
-                <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pl-5">User</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Email</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Phone</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Role</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">Actions</span></TableHead>
+                <TableRow className="hover:bg-transparent">
+                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">User</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Email</TableHead>
+                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Phone</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Role</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="w-10 pr-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {userList.map((u) => (
                   <TableRow
                     key={u._id}
-                    className={`border-b border-[#f0f0f5] transition-colors hover:bg-[#f9f9fb] group ${
+                    className={`group border-b border-[#e1e6ec] transition-colors hover:bg-white/45 ${
                       !u.isActive ? 'opacity-60' : ''
                     }`}
                   >
@@ -424,12 +423,12 @@ export function UsersPage() {
                           className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                             !u.isActive
                               ? 'bg-gray-200 text-gray-400'
-                              : 'bg-gradient-to-br from-[#f0f0f5] to-[#e8e8ed] text-[#3a3a3e]'
+                              : 'silver-sheen text-[#2b3138]'
                           }`}
                         >
                           {u.firstName[0]}{u.lastName[0]}
                         </div>
-                        <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                        <p className="truncate text-sm font-medium text-[#171b21]">
                           {u.firstName} {u.lastName}
                         </p>
                       </div>
@@ -437,12 +436,12 @@ export function UsersPage() {
 
                     {/* Email */}
                     <TableCell className="py-4">
-                      <span className="text-sm text-[#6e6e73]">{u.email}</span>
+                      <span className="text-sm text-[#616a74]">{u.email}</span>
                     </TableCell>
 
                     {/* Phone — hidden below lg */}
                     <TableCell className="py-4 hidden lg:table-cell">
-                      <span className="text-sm text-[#6e6e73]">{u.phone || '—'}</span>
+                      <span className="text-sm text-[#616a74]">{u.phone || '—'}</span>
                     </TableCell>
 
                     {/* Role */}
@@ -453,7 +452,7 @@ export function UsersPage() {
                             key={r}
                             variant="outline"
                             className={`text-[10px] font-bold uppercase tracking-wider ${
-                              roleBadgeStyles[r] || 'border-gray-200 text-gray-600'
+                              roleBadgeStyles[r] || 'border-[#c6ccd3] text-[#5b6470]'
                             }`}
                           >
                             {formatRole(r)}
@@ -468,8 +467,8 @@ export function UsersPage() {
                         variant="outline"
                         className={`text-[10px] font-bold uppercase tracking-wider ${
                           u.isActive
-                            ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                            : 'border-red-200 bg-red-50 text-red-600'
+                            ? 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]'
+                            : 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]'
                         }`}
                       >
                         {u.isActive ? 'Active' : 'Disabled'}
@@ -480,11 +479,11 @@ export function UsersPage() {
                     <TableCell className="py-4 pr-5">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" className="h-8 w-8 p-0 text-[#c8c8cd] hover:text-[#6e6e73] group-hover:text-[#86868b] rounded-lg">
+                          <Button variant="ghost" className="h-8 w-8 rounded-lg p-0 text-[#9ca6b1] hover:text-[#68727d] group-hover:text-[#7a838d]">
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl bg-white shadow-lg border border-[#e8e8ed]">
+                        <DropdownMenuContent align="end" className="rounded-xl border border-[#d6dbe2] bg-[linear-gradient(180deg,rgba(250,251,252,0.98)_0%,rgba(236,240,244,0.96)_100%)] shadow-lg">
                           <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => openEdit(u)}>
                             <Edit2 className="mr-2 h-4 w-4" /> Edit Details
@@ -507,8 +506,8 @@ export function UsersPage() {
                 ))}
               </TableBody>
             </Table>
-            <div className="px-5 py-3 border-t border-[#f0f0f5] bg-[#fafafa]">
-              <p className="text-xs text-[#86868b]">
+            <div className="border-t border-[#dde3ea] bg-white/25 px-5 py-3">
+              <p className="text-xs text-[#68727d]">
                 {userList.length} user{userList.length !== 1 ? 's' : ''}
               </p>
             </div>

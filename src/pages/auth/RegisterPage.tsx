@@ -242,15 +242,14 @@ export function RegisterPage() {
     }
   };
 
-  const inputClasses =
-    'h-10 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 text-sm rounded-xl';
+  const inputClasses = 'metal-input h-10 text-sm rounded-xl';
 
   return (
     <div className="flex min-h-screen">
       {/* Left Side - Form */}
-      <div className="relative flex flex-1 flex-col justify-center px-6 py-12 lg:flex-none lg:px-20 xl:px-28 bg-gradient-to-br from-[#eaeaef] via-[#e0e0e6] to-[#d8d8de] z-10 w-full lg:w-[48%]">
+      <div className="relative z-10 flex w-full flex-1 flex-col justify-center bg-[radial-gradient(circle_at_top_left,#f4f6f8_0%,#e4e8ed_52%,#d4dae1_100%)] px-6 py-12 lg:w-[48%] lg:flex-none lg:px-20 xl:px-28">
         <div className="absolute inset-0 opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-        <div className="relative mx-auto w-full max-w-[420px]">
+        <div className="metal-panel relative mx-auto w-full max-w-[440px] rounded-[2rem] p-8 sm:p-10">
           {/* Back link */}
           <Link
             to="/"
@@ -278,11 +277,11 @@ export function RegisterPage() {
 
           {/* Lockout Banner */}
           {isLocked && (
-            <div className="mt-6 flex items-start gap-3 rounded-xl bg-red-50 p-4 border border-red-100">
-              <ShieldAlert className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
+            <div className="mt-6 flex items-start gap-3 rounded-xl border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] p-4">
+              <ShieldAlert className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#87544f]" />
               <div>
-                <p className="text-sm font-semibold text-red-800">Account Locked</p>
-                <p className="text-sm text-red-600 mt-0.5">
+                <p className="text-sm font-semibold text-[#87544f]">Account Locked</p>
+                <p className="mt-0.5 text-sm text-[#9a625c]">
                   Too many failed attempts. Try again in {lockCountdown}.
                 </p>
               </div>
@@ -382,7 +381,7 @@ export function RegisterPage() {
 
               {/* Strength Meter */}
               {passwordValue.length > 0 && strength && (
-                <div className="mt-2 rounded-xl bg-[#f0f0f5] p-3 border border-[#d8d8de]">
+                <div className="metal-panel mt-2 rounded-xl p-3">
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[11px] font-medium text-[#86868b]">Strength</span>
                     <span
@@ -471,7 +470,7 @@ export function RegisterPage() {
                 <input
                   type="checkbox"
                   {...register('agreeToTerms')}
-                  className="mt-0.5 h-4 w-4 rounded border-[#c8c8cd] text-[#1d1d1f] focus:ring-[#1d1d1f] cursor-pointer accent-[#1d1d1f]"
+                  className="mt-0.5 h-4 w-4 cursor-pointer rounded border-[#c8c8cd] text-[#1d1d1f] accent-[#1d1d1f] focus:ring-[#1d1d1f]"
                 />
                 <span className="text-xs text-[#6e6e73] leading-relaxed">
                   I agree to the{' '}
@@ -491,7 +490,7 @@ export function RegisterPage() {
 
             <Button
               type="submit"
-              className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white font-semibold h-11 transition-all active:scale-[0.98] shadow-lg shadow-black/20 rounded-xl mt-2"
+              className="mt-2 h-11 w-full rounded-xl font-semibold transition-all active:scale-[0.98]"
               disabled={isSubmitting || isLocked}
             >
               {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -503,14 +502,14 @@ export function RegisterPage() {
                 <span className="w-full border-t border-[#c8c8cd]/60" />
               </div>
               <div className="relative flex justify-center text-xs uppercase">
-                <span className="bg-[#e4e4e9] px-2 text-[#86868b]">or</span>
+                <span className="bg-[rgba(235,239,244,0.95)] px-2 text-[#86868b]">or</span>
               </div>
             </div>
 
             <Button
               type="button"
               variant="outline"
-              className="w-full h-11 font-medium border-[#c8c8cd] bg-white/60 hover:bg-white/90 text-[#1d1d1f] transition-all active:scale-[0.98] rounded-xl"
+              className="h-11 w-full rounded-xl border-[#cfd6dd] bg-white/40 font-medium text-[#171b21] transition-all active:scale-[0.98] hover:bg-white/65"
               onClick={handleGoogleSignUp}
               disabled={googleLoading || isSubmitting || isLocked}
             >
@@ -540,7 +539,7 @@ export function RegisterPage() {
             </Button>
 
             {!isLocked && attempts > 0 && attempts < MAX_ATTEMPTS && (
-              <div className="flex items-center justify-center gap-2 text-xs text-[#6e6e73] bg-[#f0f0f5] p-2.5 rounded-xl border border-[#d8d8de]">
+              <div className="metal-pill flex items-center justify-center gap-2 rounded-xl p-2.5 text-xs text-[#616a74]">
                 <AlertCircle className="h-3.5 w-3.5" />
                 {MAX_ATTEMPTS - attempts} attempt{MAX_ATTEMPTS - attempts === 1 ? '' : 's'}{' '}
                 remaining

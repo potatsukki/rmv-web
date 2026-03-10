@@ -93,7 +93,7 @@ const STAGE_COLORS: Record<string, string> = {
 function ChartTooltip({ active, payload, label, isCurrency }: any) {
   if (!active || !payload?.length) return null;
   return (
-    <div className="rounded-lg border border-[#e8e8ed] bg-white px-3 py-2 shadow-lg">
+    <div className="metal-panel rounded-lg px-3 py-2 shadow-[0_18px_34px_rgba(18,22,27,0.12)]">
       <p className="text-xs font-medium text-[#1d1d1f]">{label}</p>
       <p className="text-sm font-semibold text-[#1d1d1f]">
         {isCurrency ? formatCurrency(payload[0].value) : payload[0].value}
@@ -118,7 +118,7 @@ function KpiCard({
 }) {
   if (isLoading) {
     return (
-      <Card className="border-[#c8c8cd]/50 shadow-sm">
+      <Card className="overflow-hidden">
         <CardContent className="p-4 sm:p-5">
           <div className="flex items-start justify-between mb-3">
             <Skeleton className="h-10 w-10 rounded-xl" />
@@ -131,11 +131,11 @@ function KpiCard({
   }
 
   return (
-    <Card className="border-[#c8c8cd]/50 bg-white/70 backdrop-blur-sm shadow-sm hover:shadow-md transition-all">
+    <Card className="transition-all hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_34px_rgba(18,22,27,0.1)]">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-start justify-between mb-3">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#f0f0f5]">
-            <Icon className="h-5 w-5 text-[#1d1d1f]" />
+          <div className="silver-sheen flex h-10 w-10 items-center justify-center rounded-xl">
+            <Icon className="h-5 w-5 text-[#2b3138]" />
           </div>
         </div>
         <div className="text-xl sm:text-2xl font-bold text-[#1d1d1f] tracking-tight">
@@ -176,7 +176,7 @@ export function ReportsPage() {
   return (
     <div className="space-y-5">
       {/* ── Header ── */}
-      <div className="rounded-2xl border border-[#d9d9e0] bg-[linear-gradient(135deg,rgba(255,255,255,0.88)_0%,rgba(245,245,248,0.92)_100%)] p-5 shadow-sm">
+      <div className="metal-panel rounded-[1.75rem] p-5">
         <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a8a93]">Analytics</p>
         <div className="mt-2 flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
@@ -187,7 +187,7 @@ export function ReportsPage() {
               Track revenue, workload, project movement, and payment pressure from one place.
             </p>
           </div>
-          <div className="rounded-xl bg-[#f3f3f7] px-3 py-2 text-xs text-[#5f5f68]">
+          <div className="metal-pill rounded-xl px-3 py-2 text-xs text-[#616a74]">
             Use the summary cards for fast scanning, then validate trends in the charts below.
           </div>
         </div>
@@ -241,7 +241,7 @@ export function ReportsPage() {
 
       {/* ── Appointment Funnel — admin only ── */}
       {isAdmin && (
-        <Card className="rounded-xl border-[#e8e8ed] bg-white/70 backdrop-blur-sm shadow-sm">
+        <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold text-[#1d1d1f]">
               Appointment Funnel
@@ -282,7 +282,7 @@ export function ReportsPage() {
                   ].map((s) => (
                     <div
                       key={s.label}
-                      className="flex items-center gap-3 rounded-xl bg-[#f5f5f7] p-3"
+                      className="metal-panel flex items-center gap-3 rounded-xl p-3"
                     >
                       <s.icon className="h-4 w-4 text-[#86868b] shrink-0" />
                       <div className="min-w-0">
@@ -326,7 +326,7 @@ export function ReportsPage() {
       )}
 
       {/* ── Revenue Chart ── */}
-      <Card className="rounded-xl border-[#e8e8ed] bg-white/70 backdrop-blur-sm shadow-sm">
+      <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="text-base font-semibold text-[#1d1d1f]">
             Revenue
@@ -341,7 +341,7 @@ export function ReportsPage() {
                 className={`capitalize rounded-lg text-xs h-8 px-3 ${
                   revenueGroupBy === g
                     ? 'bg-[#1d1d1f] text-white hover:bg-[#2d2d2f]'
-                    : 'border-[#e8e8ed] text-[#6e6e73] hover:bg-[#f5f5f7]'
+                    : 'text-[#616a74]'
                 }`}
               >
                 {g}
@@ -386,7 +386,7 @@ export function ReportsPage() {
       <div className={`grid gap-5 ${isAdmin ? 'lg:grid-cols-2' : ''}`}>
         {/* Project Pipeline — admin only */}
         {isAdmin && (
-          <Card className="rounded-xl border-[#e8e8ed] bg-white/70 backdrop-blur-sm shadow-sm">
+          <Card>
             <CardHeader>
               <CardTitle className="text-base font-semibold text-[#1d1d1f]">
                 Project Pipeline
@@ -441,7 +441,7 @@ export function ReportsPage() {
         )}
 
         {/* Payment Stages */}
-        <Card className="rounded-xl border-[#e8e8ed] bg-white/70 backdrop-blur-sm shadow-sm">
+        <Card>
           <CardHeader>
             <CardTitle className="text-base font-semibold text-[#1d1d1f]">
               Payment Stages
@@ -500,7 +500,7 @@ export function ReportsPage() {
 
       {/* ── Staff Workload — admin only ── */}
       {isAdmin && (
-        <Card className="rounded-xl border-[#e8e8ed] bg-white/70 backdrop-blur-sm shadow-sm">
+        <Card>
           <CardHeader className="flex flex-row items-center gap-2">
             <Users className="h-4 w-4 text-[#86868b]" />
             <CardTitle className="text-base font-semibold text-[#1d1d1f]">
@@ -532,7 +532,7 @@ export function ReportsPage() {
                   {workload.map((w) => (
                     <TableRow
                       key={String(w.userId)}
-                      className="hover:bg-[#f5f5f7] border-[#e8e8ed]/50"
+                      className="border-[#e8e8ed]/50 hover:bg-white/45"
                     >
                       <TableCell className="font-medium text-[#1d1d1f]">
                         {String(w.userName)}

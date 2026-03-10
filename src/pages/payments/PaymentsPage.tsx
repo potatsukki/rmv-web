@@ -39,11 +39,11 @@ const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
 const historyStatusConfig: Record<string, { label: string; className: string }> = {
-  verified: { label: 'Paid', className: 'bg-emerald-100 text-emerald-700' },
-  approved: { label: 'Approved', className: 'bg-emerald-100 text-emerald-700' },
-  pending: { label: 'Pending', className: 'bg-amber-100 text-amber-700' },
-  proof_submitted: { label: 'Awaiting Verification', className: 'bg-blue-100 text-blue-700' },
-  declined: { label: 'Declined', className: 'bg-red-100 text-red-700' },
+  verified: { label: 'Paid', className: 'border border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]' },
+  approved: { label: 'Approved', className: 'border border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]' },
+  pending: { label: 'Pending', className: 'border border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239]' },
+  proof_submitted: { label: 'Awaiting Verification', className: 'border border-[#8da4b8] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679]' },
+  declined: { label: 'Declined', className: 'border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]' },
 };
 
 export function PaymentsPage() {
@@ -193,49 +193,49 @@ export function PaymentsPage() {
           ═══════════════════════════════════════════════════════ */}
       {!selectedProjectId ? (
         <>
-          <div className="rounded-2xl border border-[#d9d9e0] bg-[linear-gradient(135deg,rgba(255,255,255,0.88)_0%,rgba(245,245,248,0.92)_100%)] p-5 shadow-sm">
-            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Payments</h1>
-            <p className="mt-1 text-sm text-[#6e6e73]">
+          <div className="metal-panel rounded-[1.75rem] p-5">
+            <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">Payments</h1>
+            <p className="mt-1 text-sm text-[#616a74]">
               {isCustomer ? 'Select a project to manage payments' : 'View payment details by project'}
             </p>
           </div>
 
           {/* Unpaid Ocular Fees */}
           {isCustomer && actionableOcularFees.length > 0 && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 bg-amber-50/50 shadow-sm">
+            <Card className="rounded-none border-x-0 border-[#c7aa7a]/60 bg-[linear-gradient(180deg,rgba(248,240,229,0.82)_0%,rgba(235,220,198,0.58)_100%)] sm:rounded-xl sm:border-x">
               <CardHeader className="pb-2 px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-base text-amber-800">
-                  <AlertTriangle className="h-4 w-4 text-amber-600" />
+                <CardTitle className="flex items-center gap-2 text-base text-[#7e6239]">
+                  <AlertTriangle className="h-4 w-4 text-[#a97d49]" />
                   Unpaid Ocular Fees
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 px-4 sm:px-6">
-                <p className="text-xs text-amber-700">
+                <p className="text-xs text-[#7e6239]">
                   Pay before your appointment can be confirmed.
                 </p>
                 {actionableOcularFees.map((appt) => (
                   <div
                     key={String(appt._id)}
-                    className="flex items-center justify-between gap-3 rounded-xl border border-amber-200 bg-white p-3"
+                    className="metal-panel flex items-center justify-between gap-3 rounded-xl p-3"
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="text-sm font-semibold text-[#1d1d1f] truncate">
+                      <p className="truncate text-sm font-semibold text-[#171b21]">
                         {format(new Date(appt.date), 'MMM d, yyyy')}
                       </p>
                       {appt.address && (
-                        <p className="flex items-center gap-1 text-xs text-[#6e6e73] truncate">
+                        <p className="flex items-center gap-1 truncate text-xs text-[#616a74]">
                           <MapPin className="h-3 w-3 shrink-0" />
                           {appt.address}
                         </p>
                       )}
-                      <p className="text-base font-bold text-[#1d1d1f] mt-0.5">
+                      <p className="mt-0.5 text-base font-bold text-[#171b21]">
                         {formatCurrency(appt.ocularFee ?? 0)}
                       </p>
                     </div>
                     <Button
                       asChild
                       size="sm"
-                      className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-lg shrink-0"
+                      className="shrink-0"
                     >
                       <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
                         Pay Now
@@ -248,7 +248,7 @@ export function PaymentsPage() {
           )}
 
           {/* ── Projects Table ── */}
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 overflow-hidden">
+          <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
             {/* Search + Filter bar */}
             <div className="px-4 pb-3 pt-4 sm:px-6">
               <CollectionToolbar
@@ -272,7 +272,7 @@ export function PaymentsPage() {
             </div>
 
             {/* Desktop table header */}
-            <div className="hidden sm:grid sm:grid-cols-[1fr_140px_140px_32px] gap-3 px-6 pb-2 text-xs font-medium text-[#86868b] uppercase tracking-wider border-b border-[#e8e8ed]">
+            <div className="hidden gap-3 border-b border-[#dde3ea] px-6 pb-2 text-xs font-medium uppercase tracking-wider text-[#68727d] sm:grid sm:grid-cols-[1fr_140px_140px_32px]">
               <span>Project</span>
               <span>Service</span>
               <span className="text-center">Status</span>
@@ -280,38 +280,38 @@ export function PaymentsPage() {
             </div>
 
             {/* Table body */}
-            <div className="divide-y divide-[#e8e8ed]">
+            <div className="divide-y divide-[#dde3ea]">
               {filteredProjects.length > 0 ? (
                 filteredProjects.map((p) => (
                   <button
                     key={String(p._id)}
                     type="button"
                     onClick={() => setSelectedProjectId(String(p._id))}
-                    className="w-full text-left px-4 sm:px-6 py-3.5 transition-colors hover:bg-[#f5f5f7]/80 group"
+                    className="group w-full px-4 py-3.5 text-left transition-colors hover:bg-white/45 sm:px-6"
                   >
                     {/* Mobile row */}
                     <div className="sm:hidden flex items-center gap-3">
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm font-semibold text-[#1d1d1f] truncate">{String(p.title)}</p>
-                        <p className="text-xs text-[#86868b] capitalize truncate mt-0.5">
+                        <p className="truncate text-sm font-semibold text-[#171b21]">{String(p.title)}</p>
+                        <p className="mt-0.5 truncate text-xs capitalize text-[#68727d]">
                           {String(p.serviceType || '').replace(/_/g, ' ')}
                         </p>
                       </div>
                       <StatusBadge status={String(p.status)} />
-                      <ChevronRight className="h-4 w-4 text-[#c8c8cd] shrink-0 group-hover:text-[#86868b] transition-colors" />
+                      <ChevronRight className="h-4 w-4 shrink-0 text-[#9ca6b1] transition-colors group-hover:text-[#68727d]" />
                     </div>
                     {/* Desktop row */}
                     <div className="hidden sm:grid sm:grid-cols-[1fr_140px_140px_32px] gap-3 items-center">
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-[#1d1d1f] truncate group-hover:text-[#3a3a3e]">{String(p.title)}</p>
+                        <p className="truncate text-sm font-semibold text-[#171b21] group-hover:text-[#4d5660]">{String(p.title)}</p>
                         {p.siteAddress && (
-                          <p className="text-xs text-[#86868b] truncate mt-0.5">
+                          <p className="mt-0.5 truncate text-xs text-[#68727d]">
                             <MapPin className="inline h-3 w-3 mr-1" />
                             {String(p.siteAddress)}
                           </p>
                         )}
                       </div>
-                      <p className="text-xs text-[#6e6e73] capitalize truncate">
+                      <p className="truncate text-xs capitalize text-[#616a74]">
                         {String(p.serviceType || '').replace(/_/g, ' ')}
                       </p>
                       <div className="flex justify-center">
@@ -338,26 +338,26 @@ export function PaymentsPage() {
 
           {/* ── Unified Payment History (Customer only, on list view) ── */}
           {isCustomer && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 overflow-hidden">
+            <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
               <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-base text-[#1d1d1f]">
-                  <Receipt className="h-4 w-4 text-[#6e6e73]" />
+                <CardTitle className="flex items-center gap-2 text-base text-[#171b21]">
+                  <Receipt className="h-4 w-4 text-[#616a74]" />
                   All Payments
                 </CardTitle>
                 <div className="relative w-full sm:w-56">
-                  <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-[#86868b]" />
+                  <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-[#68727d]" />
                   <Input
                     placeholder="Search payments..."
                     value={historySearch}
                     onChange={(e) => setHistorySearch(e.target.value)}
-                    className="pl-8 h-8 bg-[#f5f5f7]/50 border-[#d2d2d7] text-xs rounded-lg"
+                    className="h-8 rounded-lg pl-8 text-xs"
                   />
                 </div>
               </CardHeader>
 
               {/* Desktop header */}
               {!historyLoading && filteredHistory.length > 0 && (
-                <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px] gap-3 px-6 pb-2 text-xs font-medium text-[#86868b] uppercase tracking-wider border-b border-[#e8e8ed]">
+                <div className="hidden gap-3 border-b border-[#dde3ea] px-6 pb-2 text-xs font-medium uppercase tracking-wider text-[#68727d] sm:grid sm:grid-cols-[1fr_100px_100px]">
                   <span>Description</span>
                   <span className="text-right">Amount</span>
                   <span className="text-center">Status</span>
@@ -366,7 +366,7 @@ export function PaymentsPage() {
 
               <CardContent className="p-0">
                 {historyLoading && (
-                  <div className="divide-y divide-[#e8e8ed]">
+                  <div className="divide-y divide-[#dde3ea]">
                     {Array.from({ length: 4 }).map((_, i) => (
                       <div key={i} className="px-4 sm:px-6 py-3">
                         <Skeleton className="h-10 w-full rounded-lg" />
@@ -402,20 +402,20 @@ export function PaymentsPage() {
                           type="button"
                           key={item._id}
                           onClick={() => setSelectedHistoryPayment(item)}
-                          className="w-full text-left px-4 sm:px-6 py-3 transition-colors hover:bg-[#f5f5f7]/80 group"
+                          className="group w-full px-4 py-3 text-left transition-colors hover:bg-white/45 sm:px-6"
                         >
                           {/* Mobile */}
                           <div className="sm:hidden flex items-center gap-3">
                             <div
                               className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                                isOcular ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
+                                isOcular ? 'bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]' : 'bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679]'
                               }`}
                             >
                               {isOcular ? <MapPin className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
                             </div>
                             <div className="min-w-0 flex-1">
-                              <p className="text-sm font-medium text-[#1d1d1f] truncate">{item.description}</p>
-                              <p className="text-xs text-[#86868b]">{format(new Date(item.date), 'MMM d, yyyy')}</p>
+                              <p className="truncate text-sm font-medium text-[#171b21]">{item.description}</p>
+                              <p className="text-xs text-[#68727d]">{format(new Date(item.date), 'MMM d, yyyy')}</p>
                             </div>
                             <div className="flex flex-col items-end gap-1 shrink-0">
                               <span className="text-sm font-bold text-[#1d1d1f]">{formatCurrency(item.amount)}</span>
@@ -429,7 +429,9 @@ export function PaymentsPage() {
                             <div className="flex items-center gap-3 min-w-0">
                               <div
                                 className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-full ${
-                                  isOcular ? 'bg-orange-100 text-orange-600' : 'bg-blue-100 text-blue-600'
+                                  isOcular
+                                    ? 'bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]'
+                                    : 'bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679]'
                                 }`}
                               >
                                 {isOcular ? <MapPin className="h-4 w-4" /> : <CreditCard className="h-4 w-4" />}
@@ -465,7 +467,7 @@ export function PaymentsPage() {
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 px-2 text-[#6e6e73] hover:text-[#1d1d1f] hover:bg-[#f5f5f7] rounded-lg shrink-0"
+              className="metal-pill h-8 px-2 text-[#616a74] hover:text-[#171b21] rounded-lg shrink-0"
               onClick={() => setSelectedProjectId('')}
             >
               <ArrowLeft className="h-4 w-4" />
@@ -485,7 +487,7 @@ export function PaymentsPage() {
 
           {/* Detail content */}
           {planLoading ? (
-        <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+        <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
           <CardContent className="p-4">
             <Skeleton className="h-32 w-full" />
           </CardContent>
@@ -497,19 +499,16 @@ export function PaymentsPage() {
           description="A payment plan hasn't been created for this project yet."
         />
       ) : isCustomer && !contractSigned ? (
-        <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+        <Card className="metal-panel-strong rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
           <CardContent className="flex flex-col items-center text-center py-10 px-6">
-            <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f5f7] mb-4">
-              <PenTool className="h-6 w-6 text-[#6e6e73]" />
+            <div className="silver-sheen mb-4 flex h-14 w-14 items-center justify-center rounded-full">
+              <PenTool className="h-6 w-6 text-[#616a74]" />
             </div>
-            <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">Sign Your Contract First</h3>
-            <p className="text-sm text-[#6e6e73] max-w-xs mb-5">
+            <h3 className="mb-1 text-base font-semibold text-[#171b21]">Sign Your Contract First</h3>
+            <p className="mb-5 max-w-xs text-sm text-[#616a74]">
               You must review and e-sign the project contract before making any payments.
             </p>
-            <Button
-              asChild
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl px-6"
-            >
+            <Button asChild className="px-6">
               <Link to={`/projects/${selectedProjectId}`}>
                 <ScrollText className="mr-1.5 h-4 w-4" />
                 Go to Project &amp; Sign Contract
@@ -525,34 +524,30 @@ export function PaymentsPage() {
             const verifiedCount = plan.stages.filter(s => s.status === PaymentStageStatus.VERIFIED).length;
             const allVerified = verifiedCount === plan.stages.length;
             if (allVerified) return (
-              <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 bg-emerald-50/50">
+              <Card className="rounded-none -mx-3 border-x-0 border-[#98b49f] bg-[linear-gradient(180deg,rgba(238,246,241,0.92)_0%,rgba(220,234,222,0.86)_100%)] sm:mx-0 sm:rounded-xl sm:border-x">
                 <CardContent className="flex items-start gap-3 py-3 px-4">
-                  <CreditCard className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+                  <CreditCard className="mt-0.5 h-5 w-5 shrink-0 text-[#56715f]" />
                   <div>
-                    <p className="text-sm font-semibold text-emerald-900">All Payments Complete</p>
-                    <p className="text-xs text-emerald-700 mt-0.5">All payment stages have been verified. Your project is fully paid.</p>
+                    <p className="text-sm font-semibold text-[#2f4737]">All Payments Complete</p>
+                    <p className="mt-0.5 text-xs text-[#56715f]">All payment stages have been verified. Your project is fully paid.</p>
                   </div>
                 </CardContent>
               </Card>
             );
             if (awaitingCount > 0) return (
-              <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
+              <Card className="rounded-none -mx-3 border-x-0 border-[#8da4b8] bg-[linear-gradient(180deg,rgba(238,244,249,0.94)_0%,rgba(216,228,238,0.86)_100%)] sm:mx-0 sm:rounded-xl sm:border-x">
                 <CardContent className="flex items-start gap-3 py-3 px-4">
-                  <Clock className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+                  <Clock className="mt-0.5 h-5 w-5 shrink-0 text-[#4f6679]" />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-blue-900">Payment Awaiting Verification</p>
-                    <p className="text-xs text-blue-700 mt-0.5">
+                    <p className="text-sm font-semibold text-[#324657]">Payment Awaiting Verification</p>
+                    <p className="mt-0.5 text-xs text-[#4f6679]">
                       {isCashier
                         ? `${awaitingCount} payment${awaitingCount > 1 ? 's' : ''} need${awaitingCount === 1 ? 's' : ''} your verification.`
                         : `${awaitingCount} payment${awaitingCount > 1 ? 's' : ''} received and awaiting cashier verification. This page updates automatically.`}
                     </p>
                   </div>
                   {isCashier && (
-                    <Button
-                      size="sm"
-                      asChild
-                      className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs shrink-0"
-                    >
+                    <Button size="sm" asChild className="shrink-0 text-xs">
                       <Link to="/cashier-queue">
                         <CheckCircle className="mr-1 h-3.5 w-3.5" /> Go to Cashier Queue
                       </Link>
@@ -565,7 +560,7 @@ export function PaymentsPage() {
           })()}
 
           {/* ── Payment Plan (Table-style) ── */}
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 overflow-hidden">
+          <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
             <CardHeader className="px-4 sm:px-6">
               <CardTitle className="text-base text-[#1d1d1f]">Payment Plan</CardTitle>
             </CardHeader>
@@ -596,19 +591,19 @@ export function PaymentsPage() {
 
                   /* Timing badge */
                   const timingBadge = isOverdue ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-[10px] font-medium text-red-700">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] px-2 py-0.5 text-[10px] font-medium text-[#87544f]">
                       <AlertTriangle className="h-3 w-3" /> Overdue ({daysSinceActivation}d)
                     </span>
                   ) : isActivated && !isVerified && !isProofSubmitted ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-amber-50 px-2 py-0.5 text-[10px] font-medium text-amber-700">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] px-2 py-0.5 text-[10px] font-medium text-[#7e6239]">
                       <AlertCircle className="h-3 w-3" /> Due Now
                     </span>
                   ) : isHeadsUp ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-medium text-blue-600">
+                    <span className="inline-flex items-center gap-1 rounded-full border border-[#8da4b8] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] px-2 py-0.5 text-[10px] font-medium text-[#4f6679]">
                       <Clock className="h-3 w-3" /> Coming Soon
                     </span>
                   ) : isNotYetDue ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-[10px] font-medium text-gray-500">
+                    <span className="metal-pill inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium text-[#616a74]">
                       <Lock className="h-3 w-3" /> Not Yet Due
                     </span>
                   ) : null;
@@ -631,7 +626,7 @@ export function PaymentsPage() {
                     <div
                       key={String(stage.stageId)}
                       className={`px-4 sm:px-6 py-3.5 transition-colors ${
-                        isOverdue ? 'bg-red-50/40' : 'hover:bg-[#f5f5f7]/60'
+                        isOverdue ? 'bg-[linear-gradient(180deg,rgba(251,239,237,0.75)_0%,rgba(239,215,212,0.42)_100%)]' : 'hover:bg-white/45'
                       }`}
                     >
                       {/* ─── Mobile layout ─── */}
@@ -658,14 +653,14 @@ export function PaymentsPage() {
                           </p>
                         )}
                         {isDeclined && declineReason && (
-                          <div className="rounded-lg bg-red-50 border border-red-100 px-3 py-2">
-                            <p className="text-xs font-medium text-red-700">Declined: {declineReason}</p>
-                            <p className="text-xs text-red-600 mt-0.5">Please pay again via QR.</p>
+                          <div className="rounded-lg border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] px-3 py-2">
+                            <p className="text-xs font-medium text-[#87544f]">Declined: {declineReason}</p>
+                            <p className="mt-0.5 text-xs text-[#9a625c]">Please pay again via QR.</p>
                           </div>
                         )}
                         {hasPartialPayment && (
-                          <div className="rounded-lg bg-amber-50 border border-amber-100 px-3 py-2">
-                            <p className="text-xs font-medium text-amber-700">
+                          <div className="rounded-lg border border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] px-3 py-2">
+                            <p className="text-xs font-medium text-[#7e6239]">
                               {formatCurrency(stage.remainingBalance!)} remaining after partial payment of {formatCurrency(stage.amountPaid!)}
                             </p>
                           </div>
@@ -675,8 +670,8 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               className={isEarlyPay
-                                ? 'border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg text-xs h-8'
-                                : 'bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs h-8'}
+                                  ? 'border border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a] hover:brightness-[0.99] rounded-lg text-xs h-8'
+                                  : 'rounded-lg text-xs h-8'}
                               onClick={() => handleQrCheckout(String(stage.stageId))}
                               disabled={stageCheckout.isPending}
                             >
@@ -686,7 +681,7 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               variant="ghost"
-                              className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-8"
+                              className="metal-pill rounded-lg text-xs h-8 text-[#171b21] hover:text-[#4d5660]"
                               onClick={() => handleSimulate(String(stage.stageId))}
                               disabled={simulatePayment.isPending}
                               title="Simulate payment (testing)"
@@ -700,7 +695,7 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-lg text-xs h-8"
+                              className="rounded-lg border-[#93ad9d] text-[#4e6c5a] hover:bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-xs h-8"
                               onClick={() =>
                                 setCashDialog({
                                   open: true,
@@ -718,7 +713,7 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               asChild
-                              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs h-8"
+                              className="rounded-lg text-xs h-8"
                             >
                               <Link to="/cashier-queue">
                                 <CheckCircle className="mr-1 h-3.5 w-3.5" /> Verify in Cashier Queue
@@ -760,8 +755,8 @@ export function PaymentsPage() {
                               <Button
                                 size="sm"
                                 className={isEarlyPay
-                                  ? 'border border-emerald-300 bg-white text-emerald-700 hover:bg-emerald-50 rounded-lg text-xs h-7 px-2'
-                                  : 'bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs h-7 px-2'}
+                                  ? 'border border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a] hover:brightness-[0.99] rounded-lg text-xs h-7 px-2'
+                                  : 'rounded-lg text-xs h-7 px-2'}
                                 onClick={() => handleQrCheckout(String(stage.stageId))}
                                 disabled={stageCheckout.isPending}
                               >
@@ -771,7 +766,7 @@ export function PaymentsPage() {
                               <Button
                                 size="sm"
                                 variant="ghost"
-                                className="text-[#1d1d1f] hover:text-[#3a3a3e] rounded-lg text-xs h-7 px-2"
+                                className="metal-pill rounded-lg text-xs h-7 px-2 text-[#171b21] hover:text-[#4d5660]"
                                 onClick={() => handleSimulate(String(stage.stageId))}
                                 disabled={simulatePayment.isPending}
                                 title="Simulate payment (testing)"
@@ -784,7 +779,7 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className="border-emerald-200 text-emerald-700 hover:bg-emerald-50 rounded-lg text-xs h-7 px-2"
+                              className="rounded-lg border-[#93ad9d] text-[#4e6c5a] hover:bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-xs h-7 px-2"
                               onClick={() =>
                                 setCashDialog({
                                   open: true,
@@ -800,7 +795,7 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               asChild
-                              className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs h-7 px-2"
+                              className="rounded-lg text-xs h-7 px-2"
                             >
                               <Link to="/cashier-queue">
                                 <CheckCircle className="mr-1 h-3 w-3" /> Verify
@@ -818,7 +813,7 @@ export function PaymentsPage() {
 
           {/* ── Per-project Payment History (Table-style) ── */}
           {payments && payments.length > 0 && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 overflow-hidden">
+            <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
               <CardHeader className="px-4 sm:px-6">
                 <CardTitle className="text-base text-[#1d1d1f]">Payment History</CardTitle>
               </CardHeader>
@@ -834,7 +829,7 @@ export function PaymentsPage() {
               <CardContent className="p-0">
                 <div className="divide-y divide-[#e8e8ed]">
                   {payments.map((p) => (
-                    <div key={String(p._id)} className="px-4 sm:px-6 py-3 hover:bg-[#f5f5f7]/60 transition-colors">
+                    <div key={String(p._id)} className="px-4 py-3 transition-colors hover:bg-white/45 sm:px-6">
                       {/* Mobile */}
                       <div className="sm:hidden">
                         <div className="flex items-start justify-between gap-2">
@@ -936,14 +931,14 @@ export function PaymentsPage() {
           }
         }}
       >
-        <DialogContent className="rounded-2xl sm:max-w-sm">
+        <DialogContent className="metal-panel-strong rounded-2xl sm:max-w-sm">
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f]">Record Cash Payment</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
             <div>
               <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Due</Label>
-              <p className="text-lg font-bold text-emerald-700">
+              <p className="text-lg font-bold text-[#4e6c5a]">
                 {formatCurrency(cashDialog.amount)}
               </p>
             </div>
@@ -955,14 +950,14 @@ export function PaymentsPage() {
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
                 placeholder="0.00"
-                className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-emerald-300 focus:ring-emerald-200"
+                className="metal-input h-11 border-[#93ad9d] focus:border-[#93ad9d] focus:ring-[#dceade]"
               />
             </div>
           </div>
           <DialogFooter>
             <Button
               variant="outline"
-              className="border-[#d2d2d7] rounded-lg"
+              className="rounded-lg"
               onClick={() => {
                 setCashDialog({ open: false, stageId: '', amount: 0 });
                 setCashAmount('');
@@ -971,7 +966,7 @@ export function PaymentsPage() {
               Cancel
             </Button>
             <Button
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              className="rounded-lg"
               onClick={handleRecordCash}
               disabled={recordCash.isPending}
             >
@@ -986,7 +981,7 @@ export function PaymentsPage() {
         open={!!selectedHistoryPayment}
         onOpenChange={(open) => !open && setSelectedHistoryPayment(null)}
       >
-        <DialogContent className="sm:max-w-md rounded-2xl">
+        <DialogContent className="metal-panel-strong sm:max-w-md rounded-2xl">
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f]">Payment Details</DialogTitle>
           </DialogHeader>
@@ -994,7 +989,7 @@ export function PaymentsPage() {
           {selectedHistoryPayment && (
             <div className="space-y-6 mt-2">
               {/* Amount & Status */}
-              <div className="flex flex-col items-center justify-center p-6 bg-[#f5f5f7] rounded-xl border border-[#c8c8cd]/50">
+              <div className="metal-panel flex flex-col items-center justify-center rounded-xl p-6">
                 <span className="text-sm text-[#86868b] font-medium mb-1">Amount</span>
                 <span className="text-3xl font-bold text-[#1d1d1f] mb-3">
                   {formatCurrency(selectedHistoryPayment.amount)}
@@ -1052,11 +1047,11 @@ export function PaymentsPage() {
                 )}
 
                 {selectedHistoryPayment.status === 'declined' && selectedHistoryPayment.declineReason && (
-                  <div className="flex items-start gap-3 p-3 bg-red-50 rounded-lg border border-red-100 mt-2">
-                    <AlertCircle className="h-4 w-4 text-red-600 mt-0.5" />
+                  <div className="mt-2 flex items-start gap-3 rounded-lg border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] p-3">
+                    <AlertCircle className="mt-0.5 h-4 w-4 text-[#87544f]" />
                     <div>
-                      <p className="text-xs text-red-600 font-semibold">Decline Reason</p>
-                      <p className="text-sm font-medium text-red-700 mt-0.5">{selectedHistoryPayment.declineReason}</p>
+                      <p className="text-xs font-semibold text-[#87544f]">Decline Reason</p>
+                      <p className="mt-0.5 text-sm font-medium text-[#9a625c]">{selectedHistoryPayment.declineReason}</p>
                     </div>
                   </div>
                 )}

@@ -203,16 +203,16 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     description: 'In progress',
     detail: 'Projects that are still moving through design, payment, fabrication, or delivery.',
     path: '/projects',
-    color: 'text-[#1d1d1f] bg-[#f0f0f5]',
+    color: 'text-[#2b3138] silver-sheen',
   };
 
   switch (role) {
     case Role.CUSTOMER:
       return [
-        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', detail: 'Visit requests you submitted that are still waiting for the team to confirm a schedule.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', detail: 'Visit requests you submitted that are still waiting for the team to confirm a schedule.', path: '/appointments', color: 'text-[#2b3138] silver-sheen' },
         activeProjects,
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Invoices due', detail: 'Payments that still need your action before the project can move forward.', path: '/payments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently in the workshop and not yet ready for installation or handover.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Invoices due', detail: 'Payments that still need your action before the project can move forward.', path: '/payments', color: 'text-[#2b3138] silver-sheen' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently in the workshop and not yet ready for installation or handover.', path: '/projects', color: 'text-[#2b3138] silver-sheen' },
       ];
     case Role.APPOINTMENT_AGENT:
       return [
@@ -361,21 +361,21 @@ export function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#8a8a93]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7a838d]">
             Overview
           </p>
-          <div className="mt-2 inline-flex items-center rounded-full bg-[#f0f0f5] px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#4b4b53]">
+          <div className="metal-pill mt-2 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#4d5660]">
             {getRoleWorkspaceLabel(primaryRole as Role)}
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#1d1d1f] sm:text-[2rem]">
+          <h2 className="text-2xl font-bold tracking-tight text-[#171b21] sm:text-[2rem]">
             {greeting()}, {user?.firstName}
           </h2>
-          <p className="text-[#6e6e73] mt-1 text-sm">
+          <p className="mt-1 text-sm text-[#616a74]">
             {getRoleGreeting(primaryRole as Role)}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="text-xs text-[#86868b] bg-[#f0f0f5] px-3 py-1.5 rounded-lg font-medium">
+          <span className="metal-pill rounded-lg px-3 py-1.5 text-xs font-medium text-[#616a74]">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
@@ -388,19 +388,19 @@ export function DashboardPage() {
       {/* Payment Due Alert Banner (customers with pending payments) */}
       {isCustomerRole && (data as any)?.pendingPayments > 0 && (
         <Link to="/payments">
-          <div className="flex items-center gap-3 rounded-xl border border-amber-200 bg-amber-50/80 p-4 hover:bg-amber-50 transition-colors cursor-pointer">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100">
-              <AlertCircle className="h-5 w-5 text-amber-600" />
+          <div className="flex cursor-pointer items-center gap-3 rounded-[1.35rem] border border-[#c7aa7a]/70 bg-[linear-gradient(180deg,rgba(248,240,229,0.82)_0%,rgba(235,220,198,0.58)_100%)] p-4 transition-colors hover:bg-[linear-gradient(180deg,rgba(250,244,235,0.9)_0%,rgba(237,225,205,0.7)_100%)]">
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]">
+              <AlertCircle className="h-5 w-5 text-[#a97d49]" />
             </div>
             <div className="flex-1">
-              <p className="font-semibold text-amber-800 text-sm">
+              <p className="text-sm font-semibold text-[#7e6239]">
                 You have {(data as any).pendingPayments} payment{(data as any).pendingPayments > 1 ? 's' : ''} due
               </p>
-              <p className="text-xs text-amber-600">
+              <p className="text-xs text-[#8f6e42]">
                 Tap here to view and pay your outstanding balances.
               </p>
             </div>
-            <ArrowRight className="h-4 w-4 text-amber-500" />
+            <ArrowRight className="h-4 w-4 text-[#a97d49]" />
           </div>
         </Link>
       )}
@@ -409,31 +409,31 @@ export function DashboardPage() {
       {isCustomerRole && (data as any)?.pendingInstallationConfirmations?.length > 0 && (
         (data as any).pendingInstallationConfirmations.map((proj: { _id: string; title: string }) => (
           <Link key={proj._id} to={`/projects/${proj._id}/fabrication`}>
-            <div className="flex items-center gap-3 rounded-xl border border-blue-200 bg-blue-50/80 p-4 hover:bg-blue-50 transition-colors cursor-pointer">
-              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100">
-                <PackageCheck className="h-5 w-5 text-blue-600" />
+            <div className="flex cursor-pointer items-center gap-3 rounded-[1.35rem] border border-[#8da4b8]/70 bg-[linear-gradient(180deg,rgba(238,244,249,0.9)_0%,rgba(216,228,238,0.7)_100%)] p-4 transition-colors hover:bg-[linear-gradient(180deg,rgba(244,248,251,0.94)_0%,rgba(221,232,241,0.82)_100%)]">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]">
+                <PackageCheck className="h-5 w-5 text-[#4f6679]" />
               </div>
               <div className="flex-1">
-                <p className="font-semibold text-blue-800 text-sm">
+                <p className="text-sm font-semibold text-[#4f6679]">
                   Your product is ready for installation!
                 </p>
-                <p className="text-xs text-blue-600">
+                <p className="text-xs text-[#5d768a]">
                   &quot;{proj.title}&quot; fabrication is complete. Tap here to confirm your installation schedule.
                 </p>
               </div>
-              <ArrowRight className="h-4 w-4 text-blue-500" />
+              <ArrowRight className="h-4 w-4 text-[#708ca6]" />
             </div>
           </Link>
         ))
       )}
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-2">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-2">
         {isLoading
           ? Array.from({ length: 2 }).map((_, i) => (
-              <Card key={i} className="overflow-hidden border-[#c8c8cd]/50 bg-white/90 shadow-sm">
+              <Card key={i} className="overflow-hidden">
                 <CardContent className="p-4 sm:p-5">
-                  <div className="h-10 w-10 rounded-2xl bg-[#f0f0f5] sm:h-11 sm:w-11" />
+                  <div className="silver-sheen h-10 w-10 rounded-2xl sm:h-11 sm:w-11" />
                   <Skeleton className="mt-4 h-8 w-20 sm:mt-5 sm:h-9 sm:w-32" />
                   <Skeleton className="mt-2 h-4 w-16 sm:w-40" />
                 </CardContent>
@@ -447,32 +447,32 @@ export function DashboardPage() {
               return (
                 <Link key={i} to={item.path} className="block">
                   <Card
-                    className="group relative overflow-hidden border-[#c8c8cd]/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(246,246,249,0.96)_100%)] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-[#d7d7df]"
+                    className="group relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_22px_36px_rgba(18,22,27,0.12)] focus-within:ring-2 focus-within:ring-[#c7d0da]"
                   >
                     <div className="absolute inset-x-0 top-0 h-16 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.95),transparent_68%)] sm:hidden" />
-                    <CardContent className="relative flex min-h-[176px] flex-col p-4 sm:min-h-0 sm:p-6">
-                      <div className="mb-4 flex items-start justify-between sm:mb-4">
+                    <CardContent className="relative flex min-h-[196px] flex-col p-5 sm:min-h-0 sm:p-6">
+                      <div className="mb-5 flex flex-col items-start gap-3 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between sm:mb-4">
                         <div
                           className={`flex h-12 w-12 items-center justify-center rounded-[1.35rem] ${bgColor} ring-1 ring-black/5 transition-transform group-hover:scale-[1.03] sm:h-11 sm:w-11 sm:rounded-2xl`}
                         >
                           <item.icon className={`h-5 w-5 ${textColor}`} />
                         </div>
                         {item.description && (
-                          <span className="self-start rounded-full border border-white/70 bg-white/80 px-2.5 py-1 text-[10px] font-medium text-[#6e6e73] shadow-[0_1px_2px_rgba(0,0,0,0.04)] sm:self-auto sm:border-0 sm:bg-[#f5f5f7] sm:px-2.5 sm:text-[11px] sm:shadow-none">
+                          <span className="metal-pill hidden rounded-full px-2.5 py-1 text-[10px] font-medium text-[#616a74] sm:inline-flex sm:self-auto sm:text-[11px]">
                             {item.description}
                           </span>
                         )}
                       </div>
-                      <p className="text-[10px] font-semibold uppercase tracking-[0.16em] text-[#8a8a93] sm:text-[11px]">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7a838d] sm:text-[11px]">
                         {item.label}
                       </p>
-                      <div className="mt-3 text-[2.2rem] font-bold tracking-[-0.03em] text-[#1d1d1f] sm:mt-2 sm:text-4xl">
+                      <div className="mt-3 text-[2.35rem] font-bold tracking-[-0.03em] text-[#171b21] sm:mt-2 sm:text-4xl">
                         {item.value}
                       </div>
-                      <div className="mt-auto pt-3 sm:mt-0 sm:pt-0">
+                      <div className="mt-auto pt-4 sm:mt-0 sm:pt-0">
                         <div className="h-px w-full bg-[linear-gradient(90deg,rgba(29,29,31,0.08),rgba(29,29,31,0))] sm:hidden" />
                       </div>
-                      <p className="mt-2 hidden max-w-sm text-sm leading-6 text-[#6e6e73] sm:block">
+                      <p className="mt-2 hidden max-w-sm text-sm leading-6 text-[#616a74] sm:block">
                         {item.detail || (item.trend === 'up'
                           ? 'Healthy movement compared with the rest of the current reporting window.'
                           : 'This number highlights the main work queue or customer action that currently needs attention.')}
@@ -485,7 +485,7 @@ export function DashboardPage() {
       </div>
 
       {secondaryKpis.length > 0 && (
-        <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           {secondaryKpis.map((item, i) => {
             const colorParts = item.color.split(' ');
             const textColor = colorParts[0] || '';
@@ -494,7 +494,7 @@ export function DashboardPage() {
             return (
               <Link key={`${item.label}-${i}`} to={item.path} className="block">
                 <Card
-                  className="group relative overflow-hidden border-[#c8c8cd]/60 bg-[linear-gradient(180deg,rgba(255,255,255,0.96)_0%,rgba(246,246,249,0.94)_100%)] shadow-sm transition-all hover:-translate-y-0.5 hover:shadow-md focus-within:ring-2 focus-within:ring-[#d7d7df]"
+                  className="group relative overflow-hidden transition-all hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_34px_rgba(18,22,27,0.1)] focus-within:ring-2 focus-within:ring-[#c7d0da]"
                 >
                   <div className="absolute inset-x-0 top-0 h-14 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),transparent_70%)] sm:hidden" />
                   <CardContent className="relative flex min-h-[152px] flex-col p-4 sm:min-h-0 sm:p-4">
@@ -503,10 +503,10 @@ export function DashboardPage() {
                         <item.icon className={`h-4.5 w-4.5 ${textColor} sm:h-4 sm:w-4`} />
                       </div>
                     </div>
-                    <div className="text-[2rem] font-bold tracking-[-0.03em] text-[#1d1d1f] sm:text-2xl">{item.value}</div>
+                    <div className="text-[2rem] font-bold tracking-[-0.03em] text-[#171b21] sm:text-2xl">{item.value}</div>
                     <div className="mt-auto pt-4">
-                      <p className="text-[12px] font-semibold text-[#3f3f46] sm:text-[11px]">{item.label}</p>
-                      {item.description && <p className="mt-1 text-[11px] leading-5 text-[#8a8a93] sm:text-[10px]">{item.description}</p>}
+                      <p className="text-[12px] font-semibold text-[#434c56] sm:text-[11px]">{item.label}</p>
+                      {item.description && <p className="mt-1 text-[11px] leading-5 text-[#7a838d] sm:text-[10px]">{item.description}</p>}
                     </div>
                   </CardContent>
                 </Card>
@@ -527,19 +527,19 @@ export function DashboardPage() {
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
           {actions.map((action) => (
             <Link key={action.label} to={action.path} className="group">
-              <div className="flex items-center gap-2 sm:gap-4 rounded-xl border border-[#c8c8cd]/50 bg-white/70 backdrop-blur-sm p-2.5 sm:p-4 shadow-sm transition-all duration-200 hover:shadow-md hover:border-[#b8b8bd] hover:-translate-y-0.5">
+              <div className="metal-panel flex items-center gap-2 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_32px_rgba(18,22,27,0.1)] sm:gap-4 sm:p-4">
                 <div
                   className={`flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br ${action.color} text-white shadow-sm flex-shrink-0`}
                 >
                   <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs sm:text-sm font-semibold text-[#1d1d1f] group-hover:text-[#3a3a3e] leading-tight">
+                  <p className="text-xs font-semibold leading-tight text-[#171b21] group-hover:text-[#4d5660] sm:text-sm">
                     {action.label}
                   </p>
-                  <p className="text-[10px] sm:text-xs text-[#86868b] mt-0.5 leading-tight line-clamp-2">{action.description}</p>
+                  <p className="mt-0.5 line-clamp-2 text-[10px] leading-tight text-[#68727d] sm:text-xs">{action.description}</p>
                 </div>
-                <ArrowRight className="h-3.5 w-3.5 sm:h-4 sm:w-4 text-[#c8c8cd] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all hidden sm:block" />
+                <ArrowRight className="hidden h-3.5 w-3.5 text-[#9ca6b1] opacity-0 transition-all group-hover:translate-x-0.5 group-hover:opacity-100 sm:block sm:h-4 sm:w-4" />
               </div>
             </Link>
           ))}
@@ -547,21 +547,21 @@ export function DashboardPage() {
       </div>
 
       {/* Activity Section */}
-      <Card className="overflow-hidden border-[#c8c8cd]/50 shadow-sm">
-        <CardHeader className="border-b border-[#e8e8ed] bg-[#f5f5f7]/50 flex flex-row items-center justify-between">
-          <CardTitle className="text-base font-semibold text-[#1d1d1f]">
+      <Card className="overflow-hidden">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-[#dde3ea] bg-white/28">
+          <CardTitle className="text-base font-semibold text-[#171b21]">
             Recent Activity
           </CardTitle>
           <Link
             to="/notifications"
-            className="text-xs font-medium text-[#1d1d1f] hover:text-[#6e6e73] flex items-center gap-1 underline underline-offset-4"
+            className="flex items-center gap-1 text-xs font-medium text-[#171b21] underline underline-offset-4 hover:text-[#616a74]"
           >
             View all <ArrowRight className="h-3 w-3" />
           </Link>
         </CardHeader>
         <CardContent className="p-0">
           {activityLoading ? (
-            <div className="divide-y divide-[#f0f0f5]">
+            <div className="divide-y divide-[#dde3ea]">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 px-5 py-4">
                   <Skeleton className="h-9 w-9 rounded-xl flex-shrink-0" />
@@ -576,7 +576,7 @@ export function DashboardPage() {
           ) : isAdmin ? (
             /* Admin: Audit Logs */
             auditQuery.data?.items && auditQuery.data.items.length > 0 ? (
-              <div className="divide-y divide-[#f0f0f5]">
+              <div className="divide-y divide-[#dde3ea]">
                 {auditQuery.data.items.map((log) => {
                   const display = getAuditDisplay(log.action);
                   const navPath = getAuditNavPath(log);
@@ -591,7 +591,7 @@ export function DashboardPage() {
                   return (
                     <div
                       key={log._id}
-                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${navPath ? 'hover:bg-[#f5f5f7] cursor-pointer' : ''}`}
+                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${navPath ? 'cursor-pointer hover:bg-white/45' : ''}`}
                       onClick={navPath ? () => navigate(navPath) : undefined}
                       role={navPath ? 'button' : undefined}
                       tabIndex={navPath ? 0 : undefined}
@@ -632,7 +632,7 @@ export function DashboardPage() {
           ) : (
             /* Non-admin: Notifications */
             notifQuery.data?.items && notifQuery.data.items.length > 0 ? (
-              <div className="divide-y divide-[#f0f0f5]">
+              <div className="divide-y divide-[#dde3ea]">
                 {notifQuery.data.items.map((notif) => {
                   const cat = getNotificationCategory(notif.category);
                   const IconComp = cat.icon;
@@ -643,7 +643,7 @@ export function DashboardPage() {
                   return (
                     <div
                       key={notif._id}
-                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${notif.link ? 'hover:bg-[#f5f5f7] cursor-pointer' : ''} ${!notif.isRead ? 'bg-[#f0f0f5]/50' : ''}`}
+                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${notif.link ? 'cursor-pointer hover:bg-white/45' : ''} ${!notif.isRead ? 'bg-white/28' : ''}`}
                       onClick={notif.link ? () => navigate(notif.link!) : undefined}
                       role={notif.link ? 'button' : undefined}
                       tabIndex={notif.link ? 0 : undefined}
@@ -665,7 +665,7 @@ export function DashboardPage() {
                           {formatDistanceToNowStrict(new Date(notif.createdAt), { addSuffix: true })}
                         </span>
                         {!notif.isRead && (
-                          <span className="h-2 w-2 rounded-full bg-[#1d1d1f]" />
+                          <span className="h-2 w-2 rounded-full bg-[#4f6679]" />
                         )}
                       </div>
                     </div>
@@ -689,11 +689,11 @@ function EmptyActivityState({ title, description }: { title: string; description
   return (
     <div className="flex h-44 items-center justify-center">
       <div className="text-center">
-        <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#f0f0f5] mx-auto mb-3">
-          <Activity className="h-5 w-5 text-[#c8c8cd]" />
+        <div className="silver-sheen mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl">
+          <Activity className="h-5 w-5 text-[#6a7480]" />
         </div>
-        <p className="text-sm font-medium text-[#86868b]">{title}</p>
-        <p className="text-xs text-[#c8c8cd] mt-1">{description}</p>
+        <p className="text-sm font-medium text-[#68727d]">{title}</p>
+        <p className="mt-1 text-xs text-[#9aa4af]">{description}</p>
       </div>
     </div>
   );

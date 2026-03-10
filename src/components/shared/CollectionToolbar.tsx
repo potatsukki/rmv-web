@@ -40,29 +40,29 @@ export function CollectionToolbar({
   action,
 }: CollectionToolbarProps) {
   return (
-    <div className={cn('rounded-2xl border border-[#c8c8cd]/50 bg-white/75 p-4 shadow-sm backdrop-blur-sm', className)}>
+    <div className={cn('metal-panel rounded-[1.5rem] p-4', className)}>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#1d1d1f]">{title}</p>
-            <p className="text-xs text-[#86868b]">{description}</p>
+            <p className="text-sm font-semibold text-[#15191f]">{title}</p>
+            <p className="text-xs text-[#616a74]">{description}</p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
             <div className={cn('relative w-full', searchWidthClassName)}>
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#86868b]" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67707b]" />
               <Input
                 placeholder={searchPlaceholder}
                 value={searchValue}
                 onChange={(event) => onSearchChange(event.target.value)}
                 aria-label={searchAriaLabel ?? searchPlaceholder}
-                className="h-11 rounded-xl border-[#d2d2d7] bg-white pl-10 pr-4 text-sm focus:border-[#b8b8bd] focus:ring-[#6e6e73]"
+                className="h-11 pl-10 pr-4 text-sm"
               />
             </div>
             {action}
           </div>
         </div>
         <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" role="group" aria-label={filterGroupLabel}>
-          <Filter className="mr-1 hidden h-4 w-4 flex-shrink-0 text-[#86868b] md:block" />
+          <Filter className="mr-1 hidden h-4 w-4 flex-shrink-0 text-[#67707b] md:block" />
           {filters.map((filter) => (
             <button
               type="button"
@@ -72,8 +72,8 @@ export function CollectionToolbar({
               className={cn(
                 'whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e6e73] focus-visible:ring-offset-2',
                 activeFilter === filter.value
-                  ? 'bg-[#1d1d1f] text-white shadow-sm'
-                  : 'bg-[#f0f0f5] text-[#6e6e73] hover:bg-[#e8e8ed] hover:text-[#3a3a3e]',
+                  ? 'bg-[linear-gradient(180deg,#22272d_0%,#15191f_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_24px_rgba(15,18,22,0.2)]'
+                  : 'metal-pill text-[#59626d] hover:-translate-y-0.5 hover:text-[#14181d]',
               )}
             >
               {filter.label}

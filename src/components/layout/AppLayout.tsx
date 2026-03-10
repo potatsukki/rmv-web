@@ -197,18 +197,18 @@ function getRecentStorageKey(userId?: string) {
 }
 
 const STATUS_COLORS: Record<string, string> = {
-  draft: 'bg-[#f0f0f5] text-[#6e6e73]',
-  submitted: 'bg-blue-100 text-blue-700',
-  blueprint: 'bg-purple-100 text-purple-700',
-  approved: 'bg-green-100 text-green-700',
-  payment_pending: 'bg-yellow-100 text-yellow-700',
-  fabrication: 'bg-orange-100 text-orange-700',
-  completed: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-red-100 text-red-600',
-  requested: 'bg-sky-100 text-sky-700',
-  confirmed: 'bg-teal-100 text-teal-700',
-  no_show: 'bg-red-100 text-red-600',
-  reschedule_requested: 'bg-amber-100 text-amber-700',
+  draft: 'border border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470]',
+  submitted: 'border border-[#8da4b8] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679]',
+  blueprint: 'border border-[#afa7c5] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)] text-[#665d82]',
+  approved: 'border border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]',
+  payment_pending: 'border border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239]',
+  fabrication: 'border border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]',
+  completed: 'border border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]',
+  cancelled: 'border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]',
+  requested: 'border border-[#8eafbb] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] text-[#4f6d78]',
+  confirmed: 'border border-[#8da4b8] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679]',
+  no_show: 'border border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]',
+  reschedule_requested: 'border border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]',
 };
 
 const CATEGORY_META: Record<FlatResult['type'], { label: string; icon: React.ElementType }> = {
@@ -568,14 +568,14 @@ export function AppLayout() {
       <Sidebar />
       <MobileNav />
 
-      <main className="bg-[linear-gradient(180deg,#f7f7f9_0%,#f4f4f7_100%)] md:pl-64 transition-all duration-300">
-        <header className="hidden md:block sticky top-0 z-30 border-b border-[#e7e7ec] bg-white/80 backdrop-blur-xl">
+      <main className="metal-shell transition-all duration-300 md:pl-64">
+        <header className="metal-panel sticky top-0 z-30 hidden border-b md:block">
           <div className="flex h-14 items-center justify-between px-6 lg:px-8">
             <div className="flex min-w-0 flex-col justify-center">
-              <div className="mb-0.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#8b8b94]">
+              <div className="mb-0.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#78818c]">
                 <span>Workspace</span>
-                {breadcrumbs.length > 0 && <span className="h-1 w-1 rounded-full bg-[#c8c8cd]" />}
-                <span className="truncate text-[#5d5d66]">{meta.title}</span>
+                {breadcrumbs.length > 0 && <span className="h-1 w-1 rounded-full bg-[#b3bcc6]" />}
+                <span className="truncate text-[#4d5560]">{meta.title}</span>
               </div>
               {breadcrumbs.length > 1 ? (
                 <nav className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -613,15 +613,15 @@ export function AppLayout() {
                     onKeyDown={onSearchKeyDown}
                     placeholder="Search anything..."
                     aria-label="Search"
-                    className="h-9 w-[200px] lg:w-[250px] rounded-xl border border-[#dbdbe2] bg-[#f4f4f7] pl-9 pr-16 text-sm text-foreground placeholder:text-muted-foreground focus:border-[#b9b9c2] focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#d7d7df]"
+                    className="metal-input h-9 w-[200px] rounded-xl pl-9 pr-16 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c2cad3] lg:w-[250px]"
                   />
-                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[#dedee4] bg-white px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[#c7cfd7] bg-white/55 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
                     Ctrl+K
                   </kbd>
                 </div>
 
                 {isSearchOpen && (
-                  <div className="absolute right-0 z-40 mt-2 w-[400px] overflow-hidden rounded-xl border border-border bg-white shadow-xl">
+                  <div className="metal-panel absolute right-0 z-40 mt-2 w-[400px] overflow-hidden rounded-[1.25rem]">
                     {!searchQuery.trim() ? (
                       /* Empty state: recently visited */
                       recentItems.length === 0 ? (
@@ -642,7 +642,7 @@ export function AppLayout() {
                             <button
                               type="button"
                               onClick={clearRecentItems}
-                              className="ml-auto rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+                              className="ml-auto rounded-md px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-white/55 hover:text-foreground"
                             >
                               Clear recent
                             </button>
@@ -653,7 +653,7 @@ export function AppLayout() {
                                 <div
                                   onMouseEnter={() => setHighlightedIndex(index)}
                                   className={`flex items-center gap-2 px-3 py-2 transition-colors ${
-                                    highlightedIndex === index ? 'bg-muted' : 'hover:bg-muted/70'
+                                    highlightedIndex === index ? 'bg-white/60' : 'hover:bg-white/45'
                                   }`}
                                 >
                                   <button
@@ -680,7 +680,7 @@ export function AppLayout() {
                                       event.stopPropagation();
                                       removeRecentItem(result.path);
                                     }}
-                                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white hover:text-foreground"
+                                    className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-white/70 hover:text-foreground"
                                   >
                                     <X className="h-3.5 w-3.5" />
                                   </button>
@@ -694,7 +694,7 @@ export function AppLayout() {
                       /* Active search results */
                       <>
                         {isLiveLoading && debouncedQuery !== searchQuery.trim() && (
-                          <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground border-b border-border">
+                          <div className="flex items-center gap-2 border-b border-border px-3 py-2 text-xs text-muted-foreground">
                             <Loader2 className="h-3 w-3 animate-spin" />
                             Searching…
                           </div>
@@ -735,7 +735,7 @@ export function AppLayout() {
                                     onMouseEnter={() => setHighlightedIndex(index)}
                                     onClick={() => openResult(result)}
                                     className={`flex w-full items-center gap-3 px-3 py-2 text-left transition-colors ${
-                                      highlightedIndex === index ? 'bg-muted' : 'hover:bg-muted/70'
+                                      highlightedIndex === index ? 'bg-white/60' : 'hover:bg-white/45'
                                     }`}
                                   >
                                     <Icon className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
@@ -751,8 +751,8 @@ export function AppLayout() {
                                     </div>
                                     {result.badge && (
                                       <span
-                                        className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize ${
-                                          STATUS_COLORS[result.badge] ?? 'bg-[#f0f0f5] text-[#6e6e73]'
+                                        className={`flex-shrink-0 rounded-full px-2 py-0.5 text-[10px] font-semibold capitalize shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] ${
+                                          STATUS_COLORS[result.badge] ?? 'border border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470]'
                                         }`}
                                       >
                                         {result.badge.replace(/_/g, ' ')}
@@ -780,7 +780,7 @@ export function AppLayout() {
 
               <Link
                 to="/notifications"
-                className="relative flex h-9 w-9 items-center justify-center rounded-xl border border-[#e0e0e6] bg-white text-muted-foreground hover:bg-[#f4f4f7] hover:text-foreground transition-colors"
+                className="metal-pill relative flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
                 aria-label="Open notifications"
               >
                 <Bell className="h-4 w-4" />
@@ -794,9 +794,9 @@ export function AppLayout() {
               {user && (
                 <Link
                   to="/account/profile"
-                  className="flex items-center gap-2.5 rounded-xl border border-[#e0e0e6] bg-white px-2.5 py-1.5 hover:bg-[#f4f4f7] transition-colors"
+                  className="metal-pill flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 transition-colors hover:text-[#11151a]"
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-primary text-[11px] font-bold text-primary-foreground">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[linear-gradient(180deg,#24282f_0%,#15191f_100%)] text-[11px] font-bold text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                     {user.firstName[0]}
                     {user.lastName[0]}
                   </div>
@@ -812,7 +812,7 @@ export function AppLayout() {
           </div>
         </header>
 
-        <div className="px-3 py-4 pt-[4.5rem] sm:px-4 md:px-8 md:py-6 md:pt-6 pb-28 md:pb-8 animate-page">
+        <div className="animate-page px-3 pb-28 pt-[4.5rem] py-4 sm:px-4 md:px-8 md:pb-8 md:pt-6 md:py-6">
           <Outlet />
         </div>
       </main>

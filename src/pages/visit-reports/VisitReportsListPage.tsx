@@ -88,27 +88,27 @@ const STATUS_FILTERS = [
 const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
   [VisitReportStatus.DRAFT]: {
     label: 'Draft',
-    dot: 'bg-gray-400',
-    badge: 'border-gray-200 text-gray-600 bg-gray-50',
+    dot: 'bg-[#9099a3]',
+    badge: 'border-[#d6dce3] text-[#616a74] bg-[linear-gradient(180deg,#f6f8fa_0%,#e7edf3_100%)]',
   },
   [VisitReportStatus.SUBMITTED]: {
     label: 'Submitted',
-    dot: 'bg-blue-500',
-    badge: 'border-blue-200 text-blue-700 bg-blue-50',
+    dot: 'bg-[#8da4b8]',
+    badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]',
   },
   [VisitReportStatus.RETURNED]: {
     label: 'Returned',
-    dot: 'bg-orange-500',
-    badge: 'border-orange-200 text-orange-700 bg-orange-50',
+    dot: 'bg-[#c7aa7a]',
+    badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]',
   },
   [VisitReportStatus.COMPLETED]: {
     label: 'Completed',
-    dot: 'bg-emerald-500',
-    badge: 'border-emerald-200 text-emerald-700 bg-emerald-50',
+    dot: 'bg-[#93ad9d]',
+    badge: 'border-[#93ad9d] text-[#4e6c5a] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]',
   },
 };
 
-const defaultConfig = { label: 'Draft', dot: 'bg-gray-400', badge: 'border-gray-200 text-gray-600 bg-gray-50' };
+const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]', badge: 'border-[#d6dce3] text-[#616a74] bg-[linear-gradient(180deg,#f6f8fa_0%,#e7edf3_100%)]' };
 
 /* ── Component ── */
 
@@ -189,7 +189,7 @@ export function VisitReportsListPage() {
           {/* Mobile skeleton */}
           <div className="space-y-3 md:hidden">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="bg-white rounded-xl border border-[#c8c8cd]/50 p-4 space-y-3">
+              <div key={i} className="metal-panel rounded-xl p-4 space-y-3">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2.5">
                     <Skeleton className="h-2 w-2 rounded-full" />
@@ -205,7 +205,7 @@ export function VisitReportsListPage() {
             ))}
           </div>
           {/* Desktop skeleton */}
-          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+          <div className="metal-panel hidden overflow-hidden rounded-xl md:block">
             <div className="p-4 space-y-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
@@ -229,7 +229,7 @@ export function VisitReportsListPage() {
           action={(search || statusFilter) ? (
             <Button
               variant="outline"
-              className="border-[#d2d2d7] text-[#1d1d1f] hover:bg-[#f5f5f7]"
+              className="text-[#171b21]"
               onClick={() => {
                 setSearch('');
                 setStatusFilter('');
@@ -256,7 +256,7 @@ export function VisitReportsListPage() {
                   to={`/visit-reports/${firstReport._id}`}
                   className="group block"
                 >
-                  <div className="bg-white rounded-xl border border-[#c8c8cd]/50 px-4 py-3.5 active:bg-[#f5f5f7] transition-colors">
+                  <div className="metal-panel rounded-xl px-4 py-3.5 transition-colors active:bg-white/45">
                     {/* Row 1: Status dot + Name + Badge + Chevron */}
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
@@ -288,7 +288,7 @@ export function VisitReportsListPage() {
                       {projectLabels.map((label, i) => (
                         <span
                           key={i}
-                          className="inline-flex items-center rounded-full bg-[#f0f0f5] px-2 py-0.5 text-[10px] font-medium text-[#1d1d1f] border border-[#e8e8ed]"
+                          className="metal-pill inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-[#171b21]"
                         >
                           {label}
                         </span>
@@ -306,7 +306,7 @@ export function VisitReportsListPage() {
           </div>
 
           {/* ── Desktop table (md+) ── */}
-          <div className="hidden md:block bg-white rounded-xl border border-[#c8c8cd]/50 shadow-sm overflow-hidden">
+          <div className="metal-panel hidden overflow-hidden rounded-xl md:block">
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
@@ -366,7 +366,7 @@ export function VisitReportsListPage() {
                           {projectLabels.map((label, i) => (
                             <span
                               key={i}
-                              className="inline-flex items-center rounded-full bg-[#f0f0f5] px-2 py-0.5 text-[11px] font-medium text-[#1d1d1f] border border-[#e8e8ed]"
+                              className="metal-pill inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-[#171b21]"
                             >
                               {label}
                             </span>
@@ -393,7 +393,7 @@ export function VisitReportsListPage() {
                 })}
               </TableBody>
             </Table>
-            <div className="px-5 py-3 border-t border-[#f0f0f5] bg-[#fafafa]">
+            <div className="border-t border-[#dde3ea] bg-white/20 px-5 py-3">
               <p className="text-xs text-[#86868b]">
                 {groups.length} report group{groups.length !== 1 ? 's' : ''}
               </p>

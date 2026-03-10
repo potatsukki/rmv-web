@@ -57,6 +57,34 @@ interface CollectionData {
   projects: CollectionProject[];
 }
 
+interface HeroSignalCard {
+  label: string;
+  value: string;
+  detail: string;
+  icon: React.ElementType;
+}
+
+const HERO_SIGNAL_CARDS: HeroSignalCard[] = [
+  {
+    label: 'Portal Visibility',
+    value: '24/7',
+    detail: 'Live milestones, approvals, and project tracking in one place.',
+    icon: Settings,
+  },
+  {
+    label: 'Fabrication Standard',
+    value: 'SS 304',
+    detail: 'Built around durable stainless systems for demanding commercial use.',
+    icon: Layers,
+  },
+  {
+    label: 'Update Rhythm',
+    value: 'Real-Time',
+    detail: 'Clients stay aligned from costing to installation turnover.',
+    icon: Clock,
+  },
+];
+
 const SHOWCASE_COLLECTIONS: CollectionData[] = [
   {
     id: 'commercial-kitchens',
@@ -309,19 +337,19 @@ export function LandingPage() {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <div className="min-h-screen bg-[#dde2e8] font-sans text-[#1d1d1f] selection:bg-[#1d1d1f] selection:text-white">
+      <div className="min-h-screen bg-[linear-gradient(180deg,#0d1117_0%,#1a212b_18%,#cbd3db_46%,#dde4ea_68%,#141a22_100%)] font-sans text-[#1d1d1f] selection:bg-[#1d1d1f] selection:text-white">
         
         {/* Navigation */}
         <motion.header
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 1, ease: SMOOTH_240 }}
-          className="fixed top-0 z-50 w-full border-b border-[#aab2bc]/35 bg-gradient-to-b from-[#f0f3f7]/92 to-[#d6dbe2]/84 backdrop-blur-2xl shadow-[0_1px_8px_rgba(9,12,18,0.08)] gpu-reveal"
+          className="fixed top-0 z-50 w-full border-b border-white/10 bg-[linear-gradient(180deg,rgba(8,12,18,0.88)_0%,rgba(18,26,35,0.76)_58%,rgba(29,38,49,0.68)_100%)] backdrop-blur-2xl shadow-[0_10px_40px_rgba(6,8,12,0.24)] gpu-reveal"
         >
           <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link to="/" className="flex items-center gap-2 group">
-              <BrandLogo className="h-6 w-6 text-[#1d1d1f] transition-transform duration-500 group-hover:scale-110" />
-              <span className="text-sm font-bold tracking-tight text-[#1d1d1f]">
+              <BrandLogo className="h-6 w-6 text-[#f2f5f8] transition-transform duration-500 group-hover:scale-110" />
+              <span className="text-sm font-bold tracking-tight text-[#f2f5f8]">
                 RMV Stainless Steel Fabrication
               </span>
             </Link>
@@ -337,7 +365,7 @@ export function LandingPage() {
                 <a
                   key={item.label}
                   href={item.href}
-                  className="text-[13px] font-medium text-[#6e6e73] transition-colors hover:text-[#1d1d1f] relative after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-[#1d1d1f] after:transition-all after:duration-300"
+                  className="relative text-[13px] font-medium text-[#c6d0da] transition-colors hover:text-white after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-[#d9b36a] after:transition-all after:duration-300"
                 >
                   {item.label}
                 </a>
@@ -346,7 +374,7 @@ export function LandingPage() {
 
             <div className="hidden lg:flex items-center gap-3">
               {isLoggedIn ? (
-                <Button asChild variant="ghost" className="text-[13px] font-medium text-[#1d1d1f] hover:bg-[#e8e8ed] rounded-full px-5 h-9">
+                <Button asChild variant="ghost" className="h-9 rounded-full px-5 text-[13px] font-medium text-white hover:bg-white/10">
                   <Link to="/dashboard">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     Dashboard
@@ -354,11 +382,11 @@ export function LandingPage() {
                 </Button>
               ) : (
                 <>
-                  <Link to="/login" className="text-[13px] font-medium text-[#6e6e73] transition-colors hover:text-[#1d1d1f] px-3 py-2">
+                  <Link to="/login" className="px-3 py-2 text-[13px] font-medium text-[#c6d0da] transition-colors hover:text-white">
                     Sign In
                   </Link>
-                  <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-[13px] font-semibold rounded-full px-6 h-9 transition-all hover:scale-105 active:scale-95 duration-300 shadow-md shadow-black/10">
-                    <Link to="/register">Get Started</Link>
+                  <Button asChild className="h-9 rounded-full bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] px-6 text-[13px] font-semibold text-[#11161c] transition-all duration-300 hover:scale-105 hover:brightness-105 active:scale-95 shadow-[0_10px_26px_rgba(186,131,49,0.28)]">
+                    <Link to="/register" className="text-[#11161c]">Get Started</Link>
                   </Button>
                 </>
               )}
@@ -366,7 +394,7 @@ export function LandingPage() {
 
             <button
               type="button"
-              className="lg:hidden p-2.5 -mr-1 text-[#1d1d1f] rounded-xl hover:bg-black/5 transition-colors"
+              className="-mr-1 rounded-xl p-2.5 text-[#f2f5f8] transition-colors hover:bg-white/10 lg:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -379,7 +407,7 @@ export function LandingPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-40 bg-gradient-to-b from-white via-[#f0f0f3] to-[#e8e8ed] pt-20 px-6 lg:hidden overflow-y-auto"
+            className="fixed inset-0 z-40 overflow-y-auto bg-[linear-gradient(180deg,#081019_0%,#111923_52%,#1d2733_100%)] px-6 pt-20 lg:hidden"
           >
             <nav className="flex flex-col gap-1 mt-4">
                {[
@@ -389,22 +417,22 @@ export function LandingPage() {
                  { label: 'Projects', href: '#projects' },
                  { label: 'Contact', href: '#contact' },
                ].map((item) => (
-                 <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="text-2xl font-semibold tracking-tight text-[#1d1d1f] py-4 border-b border-[#d2d2d7]/50 hover:pl-2 transition-all">
+                 <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="border-b border-white/10 py-4 text-2xl font-semibold tracking-tight text-[#f3f6f9] transition-all hover:pl-2">
                    {item.label}
                  </a>
                ))}
                <div className="pt-8 flex flex-col gap-4">
                  {isLoggedIn ? (
-                   <Button asChild className="bg-[#1d1d1f] text-white text-base font-semibold rounded-2xl h-14 w-full">
+                   <Button asChild className="h-14 w-full rounded-2xl bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] text-base font-semibold text-[#11161c]">
                      <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
                    </Button>
                  ) : (
                    <>
-                     <Button asChild className="bg-[#1d1d1f] text-white text-base font-semibold rounded-2xl h-14 w-full">
-                       <Link to="/register" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
+                     <Button asChild className="h-14 w-full rounded-2xl bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] text-base font-semibold text-[#11161c]">
+                       <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="text-[#11161c]">Get Started</Link>
                      </Button>
-                     <Button asChild variant="outline" className="text-[#1d1d1f] border-[#c8c8cc] text-base font-semibold rounded-2xl h-14 w-full">
-                       <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
+                     <Button asChild variant="outline" className="h-14 w-full rounded-2xl border-white/16 bg-white/5 text-base font-semibold text-[#f3f6f9]">
+                       <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#f3f6f9]">Sign In</Link>
                      </Button>
                    </>
                  )}
@@ -414,13 +442,16 @@ export function LandingPage() {
         )}
 
         {/* Hero Section */}
-        <section ref={heroWrapperRef} id="hero" className="relative h-svh flex items-center justify-center overflow-hidden bg-gradient-to-b from-[#eef2f6] via-[#d7dde5] to-[#c9d0d8] pt-20 pb-12">
+        <section ref={heroWrapperRef} id="hero" className="relative flex min-h-svh items-center justify-center overflow-hidden bg-[linear-gradient(145deg,#04070c_0%,#0c1219_18%,#15202c_42%,#223142_66%,#d0b070_86%,#f0dfb5_100%)] pt-20 pb-12 md:pb-16 lg:pb-20">
           {/* Subtle noise texture */}
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-x-0 top-0 h-24 bg-[linear-gradient(180deg,rgba(245,232,196,0.18)_0%,rgba(245,232,196,0)_100%)] pointer-events-none" />
+          <div className="absolute inset-y-0 left-[12%] w-px bg-[linear-gradient(180deg,transparent_0%,rgba(233,194,115,0.3)_16%,rgba(233,194,115,0.08)_82%,transparent_100%)] pointer-events-none hidden xl:block" />
+          <div className="absolute inset-y-0 right-[12%] w-px bg-[linear-gradient(180deg,transparent_0%,rgba(173,194,217,0.26)_16%,rgba(173,194,217,0.08)_82%,transparent_100%)] pointer-events-none hidden xl:block" />
           {/* Soft center glow — parallax layer */}
           <motion.div
             style={{ scale: heroGlowScale, opacity: heroGlowOpacity }}
-            className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] md:w-[1100px] md:h-[1100px] bg-[radial-gradient(circle,rgba(255,255,255,1)_0%,transparent_55%)] pointer-events-none will-change-transform"
+            className="absolute top-1/2 left-1/2 h-[700px] w-[700px] -translate-x-1/2 -translate-y-1/2 bg-[radial-gradient(circle,rgba(241,212,154,0.24)_0%,rgba(125,150,181,0.16)_28%,transparent_62%)] pointer-events-none will-change-transform md:h-[1100px] md:w-[1100px]"
           />
 
           {/* Left Blueprint SVG Decoration */}
@@ -520,25 +551,25 @@ export function LandingPage() {
           
           <motion.div
             style={{ y: heroContentY, opacity: heroContentOpacity, scale: heroContentScale }}
-            className="relative z-10 px-4 sm:px-6 text-center max-w-5xl mx-auto flex flex-col items-center mt-8 md:mt-0 will-change-transform"
+            className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 text-center will-change-transform sm:px-6 md:mt-0"
           >
             {/* Chrome SVG heading for true metallic texture */}
             <motion.h1
               initial={{ opacity: 0, y: 80, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 1.4, ease: SMOOTH_240 }}
-              className="text-[2.75rem] sm:text-6xl md:text-7xl lg:text-[120px] font-bold tracking-tighter leading-[0.95] text-center mb-4 md:mb-6 py-2 gpu-reveal"
+              className="mb-4 py-2 text-center text-[2.6rem] font-bold leading-[0.95] tracking-tighter drop-shadow-[0_12px_30px_rgba(0,0,0,0.28)] sm:text-6xl md:mb-5 md:text-7xl lg:text-[108px] gpu-reveal"
             >
               <span
                 className="bg-clip-text text-transparent"
                 style={{
-                  backgroundImage: 'linear-gradient(145deg, #4a4a4e 0%, #1d1d1f 15%, #6e6e73 30%, #2d2d2f 45%, #8e8e93 55%, #3a3a3e 65%, #1d1d1f 80%, #5a5a5e 90%, #2d2d2f 100%)',
+                  backgroundImage: 'linear-gradient(135deg, #f8edd2 0%, #f2d491 16%, #9eb6cf 33%, #dfe8f2 48%, #b7863a 66%, #f7e7bf 82%, #eef5fb 100%)',
                 }}
               >Precision</span><br />
               <span
                 className="bg-clip-text text-transparent"
                 style={{
-                  backgroundImage: 'linear-gradient(145deg, #9e9ea3 0%, #c8c8cd 12%, #a0a0a5 22%, #e0e0e4 35%, #b0b0b5 45%, #8e8e93 55%, #d0d0d5 65%, #a8a8ad 78%, #c5c5ca 88%, #9a9a9f 100%)',
+                  backgroundImage: 'linear-gradient(135deg, #e7edf4 0%, #9bb2c9 12%, #f5db9e 30%, #fcf2d9 45%, #c78d35 60%, #dbe5ef 76%, #f7ecd2 100%)',
                 }}
               >Engineering.</span>
             </motion.h1>
@@ -547,7 +578,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.25, ease: SMOOTH_240 }}
-              className="text-lg sm:text-xl md:text-2xl font-medium tracking-tight text-[#6e6e73] max-w-2xl mb-4 md:mb-5 px-2 gpu-reveal"
+              className="mb-3 max-w-2xl px-2 text-lg font-medium tracking-tight text-[#e6edf4] gpu-reveal sm:text-xl md:mb-4 md:text-2xl"
             >
               Uncompromising quality in every weld.
             </motion.p>
@@ -555,7 +586,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.35, ease: SMOOTH_240 }}
-              className="text-sm sm:text-base md:text-lg font-normal text-[#86868b] max-w-xl mb-6 md:mb-8 px-4 gpu-reveal"
+              className="mb-5 max-w-xl px-4 text-sm font-normal text-[#c5d0dc] gpu-reveal sm:text-base md:mb-6 md:text-lg"
             >
               Your online platform for managing custom fabrication projects — from blueprint approvals and payment tracking to real-time progress updates.
             </motion.p>
@@ -564,23 +595,110 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.5, ease: SMOOTH_240 }}
-              className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto pb-4 gpu-reveal overflow-visible"
+              className="flex w-full flex-col gap-3 overflow-visible pb-3 gpu-reveal sm:w-auto sm:flex-row md:pb-4"
             >
-              <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all active:scale-95 duration-300 w-full sm:w-auto">
-                <Link to="/register">
+              <Button asChild className="h-14 w-full rounded-full bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] px-8 text-base font-semibold text-[#11161c] transition-all duration-300 active:scale-95 sm:w-auto md:h-16 md:px-10 shadow-[0_16px_40px_rgba(186,131,49,0.28)] hover:brightness-105">
+                <Link to="/register" className="text-[#11161c]">
                   Commission a Project
                   <ArrowRight className="ml-2 h-5 w-5" />
                 </Link>
               </Button>
-              <Button asChild className="relative overflow-hidden text-[#2d2d2f] border border-[#b0b0b6] text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all active:scale-95 duration-300 shadow-md shadow-black/8 hover:shadow-lg hover:shadow-black/12 hover:brightness-105 w-full sm:w-auto" style={{ background: 'linear-gradient(160deg, #e8e8ec 0%, #d4d4d8 25%, #f0f0f3 50%, #c8c8cd 75%, #dcdce0 100%)' }}>
-                <a href="#capabilities">Explore Services</a>
+              <Button asChild className="relative w-full overflow-hidden rounded-full border border-white/18 bg-white/8 px-8 text-base font-semibold text-[#f4f6f8] backdrop-blur-md transition-all duration-300 active:scale-95 hover:border-[#f0d498]/48 hover:bg-white/14 sm:w-auto md:h-16 md:px-10 shadow-[0_12px_30px_rgba(4,7,12,0.22)]" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 12px 30px rgba(4,7,12,0.22)' }}>
+                <a href="#capabilities" className="text-[#f4f6f8]">Explore Services</a>
               </Button>
             </motion.div>
+
           </motion.div>
+
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-[linear-gradient(180deg,rgba(20,26,34,0)_0%,rgba(20,26,34,0.3)_100%)] pointer-events-none" />
+          <div className="absolute bottom-0 left-1/2 h-px w-[min(82vw,76rem)] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#f0d7a1]/70 to-transparent" />
+        </section>
+
+        <section className="relative overflow-hidden bg-[linear-gradient(160deg,#0d131a_0%,#17202b_26%,#263444_54%,#111820_100%)] py-16 md:py-24">
+          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
+          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
+          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#d9b36a]/50 to-transparent" />
+          <div className="absolute -left-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(125,150,181,0.18)_0%,transparent_68%)] blur-3xl" />
+          <div className="absolute -right-16 top-10 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(241,212,154,0.18)_0%,transparent_72%)] blur-3xl" />
+
+          <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.15 }}
+              transition={{ duration: 1.05, ease: SMOOTH_240 }}
+              className="mb-8 text-center gpu-reveal md:mb-12"
+            >
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e4bf79]/30 bg-[#e4bf79]/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-[#f5dca9]">
+                <Sparkles className="h-3.5 w-3.5" />
+                Build Intelligence
+              </div>
+              <h2 className="mx-auto max-w-4xl text-3xl font-bold tracking-tighter text-white sm:text-4xl md:text-6xl">
+                A fabrication portal that looks like the work is actually engineered.
+              </h2>
+              <p className="mx-auto mt-4 max-w-3xl text-sm font-medium leading-7 text-[#bcc8d3] md:text-lg">
+                Designed to feel closer to a premium workshop dashboard than a generic business site, with stronger depth, material contrast, and technical cues.
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 70 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true, amount: 0.12 }}
+              transition={{ duration: 1.1, delay: 0.12, ease: SMOOTH_240 }}
+              className="relative overflow-hidden rounded-[2rem] border border-white/14 bg-[linear-gradient(145deg,rgba(9,13,18,0.78)_0%,rgba(17,24,33,0.92)_36%,rgba(30,40,52,0.88)_68%,rgba(12,18,24,0.82)_100%)] p-4 shadow-[0_28px_90px_rgba(3,6,10,0.34)] backdrop-blur-xl md:p-6 gpu-reveal"
+            >
+              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_18%,rgba(241,212,154,0.06)_50%,rgba(255,255,255,0.02)_82%,rgba(255,255,255,0.07)_100%)] opacity-80" />
+              <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
+              <div className="absolute inset-x-10 bottom-0 h-px bg-gradient-to-r from-transparent via-[#d8b26a]/60 to-transparent" />
+
+              <div className="relative grid gap-3 lg:grid-cols-[1.1fr,2.2fr] lg:gap-4">
+                <div className="rounded-[1.6rem] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] md:p-5">
+                  <h3 className="max-w-xs text-left text-lg font-bold tracking-tight text-white md:text-[1.75rem]">
+                    Stronger presence, without cramping the first impression.
+                  </h3>
+                  <p className="mt-3 max-w-sm text-sm font-medium leading-6 text-[#bcc8d3]">
+                    The hero stays focused on the main message, while this section carries the heavier showroom-style storytelling and technical polish.
+                  </p>
+                  <div className="mt-4 grid grid-cols-2 gap-3">
+                    <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8ea4bb]">Blueprint Flow</p>
+                      <p className="mt-1 text-sm font-semibold text-white">Approvals to production</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/10 bg-black/18 px-4 py-3">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8c08c]">Client Experience</p>
+                      <p className="mt-1 text-sm font-semibold text-white">Clear, premium, readable</p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid gap-3 md:grid-cols-3">
+                  {HERO_SIGNAL_CARDS.map((card) => (
+                    <div
+                      key={card.label}
+                      className="group relative overflow-hidden rounded-[1.6rem] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.025)_100%)] p-4 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-transform duration-300 hover:-translate-y-1 md:p-5"
+                    >
+                      <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(243,214,154,0.12)_0%,rgba(243,214,154,0)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+                      <div className="relative flex items-start justify-between gap-4">
+                        <div>
+                          <p className="text-[10px] font-bold uppercase tracking-[0.22em] text-[#91a4b8]">{card.label}</p>
+                          <p className="mt-2 text-xl font-bold tracking-tight text-white md:text-[1.65rem]">{card.value}</p>
+                        </div>
+                        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#dfbe86]/30 bg-[linear-gradient(145deg,rgba(226,181,102,0.16)_0%,rgba(125,150,181,0.14)_100%)] text-[#f3d79f] shadow-[0_10px_22px_rgba(0,0,0,0.18)]">
+                          <card.icon className="h-5 w-5" />
+                        </div>
+                      </div>
+                      <p className="relative mt-3 text-sm font-medium leading-6 text-[#c3ced8]">{card.detail}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </motion.div>
+          </div>
         </section>
 
         {/* Built on Trust Section */}
-        <section ref={aboutRef} id="about" className="relative z-10 -mt-10 overflow-hidden rounded-t-[40px] bg-gradient-to-br from-[#d8dee5] via-[#e7ebf0] to-[#d2d8df] pt-20 pb-16 md:-mt-16 md:rounded-t-[80px] md:pt-40 md:pb-32">
+        <section ref={aboutRef} id="about" className="relative z-10 -mt-10 overflow-hidden rounded-t-[40px] bg-[linear-gradient(180deg,#f4ead5_0%,#e8edf2_16%,#d9e1e8_44%,#cfd8e1_74%,#f2e1b7_100%)] pt-20 pb-16 md:-mt-16 md:rounded-t-[80px] md:pt-40 md:pb-32">
           <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Blueprint corner decoration */}
           <div className="absolute top-8 right-8 w-[200px] md:w-[280px] pointer-events-none hidden md:block">
@@ -645,7 +763,7 @@ export function LandingPage() {
                 <motion.div style={{ y: aboutBlobY }} className="absolute -top-10 -right-10 w-64 h-64 bg-[#d2d2d7] rounded-full blur-3xl opacity-50 mix-blend-multiply will-change-transform" />
                 <motion.div style={{ y: aboutBlobY }} className="absolute -bottom-10 -left-10 w-64 h-64 bg-white rounded-full blur-3xl opacity-80 mix-blend-multiply will-change-transform" />
                 
-                <div className="relative bg-gradient-to-br from-[#2c2c2e] via-[#1d1d1f] to-[#0a0a0a] rounded-[2rem] md:rounded-[2.5rem] p-6 md:p-8 shadow-2xl border border-white/10">
+                <div className="relative rounded-[2rem] border border-[#d4bc89]/28 bg-[linear-gradient(145deg,#10161e_0%,#17202b_42%,#24313e_72%,#111720_100%)] p-6 shadow-[0_30px_80px_rgba(10,14,20,0.34)] md:rounded-[2.5rem] md:p-8">
                   <div className="flex items-center gap-4 mb-8">
                     <div className="w-12 h-12 bg-white/10 rounded-2xl flex items-center justify-center">
                       <Settings className="h-6 w-6 text-white" />
@@ -729,7 +847,7 @@ export function LandingPage() {
                     From initial consultation to final delivery — complete transparency at every step of your fabrication journey.
                   </p>
                   <Button asChild className="bg-white hover:bg-[#e8e8ed] text-black text-base font-semibold rounded-full px-8 h-14 transition-all hover:scale-105 active:scale-95 duration-300">
-                    <Link to="/register">Get Started Now</Link>
+                    <Link to="/register" className="text-black">Get Started Now</Link>
                   </Button>
                 </motion.div>
               </div>
@@ -773,7 +891,7 @@ export function LandingPage() {
         </section>
 
         {/* Fabrication Collections */}
-        <section ref={capabilitiesRef} id="capabilities" className="relative overflow-hidden bg-[linear-gradient(160deg,#d7dde5_0%,#e8edf2_28%,#c9d0da_60%,#dde3ea_100%)] py-16 md:py-32">
+        <section ref={capabilitiesRef} id="capabilities" className="relative overflow-hidden bg-[linear-gradient(155deg,#0d1218_0%,#1a2430_20%,#d0b171_44%,#edf2f6_60%,#c0cad4_78%,#18202a_100%)] py-16 md:py-32">
           <div ref={projectsRef} id="projects" className="absolute inset-x-0 top-20 h-px" />
           <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           <div className="absolute -top-28 right-0 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.6)_0%,rgba(255,255,255,0)_68%)] blur-3xl" />
@@ -789,13 +907,16 @@ export function LandingPage() {
               transition={{ duration: 1.1, ease: SMOOTH_240 }}
               className="mb-10 text-center md:mb-12 gpu-reveal"
             >
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#aeb7c1]/70 bg-white/45 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.24em] text-[#46515d] shadow-sm shadow-white/20 backdrop-blur-md">
+              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#f1d39d]/55 bg-[rgba(17,22,29,0.58)] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.24em] text-[#f4dcae] shadow-[0_10px_28px_rgba(0,0,0,0.16)] backdrop-blur-md">
                 <Sparkles className="h-3.5 w-3.5" />
                 Collections
               </div>
               <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-6xl">
                 <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #526071 0%, #15181d 18%, #738091 38%, #2f3640 55%, #c4ccd6 72%, #2a3039 88%, #6e7a89 100%)' }}>Fabrication Collections</span>
               </h2>
+              <p className="mx-auto mt-4 max-w-3xl text-sm font-medium leading-7 text-[#314150] md:text-lg">
+                Each collection is presented like a premium portfolio track, so the landing page sells capability instead of feeling like a plain brochure.
+              </p>
             </motion.div>
 
             <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
@@ -936,7 +1057,7 @@ export function LandingPage() {
         </AnimatePresence>
 
         {/* Sectors We Serve */}
-        <section ref={sectorsRef} className="relative overflow-hidden bg-gradient-to-br from-[#cfd6de] via-[#dae1e8] to-[#c7ced8] py-16 md:py-24">
+        <section ref={sectorsRef} className="relative overflow-hidden bg-[linear-gradient(145deg,#121821_0%,#1f2a37_18%,#d5b573_42%,#e7edf2_62%,#ccd5dd_78%,#19212b_100%)] py-16 md:py-24">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
           <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
           {/* Blueprint grid decoration */}
@@ -961,7 +1082,7 @@ export function LandingPage() {
               className="mb-16 gpu-reveal"
             >
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter mb-4"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #4a4a4e 0%, #1d1d1f 15%, #6e6e73 30%, #2d2d2f 45%, #8e8e93 55%, #3a3a3e 65%, #1d1d1f 80%, #5a5a5e 90%, #2d2d2f 100%)' }}>Sectors We Serve</span></h2>
-              <p className="text-base md:text-xl font-medium text-[#6e6e73]">Trusted by businesses across diverse industries in the food and hospitality sector.</p>
+              <p className="text-base font-medium text-[#324150] md:text-xl">Trusted by businesses across diverse industries in the food and hospitality sector.</p>
             </motion.div>
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -983,9 +1104,9 @@ export function LandingPage() {
                   viewport={{ once: true, amount: 0.1 }}
                   transition={{ duration: 0.9, delay: 0.08 * i, ease: SMOOTH_240 }}
                   style={{ transformPerspective: 600, transformStyle: 'preserve-3d' }}
-                  className="gpu-reveal bg-gradient-to-br from-white/90 via-[#ececf0] to-[#d8d8de] border border-[#b4b4ba]/60 rounded-2xl md:rounded-3xl p-5 md:p-8 flex flex-col items-center justify-center gap-3 md:gap-4 hover:shadow-lg hover:shadow-black/8 transition-[border-color,box-shadow] duration-300 group shadow-sm"
+                  className="gpu-reveal flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/26 bg-[linear-gradient(145deg,rgba(255,255,255,0.82)_0%,rgba(240,227,197,0.92)_24%,rgba(213,223,232,0.9)_62%,rgba(255,255,255,0.78)_100%)] p-5 shadow-[0_18px_40px_rgba(13,18,24,0.14)] transition-[border-color,box-shadow,transform] duration-300 group hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(13,18,24,0.2)] md:rounded-3xl md:p-8"
                 >
-                  <div className="w-11 h-11 md:w-12 md:h-12 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] rounded-xl md:rounded-2xl flex items-center justify-center text-[#1d1d1f] group-hover:bg-[#1d1d1f] group-hover:text-white transition-all duration-300 shadow-md shadow-black/6 border border-[#b8b8bd]/50">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e5cb95]/55 bg-[linear-gradient(145deg,#121821_0%,#243243_100%)] text-[#f3d79f] shadow-[0_10px_26px_rgba(10,14,20,0.2)] transition-all duration-300 group-hover:scale-105 group-hover:text-white md:h-12 md:w-12 md:rounded-2xl">
                     <sector.icon className="h-6 w-6" />
                   </div>
                   <span className="font-semibold text-sm tracking-tight text-[#1d1d1f] text-center">{sector.label}</span>
@@ -1067,7 +1188,7 @@ export function LandingPage() {
         </section>
 
         {/* Our Purpose */}
-        <section ref={purposeRef} className="relative py-16 md:py-24 bg-gradient-to-br from-[#dcdce2] via-[#e8e8ed] to-[#d0d0d6] overflow-hidden">
+        <section ref={purposeRef} className="relative overflow-hidden bg-[linear-gradient(165deg,#f2e3bb_0%,#e9edf2_18%,#d8e0e7_50%,#cfd7df_74%,#17202a_100%)] py-16 md:py-24">
           <div className="absolute inset-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           {/* Blueprint dimension decoration */}
           <div className="absolute top-6 left-6 w-[160px] md:w-[200px] pointer-events-none hidden md:block">
@@ -1099,10 +1220,10 @@ export function LandingPage() {
                 viewport={{ once: true, amount: 0.15 }}
                 transition={{ duration: 1, ease: SMOOTH_240 }}
                 style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                className="gpu-reveal bg-gradient-to-br from-[#f0f0f4] via-[#e6e6eb] to-[#d4d4da] border border-[#b8b8be]/60 rounded-2xl md:rounded-[2rem] p-7 md:p-10 hover:from-[#eaeaef] hover:via-[#e0e0e5] hover:to-[#cecece] transition-[border-color,background,box-shadow] duration-300 hover:shadow-lg hover:shadow-black/8 shadow-sm"
+                className="gpu-reveal rounded-2xl border border-white/24 bg-[linear-gradient(145deg,rgba(255,255,255,0.92)_0%,rgba(243,227,191,0.86)_20%,rgba(224,232,239,0.9)_64%,rgba(255,255,255,0.84)_100%)] p-7 shadow-[0_18px_40px_rgba(12,16,22,0.12)] transition-[border-color,background,box-shadow] duration-300 hover:shadow-[0_24px_48px_rgba(12,16,22,0.18)] md:rounded-[2rem] md:p-10"
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] rounded-full border border-[#b0b0b5] flex items-center justify-center shadow-md shadow-black/6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#e2c587] bg-[linear-gradient(145deg,#11171f_0%,#253140_100%)] shadow-[0_12px_28px_rgba(10,14,20,0.18)]">
                     <Star className="h-5 w-5 text-[#1d1d1f]" />
                   </div>
                   <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f]">Our Mission</h3>
@@ -1119,10 +1240,10 @@ export function LandingPage() {
                 viewport={{ once: true, amount: 0.15 }}
                 transition={{ duration: 1, delay: 0.2, ease: SMOOTH_240 }}
                 style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                className="gpu-reveal bg-gradient-to-br from-[#f0f0f4] via-[#e6e6eb] to-[#d4d4da] border border-[#b8b8be]/60 rounded-2xl md:rounded-[2rem] p-7 md:p-10 hover:from-[#eaeaef] hover:via-[#e0e0e5] hover:to-[#cecece] transition-[border-color,background,box-shadow] duration-300 hover:shadow-lg hover:shadow-black/8 shadow-sm"
+                className="gpu-reveal rounded-2xl border border-white/24 bg-[linear-gradient(145deg,rgba(255,255,255,0.92)_0%,rgba(243,227,191,0.86)_20%,rgba(224,232,239,0.9)_64%,rgba(255,255,255,0.84)_100%)] p-7 shadow-[0_18px_40px_rgba(12,16,22,0.12)] transition-[border-color,background,box-shadow] duration-300 hover:shadow-[0_24px_48px_rgba(12,16,22,0.18)] md:rounded-[2rem] md:p-10"
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="w-12 h-12 bg-gradient-to-br from-white via-[#e8e8ed] to-[#c8c8cd] rounded-full border border-[#b0b0b5] flex items-center justify-center shadow-md shadow-black/6">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#e2c587] bg-[linear-gradient(145deg,#11171f_0%,#253140_100%)] shadow-[0_12px_28px_rgba(10,14,20,0.18)]">
                     <Layers className="h-5 w-5 text-[#1d1d1f]" />
                   </div>
                   <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f]">Our Vision</h3>
@@ -1136,7 +1257,7 @@ export function LandingPage() {
         </section>
 
         {/* Call to Action */}
-        <section ref={ctaRef} className="relative py-20 md:py-32 bg-gradient-to-br from-[#d4d4da] via-[#e0e0e6] to-[#c8c8ce] overflow-hidden">
+        <section ref={ctaRef} className="relative overflow-hidden bg-[linear-gradient(145deg,#081019_0%,#13202d_18%,#243445_42%,#d4b16e_70%,#f1dfb5_100%)] py-20 md:py-32">
           <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
           {/* Blueprint corner decoration */}
           <div className="absolute bottom-4 left-4 w-[160px] md:w-[220px] pointer-events-none hidden md:block">
@@ -1151,6 +1272,7 @@ export function LandingPage() {
             </svg>
           </div>
           <div className="max-w-4xl mx-auto px-6 text-center">
+            <div className="absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(244,213,151,0.22)_0%,rgba(155,177,202,0.12)_34%,transparent_66%)] blur-3xl" />
             <motion.div
               initial={{ opacity: 0, y: 70 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -1158,14 +1280,25 @@ export function LandingPage() {
               transition={{ duration: 1.1, ease: SMOOTH_240 }}
               className="gpu-reveal"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-7xl font-bold tracking-tighter mb-4 md:mb-6"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #4a4a4e 0%, #1d1d1f 15%, #6e6e73 30%, #2d2d2f 45%, #8e8e93 55%, #3a3a3e 65%, #1d1d1f 80%, #5a5a5e 90%, #2d2d2f 100%)' }}>Start your build.</span></h2>
-              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#6e6e73] mb-8 md:mb-10 max-w-2xl mx-auto">Access the portal to manage quotes, track projects, and communicate directly with the workshop.</p>
+              <h2 className="mb-4 text-3xl font-bold tracking-tighter sm:text-4xl md:mb-6 md:text-7xl"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg,#f8edd2 0%,#e5edf6 16%,#9eb6cf 34%,#f3d89d 58%,#fff4da 78%,#dce7f1 100%)' }}>Start your build.</span></h2>
+              <p className="mx-auto mb-8 max-w-2xl text-base font-medium text-[#e2e9f0] sm:text-xl md:mb-10 md:text-2xl">Access the portal to manage quotes, track projects, and communicate directly with the workshop.</p>
+              <div className="mx-auto mb-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3 md:mb-10">
+                {[
+                  'Project milestones stay visible from approval to turnover.',
+                  'Collections and sectors now read like a premium fabrication catalog.',
+                  'The visual language aligns better with engineered stainless work.',
+                ].map((item) => (
+                  <div key={item} className="rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-medium leading-6 text-[#f0f4f8] backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                    {item}
+                  </div>
+                ))}
+              </div>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild className="bg-[#1d1d1f] hover:bg-black text-white text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300">
-                  <Link to="/register">Create Account</Link>
+                <Button asChild className="h-14 rounded-full bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] px-8 text-base font-semibold text-[#11161c] transition-all duration-300 hover:scale-105 hover:brightness-105 active:scale-95 md:h-16 md:px-10 shadow-[0_16px_40px_rgba(186,131,49,0.28)]">
+                  <Link to="/register" className="text-[#11161c]">Create Account</Link>
                 </Button>
-                <Button asChild className="bg-white hover:bg-[#e8e8ed] text-[#1d1d1f] border border-[#d2d2d7] text-base font-semibold rounded-full px-8 h-14 md:px-10 md:h-16 transition-all hover:scale-105 active:scale-95 duration-300 shadow-sm">
-                  <a href="mailto:rmvstainless@gmail.com">Contact Sales</a>
+                <Button asChild className="h-14 rounded-full border border-white/18 bg-white/10 px-8 text-base font-semibold text-[#f4f6f8] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white/16 active:scale-95 md:h-16 md:px-10 shadow-[0_12px_30px_rgba(4,7,12,0.24)]">
+                  <a href="mailto:rmvstainless@gmail.com" className="text-[#f4f6f8]">Contact Sales</a>
                 </Button>
               </div>
             </motion.div>
@@ -1173,63 +1306,63 @@ export function LandingPage() {
         </section>
 
         {/* Global Footer based on exact details */}
-        <footer id="contact" className="relative bg-gradient-to-br from-[#e8e8ed] via-[#f0f0f4] to-[#dcdce2] border-t border-[#b0b0b6]/40 pt-16 md:pt-20 pb-10 md:pb-12">
+        <footer id="contact" className="relative border-t border-white/10 bg-[linear-gradient(145deg,#0a1016_0%,#16202b_24%,#243445_48%,#101822_100%)] pt-16 pb-10 text-white md:pt-20 md:pb-12">
           <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-12 md:mb-16">
               
               <div className="space-y-4 md:space-y-6 col-span-2 md:col-span-1">
                 <div className="flex items-center gap-2">
-                  <BrandLogo className="h-7 w-7 md:h-8 md:w-8 text-[#1d1d1f]" />
-                  <span className="text-base md:text-lg font-bold tracking-tight text-[#1d1d1f]">RMV Stainless Steel Fabrication</span>
+                  <BrandLogo className="h-7 w-7 text-[#f3f6f9] md:h-8 md:w-8" />
+                  <span className="text-base font-bold tracking-tight text-[#f3f6f9] md:text-lg">RMV Stainless Steel Fabrication</span>
                 </div>
-                <p className="text-[#6e6e73] font-medium leading-relaxed pr-4 text-sm">
+                <p className="pr-4 text-sm font-medium leading-relaxed text-[#c3ced8]">
                   Precision stainless steel fabrication for residential and commercial industries.<br/>
                   Quality you can trust.
                 </p>
               </div>
 
               <div>
-                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Services</h4>
+                <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#f6d69e] md:mb-6">Services</h4>
                 <ul className="space-y-3 md:space-y-4">
                   {['Kitchen SS Fabrication', 'Kitchen Remodeling', 'LPG Gas Pipeline', 'Fire Suppression', 'Exhaust Systems', 'Railings'].map(link => (
-                    <li key={link}><button type="button" onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">{link}</button></li>
+                    <li key={link}><button type="button" onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">{link}</button></li>
                   ))}
                 </ul>
               </div>
 
               <div>
-                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Company</h4>
+                <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#f6d69e] md:mb-6">Company</h4>
                 <ul className="space-y-3 md:space-y-4">
-                  <li><button type="button" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">About Us</button></li>
-                  <li><button type="button" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">Projects</button></li>
-                  <li><button type="button" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })} className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm cursor-pointer">Contact</button></li>
-                  <li><Link to="/privacy" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">Privacy Policy</Link></li>
-                  <li><Link to="/terms" className="text-[#6e6e73] hover:text-[#1d1d1f] font-medium transition-colors text-sm">Terms of Service</Link></li>
+                  <li><button type="button" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">About Us</button></li>
+                  <li><button type="button" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Projects</button></li>
+                  <li><button type="button" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Contact</button></li>
+                  <li><Link to="/privacy" className="text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Privacy Policy</Link></li>
+                  <li><Link to="/terms" className="text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Terms of Service</Link></li>
                 </ul>
               </div>
 
               <div className="col-span-2 md:col-span-1">
-                <h4 className="text-sm font-bold uppercase tracking-widest text-[#1d1d1f] mb-4 md:mb-6">Contact</h4>
+                <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#f6d69e] md:mb-6">Contact</h4>
                 <ul className="space-y-3 md:space-y-4">
                   <li className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 text-[#6e6e73] shrink-0" />
-                    <span className="text-[#6e6e73] text-sm font-medium">BIR Village, Novaliches, Quezon City, Philippines 1118</span>
+                    <MapPin className="h-5 w-5 shrink-0 text-[#f6d69e]" />
+                    <span className="text-sm font-medium text-[#c3ced8]">BIR Village, Novaliches, Quezon City, Philippines 1118</span>
                   </li>
                   <li className="flex items-start gap-3">
-                    <Phone className="h-5 w-5 text-[#6e6e73] shrink-0" />
-                    <span className="text-[#6e6e73] text-sm font-medium">02-9506187<br/>0945 285 2974</span>
+                    <Phone className="h-5 w-5 shrink-0 text-[#f6d69e]" />
+                    <span className="text-sm font-medium text-[#c3ced8]">02-9506187<br/>0945 285 2974</span>
                   </li>
                   <li className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 text-[#6e6e73] shrink-0" />
-                    <span className="text-[#6e6e73] text-sm font-medium">rmvstainless@gmail.com</span>
+                    <Mail className="h-5 w-5 shrink-0 text-[#f6d69e]" />
+                    <span className="text-sm font-medium text-[#c3ced8]">rmvstainless@gmail.com</span>
                   </li>
                 </ul>
               </div>
             </div>
 
             {/* Interactive Google Map */}
-            <div className="w-full h-[250px] md:h-[300px] border border-[#c8c8cc]/60 rounded-2xl md:rounded-3xl overflow-hidden mb-10 md:mb-12 grayscale hover:grayscale-0 transition-all duration-700 shadow-sm">
+            <div className="mb-10 h-[250px] w-full overflow-hidden rounded-2xl border border-white/12 shadow-[0_20px_48px_rgba(0,0,0,0.28)] transition-all duration-700 hover:grayscale-0 md:mb-12 md:h-[300px] md:rounded-3xl grayscale">
               <iframe
                 title="RMV Stainless Steel Fabrication Location"
                 src="https://maps.google.com/maps?q=Natanawan+Residence,+Dahlia+Ext,+Quezon+City,+Metro+Manila&z=17&output=embed"
@@ -1242,16 +1375,16 @@ export function LandingPage() {
               />
             </div>
 
-            <div className="flex flex-col md:flex-row justify-between items-center gap-4 pt-8 border-t border-[#c8c8cc]/40">
-              <p className="text-sm font-medium text-[#6e6e73]">
+            <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 md:flex-row">
+              <p className="text-sm font-medium text-[#c3ced8]">
                 &copy; {new Date().getFullYear()} RMV Stainless Steel Fabrication. All rights reserved.
               </p>
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-4 text-sm font-medium">
-                  <Link to="/privacy" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Privacy Policy</Link>
-                  <Link to="/terms" className="text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">Terms of Service</Link>
+                  <Link to="/privacy" className="text-[#c3ced8] transition-colors hover:text-white">Privacy Policy</Link>
+                  <Link to="/terms" className="text-[#c3ced8] transition-colors hover:text-white">Terms of Service</Link>
                 </div>
-                <div className="flex items-center gap-2 text-sm font-medium text-[#6e6e73]">
+                <div className="flex items-center gap-2 text-sm font-medium text-[#c3ced8]">
                   <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
                   All Systems Operational
                 </div>
