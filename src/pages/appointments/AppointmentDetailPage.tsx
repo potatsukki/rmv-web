@@ -175,6 +175,14 @@ export function AppointmentDetailPage() {
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
 
+  const customerCanManageAppointment =
+    isCustomer &&
+    [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
+      appt.status as AppointmentStatus,
+    );
+  const customerCanReschedule =
+    customerCanManageAppointment && appt.rescheduleCount < appt.maxReschedules;
+
   const handleConfirm = async () => {
     if (!selectedSalesStaff) {
       toast.error('Please select a sales staff member to assign');
@@ -351,6 +359,49 @@ export function AppointmentDetailPage() {
                   ? 'The visit is complete. The sales staff will submit a visit report, which will automatically create your project.'
                   : 'Visit complete. Submit the visit report to generate the project for this customer.'}
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {customerCanManageAppointment && (
+        <Card className="overflow-hidden rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm">
+          <CardContent className="space-y-4 p-4 sm:p-5">
+            <div className="flex items-start gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-white shadow-sm">
+                <Clock className="h-4 w-4" />
+              </div>
+              <div className="min-w-0 space-y-1">
+                <div className="flex flex-wrap items-center gap-2">
+                  <p className="text-sm font-semibold text-[#1d1d1f]">Manage This Appointment</p>
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#b42318] ring-1 ring-[#f3c7cf]">
+                    Active Booking
+                  </span>
+                </div>
+                <p className="text-xs leading-5 text-[#6e6e73] sm:text-sm">
+                  Need to free this slot so you can book again? You can reschedule or cancel this appointment here.
+                </p>
+              </div>
+            </div>
+            <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
+              {customerCanReschedule && (
+                <Button
+                  asChild
+                  variant="outline"
+                  className="h-11 w-full rounded-xl border-white/80 bg-white/80 text-[#3a3a3e] shadow-sm hover:bg-white sm:w-auto"
+                >
+                  <Link to={`/appointments/book?reschedule=${appt._id}`}>
+                    Reschedule
+                  </Link>
+                </Button>
+              )}
+              <Button
+                variant="destructive"
+                onClick={() => setCancelOpen(true)}
+                className="h-11 w-full rounded-xl shadow-sm sm:w-auto"
+              >
+                Cancel Appointment
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1218,22 +1269,11 @@ export function AppointmentDetailPage() {
           );
         })()}
 
-        {(isCustomer || isAgent || isAdmin) &&
+        {(isAgent || isAdmin) &&
           [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
             appt.status as AppointmentStatus,
           ) && (
             <>
-              {isCustomer && appt.rescheduleCount < appt.maxReschedules && (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
-                >
-                  <Link to={`/appointments/book?reschedule=${appt._id}`}>
-                    Reschedule
-                  </Link>
-                </Button>
-              )}
               <Button
                 variant="destructive"
                 onClick={() => setCancelOpen(true)}

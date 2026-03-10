@@ -96,6 +96,9 @@ export function ForgotPasswordPage() {
           <p className="mt-1.5 text-sm text-[#6e6e73]">
             Enter your email and we&apos;ll send you a reset code.
           </p>
+          <p className="mt-2 text-xs leading-5 text-[#86868b]">
+            If you signed up with Google only, use the Google button on sign in instead of password reset.
+          </p>
 
           <form onSubmit={handleSubmit(onSubmit)} className="mt-8 space-y-5">
             <div className="space-y-1.5">

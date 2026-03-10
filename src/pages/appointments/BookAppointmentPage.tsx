@@ -143,6 +143,30 @@ export function BookAppointmentPage() {
         navigate(`/appointments/${result._id}`);
       }
     } catch (error: unknown) {
+      const apiError = (error as {
+        response?: {
+          data?: {
+            error?: {
+              code?: string;
+              message?: string;
+              details?: { activeAppointmentId?: unknown };
+            };
+          };
+        };
+      })?.response?.data?.error;
+      const activeAppointmentId =
+        typeof apiError?.details?.activeAppointmentId === 'string'
+          ? apiError.details.activeAppointmentId
+          : undefined;
+
+      if (!rescheduleId && apiError?.code === 'DUPLICATE_ENTRY' && activeAppointmentId) {
+        toast.error(`${extractErrorMessage(error, 'Booking failed')} Redirecting you to that appointment now.`, {
+          duration: 5000,
+        });
+        navigate(`/appointments/${activeAppointmentId}`);
+        return;
+      }
+
       toast.error(extractErrorMessage(error, 'Booking failed'));
     }
   };
