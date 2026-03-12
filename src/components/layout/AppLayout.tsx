@@ -572,10 +572,10 @@ export function AppLayout() {
         <header className="metal-panel sticky top-0 z-30 hidden border-b md:block">
           <div className="flex h-14 items-center justify-between px-6 lg:px-8">
             <div className="flex min-w-0 flex-col justify-center">
-              <div className="mb-0.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#78818c]">
+              <div className="mb-0.5 flex items-center gap-2 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#78818c] dark:text-slate-300">
                 <span>Workspace</span>
                 {breadcrumbs.length > 0 && <span className="h-1 w-1 rounded-full bg-[#b3bcc6]" />}
-                <span className="truncate text-[#4d5560]">{meta.title}</span>
+                <span className="truncate text-[#4d5560] dark:text-slate-400">{meta.title}</span>
               </div>
               {breadcrumbs.length > 1 ? (
                 <nav className="flex items-center gap-1 text-xs text-muted-foreground">
@@ -615,7 +615,7 @@ export function AppLayout() {
                     aria-label="Search"
                     className="metal-input h-9 w-[200px] rounded-xl pl-9 pr-16 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c2cad3] lg:w-[250px]"
                   />
-                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[#c7cfd7] bg-white/55 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                  <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-[#c7cfd7] bg-white/55 px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-300">
                     Ctrl+K
                   </kbd>
                 </div>
@@ -796,7 +796,7 @@ export function AppLayout() {
                   to="/account/profile"
                   className="metal-pill flex items-center gap-2.5 rounded-xl px-2.5 py-1.5 transition-colors hover:text-[#11151a]"
                 >
-                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[linear-gradient(180deg,#24282f_0%,#15191f_100%)] text-[11px] font-bold text-primary-foreground shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md bg-[linear-gradient(180deg,#24282f_0%,#15191f_100%)] text-[11px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                     {user.firstName[0]}
                     {user.lastName[0]}
                   </div>

@@ -140,18 +140,18 @@ export function CashCollectionsPage() {
   return (
     <div className="space-y-8">
       {/* Page Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Cash Flow</h1>
-        <p className="text-[#6e6e73] text-sm mt-1">Manage pending cash payments and collections</p>
+      <div className="metal-panel rounded-[1.75rem] p-5">
+        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-50">Cash Flow</h1>
+        <p className="mt-1 text-sm text-[#616a74] dark:text-slate-300">Manage pending cash payments and collections</p>
       </div>
 
       {/* ═══ Pending Cash Appointments ═══ */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Banknote className="h-5 w-5 text-[#6e6e73]" />
-          <h2 className="text-lg font-semibold text-[#1d1d1f]">Pending Cash Payments</h2>
+          <Banknote className="h-5 w-5 text-[#6e6e73] dark:text-slate-300" />
+          <h2 className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100">Pending Cash Payments</h2>
           {pendingCashList.length > 0 && (
-            <span className="ml-1 rounded-full bg-[#1d1d1f] px-2.5 py-0.5 text-xs font-medium text-white">
+            <span className="ml-1 rounded-full bg-[#1d1d1f] px-2.5 py-0.5 text-xs font-medium text-white dark:bg-slate-100 dark:text-slate-950">
               {pendingCashList.length}
             </span>
           )}
@@ -184,8 +184,8 @@ export function CashCollectionsPage() {
               return (
                 <Card
                   key={appt._id}
-                  className={`rounded-xl border transition-all ${
-                    isExpanded ? 'border-[#1d1d1f]/20 shadow-md' : 'border-[#e5e5ea] hover:border-[#d2d2d7]'
+                  className={`metal-panel rounded-xl border transition-all ${
+                    isExpanded ? 'border-[#1d1d1f]/20 shadow-md dark:border-slate-600' : 'border-[#e5e5ea] hover:border-[#d2d2d7] dark:border-slate-700 dark:hover:border-slate-500'
                   }`}
                 >
                   {/* Table Row */}
@@ -196,57 +196,57 @@ export function CashCollectionsPage() {
                   >
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-4 min-w-0 flex-1">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#f0f0f5]">
-                          <User className="h-5 w-5 text-[#6e6e73]" />
+                        <div className="silver-sheen flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-[#2b3138]">
+                          <User className="h-5 w-5" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="font-semibold text-[#1d1d1f] truncate">{appt.customerName ?? 'Unknown'}</p>
-                          <p className="text-sm text-[#6e6e73] truncate">
+                          <p className="font-semibold text-[#1d1d1f] dark:text-slate-100 truncate">{appt.customerName ?? 'Unknown'}</p>
+                          <p className="text-sm text-[#616a74] dark:text-slate-300 truncate">
                             {appt.date} &middot; {formatSlotTime(appt.slotCode)}
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center gap-3 shrink-0">
                         <div className="text-right hidden sm:block">
-                          <p className="font-semibold text-[#1d1d1f]">{formatCurrency(appt.ocularFee)}</p>
+                          <p className="font-semibold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
                           <StatusBadge status={appt.status} />
                         </div>
                         {isExpanded ? (
-                          <ChevronUp className="h-5 w-5 text-[#6e6e73]" />
+                          <ChevronUp className="h-5 w-5 text-[#6e6e73] dark:text-slate-300" />
                         ) : (
-                          <ChevronDown className="h-5 w-5 text-[#6e6e73]" />
+                          <ChevronDown className="h-5 w-5 text-[#6e6e73] dark:text-slate-300" />
                         )}
                       </div>
                     </div>
                     {/* Mobile: show amount + status below */}
                     <div className="flex items-center gap-2 mt-2 sm:hidden">
-                      <p className="font-semibold text-[#1d1d1f] text-sm">{formatCurrency(appt.ocularFee)}</p>
+                      <p className="font-semibold text-[#1d1d1f] dark:text-slate-100 text-sm">{formatCurrency(appt.ocularFee)}</p>
                       <StatusBadge status={appt.status} />
                     </div>
                   </button>
 
                   {/* Expanded Detail */}
                   {isExpanded && (
-                    <div className="border-t border-[#e5e5ea] px-4 pb-4 pt-3">
+                    <div className="border-t border-[#e5e5ea] px-4 pb-4 pt-3 dark:border-slate-700">
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         {/* Customer Info */}
                         <div className="space-y-3">
-                          <h3 className="text-xs font-semibold uppercase text-[#6e6e73] tracking-wider">Customer Details</h3>
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6e6e73] dark:text-slate-400">Customer Details</h3>
                           <div className="space-y-2">
                             <div className="flex items-start gap-2.5">
-                              <User className="h-4 w-4 text-[#6e6e73] mt-0.5 shrink-0" />
-                              <span className="text-sm text-[#1d1d1f]">{appt.customerName ?? 'N/A'}</span>
+                              <User className="mt-0.5 h-4 w-4 shrink-0 text-[#6e6e73] dark:text-slate-400" />
+                              <span className="text-sm text-[#1d1d1f] dark:text-slate-100">{appt.customerName ?? 'N/A'}</span>
                             </div>
                             {appt.customerPhone && (
                               <div className="flex items-start gap-2.5">
-                                <Phone className="h-4 w-4 text-[#6e6e73] mt-0.5 shrink-0" />
-                                <span className="text-sm text-[#1d1d1f]">{appt.customerPhone}</span>
+                                <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#6e6e73] dark:text-slate-400" />
+                                <span className="text-sm text-[#1d1d1f] dark:text-slate-100">{appt.customerPhone}</span>
                               </div>
                             )}
                             {appt.formattedAddress && (
                               <div className="flex items-start gap-2.5">
-                                <MapPin className="h-4 w-4 text-[#6e6e73] mt-0.5 shrink-0" />
-                                <span className="text-sm text-[#1d1d1f]">{appt.formattedAddress}</span>
+                                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#6e6e73] dark:text-slate-400" />
+                                <span className="text-sm text-[#1d1d1f] dark:text-slate-100">{appt.formattedAddress}</span>
                               </div>
                             )}
                           </div>
@@ -254,30 +254,30 @@ export function CashCollectionsPage() {
 
                         {/* Payment Info */}
                         <div className="space-y-3">
-                          <h3 className="text-xs font-semibold uppercase text-[#6e6e73] tracking-wider">Ocular Fee Breakdown</h3>
+                          <h3 className="text-xs font-semibold uppercase tracking-wider text-[#6e6e73] dark:text-slate-400">Ocular Fee Breakdown</h3>
                           <div className="space-y-2 text-sm">
                             {appt.ocularFeeBreakdown && (
                               <>
                                 <div className="flex justify-between">
-                                  <span className="text-[#6e6e73]">Base Fee</span>
-                                  <span className="text-[#1d1d1f]">{formatCurrency(appt.ocularFeeBreakdown.baseFee)}</span>
+                                  <span className="text-[#6e6e73] dark:text-slate-300">Base Fee</span>
+                                  <span className="text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFeeBreakdown.baseFee)}</span>
                                 </div>
                                 {appt.ocularFeeBreakdown.additionalDistanceKm > 0 && (
                                   <div className="flex justify-between">
-                                    <span className="text-[#6e6e73]">Additional Distance ({appt.ocularFeeBreakdown.additionalDistanceKm.toFixed(1)} km)</span>
-                                    <span className="text-[#1d1d1f]">{formatCurrency(appt.ocularFeeBreakdown.additionalFee)}</span>
+                                    <span className="text-[#6e6e73] dark:text-slate-300">Additional Distance ({appt.ocularFeeBreakdown.additionalDistanceKm.toFixed(1)} km)</span>
+                                    <span className="text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFeeBreakdown.additionalFee)}</span>
                                   </div>
                                 )}
-                                <div className="flex justify-between border-t border-[#e5e5ea] pt-2 font-semibold">
-                                  <span className="text-[#1d1d1f]">Total</span>
-                                  <span className="text-[#1d1d1f]">{formatCurrency(appt.ocularFeeBreakdown.total)}</span>
+                                <div className="flex justify-between border-t border-[#e5e5ea] pt-2 font-semibold dark:border-slate-700">
+                                  <span className="text-[#1d1d1f] dark:text-slate-100">Total</span>
+                                  <span className="text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFeeBreakdown.total)}</span>
                                 </div>
                               </>
                             )}
                             {!appt.ocularFeeBreakdown && (
                               <div className="flex justify-between font-semibold">
-                                <span className="text-[#1d1d1f]">Ocular Fee</span>
-                                <span className="text-[#1d1d1f]">{formatCurrency(appt.ocularFee)}</span>
+                                <span className="text-[#1d1d1f] dark:text-slate-100">Ocular Fee</span>
+                                <span className="text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFee)}</span>
                               </div>
                             )}
                           </div>
@@ -285,23 +285,24 @@ export function CashCollectionsPage() {
                       </div>
 
                       {/* Schedule Info */}
-                      <div className="mt-4 flex items-center gap-2 text-sm text-[#6e6e73]">
+                      <div className="mt-4 flex items-center gap-2 text-sm text-[#6e6e73] dark:text-slate-300">
                         <Clock className="h-4 w-4" />
                         <span>Scheduled: {appt.date} at {formatSlotTime(appt.slotCode)}</span>
                       </div>
 
                       {/* Record Button */}
-                      <div className="mt-4 pt-3 border-t border-[#e5e5ea]">
+                      <div className="mt-4 border-t border-[#e5e5ea] pt-3 dark:border-slate-700">
                         {canRecord ? (
                           <Button
+                            variant="prominent"
                             onClick={() => openRecordDialog(appt)}
-                            className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+                            className="rounded-xl"
                           >
                             <Banknote className="mr-2 h-4 w-4" />
                             Record Cash Payment
                           </Button>
                         ) : (
-                          <p className="text-sm text-[#8e8e93] italic">
+                          <p className="text-sm italic text-[#8e8e93] dark:text-slate-400">
                             Cash can only be recorded when the appointment is &quot;On The Way&quot; or &quot;Completed&quot;.
                           </p>
                         )}
@@ -318,10 +319,10 @@ export function CashCollectionsPage() {
       {/* ═══ Recorded Collections ═══ */}
       <div className="space-y-4">
         <div className="flex items-center gap-2">
-          <Wallet className="h-5 w-5 text-[#6e6e73]" />
-          <h2 className="text-lg font-semibold text-[#1d1d1f]">Recorded Collections</h2>
+          <Wallet className="h-5 w-5 text-[#6e6e73] dark:text-slate-300" />
+          <h2 className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100">Recorded Collections</h2>
           {collectionList.length > 0 && (
-            <span className="ml-1 rounded-full bg-[#f0f0f5] px-2.5 py-0.5 text-xs font-medium text-[#3a3a3e]">
+            <span className="metal-pill ml-1 rounded-full px-2.5 py-0.5 text-xs font-medium text-[#3a3a3e] dark:text-slate-100">
               {collectionList.length}
             </span>
           )}
@@ -344,30 +345,30 @@ export function CashCollectionsPage() {
               description="Collected cash receipts will appear here once field payments are logged and handed off."
             />
         ) : (
-          <Card className="rounded-xl border-[#e5e5ea]">
+          <Card className="metal-panel rounded-xl border-[#e5e5ea] dark:border-slate-700">
             <CardContent className="p-0">
-              <div className="divide-y divide-[#e5e5ea]">
+              <div className="divide-y divide-[#e5e5ea] dark:divide-slate-700">
                   {collectionList.map((c) => (
                   <div
                     key={String(c._id)}
-                    className="flex flex-col gap-3 p-4 sm:flex-row sm:items-center sm:justify-between hover:bg-[#f5f5f7]/50 transition-colors"
+                    className="flex flex-col gap-3 p-4 transition-colors hover:bg-[#f5f5f7]/50 dark:hover:bg-slate-900/60 sm:flex-row sm:items-center sm:justify-between"
                   >
                     <div className="space-y-1">
                       <div className="flex items-center gap-2">
-                        <p className="font-semibold text-[#1d1d1f]">
+                        <p className="font-semibold text-[#1d1d1f] dark:text-slate-100">
                           {formatCurrency(Number(c.amountCollected))}
                         </p>
                         <StatusBadge status={String(c.status)} />
                       </div>
                       {c.amountReceived != null && (
-                        <p className="text-sm text-[#6e6e73]">
+                        <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                           Received: {formatCurrency(Number(c.amountReceived))}
                         </p>
                       )}
                       {c.salesStaffName ? (
-                        <p className="text-xs text-[#8e8e93]">From {String(c.salesStaffName)}</p>
+                        <p className="text-xs text-[#8e8e93] dark:text-slate-400">From {String(c.salesStaffName)}</p>
                       ) : null}
-                      <p className="text-xs text-[#8e8e93]">
+                      <p className="text-xs text-[#8e8e93] dark:text-slate-400">
                         {c.createdAt
                           ? format(new Date(String(c.createdAt)), 'MMM d, yyyy h:mm a')
                           : ''}
@@ -375,8 +376,9 @@ export function CashCollectionsPage() {
                     </div>
                     {isCashier && c.status === CashCollectionStatus.COLLECTED && (
                       <Button
+                        variant="prominent"
                         size="sm"
-                        className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+                        className="rounded-xl"
                         onClick={() => setReceiveDialog({ open: true, id: String(c._id), amount: String(c.amountCollected) })}
                       >
                         Receive Cash
@@ -395,7 +397,7 @@ export function CashCollectionsPage() {
         <div className="space-y-4">
           <div className="flex items-center gap-2">
             <AlertTriangle className="h-5 w-5 text-red-500" />
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">Discrepancies</h2>
+            <h2 className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100">Discrepancies</h2>
             <span className="ml-1 rounded-full bg-red-50 px-2.5 py-0.5 text-xs font-medium text-red-600">
               {discrepancyList.length}
             </span>
@@ -447,12 +449,12 @@ export function CashCollectionsPage() {
           if (!open) setReceiveDialog({ open: false, id: '', amount: '' });
         }}
       >
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="rounded-2xl max-w-md dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Receive Cash</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Receive Cash</DialogTitle>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Received</Label>
+            <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Amount Received</Label>
             <Input
               type="number"
               step="0.01"
@@ -471,7 +473,8 @@ export function CashCollectionsPage() {
               Cancel
             </Button>
             <Button
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+              variant="prominent"
+              className="rounded-xl"
               onClick={handleReceive}
               disabled={receiveMutation.isPending}
             >
@@ -489,12 +492,12 @@ export function CashCollectionsPage() {
           if (!open) setResolution('');
         }}
       >
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="rounded-2xl max-w-md dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Resolve Discrepancy</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Resolve Discrepancy</DialogTitle>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-[#3a3a3e] text-[13px] font-medium">Resolution Notes</Label>
+            <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Resolution Notes</Label>
             <Input
               value={resolution}
               onChange={(e) => setResolution(e.target.value)}
@@ -511,7 +514,8 @@ export function CashCollectionsPage() {
               Cancel
             </Button>
             <Button
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+              variant="prominent"
+              className="rounded-xl"
               onClick={handleResolve}
               disabled={resolveMutation.isPending}
             >
@@ -532,20 +536,20 @@ export function CashCollectionsPage() {
           }
         }}
       >
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="rounded-2xl max-w-md dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Record Cash Payment</DialogTitle>
-            <DialogDescription className="text-[#6e6e73]">
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Record Cash Payment</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-300">
               Record cash collected from {recordDialog.customerName} for ocular fee.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div className="space-y-1.5">
-              <Label className="text-[#3a3a3e] text-[13px] font-medium">Expected Amount</Label>
-              <p className="text-lg font-semibold text-[#1d1d1f]">{formatCurrency(recordDialog.expectedAmount)}</p>
+              <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Expected Amount</Label>
+              <p className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(recordDialog.expectedAmount)}</p>
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[#3a3a3e] text-[13px] font-medium">Amount Collected</Label>
+              <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Amount Collected</Label>
               <Input
                 type="number"
                 step="0.01"
@@ -556,7 +560,7 @@ export function CashCollectionsPage() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label className="text-[#3a3a3e] text-[13px] font-medium">Notes (optional)</Label>
+              <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Notes (optional)</Label>
               <Textarea
                 value={recordNotes}
                 onChange={(e) => setRecordNotes(e.target.value)}
@@ -578,7 +582,8 @@ export function CashCollectionsPage() {
               Cancel
             </Button>
             <Button
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+              variant="prominent"
+              className="rounded-xl"
               onClick={handleRecord}
               disabled={recordMutation.isPending}
             >

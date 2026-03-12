@@ -48,7 +48,7 @@ export function LineItemsEditor({
     <div className="space-y-4">
       {/* Unit selector */}
       <div className="flex flex-col items-start gap-2 sm:flex-row sm:items-center sm:gap-3">
-        <Label className="text-[13px] font-medium text-gray-700 whitespace-nowrap">
+        <Label className="text-[13px] font-medium text-gray-700 whitespace-nowrap dark:text-slate-300">
           Measurement Unit
         </Label>
         <div className="flex flex-wrap gap-1.5">
@@ -60,8 +60,8 @@ export function LineItemsEditor({
               onClick={() => onUnitChange(u)}
               className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
                 unit === u
-                  ? 'bg-gray-900 text-white shadow-md'
-                  : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-gray-900 text-white shadow-md dark:bg-white/[0.10] dark:text-slate-100'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-white/[0.05] dark:text-slate-400 dark:hover:bg-white/[0.08]'
               }`}
             >
               {MEASUREMENT_UNIT_LABELS[u]}
@@ -74,16 +74,16 @@ export function LineItemsEditor({
       {items.map((item, index) => (
         <Card
           key={index}
-          className="rounded-xl border-gray-100 shadow-sm overflow-hidden"
+          className="rounded-xl border-gray-100 shadow-sm overflow-hidden dark:border-white/[0.08] dark:bg-white/[0.03]"
         >
           <CardContent className="p-4 space-y-3">
             <div className="flex items-start gap-2">
-              <GripVertical className="h-4 w-4 text-gray-300 mt-3 shrink-0" />
+              <GripVertical className="h-4 w-4 text-gray-300 mt-3 shrink-0 dark:text-slate-600" />
               <div className="flex-1 space-y-3">
                 {/* Label + Quantity row */}
                 <div className="flex flex-col gap-3 sm:flex-row">
                   <div className="flex-1 space-y-1">
-                    <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                    <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider dark:text-slate-500">
                       Component / Section
                     </Label>
                     <Input
@@ -93,11 +93,11 @@ export function LineItemsEditor({
                         updateItem(index, 'label', e.target.value)
                       }
                       disabled={disabled}
-                      className="h-9 rounded-lg border-gray-200 text-sm"
+                      className="h-9 rounded-lg border-gray-200 text-sm dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30"
                     />
                   </div>
                   <div className="w-full space-y-1 sm:w-20">
-                    <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider">
+                    <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider dark:text-slate-500">
                       Qty
                     </Label>
                     <Input
@@ -108,7 +108,7 @@ export function LineItemsEditor({
                         updateItem(index, 'quantity', parseInt(e.target.value) || 1)
                       }
                       disabled={disabled}
-                      className="h-9 rounded-lg border-gray-200 text-sm"
+                      className="h-9 rounded-lg border-gray-200 text-sm dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30"
                     />
                   </div>
                 </div>
@@ -118,7 +118,7 @@ export function LineItemsEditor({
                   {(['length', 'width', 'height', 'thickness', 'area'] as const).map(
                     (dim) => (
                       <div key={dim} className="space-y-1">
-                        <Label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">
+                        <Label className="text-[10px] font-medium text-gray-400 uppercase tracking-wider dark:text-slate-600">
                           {dim} ({unitLabel})
                         </Label>
                         <Input
@@ -136,7 +136,7 @@ export function LineItemsEditor({
                             )
                           }
                           disabled={disabled}
-                          className="h-8 rounded-lg border-gray-200 text-xs"
+                          className="h-8 rounded-lg border-gray-200 text-xs dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30"
                         />
                       </div>
                     ),
@@ -151,7 +151,7 @@ export function LineItemsEditor({
                     updateItem(index, 'notes', e.target.value || undefined)
                   }
                   disabled={disabled}
-                  className="min-h-[40px] rounded-lg border-gray-200 text-xs resize-none"
+                  className="min-h-[40px] rounded-lg border-gray-200 text-xs resize-none dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30"
                   rows={1}
                 />
               </div>
@@ -161,7 +161,7 @@ export function LineItemsEditor({
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="text-gray-400 hover:text-red-500 mt-6 shrink-0"
+                  className="text-gray-400 hover:text-red-500 mt-6 shrink-0 dark:text-slate-500 dark:hover:text-red-300"
                   onClick={() => removeItem(index)}
                 >
                   <Trash2 className="h-4 w-4" />
@@ -178,7 +178,7 @@ export function LineItemsEditor({
           type="button"
           variant="outline"
           onClick={addItem}
-          className="w-full border-dashed border-[#c8c8cd] text-[#6e6e73] hover:text-[#1d1d1f] hover:border-[#6e6e73] hover:bg-[#f0f0f5] rounded-xl"
+          className="w-full rounded-xl border-dashed border-[#c8c8cd] text-[#6e6e73] hover:border-[#6e6e73] hover:bg-[#f0f0f5] hover:text-[#1d1d1f] dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-300 dark:hover:border-white/30 dark:hover:bg-white/[0.08] dark:hover:text-white"
         >
           <Plus className="mr-2 h-4 w-4" />
           Add Measurement
@@ -187,7 +187,7 @@ export function LineItemsEditor({
 
       {/* Empty state */}
       {items.length === 0 && (
-        <p className="text-center text-sm text-gray-400 py-4">
+        <p className="text-center text-sm text-gray-400 py-4 dark:text-slate-500">
           No measurements yet. Click "Add Measurement" to start.
         </p>
       )}

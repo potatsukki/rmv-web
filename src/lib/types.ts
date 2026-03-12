@@ -33,6 +33,7 @@ export interface User {
     fabrication: boolean;
     project: boolean;
   };
+  themePreference?: 'light' | 'dark' | 'system';
   createdAt: string;
 }
 

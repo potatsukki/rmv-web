@@ -36,10 +36,10 @@ export function PhotoUploadGrid({
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
         {photoKeys.length > 0 && (
-          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+          <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-                <Camera className="h-4 w-4 text-[#6e6e73]" />
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+                <Camera className="h-4 w-4 text-[#6e6e73] dark:text-slate-400" />
                 Site Photos
               </CardTitle>
             </CardHeader>
@@ -50,10 +50,10 @@ export function PhotoUploadGrid({
           </Card>
         )}
         {videoKeys.length > 0 && (
-          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+          <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-                <Video className="h-4 w-4 text-blue-500" />
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+                <Video className="h-4 w-4 text-blue-500 dark:text-blue-300" />
                 Videos
               </CardTitle>
             </CardHeader>
@@ -64,10 +64,10 @@ export function PhotoUploadGrid({
           </Card>
         )}
         {sketchKeys.length > 0 && (
-          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+          <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-                <PenTool className="h-4 w-4 text-emerald-500" />
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+                <PenTool className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
                 Sketches
               </CardTitle>
             </CardHeader>
@@ -78,10 +78,10 @@ export function PhotoUploadGrid({
           </Card>
         )}
         {referenceImageKeys.length > 0 && (
-          <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+          <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-                <Image className="h-4 w-4 text-purple-500" />
+              <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+                <Image className="h-4 w-4 text-purple-500 dark:text-purple-300" />
                 Reference Images
               </CardTitle>
             </CardHeader>
@@ -98,10 +98,10 @@ export function PhotoUploadGrid({
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
       {/* Site Photos */}
-      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+      <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-            <Camera className="h-4 w-4 text-[#6e6e73]" />
+          <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+            <Camera className="h-4 w-4 text-[#6e6e73] dark:text-slate-400" />
             Site Photos
           </CardTitle>
         </CardHeader>
@@ -119,10 +119,10 @@ export function PhotoUploadGrid({
       </Card>
 
       {/* Videos */}
-      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+      <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-            <Video className="h-4 w-4 text-blue-500" />
+          <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+            <Video className="h-4 w-4 text-blue-500 dark:text-blue-300" />
             Videos
           </CardTitle>
         </CardHeader>
@@ -140,10 +140,10 @@ export function PhotoUploadGrid({
       </Card>
 
       {/* Sketches */}
-      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+      <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-            <PenTool className="h-4 w-4 text-emerald-500" />
+          <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+            <PenTool className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
             Sketches
           </CardTitle>
         </CardHeader>
@@ -161,10 +161,10 @@ export function PhotoUploadGrid({
       </Card>
 
       {/* Reference Images */}
-      <Card className="rounded-xl border-gray-100 shadow-sm overflow-hidden">
+      <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm text-gray-700">
-            <Image className="h-4 w-4 text-purple-500" />
+          <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
+            <Image className="h-4 w-4 text-purple-500 dark:text-purple-300" />
             Reference Images
           </CardTitle>
         </CardHeader>

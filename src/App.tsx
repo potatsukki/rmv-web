@@ -64,6 +64,11 @@ const AccountProfilePage = lazy(() =>
     default: module.AccountProfilePage,
   })),
 );
+const AccountAppearancePage = lazy(() =>
+  import('@/pages/account/AccountAppearancePage').then((module) => ({
+    default: module.AccountAppearancePage,
+  })),
+);
 const AccountSecurityPage = lazy(() =>
   import('@/pages/account/AccountSecurityPage').then((module) => ({
     default: module.AccountSecurityPage,
@@ -206,16 +211,16 @@ export default function App() {
       ];
       const isPublicPath = publicPaths.includes(window.location.pathname);
 
+      if (isPublicPath) {
+        useAuthStore.setState({ isLoading: false });
+        return;
+      }
+
       try {
         const token = await fetchCsrfToken();
         setCsrfToken(token);
       } catch {
         // CSRF fetch may fail if server is down
-      }
-
-      if (isPublicPath) {
-        useAuthStore.setState({ isLoading: false });
-        return;
       }
 
       // If no access token in sessionStorage, try to restore from the per-tab refresh token.
@@ -269,6 +274,7 @@ export default function App() {
               <Route path="/account" element={<AccountLayout />}>
                 <Route index element={<Navigate to="/account/profile" replace />} />
                 <Route path="profile" element={<AccountProfilePage />} />
+                <Route path="appearance" element={<AccountAppearancePage />} />
                 <Route path="security" element={<AccountSecurityPage />} />
                 <Route path="notifications" element={<AccountNotificationsPage />} />
                 <Route path="info" element={<AccountInfoPage />} />

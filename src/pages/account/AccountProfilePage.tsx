@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, PenTool, Navigation } from 'lucide-react';
+import { Check, Navigation, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 
@@ -27,8 +27,8 @@ const LocationPicker = lazy(() =>
 
 function MapPanelFallback() {
   return (
-    <div className="flex h-[320px] items-center justify-center rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] px-4 text-center">
-      <p className="text-sm text-[#6e6e73]">Loading map tools...</p>
+    <div className="flex h-[320px] items-center justify-center rounded-xl border border-[color:var(--color-border)] bg-[color:var(--color-card)] px-4 text-center">
+      <p className="text-sm text-[var(--text-metal-muted-color)]">Loading map tools...</p>
     </div>
   );
 }
@@ -156,53 +156,53 @@ export function AccountProfilePage() {
     : DEFAULT_PHONE_DESC;
 
   const inputClasses =
-    'h-11 bg-white/80 border-[#c8c8cd] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl transition-colors';
+    'h-11 rounded-xl border-[color:var(--color-border)] bg-[color:var(--color-card)]/85 text-[var(--color-card-foreground)] placeholder:text-[var(--color-muted-foreground)] focus:border-[var(--color-accent)] focus:ring-[color:var(--color-accent)]/20 transition-colors';
 
   const hasPinnedLocation = Boolean(pinnedLocation);
   const hasSavedSignature = Boolean(signatureData?.signatureKey);
 
   return (
     <div className="space-y-6">
-    <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(248,248,250,0.96)_55%,rgba(243,243,247,0.98)_100%)]">
+    <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)]">
       <CardContent className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
-        <div className="rounded-2xl border border-[#d2d2d7]/60 bg-white/85 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">Profile</p>
-          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">Contact details ready</p>
-          <p className="mt-1 text-xs text-[#6e6e73]">Keep your name and phone current so appointment and payment updates reach you.</p>
+        <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">Profile</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">Contact details ready</p>
+          <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">Keep your name and phone current so appointment and payment updates reach you.</p>
         </div>
-        <div className="rounded-2xl border border-[#d2d2d7]/60 bg-white/85 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">Site location</p>
-          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">{hasPinnedLocation ? 'Pinned location saved' : 'Location still missing'}</p>
-          <p className="mt-1 text-xs text-[#6e6e73]">Pinned map coordinates help the team validate ocular visits faster and reduce address ambiguity.</p>
+        <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">Site location</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">{hasPinnedLocation ? 'Pinned location saved' : 'Location still missing'}</p>
+          <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">Pinned map coordinates help the team validate ocular visits faster and reduce address ambiguity.</p>
         </div>
-        <div className="rounded-2xl border border-[#d2d2d7]/60 bg-white/85 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">E-signature</p>
-          <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">{hasSavedSignature ? 'Signature on file' : 'Signature not saved yet'}</p>
-          <p className="mt-1 text-xs text-[#6e6e73]">Saving your signature now keeps contract signing quicker later in the project flow.</p>
+        <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">E-signature</p>
+          <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">{hasSavedSignature ? 'Signature on file' : 'Signature not saved yet'}</p>
+          <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">Saving your signature now keeps contract signing quicker later in the project flow.</p>
         </div>
       </CardContent>
     </Card>
 
-    <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
+    <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)] backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="text-lg font-semibold text-[#1d1d1f]">
+        <CardTitle className="text-lg font-semibold text-[var(--color-card-foreground)]">
           Personal Information
         </CardTitle>
-        <CardDescription className="text-[#86868b]">
+        <CardDescription className="text-[var(--text-metal-muted-color)]">
           Update your contact details and public profile.
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          <div className="rounded-2xl border border-[#e8e8ed] bg-[#fbfbfd] p-4 sm:p-5">
+          <div className="rounded-2xl border border-[color:var(--color-border)]/55 bg-[color:var(--color-card)]/65 p-4 sm:p-5">
             <div className="mb-4">
-              <p className="text-sm font-semibold text-[#1d1d1f]">Contact details</p>
-              <p className="text-xs text-[#86868b]">These details appear across appointment coordination and account recovery flows.</p>
+              <p className="text-sm font-semibold text-[var(--color-card-foreground)]">Contact details</p>
+              <p className="text-xs text-[var(--text-metal-muted-color)]">These details appear across appointment coordination and account recovery flows.</p>
             </div>
 
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-1.5">
-                <Label htmlFor="firstName" className="text-[#3a3a3e] text-[13px] font-medium">
+                <Label htmlFor="firstName" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                   First Name
                 </Label>
                 <Input id="firstName" {...register('firstName')} className={inputClasses} />
@@ -211,7 +211,7 @@ export function AccountProfilePage() {
                 )}
               </div>
               <div className="space-y-1.5">
-                <Label htmlFor="lastName" className="text-[#3a3a3e] text-[13px] font-medium">
+                <Label htmlFor="lastName" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                   Last Name
                 </Label>
                 <Input id="lastName" {...register('lastName')} className={inputClasses} />
@@ -222,11 +222,11 @@ export function AccountProfilePage() {
             </div>
 
             <div className="mt-6 space-y-1.5">
-              <Label htmlFor="phone" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="phone" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                 Phone Number
               </Label>
-              <div className="flex h-11 rounded-xl overflow-hidden border border-[#c8c8cd] bg-white/80 focus-within:border-[#6e6e73] focus-within:ring-2 focus-within:ring-[#6e6e73]/20 transition-all">
-                <span className="flex items-center px-3 text-sm font-medium text-[#3a3a3e] bg-gray-100/80 border-r border-[#c8c8cd] select-none shrink-0">+63</span>
+              <div className="flex h-11 rounded-xl overflow-hidden border border-[color:var(--color-border)] bg-[color:var(--color-card)]/85 focus-within:border-[var(--color-accent)] focus-within:ring-2 focus-within:ring-[color:var(--color-accent)]/20 transition-all">
+                <span className="flex items-center border-r border-[color:var(--color-border)] bg-[color:var(--color-muted)]/80 px-3 text-sm font-medium text-[var(--color-card-foreground)] select-none shrink-0">+63</span>
                 <input
                   id="phone"
                   type="tel"
@@ -238,50 +238,50 @@ export function AccountProfilePage() {
                     const raw = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10);
                     setValue('phone', raw ? `+63${raw}` : '', { shouldValidate: true, shouldDirty: true });
                   }}
-                  className="flex-1 bg-transparent px-3 text-sm text-[#1d1d1f] outline-none placeholder:text-gray-400 min-w-0"
+                  className="flex-1 bg-transparent px-3 text-sm text-[var(--color-card-foreground)] outline-none placeholder:text-[var(--color-muted-foreground)] min-w-0"
                 />
               </div>
-              <p className="text-xs text-[#86868b]">{phoneDescription}</p>
+              <p className="text-xs text-[var(--text-metal-muted-color)]">{phoneDescription}</p>
               {errors.phone && (
                 <p className="text-xs text-red-500">{errors.phone.message}</p>
               )}
             </div>
           </div>
 
-          <div className="space-y-1.5 rounded-2xl border border-[#e8e8ed] bg-[#fbfbfd] p-4 sm:p-5">
+          <div className="space-y-1.5 rounded-2xl border border-[color:var(--color-border)]/55 bg-[color:var(--color-card)]/65 p-4 sm:p-5">
             <div>
-              <Label htmlFor="address" className="text-[#3a3a3e] text-[13px] font-medium">
+              <Label htmlFor="address" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                 Site Location & Address
               </Label>
-              <p className="mt-1 text-xs text-[#86868b]">
+              <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">
                 Save both the pinned map point and the structured address so ocular visits and quotations line up with the same site.
               </p>
             </div>
 
             {/* ── Pinned Location Map ── */}
-            <div className="rounded-xl border border-[#d2d2d7]">
+            <div className="rounded-xl border border-[color:var(--color-border)]">
               <Suspense fallback={<MapPanelFallback />}>
                 <LocationPicker value={pinnedLocation} onChange={handleLocationPick} />
               </Suspense>
             </div>
             {pinnedLocation && (
-              <div className="flex items-center gap-2 text-xs text-green-600 bg-green-50 px-3 py-1.5 rounded-lg">
+              <div className="flex items-center gap-2 rounded-lg border border-emerald-300/70 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
                 <Navigation className="h-3.5 w-3.5" />
                 <span className="font-medium">Pinned Location</span>
-                <span className="text-green-500">
+                <span className="text-emerald-600 dark:text-emerald-200/90">
                   {pinnedLocation.lat.toFixed(5)}, {pinnedLocation.lng.toFixed(5)}
                 </span>
               </div>
             )}
             {formattedAddress && (
-              <p className="text-xs text-gray-500 px-1">{formattedAddress}</p>
+              <p className="px-1 text-xs text-[var(--text-metal-muted-color)]">{formattedAddress}</p>
             )}
 
             {/* ── Structured Address Fields ── */}
             <div className="pt-3 space-y-4">
               <div className="space-y-1.5">
-                <Label htmlFor="street" className="text-[#3a3a3e] text-[13px] font-medium">
-                  Street Address <span className="text-[#86868b] text-[11px]">(House No., Street Name, Subdivision)</span>
+                <Label htmlFor="street" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
+                  Street Address <span className="text-[var(--text-metal-muted-color)] text-[11px]">(House No., Street Name, Subdivision)</span>
                 </Label>
                 <Input
                   id="street"
@@ -293,7 +293,7 @@ export function AccountProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="barangay" className="text-[#3a3a3e] text-[13px] font-medium">
+                  <Label htmlFor="barangay" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                     Barangay
                   </Label>
                   <Input
@@ -304,7 +304,7 @@ export function AccountProfilePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="city" className="text-[#3a3a3e] text-[13px] font-medium">
+                  <Label htmlFor="city" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                     City / Municipality
                   </Label>
                   <Input
@@ -318,7 +318,7 @@ export function AccountProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="space-y-1.5">
-                  <Label htmlFor="province" className="text-[#3a3a3e] text-[13px] font-medium">
+                  <Label htmlFor="province" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                     Province
                   </Label>
                   <Input
@@ -327,10 +327,10 @@ export function AccountProfilePage() {
                     {...register('province')}
                     className={inputClasses}
                   />
-                  <p className="text-[10px] text-[#86868b]">Auto-fills &quot;Metro Manila&quot; for NCR cities</p>
+                  <p className="text-[10px] text-[var(--text-metal-muted-color)]">Auto-fills &quot;Metro Manila&quot; for NCR cities</p>
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="zip" className="text-[#3a3a3e] text-[13px] font-medium">
+                  <Label htmlFor="zip" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                     Postal Code
                   </Label>
                   <Input
@@ -341,7 +341,7 @@ export function AccountProfilePage() {
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label htmlFor="country" className="text-[#3a3a3e] text-[13px] font-medium">
+                  <Label htmlFor="country" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                     Country
                   </Label>
                   <Input
@@ -355,18 +355,18 @@ export function AccountProfilePage() {
               </div>
             </div>
 
-            <p className="text-xs text-[#86868b]">
+            <p className="text-xs text-[var(--text-metal-muted-color)]">
               Your pinned location and address are saved for ocular appointments.
             </p>
           </div>
 
-          <div className="flex items-center justify-end gap-4 pt-4 border-t border-[#d2d2d7]/50 mt-6">
+          <div className="mt-6 flex items-center justify-end gap-4 border-t border-[color:var(--color-border)]/50 pt-4">
             {isDirty && (
-              <p className="text-sm text-[#86868b] mr-auto">You have unsaved changes</p>
+              <p className="mr-auto text-sm text-[var(--text-metal-muted-color)]">You have unsaved changes</p>
             )}
             <Button
               type="submit"
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white min-w-[140px] h-11 font-semibold rounded-xl shadow-sm transition-all duration-200"
+              className="min-w-[140px] h-11 rounded-xl bg-[var(--color-primary)] font-semibold text-[var(--color-primary-foreground)] shadow-sm transition-all duration-200 hover:opacity-90"
               disabled={isSubmitting || !isDirty}
             >
               {isSubmitting ? (
@@ -384,13 +384,13 @@ export function AccountProfilePage() {
     </Card>
 
     {/* E-Signature Section */}
-    <Card className="border-[#d2d2d7]/50 shadow-sm rounded-2xl bg-white/80 backdrop-blur-sm">
+    <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)] backdrop-blur-sm">
       <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-[#1d1d1f]">
-          <PenTool className="h-5 w-5 text-[#6e6e73]" />
+        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-[var(--color-card-foreground)]">
+          <PenTool className="h-5 w-5 text-[var(--text-metal-muted-color)]" />
           E-Signature
         </CardTitle>
-        <CardDescription className="text-[#86868b]">
+        <CardDescription className="text-[var(--text-metal-muted-color)]">
           Draw your signature for use in contracts and official documents.
         </CardDescription>
       </CardHeader>

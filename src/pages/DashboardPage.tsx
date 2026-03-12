@@ -142,6 +142,7 @@ interface KpiItem {
   path: string;
   trend?: 'up' | 'down' | 'neutral';
   color: string;
+  badgeTone?: 'progress' | 'fabrication' | 'pending' | 'success' | 'attention' | 'neutral';
 }
 
 interface QuickAction {
@@ -193,6 +194,23 @@ function getRoleActionHeading(role: Role): { title: string; description: string 
   return headings[role] || { title: 'Quick Actions', description: 'Primary actions for this workspace.' };
 }
 
+function getKpiBadgeClass(tone: KpiItem['badgeTone']) {
+  switch (tone) {
+    case 'progress':
+      return 'border border-sky-300/85 bg-[linear-gradient(180deg,rgba(239,246,255,0.98)_0%,rgba(191,219,254,0.94)_100%)] text-sky-800 shadow-[0_8px_18px_rgba(14,116,144,0.14)] dark:border-sky-400/45 dark:bg-[linear-gradient(180deg,rgba(8,47,73,0.94)_0%,rgba(12,74,110,0.88)_100%)] dark:text-sky-100 dark:shadow-[0_10px_22px_rgba(2,132,199,0.18)]';
+    case 'fabrication':
+      return 'border border-orange-300/85 bg-[linear-gradient(180deg,rgba(255,247,237,0.98)_0%,rgba(253,186,116,0.92)_100%)] text-orange-800 shadow-[0_8px_18px_rgba(194,65,12,0.14)] dark:border-orange-400/45 dark:bg-[linear-gradient(180deg,rgba(67,20,7,0.94)_0%,rgba(124,45,18,0.88)_100%)] dark:text-orange-100 dark:shadow-[0_10px_22px_rgba(234,88,12,0.18)]';
+    case 'pending':
+      return 'border border-amber-300/85 bg-[linear-gradient(180deg,rgba(255,251,235,0.98)_0%,rgba(253,230,138,0.92)_100%)] text-amber-800 shadow-[0_8px_18px_rgba(180,83,9,0.14)] dark:border-amber-400/45 dark:bg-[linear-gradient(180deg,rgba(69,26,3,0.94)_0%,rgba(120,53,15,0.88)_100%)] dark:text-amber-100 dark:shadow-[0_10px_22px_rgba(245,158,11,0.18)]';
+    case 'success':
+      return 'border border-emerald-300/85 bg-[linear-gradient(180deg,rgba(236,253,245,0.98)_0%,rgba(167,243,208,0.92)_100%)] text-emerald-800 shadow-[0_8px_18px_rgba(4,120,87,0.14)] dark:border-emerald-400/45 dark:bg-[linear-gradient(180deg,rgba(6,44,34,0.94)_0%,rgba(6,78,59,0.88)_100%)] dark:text-emerald-100 dark:shadow-[0_10px_22px_rgba(16,185,129,0.18)]';
+    case 'attention':
+      return 'border border-fuchsia-300/85 bg-[linear-gradient(180deg,rgba(253,244,255,0.98)_0%,rgba(240,171,252,0.92)_100%)] text-fuchsia-800 shadow-[0_8px_18px_rgba(162,28,175,0.14)] dark:border-fuchsia-400/45 dark:bg-[linear-gradient(180deg,rgba(74,4,78,0.94)_0%,rgba(112,26,117,0.88)_100%)] dark:text-fuchsia-100 dark:shadow-[0_10px_22px_rgba(192,38,211,0.18)]';
+    default:
+      return 'border border-white/70 bg-white/90 text-[#364152] shadow-[0_8px_18px_rgba(15,23,42,0.08)] dark:border-white/12 dark:bg-white/10 dark:text-slate-100 dark:shadow-[0_10px_22px_rgba(0,0,0,0.2)]';
+  }
+}
+
 function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): KpiItem[] {
   const d = data as Record<string, number> | undefined;
 
@@ -204,57 +222,58 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     detail: 'Projects that are still moving through design, payment, fabrication, or delivery.',
     path: '/projects',
     color: 'text-[#2b3138] silver-sheen',
+    badgeTone: 'progress',
   };
 
   switch (role) {
     case Role.CUSTOMER:
       return [
-        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', detail: 'Visit requests you submitted that are still waiting for the team to confirm a schedule.', path: '/appointments', color: 'text-[#2b3138] silver-sheen' },
+        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', detail: 'Visit requests you submitted that are still waiting for the team to confirm a schedule.', path: '/appointments', color: 'text-[#2b3138] silver-sheen', badgeTone: 'attention' },
         activeProjects,
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Invoices due', detail: 'Payments that still need your action before the project can move forward.', path: '/payments', color: 'text-[#2b3138] silver-sheen' },
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently in the workshop and not yet ready for installation or handover.', path: '/projects', color: 'text-[#2b3138] silver-sheen' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Invoices due', detail: 'Payments that still need your action before the project can move forward.', path: '/payments', color: 'text-[#2b3138] silver-sheen', badgeTone: 'pending' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently in the workshop and not yet ready for installation or handover.', path: '/projects', color: 'text-[#2b3138] silver-sheen', badgeTone: 'fabrication' },
       ];
     case Role.APPOINTMENT_AGENT:
       return [
-        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Scheduled for today', detail: 'Appointments already booked for today that you may need to monitor or coordinate.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Need action', detail: 'New visit requests waiting for assignment, confirmation, or follow-up.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Scheduled for today', detail: 'Appointments already booked for today that you may need to monitor or coordinate.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
+        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Need action', detail: 'New visit requests waiting for assignment, confirmation, or follow-up.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
       ];
     case Role.SALES_STAFF:
       return [
-        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Visits for today', detail: 'Customer visits assigned to you today, including office and ocular appointments.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', detail: 'Visit reports that still need to be completed or corrected before project handoff.', path: '/visit-reports', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', detail: 'Cash-based ocular fees you still need to collect and turn over.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Visits for today', detail: 'Customer visits assigned to you today, including office and ocular appointments.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
+        { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', detail: 'Visit reports that still need to be completed or corrected before project handoff.', path: '/visit-reports', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', detail: 'Cash-based ocular fees you still need to collect and turn over.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
     case Role.ENGINEER:
       return [
         activeProjects,
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'In workshop', detail: 'Projects that already left engineering review and are now being built by fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Review', value: d?.pendingBlueprints ?? 0, icon: FileText, description: 'Blueprints', detail: 'Blueprint packages waiting for your review, approval, or revision request.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'In workshop', detail: 'Projects that already left engineering review and are now being built by fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'fabrication' },
+        { label: 'Pending Review', value: d?.pendingBlueprints ?? 0, icon: FileText, description: 'Blueprints', detail: 'Blueprint packages waiting for your review, approval, or revision request.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
       ];
     case Role.CASHIER:
       return [
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', detail: 'Submitted payment proofs that still need cashier review before they can be marked paid.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash transactions that still need collection, confirmation, or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', detail: 'Submitted payment proofs that still need cashier review before they can be marked paid.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
+        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash transactions that still need collection, confirmation, or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         activeProjects,
       ];
     case Role.FABRICATION_STAFF:
       return [
         activeProjects,
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Active jobs', detail: 'Projects currently assigned to the workshop and still under fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Completed Today', value: d?.completedToday ?? 0, icon: Activity, description: 'Finished', detail: 'Fabrication tasks or project stages marked complete today.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Active jobs', detail: 'Projects currently assigned to the workshop and still under fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'fabrication' },
+        { label: 'Completed Today', value: d?.completedToday ?? 0, icon: Activity, description: 'Finished', detail: 'Fabrication tasks or project stages marked complete today.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
       ];
     case Role.ADMIN:
       return [
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
         activeProjects,
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Proofs to verify', detail: 'Payment submissions waiting for cashier review or admin visibility.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', detail: 'All appointments scheduled for today across the operation.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently active in the workshop.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Appointment requests', detail: 'Customer appointment requests still waiting for scheduling action.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash-linked payments still waiting for collection or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
-        { label: 'Team Members', value: d?.totalUsers ?? 0, icon: Users, description: 'Active accounts', detail: 'User accounts currently active in the system.', path: '/users', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Proofs to verify', detail: 'Payment submissions waiting for cashier review or admin visibility.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
+        { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', detail: 'All appointments scheduled for today across the operation.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently active in the workshop.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'fabrication' },
+        { label: 'Pending Requests', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Appointment requests', detail: 'Customer appointment requests still waiting for scheduling action.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
+        { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash-linked payments still waiting for collection or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
+        { label: 'Team Members', value: d?.totalUsers ?? 0, icon: Users, description: 'Active accounts', detail: 'User accounts currently active in the system.', path: '/users', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'neutral' },
       ];
     default:
       return [activeProjects];
@@ -361,21 +380,21 @@ export function DashboardPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#7a838d]">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-metal-muted-color)]">
             Overview
           </p>
-          <div className="metal-pill mt-2 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[#4d5660]">
+          <div className="metal-pill mt-2 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-color)]">
             {getRoleWorkspaceLabel(primaryRole as Role)}
           </div>
-          <h2 className="text-2xl font-bold tracking-tight text-[#171b21] sm:text-[2rem]">
+          <h2 className="text-2xl font-bold tracking-tight text-[var(--color-card-foreground)] sm:text-[2rem]">
             {greeting()}, {user?.firstName}
           </h2>
-          <p className="mt-1 text-sm text-[#616a74]">
+          <p className="mt-1 text-sm text-[var(--text-metal-color)]">
             {getRoleGreeting(primaryRole as Role)}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <span className="metal-pill rounded-lg px-3 py-1.5 text-xs font-medium text-[#616a74]">
+          <span className="metal-pill rounded-lg px-3 py-1.5 text-xs font-medium text-[var(--text-metal-color)]">
             {new Date().toLocaleDateString('en-US', {
               weekday: 'long',
               month: 'long',
@@ -440,10 +459,6 @@ export function DashboardPage() {
               </Card>
             ))
           : featuredKpis.map((item, i) => {
-              const colorParts = item.color.split(' ');
-              const textColor = colorParts[0] || '';
-              const bgColor = colorParts[1] || '';
-
               return (
                 <Link key={i} to={item.path} className="block">
                   <Card
@@ -453,12 +468,12 @@ export function DashboardPage() {
                     <CardContent className="relative flex min-h-[196px] flex-col p-5 sm:min-h-0 sm:p-6">
                       <div className="mb-5 flex flex-col items-start gap-3 min-[420px]:flex-row min-[420px]:items-start min-[420px]:justify-between sm:mb-4">
                         <div
-                          className={`flex h-12 w-12 items-center justify-center rounded-[1.35rem] ${bgColor} ring-1 ring-black/5 transition-transform group-hover:scale-[1.03] sm:h-11 sm:w-11 sm:rounded-2xl`}
+                          className="silver-sheen flex h-12 w-12 items-center justify-center rounded-[1.35rem] ring-1 ring-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.78),0_10px_24px_rgba(18,22,27,0.12)] transition-transform group-hover:scale-[1.03] sm:h-11 sm:w-11 sm:rounded-2xl dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.48),0_12px_26px_rgba(0,0,0,0.26)]"
                         >
-                          <item.icon className={`h-5 w-5 ${textColor}`} />
+                          <item.icon className="h-5 w-5 text-[#2b3138]" />
                         </div>
                         {item.description && (
-                          <span className="metal-pill hidden rounded-full px-2.5 py-1 text-[10px] font-medium text-[#616a74] sm:inline-flex sm:self-auto sm:text-[11px]">
+                          <span className={`hidden whitespace-nowrap rounded-full px-3 py-1 text-[10px] font-semibold tracking-[0.01em] backdrop-blur-sm sm:inline-flex sm:self-auto sm:text-[11px] ${getKpiBadgeClass(item.badgeTone)}`}>
                             {item.description}
                           </span>
                         )}
@@ -466,7 +481,7 @@ export function DashboardPage() {
                       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7a838d] sm:text-[11px]">
                         {item.label}
                       </p>
-                      <div className="mt-3 text-[2.35rem] font-bold tracking-[-0.03em] text-[#171b21] sm:mt-2 sm:text-4xl">
+                      <div className="mt-3 text-[2.35rem] font-bold tracking-[-0.03em] text-[#171b21] dark:text-slate-100 sm:mt-2 sm:text-4xl">
                         {item.value}
                       </div>
                       <div className="mt-auto pt-4 sm:mt-0 sm:pt-0">
@@ -487,10 +502,6 @@ export function DashboardPage() {
       {secondaryKpis.length > 0 && (
         <div className="grid grid-cols-2 gap-3 sm:gap-4 xl:grid-cols-4">
           {secondaryKpis.map((item, i) => {
-            const colorParts = item.color.split(' ');
-            const textColor = colorParts[0] || '';
-            const bgColor = colorParts[1] || '';
-
             return (
               <Link key={`${item.label}-${i}`} to={item.path} className="block">
                 <Card
@@ -499,13 +510,13 @@ export function DashboardPage() {
                   <div className="absolute inset-x-0 top-0 h-14 bg-[radial-gradient(circle_at_top_left,rgba(255,255,255,0.9),transparent_70%)] sm:hidden" />
                   <CardContent className="relative flex min-h-[152px] flex-col p-4 sm:min-h-0 sm:p-4">
                     <div className="mb-4 flex items-start justify-between">
-                      <div className={`flex h-11 w-11 items-center justify-center rounded-2xl ${bgColor} ring-1 ring-black/5 transition-transform group-hover:scale-[1.03] sm:h-9 sm:w-9 sm:rounded-xl`}>
-                        <item.icon className={`h-4.5 w-4.5 ${textColor} sm:h-4 sm:w-4`} />
+                      <div className="silver-sheen flex h-11 w-11 items-center justify-center rounded-2xl ring-1 ring-white/25 shadow-[inset_0_1px_0_rgba(255,255,255,0.78),0_10px_22px_rgba(18,22,27,0.1)] transition-transform group-hover:scale-[1.03] sm:h-9 sm:w-9 sm:rounded-xl dark:ring-white/10 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.48),0_12px_24px_rgba(0,0,0,0.24)]">
+                        <item.icon className="h-4.5 w-4.5 text-[#2b3138] sm:h-4 sm:w-4" />
                       </div>
                     </div>
-                    <div className="text-[2rem] font-bold tracking-[-0.03em] text-[#171b21] sm:text-2xl">{item.value}</div>
+                    <div className="text-[2rem] font-bold tracking-[-0.03em] text-[#171b21] dark:text-slate-100 sm:text-2xl">{item.value}</div>
                     <div className="mt-auto pt-4">
-                      <p className="text-[12px] font-semibold text-[#434c56] sm:text-[11px]">{item.label}</p>
+                      <p className="text-[12px] font-semibold text-[#434c56] dark:text-slate-300 sm:text-[11px]">{item.label}</p>
                       {item.description && <p className="mt-1 text-[11px] leading-5 text-[#7a838d] sm:text-[10px]">{item.description}</p>}
                     </div>
                   </CardContent>
@@ -520,8 +531,8 @@ export function DashboardPage() {
       <div>
         <div className="mb-4 flex items-center justify-between">
           <div>
-            <h3 className="text-base font-semibold text-[#1d1d1f]">{actionHeading.title}</h3>
-            <p className="mt-1 text-xs text-[#86868b]">{actionHeading.description}</p>
+            <h3 className="text-base font-semibold text-[var(--color-card-foreground)]">{actionHeading.title}</h3>
+            <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">{actionHeading.description}</p>
           </div>
         </div>
         <div className="grid grid-cols-2 gap-2 sm:gap-3 lg:grid-cols-3 xl:grid-cols-4">
@@ -534,7 +545,7 @@ export function DashboardPage() {
                   <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs font-semibold leading-tight text-[#171b21] group-hover:text-[#4d5660] sm:text-sm">
+                  <p className="text-xs font-semibold leading-tight text-[#171b21] dark:text-slate-100 group-hover:text-[#4d5660] dark:group-hover:text-slate-300 sm:text-sm">
                     {action.label}
                   </p>
                   <p className="mt-0.5 line-clamp-2 text-[10px] leading-tight text-[#68727d] sm:text-xs">{action.description}</p>
@@ -548,20 +559,20 @@ export function DashboardPage() {
 
       {/* Activity Section */}
       <Card className="overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between border-b border-[#dde3ea] bg-white/28">
-          <CardTitle className="text-base font-semibold text-[#171b21]">
+        <CardHeader className="flex flex-row items-center justify-between border-b border-[color:var(--color-border)] bg-[color:var(--color-muted)]/65">
+          <CardTitle className="text-base font-semibold text-[var(--color-card-foreground)]">
             Recent Activity
           </CardTitle>
           <Link
             to="/notifications"
-            className="flex items-center gap-1 text-xs font-medium text-[#171b21] underline underline-offset-4 hover:text-[#616a74]"
+            className="flex items-center gap-1 text-xs font-medium text-[var(--color-card-foreground)] underline underline-offset-4 hover:text-[var(--text-metal-color)]"
           >
             View all <ArrowRight className="h-3 w-3" />
           </Link>
         </CardHeader>
         <CardContent className="p-0">
           {activityLoading ? (
-            <div className="divide-y divide-[#dde3ea]">
+            <div className="divide-y divide-[color:var(--color-border)]">
               {Array.from({ length: 5 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4 px-5 py-4">
                   <Skeleton className="h-9 w-9 rounded-xl flex-shrink-0" />
@@ -576,7 +587,7 @@ export function DashboardPage() {
           ) : isAdmin ? (
             /* Admin: Audit Logs */
             auditQuery.data?.items && auditQuery.data.items.length > 0 ? (
-              <div className="divide-y divide-[#dde3ea]">
+              <div className="divide-y divide-[color:var(--color-border)]">
                 {auditQuery.data.items.map((log) => {
                   const display = getAuditDisplay(log.action);
                   const navPath = getAuditNavPath(log);
@@ -591,7 +602,7 @@ export function DashboardPage() {
                   return (
                     <div
                       key={log._id}
-                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${navPath ? 'cursor-pointer hover:bg-white/45' : ''}`}
+                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${navPath ? 'cursor-pointer hover:bg-[color:var(--color-muted)]/70' : ''}`}
                       onClick={navPath ? () => navigate(navPath) : undefined}
                       role={navPath ? 'button' : undefined}
                       tabIndex={navPath ? 0 : undefined}
@@ -601,22 +612,22 @@ export function DashboardPage() {
                         <IconComp className={`h-4 w-4 ${textColor}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium text-[#1d1d1f] truncate">
+                        <p className="text-sm font-medium text-[var(--color-card-foreground)] truncate">
                           {display.label}
                         </p>
-                        <p className="text-xs text-[#86868b] truncate">
+                        <p className="text-xs text-[var(--text-metal-muted-color)] truncate">
                           {actorName}
                           {log.targetType && (
-                            <span className="text-[#c8c8cd]"> · {log.targetType}</span>
+                            <span className="text-[var(--color-border)]"> · {log.targetType}</span>
                           )}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[11px] text-[#86868b]">
+                        <span className="text-[11px] text-[var(--text-metal-muted-color)]">
                           {formatDistanceToNowStrict(new Date(log.createdAt), { addSuffix: true })}
                         </span>
                         {navPath && (
-                          <Eye className="h-3.5 w-3.5 text-[#c8c8cd]" />
+                          <Eye className="h-3.5 w-3.5 text-[var(--color-border)]" />
                         )}
                       </div>
                     </div>
@@ -632,7 +643,7 @@ export function DashboardPage() {
           ) : (
             /* Non-admin: Notifications */
             notifQuery.data?.items && notifQuery.data.items.length > 0 ? (
-              <div className="divide-y divide-[#dde3ea]">
+              <div className="divide-y divide-[color:var(--color-border)]">
                 {notifQuery.data.items.map((notif) => {
                   const cat = getNotificationCategory(notif.category);
                   const IconComp = cat.icon;
@@ -643,7 +654,7 @@ export function DashboardPage() {
                   return (
                     <div
                       key={notif._id}
-                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${notif.link ? 'cursor-pointer hover:bg-white/45' : ''} ${!notif.isRead ? 'bg-white/28' : ''}`}
+                      className={`flex items-center gap-4 px-5 py-4 transition-colors ${notif.link ? 'cursor-pointer hover:bg-[color:var(--color-muted)]/70' : ''} ${!notif.isRead ? 'bg-[color:var(--color-muted)]/82' : ''}`}
                       onClick={notif.link ? () => navigate(notif.link!) : undefined}
                       role={notif.link ? 'button' : undefined}
                       tabIndex={notif.link ? 0 : undefined}
@@ -653,15 +664,15 @@ export function DashboardPage() {
                         <IconComp className={`h-4 w-4 ${textColor}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className={`text-sm font-medium truncate ${notif.isRead ? 'text-[#6e6e73]' : 'text-[#1d1d1f]'}`}>
+                        <p className={`text-sm font-medium truncate ${notif.isRead ? 'text-[var(--text-metal-color)]' : 'text-[var(--color-card-foreground)]'}`}>
                           {notif.title}
                         </p>
-                        <p className="text-xs text-[#86868b] truncate">
+                        <p className="text-xs text-[var(--text-metal-muted-color)] truncate">
                           {notif.message}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <span className="text-[11px] text-[#86868b]">
+                        <span className="text-[11px] text-[var(--text-metal-muted-color)]">
                           {formatDistanceToNowStrict(new Date(notif.createdAt), { addSuffix: true })}
                         </span>
                         {!notif.isRead && (
@@ -690,10 +701,10 @@ function EmptyActivityState({ title, description }: { title: string; description
     <div className="flex h-44 items-center justify-center">
       <div className="text-center">
         <div className="silver-sheen mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl">
-          <Activity className="h-5 w-5 text-[#6a7480]" />
+          <Activity className="h-5 w-5 text-[var(--text-metal-color)]" />
         </div>
-        <p className="text-sm font-medium text-[#68727d]">{title}</p>
-        <p className="mt-1 text-xs text-[#9aa4af]">{description}</p>
+        <p className="text-sm font-medium text-[var(--text-metal-color)]">{title}</p>
+        <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">{description}</p>
       </div>
     </div>
   );

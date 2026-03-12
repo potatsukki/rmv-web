@@ -81,14 +81,19 @@ export function NotificationsPage() {
 
   return (
     <div className="mx-auto max-w-4xl space-y-8">
-      <div className="metal-panel flex flex-col gap-4 rounded-[1.75rem] p-5 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">Notifications</h1>
-          <p className="mt-1 text-sm text-[#616a74]">
+      <div className="metal-panel-strong flex flex-col gap-4 rounded-[1.75rem] p-5 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-start gap-4">
+          <div className="silver-sheen flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_10px_24px_rgba(0,0,0,0.18)]">
+            <Bell className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#171b21] dark:text-slate-50">Notifications</h1>
+            <p className="mt-1 text-sm text-[#616a74] dark:text-slate-300">
             Stay updated with project changes and alerts.
-          </p>
+            </p>
+          </div>
         </div>
-        <div className="text-sm text-[#6e6e73]">
+        <div className="metal-pill inline-flex items-center rounded-full px-3 py-2 text-sm font-medium text-[#616a74] dark:text-slate-200">
           {unreadCount > 0 ? `${unreadCount} unread notification${unreadCount !== 1 ? 's' : ''}` : 'Everything is read'}
         </div>
       </div>
@@ -105,10 +110,10 @@ export function NotificationsPage() {
         action={
           (unreadCount > 0 || notifications.length > 0) ? (
             <Button
-              variant="outline"
+              variant={unreadCount > 0 ? 'secondary' : 'outline'}
               onClick={() => markAllAsRead.mutate()}
               disabled={markAllAsRead.isPending || unreadCount === 0}
-              className="h-11 rounded-xl text-[#616a74] hover:text-[#171b21]"
+              className="h-11 rounded-xl border-[#c5ccd5] text-[#3f4752] hover:text-[#171b21] dark:border-slate-600 dark:text-slate-100 dark:hover:text-slate-100"
             >
               <CheckCheck className="mr-2 h-4 w-4" />
               Mark all read
@@ -153,8 +158,8 @@ export function NotificationsPage() {
                 n.link ? 'cursor-pointer' : ''
               } ${
                 !n.isRead
-                  ? 'metal-panel shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_30px_rgba(18,22,27,0.08)]'
-                  : 'metal-panel opacity-85 hover:opacity-100'
+                  ? 'metal-panel shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_30px_rgba(18,22,27,0.08)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_32px_rgba(0,0,0,0.26)]'
+                  : 'metal-panel opacity-95 hover:opacity-100'
               }`}
             >
               <CardContent className="flex items-start gap-4 p-5">
@@ -176,12 +181,12 @@ export function NotificationsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <p
                       className={`text-sm font-medium ${
-                        !n.isRead ? 'text-[#171b21]' : 'text-[#616a74]'
+                        !n.isRead ? 'text-[#171b21] dark:text-slate-50' : 'text-[#4f5863] dark:text-slate-200'
                       }`}
                     >
                       {String(n.title || '')}
                     </p>
-                    <span className="flex items-center gap-1 whitespace-nowrap text-xs text-[#8a939d]">
+                    <span className="flex items-center gap-1 whitespace-nowrap text-xs text-[#75808b] dark:text-slate-300">
                       <Clock className="h-3 w-3" />
                       {n.createdAt
                         ? String(formatDistanceToNow(new Date(String(n.createdAt)), {
@@ -190,11 +195,11 @@ export function NotificationsPage() {
                         : null}
                     </span>
                   </div>
-                  <p className="mt-1 text-sm leading-relaxed text-[#616a74]">
+                  <p className="mt-1 text-sm leading-relaxed text-[#616a74] dark:text-slate-300">
                     {String(n.message || '')}
                   </p>
                   {n.link && (
-                    <span className="inline-flex items-center gap-1 mt-2 text-xs text-[#1d1d1f] opacity-0 group-hover:opacity-100 transition-opacity">
+                    <span className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-[#3d4650] dark:text-slate-200 opacity-70 group-hover:opacity-100 transition-opacity">
                       <ExternalLink className="h-3 w-3" />
                       View details
                     </span>
@@ -205,7 +210,7 @@ export function NotificationsPage() {
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="metal-pill h-8 w-8 rounded-lg text-[#7a838d] hover:text-[#171b21]"
+                    className="metal-pill h-8 w-8 rounded-lg text-[#7a838d] hover:text-[#171b21] dark:text-slate-300 dark:hover:text-slate-100"
                     onClick={(e) => {
                       e.stopPropagation();
                       markAsRead.mutate(String(n._id));

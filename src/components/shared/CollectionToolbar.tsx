@@ -40,16 +40,16 @@ export function CollectionToolbar({
   action,
 }: CollectionToolbarProps) {
   return (
-    <div className={cn('metal-panel rounded-[1.5rem] p-4', className)}>
+    <div className={cn('metal-panel rounded-[1.5rem] p-4 sm:p-5', className)}>
       <div className="flex flex-col gap-3">
         <div className="flex flex-col gap-3 lg:flex-row lg:items-end lg:justify-between">
           <div>
-            <p className="text-sm font-semibold text-[#15191f]">{title}</p>
-            <p className="text-xs text-[#616a74]">{description}</p>
+            <p className="text-sm font-semibold text-[#15191f] dark:text-slate-50">{title}</p>
+            <p className="text-xs leading-relaxed text-[#616a74] dark:text-slate-300">{description}</p>
           </div>
           <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto">
             <div className={cn('relative w-full', searchWidthClassName)}>
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67707b]" />
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#67707b] dark:text-slate-400" />
               <Input
                 placeholder={searchPlaceholder}
                 value={searchValue}
@@ -61,8 +61,8 @@ export function CollectionToolbar({
             {action}
           </div>
         </div>
-        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar" role="group" aria-label={filterGroupLabel}>
-          <Filter className="mr-1 hidden h-4 w-4 flex-shrink-0 text-[#67707b] md:block" />
+        <div className="flex items-center gap-1.5 overflow-x-auto pb-1 no-scrollbar lg:flex-wrap lg:overflow-visible" role="group" aria-label={filterGroupLabel}>
+          <Filter className="mr-1 hidden h-4 w-4 flex-shrink-0 text-[#67707b] dark:text-slate-300 md:block" />
           {filters.map((filter) => (
             <button
               type="button"
@@ -72,8 +72,8 @@ export function CollectionToolbar({
               className={cn(
                 'whitespace-nowrap rounded-xl px-3 py-2 text-xs font-semibold transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e6e73] focus-visible:ring-offset-2',
                 activeFilter === filter.value
-                  ? 'bg-[linear-gradient(180deg,#22272d_0%,#15191f_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_24px_rgba(15,18,22,0.2)]'
-                  : 'metal-pill text-[#59626d] hover:-translate-y-0.5 hover:text-[#14181d]',
+                  ? 'bg-[linear-gradient(180deg,#22272d_0%,#15191f_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_24px_rgba(15,18,22,0.2)] dark:border dark:border-white/12 dark:bg-[linear-gradient(180deg,rgba(248,250,252,0.98)_0%,rgba(222,229,237,0.95)_100%)] dark:text-slate-950'
+                  : 'metal-pill text-[#59626d] dark:text-slate-200 hover:-translate-y-0.5 hover:text-[#14181d] dark:hover:text-white',
               )}
             >
               {filter.label}

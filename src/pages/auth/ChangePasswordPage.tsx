@@ -9,7 +9,6 @@ import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BrandLogo } from '@/components/shared/BrandLogo';
 import { api } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
@@ -94,8 +93,18 @@ export function ChangePasswordPage() {
         </div>
       </div>
       <div className="relative w-full max-w-md">
-        <div className="mb-8 flex items-center justify-center gap-2.5">
-          <BrandLogo className="h-10 w-10 ring-2 ring-white/12 shadow-lg shadow-black/30" />
+        <div className="mb-8 flex items-center justify-center">
+          <div className="inline-flex items-center gap-3 rounded-full border border-white/10 bg-white/[0.03] px-4 py-2 shadow-[0_18px_40px_rgba(0,0,0,0.28)] backdrop-blur-md">
+            <div className="flex h-11 w-11 items-center justify-center rounded-full border border-[#d6b36a]/35 bg-[radial-gradient(circle_at_30%_30%,rgba(226,201,143,0.35)_0%,rgba(138,102,45,0.28)_45%,rgba(14,18,24,0.92)_100%)] text-sm font-black tracking-[0.2em] text-[#f3dfb0]">
+              RMV
+            </div>
+            <div className="text-left leading-tight">
+              <p className="text-[0.72rem] font-semibold uppercase tracking-[0.3em] text-[#8c97a5]">
+                Stainless Steel
+              </p>
+              <p className="text-base font-bold tracking-[0.06em] text-[#f5f7fa]">Fabrication Portal</p>
+            </div>
+          </div>
         </div>
 
         <div className="rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(17,23,30,0.94)_0%,rgba(7,10,14,0.98)_100%)] p-8 shadow-[0_30px_80px_rgba(0,0,0,0.45),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">

@@ -137,6 +137,7 @@ interface UpdateProfilePayload {
     fabrication?: boolean;
     project?: boolean;
   };
+  themePreference?: 'light' | 'dark' | 'system';
 }
 
 export function useUpdateProfile() {

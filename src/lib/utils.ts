@@ -57,3 +57,24 @@ export function extractItems<T>(value: unknown): T[] {
 
   return [];
 }
+
+export function extractLocalDateValue(value?: string | Date | null): string {
+  if (!value) return '';
+
+  const parsed = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(parsed.getTime())) return '';
+
+  const year = parsed.getFullYear();
+  const month = String(parsed.getMonth() + 1).padStart(2, '0');
+  const day = String(parsed.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+export function serializeDateOnlyAsUtcNoon(value?: string | null): string | undefined {
+  if (!value) return undefined;
+
+  const [year, month, day] = value.split('-').map(Number);
+  if (!year || !month || !day) return undefined;
+
+  return new Date(Date.UTC(year, month - 1, day, 12, 0, 0)).toISOString();
+}

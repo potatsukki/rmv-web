@@ -7,7 +7,9 @@
     "dev": "vite",
     "build": "tsc -b && vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "test:contrast": "vitest run src/lib/dark-mode-contrast-regressions.test.ts",
+    "audit:contrast:browser": "node scripts/audit-dark-mode-contrast.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.0.1",
@@ -57,6 +59,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "@vitejs/plugin-react": "^4.5.2",
+    "playwright": "^1.58.2",
     "tailwindcss": "^4.1.8",
     "typescript": "~5.8.3",
     "vite": "^6.3.5",

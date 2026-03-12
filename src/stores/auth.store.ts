@@ -11,6 +11,7 @@ import {
   setStoredAccessToken,
   setStoredRefreshToken,
 } from '@/lib/auth-session';
+import { useThemeStore } from '@/stores/theme.store';
 
 interface AuthStore {
   user: User | null;
@@ -36,8 +37,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   accessToken: getStoredAccessToken(),
   refreshToken: getStoredRefreshToken(),
 
-  setUser: (user: User) =>
-    set({ user, isAuthenticated: true, isLoading: false }),
+  setUser: (user: User) => {
+    useThemeStore.getState().syncThemePreference(user.themePreference, user._id);
+    set({ user, isAuthenticated: true, isLoading: false });
+  },
 
   setCsrfToken: (token: string) => set({ csrfToken: token }),
 
@@ -54,6 +57,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   clearAuthState: () => {
     disconnectSocket();
     clearStoredAuthSession();
+    useThemeStore.getState().syncThemePreference(undefined, 'guest');
     set({
       user: null,
       isAuthenticated: false,
@@ -86,6 +90,7 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   fetchMe: async () => {
     try {
       const { data } = await api.get('/auth/me');
+      useThemeStore.getState().syncThemePreference(data.data.themePreference, data.data._id);
       set({ user: data.data, isAuthenticated: true, isLoading: false });
     } catch (error) {
       const status = axios.isAxiosError(error) ? error.response?.status : undefined;

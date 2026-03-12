@@ -1,6 +1,9 @@
 ﻿@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
+/* Dark mode variant: use data-theme attribute instead of prefers-color-scheme */
+@variant dark (&:where([data-theme="dark"] *));
+
 /* 240Hz-smooth scrolling & global GPU hints */
 html {
   scroll-behavior: smooth;
@@ -49,6 +52,102 @@ html {
   --font-sans: 'Outfit', system-ui, -apple-system, sans-serif;
 }
 
+:root {
+  color-scheme: light;
+  --body-background-image:
+    radial-gradient(circle at top left, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0) 34%),
+    linear-gradient(180deg, #f4f6f8 0%, #eceff3 48%, #e5e8ec 100%);
+  --glass-background: linear-gradient(180deg, rgba(251, 252, 253, 0.74) 0%, rgba(234, 238, 242, 0.68) 100%);
+  --glass-border: rgba(193, 200, 209, 0.6);
+  --glass-shadow: 0 12px 28px rgba(18, 23, 29, 0.08);
+  --silver-sheen-background: linear-gradient(145deg, #eef2f5 0%, #c8ced5 22%, #f8fafc 48%, #aeb7c2 76%, #eef2f5 100%);
+  --metal-shell-background:
+    radial-gradient(circle at top, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 30%),
+    linear-gradient(180deg, rgba(247, 249, 251, 0.98) 0%, rgba(235, 239, 244, 0.96) 100%);
+  --metal-panel-background: linear-gradient(180deg, rgba(251, 252, 253, 0.92) 0%, rgba(236, 240, 244, 0.88) 100%);
+  --metal-panel-border: rgba(194, 201, 210, 0.68);
+  --metal-panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 16px 34px rgba(20, 24, 30, 0.08);
+  --metal-panel-strong-background:
+    linear-gradient(180deg, rgba(247, 249, 252, 0.98) 0%, rgba(233, 238, 244, 0.96) 100%),
+    linear-gradient(135deg, rgba(255, 255, 255, 0.62) 0%, rgba(255, 255, 255, 0) 46%);
+  --metal-panel-strong-border: rgba(188, 196, 206, 0.72);
+  --metal-panel-strong-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.86),
+    0 20px 36px rgba(18, 23, 29, 0.08);
+  --metal-pill-background: linear-gradient(180deg, rgba(247, 249, 251, 0.96) 0%, rgba(222, 228, 235, 0.88) 100%);
+  --metal-pill-border: rgba(193, 200, 209, 0.72);
+  --metal-pill-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 10px 22px rgba(18, 22, 27, 0.06);
+  --metal-input-background: linear-gradient(180deg, rgba(241, 244, 247, 0.94) 0%, rgba(231, 236, 241, 0.9) 100%);
+  --metal-input-border: rgba(189, 196, 205, 0.76);
+  --metal-input-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  --metal-divider-color: rgba(190, 197, 206, 0.72);
+  --text-metal-color: #434c56;
+  --text-metal-muted-color: #5e6671;
+  --text-gradient-background: linear-gradient(135deg, #11151a 0%, #4d5660 30%, #bac2cb 52%, #4d5660 74%, #11151a 100%);
+  --text-silver-background: linear-gradient(135deg, #78828d 0%, #dfe5ea 35%, #a7b0ba 50%, #dfe5ea 65%, #78828d 100%);
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-primary: #f3f5f7;
+  --color-primary-foreground: #0c1015;
+  --color-secondary: #202831;
+  --color-secondary-foreground: #edf1f5;
+  --color-accent: #9ba9b8;
+  --color-accent-foreground: #0b1015;
+  --color-muted: #161d24;
+  --color-muted-foreground: #a5b0bc;
+  --color-background: #0a0f14;
+  --color-foreground: #edf2f7;
+  --color-card: #121920;
+  --color-card-foreground: #edf2f7;
+  --color-border: #26303a;
+  --color-input: #1a232c;
+  --color-ring: #8fa0b0;
+  --color-success: #70b18f;
+  --color-warning: #d6a969;
+  --color-info: #88abc5;
+  --body-background-image:
+    radial-gradient(circle at top left, rgba(113, 135, 155, 0.16) 0%, rgba(0, 0, 0, 0) 28%),
+    linear-gradient(180deg, #0e141a 0%, #090e13 48%, #060a0e 100%);
+  --glass-background: linear-gradient(180deg, rgba(20, 27, 35, 0.8) 0%, rgba(13, 18, 24, 0.76) 100%);
+  --glass-border: rgba(103, 118, 133, 0.34);
+  --glass-shadow: 0 14px 34px rgba(0, 0, 0, 0.28);
+  --silver-sheen-background: linear-gradient(145deg, #e8edf2 0%, #8a98a7 24%, #f7fafc 50%, #6f7e8d 76%, #dfe6ee 100%);
+  --metal-shell-background:
+    radial-gradient(circle at top, rgba(130, 146, 161, 0.16) 0%, rgba(255, 255, 255, 0) 32%),
+    linear-gradient(180deg, rgba(19, 26, 33, 0.98) 0%, rgba(11, 16, 22, 0.97) 100%);
+  --metal-panel-background: linear-gradient(180deg, rgba(24, 31, 39, 0.94) 0%, rgba(16, 22, 28, 0.9) 100%);
+  --metal-panel-border: rgba(98, 113, 126, 0.34);
+  --metal-panel-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.05),
+    0 18px 38px rgba(0, 0, 0, 0.32);
+  --metal-panel-strong-background:
+    linear-gradient(180deg, rgba(11, 16, 22, 0.99) 0%, rgba(6, 9, 13, 0.99) 100%),
+    linear-gradient(135deg, rgba(170, 181, 192, 0.09) 0%, rgba(255, 255, 255, 0) 48%);
+  --metal-panel-strong-border: rgba(121, 135, 149, 0.2);
+  --metal-panel-strong-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 22px 42px rgba(0, 0, 0, 0.42);
+  --metal-pill-background: linear-gradient(180deg, rgba(34, 43, 53, 0.94) 0%, rgba(22, 29, 36, 0.92) 100%);
+  --metal-pill-border: rgba(107, 120, 133, 0.42);
+  --metal-pill-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 22px rgba(0, 0, 0, 0.22);
+  --metal-input-background: linear-gradient(180deg, rgba(21, 28, 35, 0.96) 0%, rgba(15, 20, 26, 0.94) 100%);
+  --metal-input-border: rgba(89, 102, 114, 0.46);
+  --metal-input-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  --metal-divider-color: rgba(82, 96, 108, 0.6);
+  --text-metal-color: #8fa0b1;
+  --text-metal-muted-color: #a6b0ba;
+  --text-gradient-background: linear-gradient(135deg, #f4f8fb 0%, #aeb9c4 28%, #ffffff 52%, #96a3af 74%, #f4f8fb 100%);
+  --text-silver-background: linear-gradient(135deg, #d6dde5 0%, #7f8e9c 35%, #eef3f7 52%, #7f8e9c 70%, #d6dde5 100%);
+}
+
 
 /* Silky-smooth anchor scrolling */
 html {
@@ -62,9 +161,7 @@ body {
   min-width: 320px;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image:
-    radial-gradient(circle at top left, rgba(255, 255, 255, 0.82) 0%, rgba(255, 255, 255, 0) 34%),
-    linear-gradient(180deg, #f4f6f8 0%, #eceff3 48%, #e5e8ec 100%);
+  background-image: var(--body-background-image);
   background-attachment: fixed;
 }
 
@@ -160,13 +257,13 @@ a, button, input, select, textarea,
 @utility glass {
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
-  background: linear-gradient(180deg, rgba(251, 252, 253, 0.74) 0%, rgba(234, 238, 242, 0.68) 100%);
-  border: 1px solid rgba(193, 200, 209, 0.6);
-  box-shadow: 0 12px 28px rgba(18, 23, 29, 0.08);
+  background: var(--glass-background);
+  border: 1px solid var(--glass-border);
+  box-shadow: var(--glass-shadow);
 }
 
 @utility silver-sheen {
-  background: linear-gradient(145deg, #eef2f5 0%, #c8ced5 22%, #f8fafc 48%, #aeb7c2 76%, #eef2f5 100%);
+  background: var(--silver-sheen-background);
 }
 
 /* Subtle metallic border */
@@ -177,7 +274,7 @@ a, button, input, select, textarea,
 
 /* Gradient text utility - Silver metallic */
 @utility text-gradient {
-  background: linear-gradient(135deg, #11151a 0%, #4d5660 30%, #bac2cb 52%, #4d5660 74%, #11151a 100%);
+  background: var(--text-gradient-background);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -185,58 +282,52 @@ a, button, input, select, textarea,
 
 /* Silver metallic accent text */
 @utility text-silver {
-  background: linear-gradient(135deg, #78828d 0%, #dfe5ea 35%, #a7b0ba 50%, #dfe5ea 65%, #78828d 100%);
+  background: var(--text-silver-background);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
 }
 
 @utility metal-shell {
-  background:
-    radial-gradient(circle at top, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 30%),
-    linear-gradient(180deg, rgba(247, 249, 251, 0.98) 0%, rgba(235, 239, 244, 0.96) 100%);
+  background: var(--metal-shell-background);
 }
 
 @utility metal-panel {
-  background: linear-gradient(180deg, rgba(251, 252, 253, 0.92) 0%, rgba(236, 240, 244, 0.88) 100%);
-  border: 1px solid rgba(194, 201, 210, 0.68);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 16px 34px rgba(20, 24, 30, 0.08);
+  background: var(--metal-panel-background);
+  border: 1px solid var(--metal-panel-border);
+  box-shadow: var(--metal-panel-shadow);
   backdrop-filter: blur(16px);
   -webkit-backdrop-filter: blur(16px);
 }
 
 @utility metal-panel-strong {
-  background:
-    linear-gradient(180deg, rgba(26, 29, 34, 0.98) 0%, rgba(15, 18, 23, 0.98) 100%),
-    linear-gradient(135deg, rgba(155, 165, 176, 0.12) 0%, rgba(255, 255, 255, 0) 48%);
-  border: 1px solid rgba(146, 154, 166, 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 18px 38px rgba(0, 0, 0, 0.34);
+  background: var(--metal-panel-strong-background);
+  border: 1px solid var(--metal-panel-strong-border);
+  box-shadow: var(--metal-panel-strong-shadow);
 }
 
 @utility metal-pill {
-  background: linear-gradient(180deg, rgba(247, 249, 251, 0.96) 0%, rgba(222, 228, 235, 0.88) 100%);
-  border: 1px solid rgba(193, 200, 209, 0.72);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 10px 22px rgba(18, 22, 27, 0.06);
+  background: var(--metal-pill-background);
+  border: 1px solid var(--metal-pill-border);
+  box-shadow: var(--metal-pill-shadow);
 }
 
 @utility metal-input {
-  background: linear-gradient(180deg, rgba(241, 244, 247, 0.94) 0%, rgba(231, 236, 241, 0.9) 100%);
-  border: 1px solid rgba(189, 196, 205, 0.76);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.62);
+  background: var(--metal-input-background);
+  border: 1px solid var(--metal-input-border);
+  box-shadow: var(--metal-input-shadow);
 }
 
 @utility metal-divider {
-  border-color: rgba(190, 197, 206, 0.72);
+  border-color: var(--metal-divider-color);
 }
 
 @utility text-metal-muted {
-  color: #5e6671;
+  color: var(--text-metal-muted-color);
+}
+
+@utility text-metal {
+  color: var(--text-metal-color);
 }
 
 /* Page transition */

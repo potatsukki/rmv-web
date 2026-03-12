@@ -20,7 +20,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage, cn } from '@/lib/utils';
+import { extractErrorMessage, extractLocalDateValue, serializeDateOnlyAsUtcNoon, cn } from '@/lib/utils';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -240,10 +240,10 @@ export function VisitReportPage() {
   }, [id]);
 
   const isSalesStaff = user?.roles.includes(Role.SALES_STAFF);
-  const isEngineer = user?.roles.includes(Role.ENGINEER);
   const isAdmin = user?.roles.includes(Role.ADMIN);
   const isEngineerOrAdmin =
     user?.roles.includes(Role.ENGINEER) || user?.roles.includes(Role.ADMIN);
+  const linkedProjectId = linkedProject?._id || (report?.linkedProjectId ? rawId(report.linkedProjectId) : '');
   const isConsultationDraftProject =
     report?.visitType === 'consultation' && linkedProject?.status === 'draft';
 
@@ -274,8 +274,7 @@ export function VisitReportPage() {
     setInitialDesignKeys(report.initialDesignKeys || []);
     setInitialDesignNotes(report.initialDesignNotes || '');
     if (report.recommendedOcularDate) {
-      const d = new Date(report.recommendedOcularDate);
-      setRecommendedOcularDate(format(d, 'yyyy-MM-dd'));
+      setRecommendedOcularDate(extractLocalDateValue(report.recommendedOcularDate));
     }
     setRecommendedOcularSlot(report.recommendedOcularSlot || '');
 
@@ -414,9 +413,7 @@ export function VisitReportPage() {
           designPreferences: designPreferences || undefined,
           materialOptions: materialOptions || undefined,
           projectScope: projectScope || undefined,
-          recommendedOcularDate: recommendedOcularDate
-            ? new Date(`${recommendedOcularDate}T00:00:00`).toISOString()
-            : undefined,
+          recommendedOcularDate: serializeDateOnlyAsUtcNoon(recommendedOcularDate),
           recommendedOcularSlot: recommendedOcularSlot || undefined,
         }),
         ...(visitType === 'ocular' && {
@@ -581,15 +578,24 @@ export function VisitReportPage() {
     value: string;
   }) => (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 rounded-lg bg-gray-100 p-2">
-        <Icon className="h-4 w-4 text-gray-500" />
+      <div className="mt-0.5 rounded-lg border border-[#d7dde5] bg-white shadow-[0_4px_12px_rgba(15,23,42,0.05)] dark:border-slate-700 dark:bg-slate-800 p-2">
+        <Icon className="h-4 w-4 text-[#5a6675] dark:text-slate-400" />
       </div>
       <div>
-        <p className="text-[13px] font-medium text-gray-700">{label}</p>
-        <p className="text-sm text-gray-500">{value}</p>
+        <p className="text-[13px] font-medium text-[#46515f] dark:text-slate-300">{label}</p>
+        <p className="text-sm text-[#667282] dark:text-slate-400">{value}</p>
       </div>
     </div>
   );
+
+  const editCardClassName =
+    'rounded-xl border border-[#cfd6df] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)]';
+
+  const editInputClassName =
+    'rounded-xl border-gray-200 bg-gray-50/50 text-gray-900 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30 dark:focus:border-white/30 dark:focus:ring-[#d6b36a]/20';
+
+  const editSectionClassName =
+    'rounded-xl border border-[#cfd6df] bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)] dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)]';
 
   return (
     <div className="space-y-6">
@@ -599,16 +605,16 @@ export function VisitReportPage() {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/visit-reports')}
-          className="rounded-xl text-gray-500 hover:text-gray-900"
+          className="rounded-xl text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-100">
             {canEdit ? 'Edit Visit Report' : 'Visit Report Details'}
           </h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-gray-500 dark:text-slate-300 mt-0.5">
             {serviceLabel}{' '}
             &middot;{' '}
             {report.visitType === 'ocular' ? 'Ocular Visit' : 'Consultation'}
@@ -628,21 +634,21 @@ export function VisitReportPage() {
 
       {/* ── Return reason banner ── */}
       {report.returnReason && isReturned && (
-        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4">
-          <p className="text-sm font-semibold text-orange-800">
+        <div className="rounded-xl border border-orange-200 bg-orange-50 p-4 dark:border-orange-900/60 dark:bg-orange-950/40">
+          <p className="text-sm font-semibold text-orange-800 dark:text-orange-100">
             Report Returned
           </p>
-          <p className="text-sm text-orange-700 mt-1">{report.returnReason}</p>
+          <p className="text-sm text-orange-700 dark:text-orange-200 mt-1">{report.returnReason}</p>
         </div>
       )}
 
       {report.visitType === 'ocular' && !reportHasMeasurements && !canEdit && (
-        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4">
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
           <div className="flex items-start gap-3">
-            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+            <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
             <div>
-              <p className="text-sm font-semibold text-amber-900">Measurements are missing from this ocular report</p>
-              <p className="mt-1 text-sm text-amber-800">
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Measurements are missing from this ocular report</p>
+              <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
                 The engineer can still see the rest of the ocular notes and attachments, but this report does not contain measured line items or legacy dimensions yet.
               </p>
             </div>
@@ -651,9 +657,9 @@ export function VisitReportPage() {
       )}
 
       {isConsultationDraftProject && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4">
-          <p className="text-sm font-semibold text-blue-900">Ocular visit is still required</p>
-          <p className="mt-1 text-sm text-blue-700">
+        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/40">
+          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Ocular visit is still required</p>
+          <p className="mt-1 text-sm text-blue-700 dark:text-blue-200">
             This consultation created a draft project, but engineering cannot start until the ocular visit is finalized and its report is submitted.
           </p>
         </div>
@@ -664,9 +670,9 @@ export function VisitReportPage() {
         <div className="space-y-6">
           <div className="grid gap-6 lg:grid-cols-2">
             {/* Report Info */}
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className={editCardClassName}>
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Report Info</CardTitle>
+                <CardTitle className="text-lg text-gray-900 dark:text-slate-100">Report Info</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <InfoRow icon={Layers} label="Service Type" value={serviceLabel} />
@@ -686,9 +692,9 @@ export function VisitReportPage() {
             </Card>
 
             {/* Details */}
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className={editCardClassName}>
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">Details</CardTitle>
+                <CardTitle className="text-lg text-gray-900 dark:text-slate-100">Details</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 {report.materials && (
@@ -712,10 +718,10 @@ export function VisitReportPage() {
 
           {/* Consultation Summary (read-only) */}
           {report.visitType === 'consultation' && (
-            <Card className="rounded-xl border-blue-100 shadow-sm">
+            <Card className="rounded-xl border-blue-100 dark:border-blue-900/60 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                  <FolderOpen className="h-5 w-5 text-blue-500" />
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                  <FolderOpen className="h-5 w-5 text-blue-500 dark:text-blue-300" />
                   Consultation Summary
                 </CardTitle>
               </CardHeader>
@@ -733,11 +739,11 @@ export function VisitReportPage() {
                   <InfoRow icon={FolderOpen} label="Project Scope" value={report.projectScope} />
                 )}
                 {(report.recommendedOcularDate || report.recommendedOcularSlot) && (
-                  <div className="border-t border-gray-100 pt-3">
-                    <p className="text-[13px] font-semibold text-gray-800 mb-2">Recommended Ocular Schedule</p>
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600">
+                  <div className="border-t border-gray-100 dark:border-slate-700 pt-3">
+                    <p className="text-[13px] font-semibold text-gray-800 dark:text-slate-200 mb-2">Recommended Ocular Schedule</p>
+                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-slate-400">
                       {report.recommendedOcularDate && (
-                        <span>Date: <strong>{format(new Date(report.recommendedOcularDate), 'MMMM d, yyyy')}</strong></span>
+                        <span>Date: <strong>{format(new Date(`${extractLocalDateValue(report.recommendedOcularDate)}T00:00:00`), 'MMMM d, yyyy')}</strong></span>
                       )}
                       {report.recommendedOcularSlot && (
                         <span>Time: <strong>{(() => {
@@ -756,23 +762,23 @@ export function VisitReportPage() {
 
           {/* Line Items (read-only) — ocular only */}
           {report.visitType === 'ocular' && report.lineItems && report.lineItems.length > 0 && (
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className={editSectionClassName}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                  <Ruler className="h-5 w-5 text-gray-400" />
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                  <Ruler className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                   Measurements ({MEASUREMENT_UNIT_LABELS[report.measurementUnit || 'cm'] || report.measurementUnit})
                 </CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="space-y-3">
                   {report.lineItems.map((item, i) => (
-                    <div key={i} className="flex items-start gap-3 rounded-xl bg-gray-50 p-3 border border-gray-100">
-                      <div className="bg-white rounded-lg h-8 w-8 flex items-center justify-center text-xs font-bold text-gray-500 border border-gray-200 shrink-0">
+                    <div key={i} className="flex items-start gap-3 rounded-xl border border-[#d8dee6] bg-[#f8fafc] p-3 shadow-[0_6px_18px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800/80">
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#cfd6df] bg-white text-xs font-bold text-[#5e6977] shadow-[0_2px_8px_rgba(15,23,42,0.05)] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-semibold text-gray-900">{item.label}</p>
-                        <div className="flex flex-wrap gap-x-4 gap-y-1 mt-1 text-xs text-gray-500">
+                        <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{item.label}</p>
+                        <div className="mt-1 flex flex-wrap gap-x-4 gap-y-1 text-xs text-[#647080] dark:text-slate-400">
                           {item.length != null && <span>L: {item.length}</span>}
                           {item.width != null && <span>W: {item.width}</span>}
                           {item.height != null && <span>H: {item.height}</span>}
@@ -781,7 +787,7 @@ export function VisitReportPage() {
                           <span>Qty: {item.quantity}</span>
                         </div>
                         {item.notes && (
-                          <p className="text-xs text-gray-400 mt-1">{item.notes}</p>
+                          <p className="mt-1 text-xs text-[#7b8694] dark:text-slate-400">{item.notes}</p>
                         )}
                       </div>
                     </div>
@@ -793,15 +799,15 @@ export function VisitReportPage() {
 
           {/* Legacy measurements (read-only) — ocular only */}
           {report.visitType === 'ocular' && isLegacyReport && report.measurements && (
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                  <Ruler className="h-5 w-5 text-gray-400" />
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                  <Ruler className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                   Measurements (Legacy)
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 text-sm text-gray-500">
+                <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 text-sm text-gray-500 dark:text-slate-400">
                   {report.measurements.length != null && (
                     <span>Length: {report.measurements.length} {report.measurements.unit}</span>
                   )}
@@ -816,7 +822,7 @@ export function VisitReportPage() {
                   )}
                 </div>
                 {report.measurements.raw && (
-                  <p className="text-sm text-gray-500 mt-2">{report.measurements.raw}</p>
+                  <p className="text-sm text-gray-500 dark:text-slate-400 mt-2">{report.measurements.raw}</p>
                 )}
               </CardContent>
             </Card>
@@ -824,10 +830,10 @@ export function VisitReportPage() {
 
           {/* Site Conditions (read-only) — ocular only */}
           {report.visitType === 'ocular' && report.siteConditions && (
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                  <MapPin className="h-5 w-5 text-gray-400" />
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                  <MapPin className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                   Site Conditions
                 </CardTitle>
               </CardHeader>
@@ -845,7 +851,7 @@ export function VisitReportPage() {
                 {report.siteConditions.obstaclesOrConstraints && (
                   <InfoRow icon={StickyNote} label="Obstacles" value={report.siteConditions.obstaclesOrConstraints} />
                 )}
-                <div className="flex gap-4 text-sm text-gray-500">
+                <div className="flex gap-4 text-sm text-gray-500 dark:text-slate-400">
                   {report.siteConditions.hasElectrical && <span>Electrical nearby</span>}
                   {report.siteConditions.hasPlumbing && <span>Plumbing nearby</span>}
                 </div>
@@ -854,10 +860,10 @@ export function VisitReportPage() {
           )}
 
           {report.visitType === 'ocular' && (report.initialDesignKeys?.length || report.initialDesignNotes) && (
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                  <Paintbrush className="h-5 w-5 text-gray-400" />
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                  <Paintbrush className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                   Initial Design
                 </CardTitle>
               </CardHeader>
@@ -900,9 +906,9 @@ export function VisitReportPage() {
         <div className="space-y-6">
           {/* Section 1: Service Type + Visit Details */}
           <div className="grid gap-6 lg:grid-cols-2">
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">
+                <CardTitle className="text-lg text-gray-900 dark:text-slate-100">
                   Service & Visit
                 </CardTitle>
               </CardHeader>
@@ -918,11 +924,11 @@ export function VisitReportPage() {
                 />
 
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Visit Type
                   </Label>
                   <Select value={visitType} onValueChange={setVisitType} disabled={report?.visitType === 'ocular'}>
-                    <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-[#6e6e73]/20">
+                    <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-[#6e6e73]/20 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:hover:bg-white/[0.08] dark:focus:ring-[#d6b36a]/20">
                       <SelectValue placeholder="Select visit type" />
                     </SelectTrigger>
                     <SelectContent>
@@ -933,28 +939,28 @@ export function VisitReportPage() {
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Actual Visit Date & Time
                   </Label>
                   <Input
                     type="datetime-local"
                     value={actualVisitDateTime}
                     onChange={(e) => setActualVisitDateTime(e.target.value)}
-                    className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-[#6e6e73]/20"
+                    className="h-11 rounded-xl border-gray-200 bg-gray-50/50 hover:bg-white focus:ring-[#6e6e73]/20 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:hover:bg-white/[0.08] dark:focus:ring-[#d6b36a]/20"
                   />
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="rounded-xl border-gray-100 shadow-sm">
+            <Card className={editSectionClassName}>
               <CardHeader>
-                <CardTitle className="text-lg text-gray-900">
+                <CardTitle className="text-lg text-gray-900 dark:text-slate-100">
                   Customer Requirements
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Customer Requirements
                   </Label>
                   <Textarea
@@ -962,12 +968,12 @@ export function VisitReportPage() {
                     onChange={(e) => setCustomerRequirements(e.target.value)}
                     placeholder="What the customer needs..."
                     disabled={report?.visitType === 'ocular'}
-                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="min-h-[80px] rounded-xl border-gray-200 bg-gray-50/50 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30 dark:focus:border-white/30 dark:focus:ring-[#d6b36a]/20 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
 
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Notes
                   </Label>
                   <Textarea
@@ -975,7 +981,7 @@ export function VisitReportPage() {
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Additional observations..."
                     disabled={report?.visitType === 'ocular'}
-                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 disabled:opacity-60 disabled:cursor-not-allowed"
+                    className="min-h-[80px] rounded-xl border-gray-200 bg-gray-50/50 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30 dark:focus:border-white/30 dark:focus:ring-[#d6b36a]/20 disabled:opacity-60 disabled:cursor-not-allowed"
                   />
                 </div>
               </CardContent>
@@ -984,66 +990,66 @@ export function VisitReportPage() {
 
           {/* Consultation Summary (only for consultation visit type) */}
           {visitType === 'consultation' && (
-            <Card className="rounded-xl border-blue-100 shadow-sm">
+            <Card className={editSectionClassName}>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                  <FolderOpen className="h-5 w-5 text-blue-500" />
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                  <FolderOpen className="h-5 w-5 text-gray-500 dark:text-slate-300" />
                   Consultation Summary
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Products Discussed
                   </Label>
                   <Textarea
                     value={productsDiscussed}
                     onChange={(e) => setProductsDiscussed(e.target.value)}
                     placeholder="e.g., Stainless steel railings, kitchen countertop, gate..."
-                    className="min-h-[80px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                    className={cn('min-h-[80px]', editInputClassName)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Design Preferences
                   </Label>
                   <Textarea
                     value={designPreferences}
                     onChange={(e) => setDesignPreferences(e.target.value)}
                     placeholder="Modern minimalist, classic ornamental, industrial..."
-                    className="min-h-[60px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                    className={cn('min-h-[60px]', editInputClassName)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Material Options
                   </Label>
                   <Textarea
                     value={materialOptions}
                     onChange={(e) => setMaterialOptions(e.target.value)}
                     placeholder="Stainless 304, Stainless 316, mild steel, combination..."
-                    className="min-h-[60px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                    className={cn('min-h-[60px]', editInputClassName)}
                   />
                 </div>
                 <div className="space-y-1.5">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Project Scope
                   </Label>
                   <Textarea
                     value={projectScope}
                     onChange={(e) => setProjectScope(e.target.value)}
                     placeholder="Brief description of the overall project scope and deliverables..."
-                    className="min-h-[60px] rounded-xl border-gray-200 focus:border-blue-400 focus:ring-blue-400/20"
+                    className={cn('min-h-[60px]', editInputClassName)}
                   />
                 </div>
 
-                <div className="border-t border-gray-100 pt-4">
-                  <p className="text-[13px] font-semibold text-gray-800 mb-3">
+                <div className="border-t border-gray-100 pt-4 dark:border-white/10">
+                  <p className="mb-3 text-[13px] font-semibold text-gray-800 dark:text-slate-200">
                     Recommended Ocular Schedule
                   </p>
                   <div className="grid gap-4 sm:grid-cols-2">
                     <div className="space-y-1.5">
-                      <Label className="text-[13px] font-medium text-gray-700">
+                      <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                         Date
                       </Label>
                       <Popover open={ocularDateOpen} onOpenChange={setOcularDateOpen}>
@@ -1051,11 +1057,11 @@ export function VisitReportPage() {
                           <button
                             type="button"
                             className={cn(
-                              'flex h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-left text-sm transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300',
-                              !recommendedOcularDate && 'text-gray-400',
+                              'flex h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:hover:bg-white/[0.08] dark:focus:ring-[#d6b36a]/20',
+                              !recommendedOcularDate && 'text-gray-400 dark:text-slate-500',
                             )}
                           >
-                            <CalendarIcon className="h-4 w-4 shrink-0 text-gray-400" />
+                            <CalendarIcon className="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500" />
                             {recommendedOcularDate
                               ? format(new Date(`${recommendedOcularDate}T00:00:00`), 'MMMM d, yyyy')
                               : 'Pick a date'}
@@ -1084,11 +1090,11 @@ export function VisitReportPage() {
                       </Popover>
                     </div>
                     <div className="space-y-1.5">
-                      <Label className="text-[13px] font-medium text-gray-700">
+                      <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                         Time Slot
                       </Label>
                       <Select value={recommendedOcularSlot} onValueChange={setRecommendedOcularSlot}>
-                        <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50">
+                        <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:focus:ring-[#d6b36a]/20">
                           <SelectValue placeholder="Select a slot" />
                         </SelectTrigger>
                         <SelectContent>
@@ -1115,10 +1121,10 @@ export function VisitReportPage() {
           {visitType === 'ocular' && (<>
 
           {/* Section 2: Measurements */}
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className={editCardClassName}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                <Ruler className="h-5 w-5 text-gray-400" />
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                <Ruler className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                 Measurements
               </CardTitle>
             </CardHeader>
@@ -1126,8 +1132,8 @@ export function VisitReportPage() {
               {isLegacyReport ? (
                 /* Legacy flat measurements for old reports */
                 <div className="space-y-4">
-                  <div className="rounded-xl bg-amber-50 border border-amber-200 p-3">
-                    <p className="text-xs text-amber-700">
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-700/35 dark:bg-amber-950/20">
+                    <p className="text-xs text-amber-700 dark:text-amber-200">
                       This report uses the old measurement format. New reports use per-component line items.
                     </p>
                   </div>
@@ -1147,7 +1153,7 @@ export function VisitReportPage() {
                           step="0.01"
                           value={value}
                           onChange={(e) => set(e.target.value)}
-                          className="h-11 rounded-xl border-gray-200"
+                          className={cn('h-11', editInputClassName)}
                         />
                       </div>
                     ))}
@@ -1160,7 +1166,7 @@ export function VisitReportPage() {
                       value={legacyMeasurementNotes}
                       onChange={(e) => setLegacyMeasurementNotes(e.target.value)}
                       placeholder="Special conditions, non-standard shapes..."
-                      className="min-h-[60px] rounded-xl border-gray-200"
+                      className={cn('min-h-[60px]', editInputClassName)}
                     />
                   </div>
                 </div>
@@ -1177,10 +1183,10 @@ export function VisitReportPage() {
           </Card>
 
           {/* Section 3: Site Conditions */}
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className={editCardClassName}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                <MapPin className="h-5 w-5 text-gray-400" />
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                <MapPin className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                 Site Conditions
               </CardTitle>
             </CardHeader>
@@ -1193,10 +1199,10 @@ export function VisitReportPage() {
           </Card>
 
           {/* Section 4: Materials & Design */}
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className={editCardClassName}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                <Package className="h-5 w-5 text-gray-400" />
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                <Package className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                 Materials & Design
               </CardTitle>
             </CardHeader>
@@ -1209,7 +1215,7 @@ export function VisitReportPage() {
                   value={materials}
                   onChange={(e) => setMaterials(e.target.value)}
                   placeholder="e.g., Stainless 304"
-                  className="h-11 rounded-xl border-gray-200"
+                  className={cn('h-11', editInputClassName)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -1220,7 +1226,7 @@ export function VisitReportPage() {
                   value={finishes}
                   onChange={(e) => setFinishes(e.target.value)}
                   placeholder="e.g., Brushed, Mirror"
-                  className="h-11 rounded-xl border-gray-200"
+                  className={cn('h-11', editInputClassName)}
                 />
               </div>
               <div className="space-y-1.5">
@@ -1231,21 +1237,21 @@ export function VisitReportPage() {
                   value={preferredDesign}
                   onChange={(e) => setPreferredDesign(e.target.value)}
                   placeholder="e.g., Modern minimalist"
-                  className="h-11 rounded-xl border-gray-200"
+                  className={cn('h-11', editInputClassName)}
                 />
               </div>
             </CardContent>
           </Card>
 
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className={editCardClassName}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                <Paintbrush className="h-5 w-5 text-gray-400" />
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                <Paintbrush className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                 Initial Design
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-slate-400">
                 After capturing the site measurements and ocular findings, attach the initial design references or sketch notes that engineering should review next.
               </p>
               <FileUpload
@@ -1266,7 +1272,7 @@ export function VisitReportPage() {
                   value={initialDesignNotes}
                   onChange={(e) => setInitialDesignNotes(e.target.value)}
                   placeholder="Explain the design direction, references, or assumptions based on the actual ocular findings."
-                  className="min-h-[80px] rounded-xl border-gray-200"
+                  className={cn('min-h-[80px]', editInputClassName)}
                 />
               </div>
             </CardContent>
@@ -1276,10 +1282,10 @@ export function VisitReportPage() {
 
           {/* Section 5: File Uploads — ocular only */}
           {visitType === 'ocular' && (
-          <Card className="rounded-xl border-gray-100 shadow-sm">
+          <Card className={editCardClassName}>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-                <Camera className="h-5 w-5 text-gray-400" />
+              <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                <Camera className="h-5 w-5 text-gray-400 dark:text-slate-500" />
                 Photos & Attachments
               </CardTitle>
             </CardHeader>
@@ -1307,7 +1313,7 @@ export function VisitReportPage() {
             <Button
               onClick={handleSave}
               disabled={updateMutation.isPending || initialDesignUploading}
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-xl"
+              className="rounded-xl [background-image:none] bg-gray-900 text-white hover:bg-gray-800 dark:border dark:border-white/12 dark:[background-image:none] dark:bg-[#223246] dark:text-slate-100 dark:hover:bg-[#2a3c52]"
             >
               <Save className="mr-2 h-4 w-4" />
               Save Draft
@@ -1315,7 +1321,7 @@ export function VisitReportPage() {
             <Button
               onClick={() => setSubmitOpen(true)}
               disabled={submitMutation.isPending || initialDesignUploading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
+              className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-700 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
             >
               <Send className="mr-2 h-4 w-4" />
               Submit Report
@@ -1328,7 +1334,7 @@ export function VisitReportPage() {
             onClick={() => setReturnOpen(true)}
             disabled={returnMutation.isPending}
             variant="outline"
-            className="border-[#c8c8cd] text-[#1d1d1f] hover:bg-[#f0f0f5] rounded-xl"
+            className="border-[#c8c8cd] text-[#1d1d1f] hover:bg-[#f0f0f5] rounded-xl dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Return for Revision
@@ -1350,21 +1356,22 @@ export function VisitReportPage() {
           </Button>
         )}
 
-        {linkedProject?._id && (!isConsultationDraftProject || !isEngineer) && (
+        {linkedProjectId && (
           <Button
-            onClick={() => navigate(`/projects/${linkedProject._id}`)}
-            className="bg-[#0066cc] hover:bg-[#0055b3] text-white rounded-xl"
+            onClick={() => navigate(`/projects/${linkedProjectId}`)}
+            variant="prominent"
+            className="rounded-xl"
           >
             <FolderOpen className="mr-2 h-4 w-4" />
-            {isConsultationDraftProject ? 'View Draft Project' : 'Go to Project'}
+            {isConsultationDraftProject ? 'Go to Draft Project' : 'Go to Project'}
           </Button>
         )}
 
-        {isConsultationDraftProject && (
+        {isConsultationDraftProject && (isSalesStaff || isAdmin) && (
           <Button
             onClick={() => navigate(`/appointments/${rawId(report.appointmentId)}`)}
             variant="outline"
-            className="rounded-xl border-[#c8c8cd] text-[#1d1d1f] hover:bg-[#f0f0f5]"
+            className="rounded-xl border-[#c8c8cd] text-[#1d1d1f] hover:bg-[#f0f0f5] dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
           >
             <CalendarIcon className="mr-2 h-4 w-4" />
             Go to Appointment
@@ -1379,10 +1386,11 @@ export function VisitReportPage() {
         title="Submit Visit Report"
         description={
           report?.visitType === 'ocular'
-            ? 'This will update the existing project with the on-site measurements and details collected during the ocular visit. The appointment will be marked as completed. Are you sure?'
+            ? 'This will update the existing project with the on-site measurements and details collected during the ocular visit. The initial design package will also be submitted to engineering for approval, and the appointment will be marked as completed. Are you sure?'
             : 'This will create a draft project from the consultation and hand the workflow to ocular scheduling. Engineering starts only after the ocular visit is completed. Are you sure?'
         }
         confirmLabel="Submit"
+        confirmClassName="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-700 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
         isLoading={submitMutation.isPending}
         onConfirm={handleSubmit}
       />
@@ -1398,15 +1406,15 @@ export function VisitReportPage() {
         isLoading={returnMutation.isPending}
         onConfirm={handleReturn}
       >
-        <div className="space-y-2 mt-2">
-          <Label className="text-[13px] font-medium text-gray-700">
+        <div className="space-y-2.5">
+          <Label className="text-[13px] font-semibold tracking-[0.01em] text-[color:var(--text-metal-color)] dark:text-slate-200">
             Reason for returning
           </Label>
           <Textarea
             value={returnReason}
             onChange={(e) => setReturnReason(e.target.value)}
             placeholder="Explain what needs to be corrected..."
-            className="min-h-[80px] rounded-xl border-gray-200"
+            className="min-h-[108px] rounded-[1.35rem] border-[color:var(--metal-input-border)] bg-[var(--metal-input-background)] px-4 py-3 text-[15px] text-[#182029] shadow-[var(--metal-input-shadow)] placeholder:text-[color:var(--text-metal-muted-color)] focus-visible:ring-[color:var(--color-ring)] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
       </ConfirmDialog>
@@ -1420,15 +1428,15 @@ export function VisitReportPage() {
         isLoading={reopenMutation.isPending}
         onConfirm={handleReopenForRepair}
       >
-        <div className="space-y-2 mt-2">
-          <Label className="text-[13px] font-medium text-gray-700">
+        <div className="space-y-2.5">
+          <Label className="text-[13px] font-semibold tracking-[0.01em] text-[color:var(--text-metal-color)] dark:text-slate-200">
             Repair reason
           </Label>
           <Textarea
             value={repairReason}
             onChange={(e) => setRepairReason(e.target.value)}
             placeholder="Explain what needs to be fixed before engineering relies on this report..."
-            className="min-h-[96px] rounded-xl border-gray-200"
+            className="min-h-[108px] rounded-[1.35rem] border-[color:var(--metal-input-border)] bg-[var(--metal-input-background)] px-4 py-3 text-[15px] text-[#182029] shadow-[var(--metal-input-shadow)] placeholder:text-[color:var(--text-metal-muted-color)] focus-visible:ring-[color:var(--color-ring)] dark:text-slate-100 dark:placeholder:text-slate-500"
           />
         </div>
       </ConfirmDialog>

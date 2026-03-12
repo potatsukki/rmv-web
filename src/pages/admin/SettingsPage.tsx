@@ -224,8 +224,8 @@ export function SettingsPage() {
     <div className="space-y-8 max-w-5xl mx-auto">
       {/* Header */}
       <div className="metal-panel rounded-[1.75rem] p-5">
-        <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">System Settings</h1>
-        <p className="mt-1 text-sm text-[#616a74]">
+        <h1 className="text-2xl font-bold tracking-tight text-[#171b21] dark:text-slate-100">System Settings</h1>
+        <p className="mt-1 text-sm text-[#616a74] dark:text-slate-400">
           Manage global configuration, holidays, and maintenance mode.
         </p>
       </div>
@@ -251,10 +251,10 @@ export function SettingsPage() {
                     <Power className="h-6 w-6" />
                   </div>
                   <div>
-                    <CardTitle className="text-lg text-gray-900">
+                    <CardTitle className="text-lg text-gray-900 dark:text-slate-100">
                       System Maintenance Mode
                     </CardTitle>
-                    <CardDescription className="text-gray-500">
+                    <CardDescription className="text-gray-500 dark:text-slate-400">
                       {maintenanceEnabled
                         ? 'The system is currently unavailable to non-admin users.'
                         : 'The system is fully operational and accessible to all users.'}
@@ -284,18 +284,18 @@ export function SettingsPage() {
         <div className="md:col-span-2">
           <Card className="rounded-xl">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-xl text-[#171b21]">
-                <CreditCard className="h-5 w-5 text-[#8a939d]" />
+              <CardTitle className="flex items-center gap-2 text-xl text-[#171b21] dark:text-slate-100">
+                <CreditCard className="h-5 w-5 text-[#8a939d] dark:text-slate-400" />
                 Payment &amp; Installment Settings
               </CardTitle>
-              <CardDescription className="text-[#616a74]">
+              <CardDescription className="text-[#616a74] dark:text-slate-400">
                 Configure installment surcharge and stage split for project payments.
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
               {/* Surcharge */}
               <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
+                <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                   Installment Surcharge (%)
                 </Label>
                 <div className="flex items-center gap-2 max-w-xs">
@@ -308,11 +308,11 @@ export function SettingsPage() {
                     step={1}
                     className={inputClasses}
                   />
-                  <span className="text-sm text-gray-500 whitespace-nowrap">
+                  <span className="text-sm text-gray-500 dark:text-slate-400 whitespace-nowrap">
                     % surcharge on total
                   </span>
                 </div>
-                <p className="text-xs text-gray-400">
+                <p className="text-xs text-gray-400 dark:text-slate-500">
                   Customers paying in installments pay total + this surcharge. Set to 0 for no surcharge.
                 </p>
               </div>
@@ -320,7 +320,7 @@ export function SettingsPage() {
               {/* Stages */}
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <Label className="text-[13px] font-medium text-gray-700">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Installment Stages
                   </Label>
                   <Button
@@ -329,7 +329,7 @@ export function SettingsPage() {
                     size="sm"
                     onClick={addStage}
                     disabled={splitValues.length >= 6}
-                    className="h-7 text-xs border-gray-200 rounded-lg"
+                    className="h-7 rounded-lg border-gray-200 !bg-white/80 !text-[#171b21] text-xs hover:!bg-white dark:border-slate-600 dark:!bg-slate-800/90 dark:!text-slate-100 dark:hover:!bg-slate-700"
                   >
                     <Plus className="mr-1 h-3 w-3" />
                     Add Stage
@@ -361,14 +361,14 @@ export function SettingsPage() {
                         max={100}
                         className={`w-20 text-center ${inputClasses}`}
                       />
-                      <span className="text-sm text-gray-500">%</span>
+                      <span className="text-sm text-gray-500 dark:text-slate-400">%</span>
                       {splitValues.length > 1 && (
                         <Button
                           type="button"
                           variant="ghost"
                           size="sm"
                           onClick={() => removeStage(idx)}
-                          className="h-8 w-8 p-0 text-gray-400 hover:text-red-600 hover:bg-red-50"
+                          className="h-8 w-8 p-0 text-gray-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30"
                         >
                           <Trash2 className="h-4 w-4" />
                         </Button>
@@ -378,7 +378,7 @@ export function SettingsPage() {
                 </div>
 
                 <div className="flex items-center justify-between pt-2">
-                  <p className="text-xs text-gray-400">
+                  <p className="text-xs text-gray-400 dark:text-slate-500">
                     Total:{' '}
                     <span
                       className={
@@ -394,6 +394,7 @@ export function SettingsPage() {
                     (must be 100%)
                   </p>
                   <Button
+                    variant="prominent"
                     onClick={handleSavePaymentSettings}
                     disabled={updateConfig.isPending}
                     className="rounded-lg"
@@ -415,11 +416,11 @@ export function SettingsPage() {
         {/* Config Values */}
         <Card className="h-full flex flex-col rounded-xl">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-xl text-[#171b21]">
-              <Settings className="h-5 w-5 text-[#8a939d]" />
+            <CardTitle className="flex items-center gap-2 text-xl text-[#171b21] dark:text-slate-100">
+              <Settings className="h-5 w-5 text-[#8a939d] dark:text-slate-400" />
               General Configuration
             </CardTitle>
-            <CardDescription className="text-[#616a74]">
+            <CardDescription className="text-[#616a74] dark:text-slate-400">
               Technical settings and global constants.
             </CardDescription>
           </CardHeader>
@@ -434,7 +435,7 @@ export function SettingsPage() {
                 ))}
               </div>
             ) : !configs || configs.length === 0 ? (
-              <div className="text-center py-8 text-gray-500 border border-dashed border-gray-200 rounded-xl">
+              <div className="text-center py-8 text-gray-500 dark:text-slate-400 border border-dashed border-gray-200 dark:border-slate-700 rounded-xl">
                 No configuration entries found.
               </div>
             ) : (
@@ -448,11 +449,11 @@ export function SettingsPage() {
                     >
                       <div className="flex items-start justify-between mb-2">
                         <div>
-                          <p className="font-mono text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                          <p className="font-mono text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wider">
                             {cfg.key}
                           </p>
                           {cfg.description && (
-                            <p className="text-sm text-gray-600 mt-1">{cfg.description}</p>
+                            <p className="text-sm text-gray-600 dark:text-slate-300 mt-1">{cfg.description}</p>
                           )}
                         </div>
                         <Button
@@ -461,11 +462,11 @@ export function SettingsPage() {
                           onClick={() => openEditConfig(cfg)}
                           className="h-8 w-8 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
                         >
-                          <Settings className="h-4 w-4 text-gray-400" />
+                          <Settings className="h-4 w-4 text-gray-400 dark:text-slate-500" />
                           <span className="sr-only">Edit</span>
                         </Button>
                       </div>
-                      <div className="metal-pill break-all rounded-lg border border-[#d6dce3] p-2 font-mono text-sm text-[#434c56]">
+                      <div className="metal-pill break-all rounded-lg border border-[#d6dce3] dark:border-slate-700 p-2 font-mono text-sm text-[#434c56] dark:text-slate-300">
                         {typeof cfg.value === 'string' ? cfg.value : JSON.stringify(cfg.value)}
                       </div>
                     </div>
@@ -480,11 +481,11 @@ export function SettingsPage() {
           <CardHeader>
             <div className="flex items-center justify-between">
               <div>
-                <CardTitle className="flex items-center gap-2 text-xl text-[#171b21]">
-                  <Calendar className="h-5 w-5 text-[#8a939d]" />
+                <CardTitle className="flex items-center gap-2 text-xl text-[#171b21] dark:text-slate-100">
+                  <Calendar className="h-5 w-5 text-[#8a939d] dark:text-slate-400" />
                   Holiday Calendar
                 </CardTitle>
-                <CardDescription className="text-[#616a74]">
+                <CardDescription className="text-[#616a74] dark:text-slate-400">
                   Manage blocked dates for appointments.
                 </CardDescription>
               </div>
@@ -523,7 +524,7 @@ export function SettingsPage() {
                 ))}
               </div>
             ) : !holidays || holidays.length === 0 ? (
-              <div className="text-center py-12 text-gray-400">
+              <div className="text-center py-12 text-gray-400 dark:text-slate-500">
                 <Calendar className="h-12 w-12 mx-auto mb-2 opacity-20" />
                 <p>No holidays set for {holidayYear}.</p>
               </div>
@@ -542,15 +543,15 @@ export function SettingsPage() {
                         <span>{new Date(h.date).getDate()}</span>
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">{h.name}</p>
-                        <p className="text-xs text-gray-500">{formatDate(h.date)}</p>
+                        <p className="font-medium text-gray-900 dark:text-slate-100">{h.name}</p>
+                        <p className="text-xs text-gray-500 dark:text-slate-400">{formatDate(h.date)}</p>
                       </div>
                     </div>
                     <Button
                       variant="ghost"
                       size="sm"
                       onClick={() => setDeleteHoliday({ open: true, holiday: h })}
-                      className="text-gray-400 hover:text-red-600 hover:bg-red-50 opacity-0 group-hover:opacity-100 transition-opacity"
+                      className="text-gray-400 dark:text-slate-500 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/30 opacity-0 group-hover:opacity-100 transition-opacity"
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
@@ -571,14 +572,14 @@ export function SettingsPage() {
       >
         <DialogContent className="metal-panel max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-[#171b21]">Update Configuration</DialogTitle>
-            <DialogDescription className="text-[#616a74]">
+            <DialogTitle className="text-[#171b21] dark:text-slate-100">Update Configuration</DialogTitle>
+            <DialogDescription className="text-[#616a74] dark:text-slate-100">
               Modifying system constants can affect application behavior.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-1.5">
-              <Label className="text-xs font-mono text-gray-500 uppercase">Key</Label>
+              <Label className="text-xs font-mono text-gray-500 dark:text-slate-300 uppercase">Key</Label>
               <Input
                 value={editConfig?.key || ''}
                 disabled
@@ -588,7 +589,7 @@ export function SettingsPage() {
             <div className="space-y-1.5">
               <Label
                 htmlFor="cfg-value"
-                className="text-[13px] font-medium text-gray-700"
+                className="text-[13px] font-medium text-gray-700 dark:text-slate-300"
               >
                 Value
               </Label>
@@ -598,12 +599,12 @@ export function SettingsPage() {
                 onChange={(e) => setConfigValue(e.target.value)}
                 className={`font-mono ${inputClasses}`}
               />
-              <p className="text-xs text-gray-400">JSON objects are supported.</p>
+              <p className="text-xs text-gray-400 dark:text-slate-300">JSON objects are supported.</p>
             </div>
             <div className="space-y-1.5">
               <Label
                 htmlFor="cfg-desc"
-                className="text-[13px] font-medium text-gray-700"
+                className="text-[13px] font-medium text-gray-700 dark:text-slate-300"
               >
                 Description
               </Label>
@@ -626,7 +627,7 @@ export function SettingsPage() {
               <Button
                 onClick={handleSaveConfig}
                 disabled={updateConfig.isPending}
-                className="rounded-lg"
+                className="rounded-lg text-white dark:text-white"
               >
                 {updateConfig.isPending ? (
                   <RefreshCw className="mr-2 h-4 w-4 animate-spin" />

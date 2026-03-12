@@ -33,21 +33,21 @@ const STATUS_FILTERS = [
 function statusConfig(status: string) {
   switch (status) {
     case ProjectStatus.COMPLETED:
-      return { badge: 'border-[#93ad9d] text-[#4e6c5a] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]', bar: 'bg-[#6c8f7d]' };
+      return { badge: 'border-[#93ad9d] text-[#4e6c5a] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] dark:border-emerald-700/50 dark:text-emerald-200 dark:bg-emerald-900/40', bar: 'bg-[#6c8f7d]' };
     case ProjectStatus.FABRICATION:
-      return { badge: 'border-[#afa7c5] text-[#665d82] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)]', bar: 'bg-[#8277a3]' };
+      return { badge: 'border-[#afa7c5] text-[#665d82] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)] dark:border-purple-700/50 dark:text-purple-200 dark:bg-purple-900/40', bar: 'bg-[#8277a3]' };
     case ProjectStatus.PAYMENT_PENDING:
-      return { badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]', bar: 'bg-[#a97d49]' };
+      return { badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] dark:border-amber-700/50 dark:text-amber-200 dark:bg-amber-900/40', bar: 'bg-[#a97d49]' };
     case ProjectStatus.BLUEPRINT:
-      return { badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]', bar: 'bg-[#708ca6]' };
+      return { badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] dark:border-blue-700/50 dark:text-blue-200 dark:bg-blue-900/40', bar: 'bg-[#708ca6]' };
     case ProjectStatus.APPROVED:
-      return { badge: 'border-[#8eafbb] text-[#4f6d78] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)]', bar: 'bg-[#6f919d]' };
+      return { badge: 'border-[#8eafbb] text-[#4f6d78] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] dark:border-cyan-700/50 dark:text-cyan-200 dark:bg-cyan-900/40', bar: 'bg-[#6f919d]' };
     case ProjectStatus.SUBMITTED:
-      return { badge: 'border-[#c4a07d] text-[#7b5d3f] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)]', bar: 'bg-[#aa7f53]' };
+      return { badge: 'border-[#c4a07d] text-[#7b5d3f] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] dark:border-orange-700/50 dark:text-orange-200 dark:bg-orange-900/40', bar: 'bg-[#aa7f53]' };
     case ProjectStatus.CANCELLED:
-      return { badge: 'border-[#cb8b86] text-[#87544f] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)]', bar: 'bg-[#b96c66]' };
+      return { badge: 'border-[#cb8b86] text-[#87544f] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] dark:border-red-700/50 dark:text-red-200 dark:bg-red-900/40', bar: 'bg-[#b96c66]' };
     default:
-      return { badge: 'border-[#c6ccd3] text-[#5b6470] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)]', bar: 'bg-[#9ca6b1]' };
+      return { badge: 'border-[#c6ccd3] text-[#5b6470] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] dark:border-slate-600 dark:text-slate-200 dark:bg-slate-700/60', bar: 'bg-[#9ca6b1]' };
   }
 }
 
@@ -96,8 +96,8 @@ export function ProjectsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">Projects</h1>
-        <p className="mt-1 text-sm text-[#616a74]">Track fabrication progress and project milestones.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--color-card-foreground)]">Projects</h1>
+        <p className="mt-1 text-sm text-[var(--text-metal-color)]">Track fabrication progress and project milestones.</p>
       </div>
 
       {/* Controls */}
@@ -115,7 +115,7 @@ export function ProjectsPage() {
       {/* Loading skeleton */}
       {isLoading ? (
         <div className="metal-panel overflow-hidden rounded-[1.5rem]">
-          <div className="divide-y divide-[#e1e6ec]">
+          <div className="divide-y divide-[color:var(--color-border)]">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 px-6 py-4">
                 <Skeleton className="h-9 w-9 rounded-xl shrink-0" />
@@ -139,7 +139,7 @@ export function ProjectsPage() {
           action={(search || statusFilter) ? (
             <Button
               variant="outline"
-              className="text-[#171b21]"
+              className="text-[var(--color-card-foreground)]"
               onClick={() => { setSearch(''); setStatusFilter(''); }}
             >
               Clear Filters
@@ -153,16 +153,16 @@ export function ProjectsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Project</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Project</TableHead>
+                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Status</TableHead>
                   {isStaff && (
-                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Customer</TableHead>
+                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Customer</TableHead>
                   )}
                   {isStaff && (
-                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] xl:table-cell">Engineer</TableHead>
+                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)] xl:table-cell">Engineer</TableHead>
                   )}
-                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Created</TableHead>
-                  <TableHead className="w-10 pr-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">View</span></TableHead>
+                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Created</TableHead>
+                  <TableHead className="w-10 pr-5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]"><span className="sr-only">View</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -181,7 +181,7 @@ export function ProjectsPage() {
                   return (
                     <TableRow
                       key={String(project._id)}
-                      className="group cursor-pointer border-b border-[#e1e6ec] transition-colors hover:bg-white/45"
+                      className="group cursor-pointer border-b border-[color:var(--color-border)] transition-colors hover:bg-[color:var(--color-muted)]/70"
                       onClick={() => navigate(`/projects/${project._id}`)}
                     >
                       {/* Project info */}
@@ -189,7 +189,7 @@ export function ProjectsPage() {
                         <div className="flex items-center gap-3">
                           <div className={`h-2 w-2 rounded-full flex-shrink-0 ${cfg.bar}`} />
                           <div className="min-w-0">
-                            <p className="max-w-[220px] truncate text-sm font-medium text-[#171b21] transition-colors group-hover:text-[#4f6679]">
+                            <p className="max-w-[220px] truncate text-sm font-medium text-[var(--color-card-foreground)] transition-colors group-hover:text-[var(--text-metal-color)]">
                               {String(project.serviceType || project.title || '')}
                             </p>
                           </div>
@@ -207,14 +207,14 @@ export function ProjectsPage() {
                       {isStaff && (
                         <TableCell className="py-4 hidden lg:table-cell">
                           {customer ? (
-                            <div className="flex items-center gap-1.5 text-xs text-[#616a74]">
-                              <User className="h-3 w-3 shrink-0 text-[#8b95a0]" />
+                            <div className="flex items-center gap-1.5 text-xs text-[var(--text-metal-color)]">
+                              <User className="h-3 w-3 shrink-0 text-[var(--text-metal-muted-color)]" />
                               <span className="truncate max-w-[140px]">
                                 {customer.firstName} {customer.lastName}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs text-[#9fa8b3]">—</span>
+                            <span className="text-xs text-[var(--text-metal-muted-color)]">—</span>
                           )}
                         </TableCell>
                       )}
@@ -223,22 +223,22 @@ export function ProjectsPage() {
                       {isStaff && (
                         <TableCell className="py-4 hidden xl:table-cell">
                           {engineers.length > 0 ? (
-                            <div className="flex items-center gap-1.5 text-xs text-[#616a74]">
-                              <Wrench className="h-3 w-3 shrink-0 text-[#8b95a0]" />
+                            <div className="flex items-center gap-1.5 text-xs text-[var(--text-metal-color)]">
+                              <Wrench className="h-3 w-3 shrink-0 text-[var(--text-metal-muted-color)]" />
                               <span className="truncate max-w-[140px]">
                                 {engineers.map((e) => `${e.firstName} ${e.lastName}`).join(', ')}
                               </span>
                             </div>
                           ) : (
-                            <span className="text-xs italic text-[#9fa8b3]">No engineer</span>
+                            <span className="text-xs italic text-[var(--text-metal-muted-color)]">No engineer</span>
                           )}
                         </TableCell>
                       )}
 
                       {/* Date */}
                       <TableCell className="py-4 hidden lg:table-cell">
-                        <div className="flex items-center gap-1.5 text-xs text-[#616a74]">
-                          <Calendar className="h-3 w-3 shrink-0 text-[#8b95a0]" />
+                        <div className="flex items-center gap-1.5 text-xs text-[var(--text-metal-color)]">
+                          <Calendar className="h-3 w-3 shrink-0 text-[var(--text-metal-muted-color)]" />
                           {project.createdAt
                             ? format(new Date(String(project.createdAt)), 'MMM d, yyyy')
                             : ''}
@@ -250,7 +250,7 @@ export function ProjectsPage() {
                         <Link
                           to={`/projects/${project._id}`}
                           onClick={(e) => e.stopPropagation()}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-[#9ca6b1] transition-colors hover:bg-white/65 hover:text-[#59626d]"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-metal-muted-color)] transition-colors hover:bg-[color:var(--color-muted)]/85 hover:text-[var(--text-metal-color)]"
                         >
                           <ChevronRight className="h-4 w-4" />
                         </Link>
@@ -260,8 +260,8 @@ export function ProjectsPage() {
                 })}
               </TableBody>
             </Table>
-            <div className="border-t border-[#dde3ea] px-6 py-2.5">
-              <p className="text-[11px] text-[#68727d]">
+            <div className="border-t border-[color:var(--color-border)] px-6 py-2.5">
+              <p className="text-[11px] text-[var(--text-metal-color)]">
                 {projects.length} project{projects.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -285,7 +285,7 @@ export function ProjectsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`h-2 w-2 rounded-full shrink-0 ${cfg.bar}`} />
-                      <p className="truncate text-sm font-semibold text-[#171b21]">
+                      <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">
                         {String(project.title || '')}
                       </p>
                     </div>
@@ -295,20 +295,20 @@ export function ProjectsPage() {
                   </div>
 
                   {project.serviceType && (
-                    <span className="metal-pill mt-1 ml-4 inline-block rounded-full px-1.5 py-0.5 text-[11px] text-[#616a74]">
+                    <span className="metal-pill mt-1 ml-4 inline-block rounded-full px-1.5 py-0.5 text-[11px] text-[var(--text-metal-color)]">
                       {String(project.serviceType)}
                     </span>
                   )}
 
                   <div className="ml-4 mt-2 space-y-1">
                     {isStaff && customer && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-[#68727d]">
+                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-metal-color)]">
                         <User className="h-3 w-3 shrink-0" />
                         <span>{customer.firstName} {customer.lastName}</span>
                       </div>
                     )}
                     {project.createdAt && (
-                      <div className="flex items-center gap-1.5 text-[11px] text-[#68727d]">
+                      <div className="flex items-center gap-1.5 text-[11px] text-[var(--text-metal-color)]">
                         <Calendar className="h-3 w-3 shrink-0" />
                         <span>{format(new Date(String(project.createdAt)), 'MMM d, yyyy')}</span>
                       </div>
@@ -317,7 +317,7 @@ export function ProjectsPage() {
                 </Link>
               );
             })}
-            <p className="px-1 pt-1 text-[11px] text-[#68727d]">
+            <p className="px-1 pt-1 text-[11px] text-[var(--text-metal-color)]">
               {projects.length} project{projects.length !== 1 ? 's' : ''}
             </p>
           </div>

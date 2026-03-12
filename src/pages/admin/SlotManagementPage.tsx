@@ -270,23 +270,23 @@ export function SlotManagementPage() {
     <div className="mx-auto max-w-4xl space-y-6 p-4 sm:p-6">
       {/* Header */}
       <div className="flex flex-col gap-1">
-        <h1 className="text-2xl font-bold text-gray-900">Slot Management</h1>
-        <p className="text-sm text-gray-500">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-slate-100">Slot Management</h1>
+        <p className="text-sm text-gray-500 dark:text-slate-400">
           Block or unblock appointment time slots for specific dates. Blocked slots cannot be booked
           by anyone.
         </p>
       </div>
 
       {/* Date + Type Selector */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-gray-100 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
         <CardHeader className="pb-3">
-          <CardTitle className="text-lg text-gray-900">Select Date &amp; Type</CardTitle>
-          <CardDescription>Pick a date and appointment type to manage slots</CardDescription>
+          <CardTitle className="text-lg text-gray-900 dark:text-slate-100">Select Date &amp; Type</CardTitle>
+          <CardDescription className="dark:text-slate-400">Pick a date and appointment type to manage slots</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end">
             <div className="flex-1">
-              <Label className="text-sm font-medium text-gray-700">Date</Label>
+              <Label className="text-sm font-medium text-gray-700 dark:text-slate-300">Date</Label>
               <Input
                 type="date"
                 value={selectedDate}
@@ -300,13 +300,10 @@ export function SlotManagementPage() {
               {TYPES.map((t) => (
                 <Button
                   key={t}
-                  variant={activeType === t ? 'default' : 'outline'}
+                  variant={activeType === t ? 'prominent' : 'outline'}
                   size="sm"
                   onClick={() => handleTypeChange(t)}
-                  className={cn(
-                    'capitalize',
-                    activeType === t && 'bg-[#1d1d1f] hover:bg-[#2d2d2f]',
-                  )}
+                  className="capitalize"
                 >
                   {t === 'office' ? 'Office Visit' : 'Ocular Visit'}
                 </Button>
@@ -322,16 +319,16 @@ export function SlotManagementPage() {
       </Card>
 
       {/* Slot Grid */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-gray-100 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
         <CardHeader className="pb-3">
-          <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-            <Clock className="h-5 w-5 text-gray-500" />
+          <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+            <Clock className="h-5 w-5 text-gray-500 dark:text-slate-400" />
             Time Slots — {selectedDate}
-            <Badge variant="outline" className="ml-auto capitalize text-xs">
+            <Badge variant="outline" className="ml-auto capitalize text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
               {activeType}
             </Badge>
           </CardTitle>
-          <CardDescription>
+          <CardDescription className="dark:text-slate-400">
             {selectMode
               ? 'Select available slots to block or blocked slots to unblock in bulk'
               : 'Click an available slot to block it, or unblock a blocked slot'}
@@ -341,12 +338,9 @@ export function SlotManagementPage() {
           {/* ── Toolbar ── */}
           <div className="flex flex-wrap items-center gap-2">
             <Button
-              variant={selectMode ? 'default' : 'outline'}
+              variant={selectMode ? 'prominent' : 'outline'}
               size="sm"
               onClick={() => (selectMode ? exitSelectMode() : setSelectMode(true))}
-              className={cn(
-                selectMode && 'bg-[#1d1d1f] hover:bg-[#2d2d2f]',
-              )}
             >
               <ListChecks className="mr-1.5 h-4 w-4" />
               {selectMode ? 'Exit Select Mode' : 'Select Mode'}
@@ -356,7 +350,7 @@ export function SlotManagementPage() {
               variant="outline"
               size="sm"
               onClick={() => setBlockDayDialog(true)}
-              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
+              className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700 dark:border-red-500/40 dark:text-red-300 dark:hover:bg-red-500/10"
             >
               <Ban className="mr-1.5 h-4 w-4" />
               Block Entire Day
@@ -366,7 +360,7 @@ export function SlotManagementPage() {
               <Button
                 size="sm"
                 onClick={() => setBulkBlockDialog(true)}
-                className="bg-red-600 hover:bg-red-700"
+                className="!bg-red-600 !text-white hover:!bg-red-700"
               >
                 <ShieldBan className="mr-1.5 h-4 w-4" />
                 Block Selected ({selectedAvailable.size})
@@ -378,7 +372,7 @@ export function SlotManagementPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => setBulkUnblockConfirm(true)}
-                className="border-green-200 text-green-700 hover:bg-green-50"
+                className="border-green-200 text-green-700 hover:bg-green-50 dark:border-green-500/40 dark:text-green-300 dark:hover:bg-green-500/10"
               >
                 <CheckSquare className="mr-1.5 h-4 w-4" />
                 Unblock Selected ({selectedBlockedIds.size})
@@ -389,7 +383,7 @@ export function SlotManagementPage() {
               <button
                 type="button"
                 onClick={clearSelections}
-                className="ml-1 text-xs text-gray-400 underline hover:text-gray-600"
+                className="ml-1 text-xs text-gray-400 underline hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300"
               >
                 Clear selection
               </button>
@@ -421,11 +415,11 @@ export function SlotManagementPage() {
                       'relative rounded-xl border-2 p-3 text-center transition-all',
                       isBlocked
                         ? isSelectedBlocked
-                          ? 'border-green-400 bg-green-50 text-red-700 ring-2 ring-green-300'
-                          : 'border-red-300 bg-red-50 text-red-700 hover:border-red-400'
+                          ? 'border-green-400 bg-green-50 text-red-700 ring-2 ring-green-300 dark:border-green-500 dark:bg-green-500/12 dark:text-red-200 dark:ring-green-500/40'
+                          : 'border-red-300 bg-red-50 text-red-700 hover:border-red-400 dark:border-red-500/40 dark:bg-red-500/10 dark:text-red-200 dark:hover:border-red-400'
                         : isSelectedAvailable
-                          ? 'border-[#1d1d1f] bg-[#f0f0f5] text-gray-700 ring-2 ring-[#c8c8cd]'
-                          : 'border-gray-200 bg-white text-gray-700 hover:border-[#c8c8cd] hover:bg-[#f0f0f5]/30',
+                          ? 'border-[#1d1d1f] bg-[#f0f0f5] text-gray-700 ring-2 ring-[#c8c8cd] dark:border-slate-200 dark:bg-slate-800 dark:text-slate-100 dark:ring-slate-500/40'
+                          : 'border-gray-200 bg-white text-gray-700 hover:border-[#c8c8cd] hover:bg-[#f0f0f5]/30 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-800/70',
                     )}
                   >
                     {/* Checkbox indicator in select mode */}
@@ -434,18 +428,18 @@ export function SlotManagementPage() {
                         {isSelectedAvailable || isSelectedBlocked ? (
                           <CheckSquare className="h-4 w-4 text-[#1d1d1f]" />
                         ) : (
-                          <Square className="h-4 w-4 text-gray-300" />
+                          <Square className="h-4 w-4 text-gray-300 dark:text-slate-500" />
                         )}
                       </span>
                     )}
                     <p className="text-sm font-semibold">{formatSlotTime(slot)}</p>
                     {isBlocked ? (
                       <div className="mt-1.5 flex items-center justify-center gap-1">
-                        <ShieldBan className="h-3.5 w-3.5 text-red-500" />
-                        <span className="text-xs font-medium text-red-500">Blocked</span>
+                        <ShieldBan className="h-3.5 w-3.5 text-red-500 dark:text-red-300" />
+                        <span className="text-xs font-medium text-red-500 dark:text-red-300">Blocked</span>
                       </div>
                     ) : (
-                      <p className="mt-1.5 text-xs font-medium text-green-600">Available</p>
+                      <p className="mt-1.5 text-xs font-medium text-green-600 dark:text-green-300">Available</p>
                     )}
                   </button>
                 );
@@ -456,11 +450,11 @@ export function SlotManagementPage() {
       </Card>
 
       {/* Blocked Slots List */}
-      <Card className="rounded-xl border-gray-100 shadow-sm">
+      <Card className="rounded-xl border-gray-100 shadow-sm dark:border-slate-700 dark:bg-slate-900/80">
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-lg text-gray-900">
-              <CalendarOff className="h-5 w-5 text-red-500" />
+            <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+              <CalendarOff className="h-5 w-5 text-red-500 dark:text-red-300" />
               Blocked Slots for {selectedDate}
             </CardTitle>
             {selectMode && hasBlockedSelected && (
@@ -468,7 +462,7 @@ export function SlotManagementPage() {
                 size="sm"
                 variant="outline"
                 onClick={() => setBulkUnblockConfirm(true)}
-                className="border-green-200 text-green-700 hover:bg-green-50"
+                className="border-green-200 text-green-700 hover:bg-green-50 dark:border-green-500/40 dark:text-green-300 dark:hover:bg-green-500/10"
               >
                 Unblock Selected ({selectedBlockedIds.size})
               </Button>
@@ -483,7 +477,7 @@ export function SlotManagementPage() {
               ))}
             </div>
           ) : !blockedSlots?.length ? (
-            <p className="py-6 text-center text-sm text-gray-400">
+            <p className="py-6 text-center text-sm text-gray-400 dark:text-slate-500">
               No blocked slots for this date
             </p>
           ) : (
@@ -496,8 +490,8 @@ export function SlotManagementPage() {
                     className={cn(
                       'flex items-center justify-between rounded-lg border p-3 transition-all',
                       isChecked
-                        ? 'border-green-300 bg-green-50/50'
-                        : 'border-gray-100 bg-gray-50/50',
+                        ? 'border-green-300 bg-green-50/50 dark:border-green-500/40 dark:bg-green-500/10'
+                        : 'border-gray-100 bg-gray-50/50 dark:border-slate-700 dark:bg-slate-800/70',
                     )}
                   >
                     <div className="flex items-center gap-3">
@@ -508,27 +502,27 @@ export function SlotManagementPage() {
                           className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg"
                         >
                           {isChecked ? (
-                            <CheckSquare className="h-5 w-5 text-green-600" />
+                            <CheckSquare className="h-5 w-5 text-green-600 dark:text-green-300" />
                           ) : (
-                            <Square className="h-5 w-5 text-gray-300" />
+                            <Square className="h-5 w-5 text-gray-300 dark:text-slate-500" />
                           )}
                         </button>
                       ) : (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100">
-                          <ShieldBan className="h-4 w-4 text-red-600" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-100 dark:bg-red-500/15">
+                          <ShieldBan className="h-4 w-4 text-red-600 dark:text-red-300" />
                         </div>
                       )}
                       <div>
-                        <p className="text-sm font-medium text-gray-900">
+                        <p className="text-sm font-medium text-gray-900 dark:text-slate-100">
                           {formatSlotTime(s.slotCode)}{' '}
-                          <Badge variant="outline" className="ml-1 capitalize text-xs">
+                          <Badge variant="outline" className="ml-1 capitalize text-xs dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
                             {s.type}
                           </Badge>
                         </p>
                         {s.reason && (
-                          <p className="text-xs text-gray-500">Reason: {s.reason}</p>
+                          <p className="text-xs text-gray-500 dark:text-slate-400">Reason: {s.reason}</p>
                         )}
-                        <p className="text-xs text-gray-400">
+                        <p className="text-xs text-gray-400 dark:text-slate-500">
                           Blocked by {s.blockedBy?.firstName} {s.blockedBy?.lastName}
                         </p>
                       </div>
@@ -538,7 +532,7 @@ export function SlotManagementPage() {
                         variant="ghost"
                         size="sm"
                         onClick={() => setDeleteConfirm({ open: true, slot: s })}
-                        className="text-red-500 hover:bg-red-50 hover:text-red-700"
+                        className="text-red-500 hover:bg-red-50 hover:text-red-700 dark:text-red-300 dark:hover:bg-red-500/10 dark:hover:text-red-200"
                       >
                         <Trash2 className="h-4 w-4" />
                       </Button>
@@ -561,10 +555,10 @@ export function SlotManagementPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
-            <DialogTitle>Block Time Slot</DialogTitle>
-            <DialogDescription>
+            <DialogTitle className="dark:text-slate-100">Block Time Slot</DialogTitle>
+            <DialogDescription className="dark:text-slate-400">
               Block <span className="font-semibold">{formatSlotTime(blockDialog.slotCode)}</span> on{' '}
               <span className="font-semibold">{selectedDate}</span> for{' '}
               <span className="font-semibold capitalize">{activeType}</span> appointments. Customers
@@ -573,13 +567,13 @@ export function SlotManagementPage() {
           </DialogHeader>
           <div className="space-y-3 py-2">
             <div>
-              <Label className="text-sm font-medium">Reason (optional)</Label>
+              <Label className="text-sm font-medium dark:text-slate-300">Reason (optional)</Label>
               <Textarea
                 placeholder="e.g. Staff meeting, maintenance..."
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
                 maxLength={200}
-                className="mt-1"
+                className="mt-1 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 rows={2}
               />
             </div>
@@ -591,13 +585,14 @@ export function SlotManagementPage() {
                 setBlockDialog({ open: false, slotCode: '' });
                 setReason('');
               }}
+              className="dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
             >
               Cancel
             </Button>
             <Button
               onClick={handleBlock}
               disabled={createBlock.isPending}
-              className="bg-red-600 hover:bg-red-700"
+              className="!bg-red-600 !text-white hover:!bg-red-700"
             >
               {createBlock.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Block Slot
@@ -633,13 +628,13 @@ export function SlotManagementPage() {
           }
         }}
       >
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <Ban className="h-5 w-5 text-red-500" />
+            <DialogTitle className="flex items-center gap-2 dark:text-slate-100">
+              <Ban className="h-5 w-5 text-red-500 dark:text-red-300" />
               Block Entire Day
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="dark:text-slate-400">
               Block <strong>all 7 time slots</strong> for{' '}
               <span className="font-semibold">{selectedDate}</span>. No one will be able to book any
               appointment on this date for the selected type.
@@ -647,19 +642,16 @@ export function SlotManagementPage() {
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label className="mb-2 block text-sm font-medium">Appointment Type</Label>
+              <Label className="mb-2 block text-sm font-medium dark:text-slate-300">Appointment Type</Label>
               <div className="flex gap-2">
                 {(['office', 'ocular', 'both'] as const).map((t) => (
                   <Button
                     key={t}
                     type="button"
-                    variant={blockDayType === t ? 'default' : 'outline'}
+                    variant={blockDayType === t ? 'prominent' : 'outline'}
                     size="sm"
                     onClick={() => setBlockDayType(t)}
-                    className={cn(
-                      'capitalize',
-                      blockDayType === t && 'bg-[#1d1d1f] hover:bg-[#2d2d2f]',
-                    )}
+                    className="capitalize"
                   >
                     {t === 'office'
                       ? 'Office Only'
@@ -669,20 +661,20 @@ export function SlotManagementPage() {
                   </Button>
                 ))}
               </div>
-              <p className="mt-1.5 text-xs text-gray-400">
+              <p className="mt-1.5 text-xs text-gray-400 dark:text-slate-500">
                 {blockDayType === 'both'
                   ? 'This will block all 14 slots (7 office + 7 ocular)'
                   : `This will block all 7 ${blockDayType} slots`}
               </p>
             </div>
             <div>
-              <Label className="text-sm font-medium">Reason (optional)</Label>
+              <Label className="text-sm font-medium dark:text-slate-300">Reason (optional)</Label>
               <Textarea
                 placeholder="e.g. Company team building, holiday..."
                 value={blockDayReason}
                 onChange={(e) => setBlockDayReason(e.target.value)}
                 maxLength={200}
-                className="mt-1"
+                className="mt-1 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 rows={2}
               />
             </div>
@@ -695,13 +687,14 @@ export function SlotManagementPage() {
                 setBlockDayReason('');
                 setBlockDayType('both');
               }}
+              className="dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
             >
               Cancel
             </Button>
             <Button
               onClick={handleBlockDay}
               disabled={bulkBlock.isPending}
-              className="bg-red-600 hover:bg-red-700"
+              className="!bg-red-600 !text-white hover:!bg-red-700"
             >
               {bulkBlock.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               Block Entire Day

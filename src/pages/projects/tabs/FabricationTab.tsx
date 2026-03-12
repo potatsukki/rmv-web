@@ -30,6 +30,7 @@ import {
 } from '@/hooks/useFabrication';
 import { useConfirmInstallation } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
+import { useThemeStore } from '@/stores/theme.store';
 import { connectSocket } from '@/lib/socket';
 import { FabricationStatus, Role } from '@/lib/constants';
 
@@ -51,6 +52,8 @@ export function FabricationTab({
   showAssignmentNotice,
 }: FabricationTabProps) {
   const { user } = useAuthStore();
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
   const queryClient = useQueryClient();
   const [updateDialogOpen, setUpdateDialogOpen] = useState(false);
   const [notes, setNotes] = useState('');
@@ -106,7 +109,7 @@ export function FabricationTab({
 
   if (!canViewUpdates) {
     return (
-      <Card className="rounded-xl border-amber-200 bg-amber-50/50">
+      <Card className="metal-panel-strong rounded-xl border-amber-500/30 bg-amber-500/10">
         <CardContent className="p-4 flex items-start gap-3">
           <Lock className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
           <div>
@@ -242,14 +245,14 @@ export function FabricationTab({
     <div className="space-y-4">
       {/* Customer Fabrication Guide Banner */}
       {isCustomer && fabricationStatus?.currentStatus && fabricationStatus.currentStatus !== FabricationStatus.READY_FOR_DELIVERY && fabricationStatus.currentStatus !== FabricationStatus.DONE && (
-        <Card className="rounded-xl border-indigo-200 bg-indigo-50/50">
+        <Card className="rounded-xl border-indigo-200 bg-indigo-50/50 dark:border-indigo-500/35 dark:bg-indigo-500/10">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-indigo-600 dark:text-indigo-300" />
             <div>
-              <p className="text-sm font-semibold text-indigo-900">
+              <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
                 Fabrication: {fabricationStatus.currentStatus.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase())}
               </p>
-              <p className="text-xs text-indigo-700 mt-0.5">
+              <p className="mt-0.5 text-xs text-indigo-700 dark:text-indigo-300">
                 Your order is being fabricated. The team posts updates with photos below. You&apos;ll be notified when it&apos;s ready for delivery.
               </p>
             </div>
@@ -257,12 +260,12 @@ export function FabricationTab({
         </Card>
       )}
       {isCustomer && fabricationStatus?.currentStatus === FabricationStatus.DONE && (
-        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50">
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/35 dark:bg-emerald-500/10">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <PackageCheck className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <PackageCheck className="mt-0.5 h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />
             <div>
-              <p className="text-sm font-semibold text-emerald-900">Fabrication Complete</p>
-              <p className="text-xs text-emerald-700 mt-0.5">Your order has been delivered and installed. Thank you!</p>
+              <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Fabrication Complete</p>
+              <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">Your order has been delivered and installed. Thank you!</p>
             </div>
           </CardContent>
         </Card>
@@ -270,12 +273,12 @@ export function FabricationTab({
 
       {/* Payment Gate Banners */}
       {!isProjectInFabrication && (
-        <Card className="rounded-xl border-slate-200 bg-slate-50/60">
+        <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-xl border-[color:var(--color-border)]/60`}>
           <CardContent className="p-4 flex items-start gap-3">
-            <Info className="h-5 w-5 text-slate-600 mt-0.5 shrink-0" />
+            <Info className={`h-5 w-5 mt-0.5 shrink-0 ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
             <div>
-              <p className="text-sm font-semibold text-slate-800">Fabrication has not started yet</p>
-              <p className="text-xs text-slate-700 mt-0.5">
+              <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>Fabrication has not started yet</p>
+              <p className={`mt-0.5 text-xs ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                 Progress updates become available once the required payment is verified and the project moves into fabrication.
               </p>
             </div>
@@ -284,12 +287,12 @@ export function FabricationTab({
       )}
 
       {fabricationStatus?.paymentGate && !fabricationStatus.paymentGate.allPaid && (
-        <Card className="rounded-xl border-amber-200 bg-amber-50/50">
+        <Card className="rounded-xl border-amber-200 bg-amber-50/50 dark:border-amber-500/35 dark:bg-amber-500/10">
           <CardContent className="p-4 flex items-start gap-3">
-            <CreditCard className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <CreditCard className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
             <div>
-              <p className="text-sm font-semibold text-amber-800">Payment Gate Active</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">Payment Gate Active</p>
+              <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
                 {fabricationStatus.paymentGate.unpaidCount} payment stage(s) remain unpaid.
                 Fabrication cannot proceed to &quot;Ready for Delivery&quot; until all stages are verified.
               </p>
@@ -299,10 +302,10 @@ export function FabricationTab({
       )}
 
       {fabricationStatus?.paymentGate?.allPaid && (
-        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50">
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/35 dark:bg-emerald-500/10">
           <CardContent className="p-4 flex items-center gap-3">
-            <CreditCard className="h-5 w-5 text-emerald-600 shrink-0" />
-            <p className="text-sm font-medium text-emerald-800">
+            <CreditCard className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-100">
               All payments verified — fabrication is unblocked
             </p>
           </CardContent>
@@ -311,12 +314,12 @@ export function FabricationTab({
 
       {/* Installation Confirmation Banners */}
       {isReadyForDelivery && !installationConfirmed && isCustomer && (
-        <Card className="rounded-xl border-blue-200 bg-blue-50/60">
+        <Card className="rounded-xl border-blue-200 bg-blue-50/60 dark:border-blue-500/35 dark:bg-blue-500/10">
           <CardContent className="p-4 flex items-start gap-3">
             <CalendarCheck className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-900">Your product is ready for installation!</p>
-              <p className="text-xs text-blue-700 mt-0.5">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Your product is ready for installation!</p>
+              <p className="mt-0.5 text-xs text-blue-700 dark:text-blue-300">
                 Fabrication is complete. Please confirm your installation schedule so our team can proceed.
               </p>
             </div>
@@ -333,12 +336,12 @@ export function FabricationTab({
       )}
 
       {isReadyForDelivery && !installationConfirmed && canAddUpdate && (
-        <Card className="rounded-xl border-amber-200 bg-amber-50/50">
+        <Card className="rounded-xl border-amber-200 bg-amber-50/50 dark:border-amber-500/35 dark:bg-amber-500/10">
           <CardContent className="p-4 flex items-start gap-3">
             <CalendarCheck className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-amber-800">Awaiting Customer Confirmation</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">Awaiting Customer Confirmation</p>
+              <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
                 The customer has been notified and must confirm the installation schedule before you can mark this as Done.
               </p>
             </div>
@@ -347,10 +350,10 @@ export function FabricationTab({
       )}
 
       {isReadyForDelivery && installationConfirmed && (
-        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50">
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/35 dark:bg-emerald-500/10">
           <CardContent className="p-4 flex items-center gap-3">
-            <PackageCheck className="h-5 w-5 text-emerald-600 shrink-0" />
-            <p className="text-sm font-medium text-emerald-800">
+            <PackageCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />
+            <p className="text-sm font-medium text-emerald-800 dark:text-emerald-100">
               Customer confirmed installation — you may now mark the project as Done.
             </p>
           </CardContent>
@@ -358,34 +361,34 @@ export function FabricationTab({
       )}
 
       {/* Main Updates Card */}
-      <Card className="rounded-xl border-[#c8c8cd]/50">
+      <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-xl border-[color:var(--color-border)]/60 dark:border-slate-700`}>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className="text-lg text-[#1d1d1f]">Fabrication Updates</CardTitle>
+          <CardTitle className={`text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Fabrication Updates</CardTitle>
           {canAddUpdate && !(allowedStatuses.includes(FabricationStatus.DONE) && !installationConfirmed && allowedStatuses.length === 1) && (
             <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
               <DialogTrigger asChild>
-                <Button className="bg-gray-900 hover:bg-gray-800 text-white shrink-0 rounded-xl" size="sm">
+                <Button variant="prominent" className="shrink-0 rounded-xl" size="sm">
                   <Plus className="mr-2 h-4 w-4" />
                   New Update
                 </Button>
               </DialogTrigger>
-              <DialogContent className="rounded-2xl">
+              <DialogContent className={`${isDark ? 'bg-slate-950/96 text-slate-100' : 'bg-white text-[var(--color-card-foreground)]'} rounded-2xl border-[color:var(--color-border)]/60 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-md`}>
                 <DialogHeader>
-                  <DialogTitle className="text-gray-900">Add Fabrication Update</DialogTitle>
-                  <DialogDescription className="text-gray-500">
+                  <DialogTitle className={isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}>Add Fabrication Update</DialogTitle>
+                  <DialogDescription className={isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}>
                     Log progress from the workshop floor.
                   </DialogDescription>
                 </DialogHeader>
                 <form onSubmit={handleAddUpdate} className="space-y-4 py-4">
                   <div className="space-y-1.5">
-                    <Label htmlFor="fab-status" className="text-[13px] font-medium text-gray-700">
+                    <Label htmlFor="fab-status" className={`text-[13px] font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
                       Status
                     </Label>
                     <Select value={status} onValueChange={setStatus}>
-                      <SelectTrigger className="w-full h-11 rounded-xl border-gray-200 bg-gray-50/50 focus:ring-2 focus:ring-[#6e6e73]/20 focus:border-[#6e6e73]">
+                      <SelectTrigger className={`${isDark ? 'bg-slate-900/70 text-slate-100 focus:border-slate-500 focus:ring-slate-500/20' : 'bg-white text-[var(--color-card-foreground)] focus:border-[var(--color-ring)] focus:ring-[var(--color-ring)]/20'} h-11 w-full rounded-xl border border-[color:var(--color-border)]/45 focus:ring-2`}>
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className={`${isDark ? 'bg-slate-950 text-slate-100' : 'bg-white text-[var(--color-card-foreground)]'} border-[color:var(--color-border)]/55`}>
                         {(allowedStatuses.length > 0 ? allowedStatuses : Object.values(FabricationStatus)).map((value) => {
                           const gate = fabricationStatus?.paymentGate?.stageGates?.[value];
                           const isPaymentBlocked = gate?.blocked === true;
@@ -414,9 +417,9 @@ export function FabricationTab({
                     </Select>
                     {/* Payment gate warning for selected status */}
                     {fabricationStatus?.paymentGate?.stageGates?.[status]?.blocked && (
-                      <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 mt-1.5">
+                      <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-500/35 dark:bg-amber-500/10">
                         <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-                        <p className="text-xs text-amber-700">
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
                           This stage requires {fabricationStatus.paymentGate.stageGates[status]!.requiredPaid} of {fabricationStatus.paymentGate.totalStages} payment stages to be verified.
                           Currently {fabricationStatus.paymentGate.stageGates[status]!.currentPaid} paid.
                           {fabricationStatus.paymentGate.stageGates[status]!.nextUnpaidLabel && (
@@ -427,9 +430,9 @@ export function FabricationTab({
                     )}
                     {/* Payment notification hint */}
                     {status && ['finishing', 'quality_check', 'ready_for_delivery', 'done'].includes(status) && (
-                      <div className="flex items-start gap-2 rounded-lg bg-blue-50 border border-blue-200 px-3 py-2 mt-1.5">
-                        <CreditCard className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-                        <p className="text-xs text-blue-700">
+                      <div className="mt-1.5 flex items-start gap-2 rounded-xl border border-sky-400/25 bg-sky-500/10 px-3 py-2">
+                        <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
+                        <p className={`text-xs ${isDark ? 'text-sky-100/90' : 'text-sky-800'}`}>
                           Advancing to this stage will notify the customer about an upcoming or due payment.
                           {['quality_check', 'done'].includes(status)
                             ? ' Their next payment stage will be unlocked for payment.'
@@ -440,7 +443,7 @@ export function FabricationTab({
                   </div>
 
                   <div className="space-y-1.5">
-                    <Label htmlFor="fab-notes" className="text-[13px] font-medium text-gray-700">
+                    <Label htmlFor="fab-notes" className={`text-[13px] font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
                       Progress Notes
                     </Label>
                     <Textarea
@@ -448,7 +451,7 @@ export function FabricationTab({
                       placeholder="Describe work completed..."
                       value={notes}
                       onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setNotes(e.target.value)}
-                      className="min-h-[100px] bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
+                      className={`${isDark ? 'bg-slate-900/70 text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500/20' : 'bg-white text-[var(--color-card-foreground)] placeholder:text-[var(--text-metal-muted-color)] focus:border-[var(--color-ring)] focus:ring-[var(--color-ring)]/20'} min-h-[100px] border-[color:var(--color-border)]/45`}
                     />
                   </div>
 
@@ -468,14 +471,15 @@ export function FabricationTab({
                       type="button"
                       variant="outline"
                       onClick={() => setUpdateDialogOpen(false)}
-                      className="border-gray-200 rounded-lg"
+                      className={`${isDark ? 'border-white/12 bg-slate-900/60 text-slate-100 hover:bg-slate-800/80' : 'border-[color:var(--color-border)] bg-white text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]'} rounded-lg`}
                     >
                       Cancel
                     </Button>
                     <Button
                       type="submit"
                       disabled={addUpdateMutation.isPending || uploading}
-                      className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                      variant="prominent"
+                      className="rounded-lg"
                     >
                       {uploading ? 'Uploading...' : addUpdateMutation.isPending ? 'Posting...' : 'Post Update'}
                     </Button>
@@ -489,7 +493,7 @@ export function FabricationTab({
           {isLoading ? (
             <div className="space-y-4">
               {[1, 2, 3].map((i) => (
-                <div key={i} className="h-24 rounded-xl bg-gray-100 animate-pulse" />
+                <div key={i} className="h-24 rounded-xl bg-gray-100 animate-pulse dark:bg-slate-800" />
               ))}
             </div>
           ) : isError ? (
@@ -500,21 +504,21 @@ export function FabricationTab({
               </Button>
             </div>
           ) : updates && updates.length > 0 ? (
-            <div className="relative border-l-2 border-gray-200 ml-4 space-y-12 pb-4">
+            <div className="relative ml-4 space-y-12 border-l-2 border-[color:var(--color-border)]/45 pb-4 dark:border-slate-700">
               {updates.map((update) => (
                 <div key={String(update._id)} className="relative pl-8">
                   {/* Timeline Dot */}
-                  <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full bg-white border-4 border-[#1d1d1f] shadow-sm" />
+                  <div className="absolute -left-[9px] top-0 h-4 w-4 rounded-full border-4 border-slate-200 bg-slate-950 shadow-sm dark:border-slate-200 dark:bg-slate-950" />
 
                   <div className="flex flex-wrap items-center gap-2 mb-2">
-                    <span className="text-sm font-semibold text-gray-900">
+                    <span className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>
                       {format(new Date(update.createdAt), 'MMMM d, yyyy')}
                     </span>
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <span className={`flex items-center gap-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                       <Clock className="h-3 w-3" />
                       {format(new Date(update.createdAt), 'h:mm a')}
                     </span>
-                    <span className="text-xs text-gray-500 flex items-center gap-1">
+                    <span className={`flex items-center gap-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                       <User className="h-3 w-3" />
                       {user?._id === update.createdBy
                         ? 'You'
@@ -527,7 +531,7 @@ export function FabricationTab({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-gray-400 hover:text-gray-700"
+                          className="h-7 w-7 text-slate-500 hover:text-slate-200 dark:text-slate-500 dark:hover:text-slate-200"
                           onClick={() => {
                             setEditingUpdate(update);
                             setEditNotes(update.notes);
@@ -539,7 +543,7 @@ export function FabricationTab({
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-gray-400 hover:text-red-600"
+                          className="h-7 w-7 text-slate-500 hover:text-red-400 dark:text-slate-500 dark:hover:text-red-400"
                           onClick={() => setDeletingUpdateId(String(update._id))}
                         >
                           <Trash2 className="h-3.5 w-3.5" />
@@ -552,23 +556,23 @@ export function FabricationTab({
                     <StatusBadge status={String(update.status)} />
                   </div>
 
-                  <Card className="bg-white border-gray-100 shadow-sm hover:shadow-md transition-shadow rounded-xl">
+                  <Card className={`${isDark ? 'metal-panel dark:bg-slate-900/85' : 'metal-panel'} rounded-xl border-[color:var(--color-border)]/50 shadow-sm transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_34px_rgba(0,0,0,0.24)] dark:border-slate-700`}>
                     <CardContent className="p-4 space-y-4">
-                      <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
+                      <p className={`whitespace-pre-wrap leading-relaxed ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
                         {update.notes}
                       </p>
 
                       {/* Attachments Grid */}
                       {update.photoKeys && update.photoKeys.length > 0 && (
-                        <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-gray-100">
+                        <div className="grid grid-cols-1 min-[400px]:grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-[color:var(--color-border)]/45 dark:border-slate-700">
                           {update.photoKeys.map((key: string, idx: number) => (
                             <button
                               key={idx}
                               type="button"
                               onClick={() => handleViewFile(key)}
-                              className="group relative aspect-square bg-gray-50 rounded-xl overflow-hidden border border-gray-100 block"
+                              className={`${isDark ? 'bg-slate-900/50 dark:bg-slate-800' : 'bg-[color:var(--color-muted)]'} group relative block aspect-square overflow-hidden rounded-xl border border-[color:var(--color-border)]/50 dark:border-slate-700`}
                             >
-                              <div className="absolute inset-0 flex items-center justify-center text-gray-400">
+                              <div className={`absolute inset-0 flex items-center justify-center ${isDark ? 'text-slate-400 dark:text-slate-500' : 'text-[var(--text-metal-muted-color)]'}`}>
                                 <Paperclip className="h-6 w-6" />
                               </div>
                               <AuthImage
@@ -588,16 +592,16 @@ export function FabricationTab({
             </div>
           ) : (
             <div className="text-center py-8">
-              <Hammer className="h-10 w-10 text-gray-300 mx-auto mb-3" />
-              <p className="text-sm text-[#6e6e73]">No fabrication updates yet.</p>
-              <p className="text-xs text-[#86868b] mt-1">
+              <Hammer className={`mx-auto mb-3 h-10 w-10 ${isDark ? 'text-slate-400 dark:text-slate-500' : 'text-[var(--text-metal-muted-color)]'}`} />
+              <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>No fabrication updates yet.</p>
+              <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>
                 Updates will appear here as the fabrication team logs progress.
               </p>
               {canAddUpdate && (
                 <Button
                   onClick={() => setUpdateDialogOpen(true)}
                   variant="outline"
-                  className="border-gray-200 rounded-xl mt-3"
+                  className={`${isDark ? 'dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700' : 'border-[color:var(--color-border)] bg-white text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]'} mt-3 rounded-xl border-gray-200`}
                   size="sm"
                 >
                   Log First Update
@@ -610,21 +614,21 @@ export function FabricationTab({
 
       {/* ── Edit Update Dialog ── */}
       <Dialog open={!!editingUpdate} onOpenChange={(open) => { if (!open) setEditingUpdate(null); }}>
-        <DialogContent className="rounded-2xl">
+        <DialogContent className={`${isDark ? 'bg-slate-950/96 text-slate-100' : 'bg-white text-[var(--color-card-foreground)]'} rounded-2xl border-[color:var(--color-border)]/60 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-md`}>
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Edit Update</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className={isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}>Edit Update</DialogTitle>
+            <DialogDescription className={isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}>
               Edit the notes or photos. Status cannot be changed once posted.
             </DialogDescription>
           </DialogHeader>
           <form onSubmit={handleEditUpdate} className="space-y-4 py-4">
             <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-gray-700">Progress Notes</Label>
+              <Label className={`text-[13px] font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>Progress Notes</Label>
               <Textarea
                 placeholder="Describe work completed..."
                 value={editNotes}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setEditNotes(e.target.value)}
-                className="min-h-[100px] bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
+                className={`${isDark ? 'bg-slate-900/70 text-slate-100 placeholder:text-slate-500 focus:border-slate-500 focus:ring-slate-500/20' : 'bg-white text-[var(--color-card-foreground)] placeholder:text-[var(--text-metal-muted-color)] focus:border-[var(--color-ring)] focus:ring-[var(--color-ring)]/20'} min-h-[100px] border-[color:var(--color-border)]/45`}
               />
             </div>
             <FileUpload
@@ -642,14 +646,15 @@ export function FabricationTab({
                 type="button"
                 variant="outline"
                 onClick={() => setEditingUpdate(null)}
-                className="border-gray-200 rounded-lg"
+                className={`${isDark ? 'border-white/12 bg-slate-900/60 text-slate-100 hover:bg-slate-800/80' : 'border-[color:var(--color-border)] bg-white text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]'} rounded-lg`}
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={updateMutation.isPending || editUploading}
-                className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+                variant="prominent"
+                className="rounded-lg"
               >
                 {editUploading ? 'Uploading...' : updateMutation.isPending ? 'Saving...' : 'Save Changes'}
               </Button>
@@ -660,10 +665,10 @@ export function FabricationTab({
 
       {/* ── Delete Confirmation Dialog ── */}
       <Dialog open={!!deletingUpdateId} onOpenChange={(open) => { if (!open) setDeletingUpdateId(null); }}>
-        <DialogContent className="rounded-2xl max-w-sm">
+        <DialogContent className={`${isDark ? 'bg-slate-950/96 text-slate-100' : 'bg-white text-[var(--color-card-foreground)]'} max-w-sm rounded-2xl border-[color:var(--color-border)]/60 shadow-[0_28px_90px_rgba(0,0,0,0.28)] backdrop-blur-md`}>
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Delete Update?</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className={isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}>Delete Update?</DialogTitle>
+            <DialogDescription className={isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}>
               This will permanently remove the update from the timeline. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
@@ -672,7 +677,7 @@ export function FabricationTab({
               type="button"
               variant="outline"
               onClick={() => setDeletingUpdateId(null)}
-              className="border-gray-200 rounded-lg"
+              className={`${isDark ? 'border-white/12 bg-slate-900/60 text-slate-100 hover:bg-slate-800/80' : 'border-[color:var(--color-border)] bg-white text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]'} rounded-lg`}
             >
               Cancel
             </Button>

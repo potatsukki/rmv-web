@@ -60,10 +60,26 @@ const SERVICE_ICONS: Record<string, LucideIcon> = {
 };
 
 const STATUS_STYLES: Record<string, { dot: string; bg: string; text: string }> = {
-  [VisitReportStatus.DRAFT]: { dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-500' },
-  [VisitReportStatus.SUBMITTED]: { dot: 'bg-blue-500', bg: 'bg-blue-50', text: 'text-blue-600' },
-  [VisitReportStatus.RETURNED]: { dot: 'bg-orange-500', bg: 'bg-orange-50', text: 'text-orange-600' },
-  [VisitReportStatus.COMPLETED]: { dot: 'bg-emerald-500', bg: 'bg-emerald-50', text: 'text-emerald-600' },
+  [VisitReportStatus.DRAFT]: {
+    dot: 'bg-gray-400 dark:bg-slate-400',
+    bg: 'bg-gray-50 dark:bg-white/[0.08] dark:ring-1 dark:ring-white/[0.08]',
+    text: 'text-gray-500 dark:text-slate-200',
+  },
+  [VisitReportStatus.SUBMITTED]: {
+    dot: 'bg-blue-500 dark:bg-sky-400',
+    bg: 'bg-blue-50 dark:bg-sky-500/15 dark:ring-1 dark:ring-sky-400/20',
+    text: 'text-blue-600 dark:text-sky-200',
+  },
+  [VisitReportStatus.RETURNED]: {
+    dot: 'bg-orange-500 dark:bg-amber-400',
+    bg: 'bg-orange-50 dark:bg-amber-500/15 dark:ring-1 dark:ring-amber-400/20',
+    text: 'text-orange-600 dark:text-amber-200',
+  },
+  [VisitReportStatus.COMPLETED]: {
+    dot: 'bg-emerald-500 dark:bg-emerald-400',
+    bg: 'bg-emerald-50 dark:bg-emerald-500/15 dark:ring-1 dark:ring-emerald-400/20',
+    text: 'text-emerald-600 dark:text-emerald-200',
+  },
 };
 
 const STATUS_SHORT: Record<string, string> = {
@@ -130,14 +146,14 @@ function InlineRename({
           if (e.key === 'Enter') save();
           if (e.key === 'Escape') onDone();
         }}
-        className="w-full min-w-0 rounded-md border border-[#c8c8cd] bg-white px-2 py-0.5 text-[13px] font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-[#6e6e73]/20"
+        className="w-full min-w-0 rounded-md border border-[#c8c8cd] bg-white px-2 py-0.5 text-[13px] font-semibold text-gray-900 outline-none focus:ring-2 focus:ring-[#6e6e73]/20 dark:border-[#2f4563] dark:bg-[#162235] dark:text-slate-100 dark:focus:ring-[#4f7097]/20"
         maxLength={60}
       />
       <button
         type="button"
         onClick={save}
         disabled={updateMutation.isPending}
-        className="shrink-0 rounded-md p-1 text-emerald-600 hover:bg-emerald-50 transition-colors"
+        className="shrink-0 rounded-md p-1 text-emerald-600 transition-colors hover:bg-emerald-50 dark:text-emerald-300 dark:hover:bg-emerald-900/30"
         aria-label="Save name"
       >
         {updateMutation.isPending ? (
@@ -149,7 +165,7 @@ function InlineRename({
       <button
         type="button"
         onClick={onDone}
-        className="shrink-0 rounded-md p-1 text-gray-400 hover:bg-gray-100 transition-colors"
+        className="shrink-0 rounded-md p-1 text-gray-400 transition-colors hover:bg-gray-100 dark:text-slate-500 dark:hover:bg-white/[0.06]"
         aria-label="Cancel"
       >
         <X className="h-3.5 w-3.5" />
@@ -256,10 +272,10 @@ export function ProjectNavigator({
   };
 
   return (
-    <div className="w-full rounded-xl border border-gray-100 bg-white p-3 sm:p-4 shadow-sm">
+    <div className="w-full rounded-xl border border-gray-100 bg-white p-3 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] sm:p-4">
       {/* Header row */}
       <div className="flex items-center justify-between mb-3">
-        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400">
+        <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
           Projects ({reports.length})
         </p>
         {canAdd && (
@@ -269,7 +285,7 @@ export function ProjectNavigator({
             onClick={handleAdd}
             className={cn(
               'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
-              'bg-[#f0f0f5] text-[#1d1d1f] hover:bg-[#e4e4e9] active:scale-[0.97]',
+              'bg-[#f0f0f5] text-[#1d1d1f] hover:bg-[#e4e4e9] active:scale-[0.97] dark:border dark:border-white/10 dark:bg-[#182437] dark:text-slate-100 dark:hover:bg-[#213148]',
               adding && 'opacity-50 pointer-events-none',
             )}
           >
@@ -318,8 +334,8 @@ export function ProjectNavigator({
                 'px-4 py-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e6e73]/30',
                 isActive && canEdit ? 'pb-10' : '',
                 isActive
-                  ? 'border-[#1d1d1f]/30 bg-gradient-to-br from-[#f0f0f5] to-white shadow-md ring-1 ring-[#c8c8cd]/60'
-                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm active:scale-[0.98]',
+                  ? 'border-[#1d1d1f]/30 bg-gradient-to-br from-[#f0f0f5] to-white shadow-md ring-1 ring-[#c8c8cd]/60 dark:border-[#456182] dark:bg-[linear-gradient(135deg,rgba(28,42,64,1)_0%,rgba(18,28,43,1)_100%)] dark:ring-[#5b7699]/30'
+                  : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm active:scale-[0.98] dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-[#39577a] dark:hover:bg-white/[0.05]',
               )}
             >
               {/* Icon */}
@@ -327,8 +343,8 @@ export function ProjectNavigator({
                 className={cn(
                   'flex h-10 w-10 shrink-0 items-center justify-center rounded-lg transition-colors',
                   isActive
-                    ? 'bg-[#1d1d1f] text-white'
-                    : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100 group-hover:text-gray-500',
+                    ? 'bg-[#1d1d1f] text-white dark:bg-[#20324a] dark:text-[#d7e8fb]'
+                    : 'bg-gray-50 text-gray-400 group-hover:bg-gray-100 group-hover:text-gray-500 dark:bg-[#162235] dark:text-slate-500 dark:group-hover:bg-[#1d2d45] dark:group-hover:text-slate-300',
                 )}
               >
                 <Icon className="h-5 w-5" />
@@ -347,7 +363,7 @@ export function ProjectNavigator({
                     <p
                       className={cn(
                         'text-sm font-semibold leading-tight truncate',
-                        isActive ? 'text-[#1d1d1f]' : 'text-gray-800',
+                        isActive ? 'text-[#1d1d1f] dark:text-slate-100' : 'text-gray-800 dark:text-slate-200',
                       )}
                     >
                       {label}
@@ -379,7 +395,7 @@ export function ProjectNavigator({
                       e.stopPropagation();
                       setRenamingId(id);
                     }}
-                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f0f5] text-[#1d1d1f] hover:bg-[#e4e4e9] hover:text-[#1d1d1f] transition-colors"
+                    className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f0f5] text-[#1d1d1f] transition-colors hover:bg-[#e4e4e9] hover:text-[#1d1d1f] dark:bg-[#182437] dark:text-slate-200 dark:hover:bg-[#213148] dark:hover:text-white"
                     aria-label="Rename project"
                   >
                     <Pencil className="h-3.5 w-3.5" />
@@ -391,7 +407,7 @@ export function ProjectNavigator({
                         e.stopPropagation();
                         setDeleteTarget(report);
                       }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-600 hover:bg-red-200 hover:text-red-700 transition-colors"
+                      className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-600 transition-colors hover:bg-red-200 hover:text-red-700 dark:bg-[#341c1d] dark:text-[#f4d0cb] dark:hover:bg-[#482628] dark:hover:text-[#ffe1dc]"
                       aria-label="Delete project"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
@@ -406,8 +422,8 @@ export function ProjectNavigator({
                   className={cn(
                     'absolute top-1.5 right-1.5 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
                     isActive
-                      ? 'bg-[#1d1d1f] text-white'
-                      : 'bg-gray-200 text-gray-600',
+                      ? 'bg-[#1d1d1f] text-white dark:bg-[#20324a] dark:text-[#d7e8fb]'
+                      : 'bg-gray-200 text-gray-600 dark:bg-[#162235] dark:text-slate-400',
                   )}
                 >
                   {idx + 1}

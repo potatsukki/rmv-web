@@ -34,6 +34,18 @@ const COMPRESSIBLE_IMAGE_TYPES = new Set([
   'image/webp',
 ]);
 
+function formatFileSize(bytes: number): string {
+  if (bytes < 1024 * 1024) {
+    return `${Math.max(1, Math.round(bytes / 1024))} KB`;
+  }
+
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function createFileTooLargeMessage(fileName: string, fileSize: number, maxSizeMB: number): string {
+  return `${fileName} is too large to upload. Maximum allowed size is ${maxSizeMB}MB per file, but this file is ${formatFileSize(fileSize)}. Please resize or compress it and try again.`;
+}
+
 /** Strip the leading UUID prefix from R2 keys for a cleaner display name.
  *  e.g. "a1b2c3d4-e5f6-...-MyPhoto.png" → "MyPhoto.png"
  *       "a1b2c3d4-e5f6-...-89f1.png" (old UUID-only) stays as-is */
@@ -73,18 +85,26 @@ export function FileUpload({
 
   const processFile = useCallback(
     async (file: File): Promise<File> => {
+      const maxSizeBytes = maxSizeMB * 1024 * 1024;
+
       // Compress images
       if (COMPRESSIBLE_IMAGE_TYPES.has(file.type.toLowerCase())) {
-        return await imageCompression(file, {
+        const compressedFile = await imageCompression(file, {
           maxSizeMB: Math.min(maxSizeMB, 2),
           maxWidthOrHeight: 1920,
           useWebWorker: true,
         });
+
+        if (compressedFile.size > maxSizeBytes) {
+          throw new Error(createFileTooLargeMessage(file.name, compressedFile.size, maxSizeMB));
+        }
+
+        return compressedFile;
       }
 
       // Check size for non-images
-      if (file.size > maxSizeMB * 1024 * 1024) {
-        throw new Error(`File ${file.name} exceeds ${maxSizeMB}MB limit`);
+      if (file.size > maxSizeBytes) {
+        throw new Error(createFileTooLargeMessage(file.name, file.size, maxSizeMB));
       }
 
       return file;
@@ -139,6 +159,12 @@ export function FileUpload({
               (err.response?.data as { error?: { message?: string } } | undefined)?.error?.message
               || err.message;
             toast.error(apiMessage || `Failed to upload ${rawFile.name}`);
+          } else if (err instanceof TypeError && err.message === 'Failed to fetch') {
+            if (rawFile.size > maxSizeMB * 1024 * 1024) {
+              toast.error(createFileTooLargeMessage(rawFile.name, rawFile.size, maxSizeMB));
+            } else {
+              toast.error(`Upload failed for ${rawFile.name}. Please check your connection and try again.`);
+            }
           } else {
             toast.error(
               err instanceof Error ? err.message : `Failed to upload ${rawFile.name}`,

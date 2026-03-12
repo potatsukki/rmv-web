@@ -97,9 +97,16 @@ export function RefundQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div className="metal-panel rounded-[1.75rem] p-5">
-        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Refund Requests</h1>
-        <p className="text-[#6e6e73] mt-1 text-sm">Review and process customer refund requests</p>
+      <div className="metal-panel-strong rounded-[1.75rem] p-5">
+        <div className="flex items-start gap-4">
+          <div className="silver-sheen flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_10px_24px_rgba(0,0,0,0.18)]">
+            <RotateCcw className="h-5 w-5" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-50">Refund Requests</h1>
+            <p className="mt-1 text-sm text-[#616a74] dark:text-slate-300">Review and process customer refund requests</p>
+          </div>
+        </div>
       </div>
 
       <CollectionToolbar
@@ -122,7 +129,7 @@ export function RefundQueuePage() {
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
-              <Card key={i} className="rounded-xl">
+              <Card key={i} className="metal-panel rounded-xl">
               <CardContent className="p-4">
                 <Skeleton className="h-24 w-full" />
               </CardContent>
@@ -145,14 +152,16 @@ export function RefundQueuePage() {
             const contact = getCustomerContact(r);
 
             return (
-              <Card key={r._id} className="rounded-xl transition-colors hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_32px_rgba(18,22,27,0.1)]">
+              <Card key={r._id} className="metal-panel rounded-xl transition-colors hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_32px_rgba(18,22,27,0.1)] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_36px_rgba(0,0,0,0.26)]">
                 <CardContent className="p-4">
                   <div className="flex flex-col gap-3">
                     {/* Header row */}
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2 min-w-0">
-                        <User className="h-4 w-4 text-[#6e6e73] shrink-0" />
-                        <span className="font-semibold text-[#1d1d1f] truncate">{getCustomerName(r)}</span>
+                        <div className="silver-sheen flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.68),0_8px_18px_rgba(18,22,27,0.08)]">
+                          <User className="h-4 w-4" />
+                        </div>
+                        <span className="truncate font-semibold text-[#1d1d1f] dark:text-slate-100">{getCustomerName(r)}</span>
                       </div>
                       <StatusBadge status={r.status} className="shrink-0 text-[10px]" />
                     </div>
@@ -160,41 +169,41 @@ export function RefundQueuePage() {
                     {/* Details grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-sm">
                       <div>
-                        <span className="text-[#6e6e73]">Amount: </span>
-                        <span className="font-semibold text-[#1d1d1f]">{formatCurrency(r.amount)}</span>
+                        <span className="text-[#6e6e73] dark:text-slate-300">Amount: </span>
+                        <span className="font-semibold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(r.amount)}</span>
                       </div>
                       <div>
-                        <span className="text-[#6e6e73]">Method: </span>
-                        <span className="font-medium text-[#1d1d1f]">{r.refundMethod === 'gcash' ? 'GCash' : 'Bank Transfer'}</span>
+                        <span className="text-[#6e6e73] dark:text-slate-300">Method: </span>
+                        <span className="font-medium text-[#1d1d1f] dark:text-slate-100">{r.refundMethod === 'gcash' ? 'GCash' : 'Bank Transfer'}</span>
                       </div>
                       <div>
-                        <span className="text-[#6e6e73]">Account: </span>
-                        <span className="text-[#3a3a3e]">{r.accountName} — {r.accountNumber}</span>
+                        <span className="text-[#6e6e73] dark:text-slate-300">Account: </span>
+                        <span className="text-[#3a3a3e] dark:text-slate-200">{r.accountName} — {r.accountNumber}</span>
                       </div>
                       {r.bankName && (
                         <div className="flex items-center gap-1">
-                          <Building2 className="h-3.5 w-3.5 text-[#6e6e73]" />
-                          <span className="text-[#3a3a3e]">{r.bankName}</span>
+                          <Building2 className="h-3.5 w-3.5 text-[#6e6e73] dark:text-slate-300" />
+                          <span className="text-[#3a3a3e] dark:text-slate-200">{r.bankName}</span>
                         </div>
                       )}
                       {contact.email && (
                         <div>
-                          <span className="text-[#6e6e73]">Email: </span>
-                          <span className="text-[#3a3a3e]">{contact.email}</span>
+                          <span className="text-[#6e6e73] dark:text-slate-300">Email: </span>
+                          <span className="text-[#3a3a3e] dark:text-slate-200">{contact.email}</span>
                         </div>
                       )}
                       {contact.phone && (
                         <div className="flex items-center gap-1">
-                          <Phone className="h-3.5 w-3.5 text-[#6e6e73]" />
-                          <span className="text-[#3a3a3e]">{contact.phone}</span>
+                          <Phone className="h-3.5 w-3.5 text-[#6e6e73] dark:text-slate-300" />
+                          <span className="text-[#3a3a3e] dark:text-slate-200">{contact.phone}</span>
                         </div>
                       )}
                     </div>
 
                     {/* Reason */}
                     <div className="text-sm">
-                      <span className="text-[#6e6e73]">Reason: </span>
-                      <span className="text-[#3a3a3e]">{r.reason}</span>
+                      <span className="text-[#6e6e73] dark:text-slate-300">Reason: </span>
+                      <span className="text-[#3a3a3e] dark:text-slate-200">{r.reason}</span>
                     </div>
 
                     {/* Denial reason if denied */}
@@ -206,15 +215,15 @@ export function RefundQueuePage() {
                     )}
 
                     {/* Footer: date + actions */}
-                    <div className="flex items-center justify-between pt-1 border-t border-[#f0f0f2]">
-                      <div className="flex items-center gap-3 text-xs text-[#86868b]">
+                    <div className="flex items-center justify-between border-t border-[#f0f0f2] pt-1 dark:border-slate-700">
+                      <div className="flex items-center gap-3 text-xs text-[#86868b] dark:text-slate-400">
                         <span>{format(new Date(r.createdAt), 'MMM d, yyyy h:mm a')}</span>
                         {typeof r.appointmentId === 'string' ? (
-                          <Link to={`/appointments/${r.appointmentId}`} className="text-blue-600 hover:underline">
+                          <Link to={`/appointments/${r.appointmentId}`} className="text-blue-600 hover:underline dark:text-blue-300">
                             View Appointment
                           </Link>
                         ) : (
-                          <Link to={`/appointments/${r.appointmentId._id}`} className="text-blue-600 hover:underline">
+                          <Link to={`/appointments/${r.appointmentId._id}`} className="text-blue-600 hover:underline dark:text-blue-300">
                             View Appointment
                           </Link>
                         )}
@@ -225,13 +234,14 @@ export function RefundQueuePage() {
                             size="sm"
                             variant="outline"
                             onClick={() => setDenyDialog({ open: true, id: r._id })}
-                            className="h-8 rounded-xl border-[#cb8b86] text-[#87544f] hover:bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-xs"
+                            className="h-8 rounded-xl border-[#cb8b86] text-[#87544f] hover:bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-xs dark:border-red-700/50 dark:text-red-200 dark:hover:bg-red-900/40"
                           >
                             <XCircle className="mr-1 h-3.5 w-3.5" />
                             Deny
                           </Button>
                           <Button
                             size="sm"
+                            variant="prominent"
                             onClick={() => setApproveId(r._id)}
                             className="h-8 rounded-xl text-xs"
                           >
@@ -255,11 +265,11 @@ export function RefundQueuePage() {
                 size="sm"
                 onClick={() => setPage(p => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="rounded-xl"
+                className="rounded-xl dark:border-slate-600"
               >
                 Previous
               </Button>
-              <span className="flex items-center text-sm text-[#6e6e73]">
+              <span className="flex items-center text-sm text-[#6e6e73] dark:text-slate-300">
                 Page {data?.page ?? 1} of {data?.totalPages ?? 1}
               </span>
               <Button
@@ -267,7 +277,7 @@ export function RefundQueuePage() {
                 size="sm"
                 onClick={() => setPage(p => p + 1)}
                 disabled={page >= (data?.totalPages ?? 1)}
-                className="rounded-xl"
+                className="rounded-xl dark:border-slate-600"
               >
                 Next
               </Button>
@@ -278,10 +288,10 @@ export function RefundQueuePage() {
 
       {/* Approve Confirmation */}
       <Dialog open={!!approveId} onOpenChange={(open) => { if (!open) setApproveId(''); }}>
-        <DialogContent className="metal-panel max-w-md rounded-2xl">
+        <DialogContent className="metal-panel max-w-md rounded-2xl dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Approve Refund</DialogTitle>
-            <DialogDescription className="text-[#6e6e73]">
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Approve Refund</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-300">
               Confirm that this refund has been processed. The appointment's ocular fee status will be marked as refunded.
             </DialogDescription>
           </DialogHeader>
@@ -290,6 +300,7 @@ export function RefundQueuePage() {
               Cancel
             </Button>
             <Button
+              variant="prominent"
               onClick={handleApprove}
               disabled={approveMutation.isPending}
               className="rounded-xl"
@@ -302,15 +313,15 @@ export function RefundQueuePage() {
 
       {/* Deny Dialog */}
       <Dialog open={denyDialog.open} onOpenChange={(open) => { if (!open) { setDenyDialog({ open: false, id: '' }); setDenialReason(''); } }}>
-        <DialogContent className="metal-panel max-w-md rounded-2xl">
+        <DialogContent className="metal-panel max-w-md rounded-2xl dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Deny Refund</DialogTitle>
-            <DialogDescription className="text-[#6e6e73]">
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Deny Refund</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-300">
               Please provide a reason for denying this refund request. The customer will be notified.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Label htmlFor="denial-reason" className="text-sm font-medium text-[#3a3a3e]">Reason for denial</Label>
+            <Label htmlFor="denial-reason" className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">Reason for denial</Label>
             <Textarea
               id="denial-reason"
               placeholder="e.g., Visit already completed, outside refund period..."

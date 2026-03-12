@@ -6,15 +6,15 @@ const statusBadgeVariants = cva(
   {
     variants: {
       color: {
-        gray: 'border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470]',
-        blue: 'border-[#8da4b8] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679]',
-        green: 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]',
-        yellow: 'border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239]',
-        red: 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]',
-        purple: 'border-[#afa7c5] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)] text-[#665d82]',
-        orange: 'border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]',
-        indigo: 'border-[#98a6c4] bg-[linear-gradient(180deg,#eff1f9_0%,#dce2f0_100%)] text-[#5b6785]',
-        cyan: 'border-[#8eafbb] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] text-[#4f6d78]',
+        gray: 'border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470] dark:border-slate-600 dark:bg-none dark:bg-slate-700/60 dark:text-slate-200',
+        blue: 'border-[#8da4b8] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)] text-[#4f6679] dark:border-blue-700/50 dark:bg-none dark:bg-blue-900/40 dark:text-blue-200',
+        green: 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a] dark:border-emerald-700/50 dark:bg-none dark:bg-emerald-900/40 dark:text-emerald-200',
+        yellow: 'border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239] dark:border-amber-700/50 dark:bg-none dark:bg-amber-900/40 dark:text-amber-200',
+        red: 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f] dark:border-red-700/50 dark:bg-none dark:bg-red-900/40 dark:text-red-200',
+        purple: 'border-[#afa7c5] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)] text-[#665d82] dark:border-purple-700/50 dark:bg-none dark:bg-purple-900/40 dark:text-purple-200',
+        orange: 'border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f] dark:border-orange-700/50 dark:bg-none dark:bg-orange-900/40 dark:text-orange-200',
+        indigo: 'border-[#98a6c4] bg-[linear-gradient(180deg,#eff1f9_0%,#dce2f0_100%)] text-[#5b6785] dark:border-indigo-700/50 dark:bg-none dark:bg-indigo-900/40 dark:text-indigo-200',
+        cyan: 'border-[#8eafbb] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] text-[#4f6d78] dark:border-cyan-700/50 dark:bg-none dark:bg-cyan-900/40 dark:text-cyan-200',
       },
     },
     defaultVariants: {
@@ -59,6 +59,9 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   declined: 'red',
   awaiting_proof: 'yellow',
   refunded: 'purple',
+  enabled: 'green',
+  disabled: 'red',
+  inactive: 'gray',
 
   // Fabrication
   queued: 'gray',

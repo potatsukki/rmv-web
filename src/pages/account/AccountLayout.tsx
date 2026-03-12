@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
-import { User as UserIcon, Shield, Bell, Info, Mail, Phone, LogOut } from 'lucide-react';
+import { User as UserIcon, Shield, Bell, Info, Mail, Phone, LogOut, Moon } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -16,6 +16,7 @@ import { cn } from '@/lib/utils';
 
 const tabs = [
   { label: 'Profile', path: '/account/profile', icon: UserIcon },
+  { label: 'Appearance', path: '/account/appearance', icon: Moon },
   { label: 'Security', path: '/account/security', icon: Shield },
   { label: 'Notifications', path: '/account/notifications', icon: Bell },
   { label: 'Account', path: '/account/info', icon: Info },
@@ -49,10 +50,10 @@ export function AccountLayout() {
     <div className="max-w-5xl mx-auto space-y-6 lg:space-y-8">
       {/* Header */}
       <div>
-        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-gray-900">
+        <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--color-foreground)]">
           Account Settings
         </h1>
-        <p className="text-gray-500 mt-1 text-sm">
+        <p className="mt-1 text-sm text-[var(--text-metal-muted-color)]">
           Manage your personal information and preferences.
         </p>
       </div>
@@ -68,8 +69,8 @@ export function AccountLayout() {
                 cn(
                   'flex items-center gap-2 whitespace-nowrap rounded-lg px-3.5 py-2 text-sm font-medium transition-colors shrink-0',
                   isActive
-                    ? 'bg-[#f0f0f5] text-[#1d1d1f] shadow-sm'
-                    : 'text-gray-500 hover:bg-gray-50 hover:text-gray-900',
+                    ? 'bg-[color:var(--color-card)] text-[var(--color-card-foreground)] shadow-sm'
+                    : 'text-[var(--text-metal-muted-color)] hover:bg-[color:var(--color-card)]/70 hover:text-[var(--color-card-foreground)]',
                 )
               }
             >
@@ -90,12 +91,12 @@ export function AccountLayout() {
       <div className="grid gap-6 lg:gap-8 lg:grid-cols-3">
         {/* Left Column: User Profile Card (desktop only) */}
         <div className="hidden lg:block lg:col-span-1">
-          <Card className="border-gray-100 shadow-sm overflow-hidden rounded-2xl sticky top-24">
+          <Card className="sticky top-24 overflow-hidden rounded-2xl border-[color:var(--color-border)]/50 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)]">
             <div className="h-28 bg-gradient-to-r from-[#1a1a1c] via-[#111113] to-[#1a1a1c]" />
             <div className="px-6 relative">
               <div className="absolute -top-12 left-6">
-                <Avatar className="h-24 w-24 border-4 border-white shadow-lg bg-white">
-                  <AvatarFallback className="bg-[#f0f0f5] text-[#1d1d1f] text-2xl font-bold">
+                <Avatar className="h-24 w-24 border-4 border-[color:var(--color-card)] shadow-lg bg-[color:var(--color-card)]">
+                  <AvatarFallback className="bg-[color:var(--color-card)] text-[var(--color-card-foreground)] text-2xl font-bold">
                     {userInitials}
                   </AvatarFallback>
                 </Avatar>
@@ -104,17 +105,17 @@ export function AccountLayout() {
 
             <CardContent className="pt-16 pb-6 px-6">
               <div className="mb-6">
-                <h2 className="text-xl font-bold text-gray-900">
+                <h2 className="text-xl font-bold text-[var(--color-card-foreground)]">
                   {user?.firstName} {user?.lastName}
                 </h2>
-                <p className="text-sm text-gray-500 font-medium truncate">{user?.email}</p>
+                <p className="truncate text-sm font-medium text-[var(--text-metal-muted-color)]">{user?.email}</p>
 
                 <div className="flex flex-wrap gap-2 mt-4">
                   {user?.roles?.map((role) => (
                     <Badge
                       key={role}
                       variant="secondary"
-                      className="px-2 py-0.5 bg-gray-100 text-gray-600 border border-gray-200 uppercase text-[10px] tracking-wider font-semibold rounded-md"
+                      className="rounded-full border border-[color:var(--color-border)] bg-[color:var(--color-muted)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-muted-color)] dark:border-white/12 dark:bg-[linear-gradient(180deg,rgba(245,247,250,0.96)_0%,rgba(223,229,236,0.92)_100%)] dark:text-[#596775] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.72)]"
                     >
                       {role.replace(/_/g, ' ')}
                     </Badge>
@@ -125,13 +126,13 @@ export function AccountLayout() {
               <Separator className="my-4" />
 
               <div className="space-y-3 pt-2">
-                <div className="flex items-center gap-3 text-sm text-gray-600">
-                  <Mail className="h-4 w-4 text-gray-400 shrink-0" />
+                <div className="flex items-center gap-3 text-sm text-[var(--text-metal-muted-color)]">
+                  <Mail className="h-4 w-4 shrink-0 text-[var(--color-muted-foreground)]" />
                   <span className="truncate">{user?.email}</span>
                 </div>
                 {user?.phone && (
-                  <div className="flex items-center gap-3 text-sm text-gray-600">
-                    <Phone className="h-4 w-4 text-gray-400 shrink-0" />
+                  <div className="flex items-center gap-3 text-sm text-[var(--text-metal-muted-color)]">
+                    <Phone className="h-4 w-4 shrink-0 text-[var(--color-muted-foreground)]" />
                     <span>{user.phone}</span>
                   </div>
                 )}
@@ -148,8 +149,8 @@ export function AccountLayout() {
                       cn(
                         'flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-medium transition-colors',
                         isActive
-                          ? 'bg-[#f0f0f5] text-[#1d1d1f]'
-                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900',
+                          ? 'bg-[color:var(--color-card)] text-[var(--color-card-foreground)]'
+                          : 'text-[var(--text-metal-muted-color)] hover:bg-[color:var(--color-card)]/65 hover:text-[var(--color-card-foreground)]',
                       )
                     }
                   >

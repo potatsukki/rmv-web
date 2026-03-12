@@ -10,7 +10,7 @@ import { signInWithPopup } from 'firebase/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { BrandLogo } from '@/components/shared/BrandLogo';
+import { AuthBrandPanel } from '@/components/auth/AuthBrandPanel';
 import { api, fetchCsrfToken } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { auth, googleProvider } from '@/lib/firebase';
@@ -264,12 +264,6 @@ export function RegisterPage() {
             Back to Home
           </Link>
 
-          {/* Brand */}
-          <div className="mb-4 flex items-center gap-2.5">
-            <BrandLogo className="h-9 w-9 ring-2 ring-white/12 shadow-lg shadow-black/30" />
-            <span className="font-bold tracking-tight text-[#f5f7fa]">RMV Stainless</span>
-          </div>
-
           <h2 className="text-2xl font-bold tracking-tight text-[#f5f7fa]">
             Create account
           </h2>
@@ -514,7 +508,7 @@ export function RegisterPage() {
             <Button
               type="button"
               variant="outline"
-              className="h-11 w-full rounded-xl border-[#d6dde6]/70 bg-[linear-gradient(180deg,rgba(245,247,250,0.98)_0%,rgba(222,228,235,0.94)_100%)] font-medium text-[#14181d] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_12px_24px_rgba(0,0,0,0.12)] transition-all hover:bg-[linear-gradient(180deg,rgba(250,251,253,1)_0%,rgba(228,233,239,0.98)_100%)] hover:text-[#14181d] active:scale-[0.98]"
+              className="h-11 w-full rounded-xl border-[#d6dde6]/80 bg-white font-medium text-[#14181d] shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_12px_24px_rgba(0,0,0,0.12)] transition-all hover:-translate-y-0.5 hover:border-[#b8c4d1] hover:bg-white hover:text-[#14181d] hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.96),0_16px_28px_rgba(0,0,0,0.16)] active:scale-[0.98] disabled:border-[#d6dde6]/60 disabled:bg-[#eef2f6] disabled:text-[#7d8794]"
               onClick={handleGoogleSignUp}
               disabled={googleLoading || isSubmitting || isLocked}
             >
@@ -554,75 +548,7 @@ export function RegisterPage() {
         </div>
       </div>
 
-      {/* Right Side - Visual */}
-      <div className="relative hidden w-0 flex-1 lg:block">
-        <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(38,61,84,0.58)_0%,transparent_32%),radial-gradient(circle_at_bottom_right,rgba(176,133,68,0.18)_0%,transparent_24%),linear-gradient(160deg,#080b10_0%,#0c1016_44%,#121821_100%)]" />
-        <div className="absolute inset-0 opacity-[0.05]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-        <div className="absolute inset-y-0 left-0 w-px bg-white/6" />
-        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(5,8,12,0.04)_0%,rgba(5,8,12,0.26)_100%)]" />
-
-        <div className="absolute inset-0 flex items-center justify-center px-12 py-16 lg:px-16">
-          <div className="w-full max-w-[30rem] rounded-[2rem] border border-white/10 bg-[linear-gradient(180deg,rgba(19,25,33,0.84)_0%,rgba(10,13,18,0.92)_100%)] p-8 shadow-[0_32px_90px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-xl">
-            <div className="mb-6 flex items-center justify-between">
-              <div className="flex h-12 w-12 items-center justify-center rounded-xl border border-[#d6b36a]/25 bg-[linear-gradient(180deg,rgba(214,179,106,0.16)_0%,rgba(214,179,106,0.05)_100%)]">
-                <Check className="h-6 w-6 text-[#e2c98f]" />
-              </div>
-              <span className="rounded-full border border-white/10 bg-white/[0.04] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-[#93a0af]">
-                Project Access
-              </span>
-            </div>
-
-            <div className="rounded-[1.5rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0.02)_100%)] p-5">
-              <div className="mb-5 flex items-center justify-between">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#8894a3]">
-                    RMV Client Setup
-                  </p>
-                  <h3 className="mt-1 text-xl font-bold text-[#f5f7fa]">Account Activation</h3>
-                </div>
-                <div className="rounded-2xl border border-[#d6b36a]/20 bg-[#d6b36a]/10 px-3 py-1.5 text-right">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#d9bf84]">Status</p>
-                  <p className="text-sm font-bold text-[#f2d9a1]">Ready</p>
-                </div>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b96a3]">Portal</p>
-                  <p className="mt-2 text-base font-bold text-[#f5f7fa]">Client Access</p>
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b96a3]">Verification</p>
-                  <p className="mt-2 text-base font-bold text-[#f5f7fa]">Email Secure</p>
-                </div>
-                <div className="rounded-2xl border border-white/8 bg-white/[0.04] p-3.5">
-                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-[#8b96a3]">Tracking</p>
-                  <p className="mt-2 text-base font-bold text-[#f5f7fa]">Live Updates</p>
-                </div>
-              </div>
-
-              <div className="mt-5 rounded-2xl border border-white/8 bg-[#0a0d12]/70 p-4">
-                <div className="mb-2 flex items-center justify-between text-sm">
-                  <span className="font-medium text-[#d7dee6]">Onboarding flow</span>
-                  <span className="font-semibold text-[#e2c98f]">3 steps</span>
-                </div>
-                <div className="h-2 rounded-full bg-white/8">
-                  <div className="h-2 w-[68%] rounded-full bg-[linear-gradient(90deg,#f0d08f_0%,#b9873c_100%)]" />
-                </div>
-              </div>
-            </div>
-
-            <blockquote className="mt-6">
-              <p className="max-w-lg text-lg font-medium leading-relaxed text-[#d2d9e1]">
-                &ldquo;Create your account once and keep approvals, project updates, and billing visibility in one secure place.&rdquo;
-              </p>
-              <footer className="mt-4 text-xs font-bold uppercase tracking-[0.2em] text-[#6f7b89]">
-                RMV Management System
-              </footer>
-            </blockquote>
-          </div>
-        </div>
-      </div>
+      <AuthBrandPanel />
     </div>
   );
 }

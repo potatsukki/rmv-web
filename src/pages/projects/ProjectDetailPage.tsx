@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { FileUpload } from '@/components/shared/FileUpload';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -35,6 +36,7 @@ import { usePaymentPlan, usePaymentsByProject } from '@/hooks/usePayments';
 import { useGetDownloadUrl, openAuthenticatedFile } from '@/hooks/useUploads';
 import { useUsers, useSignature } from '@/hooks/useUsers';
 import { useAuthStore } from '@/stores/auth.store';
+import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { Role } from '@/lib/constants';
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
@@ -92,15 +94,15 @@ function MediaThumbnail({ fileKey, type, onPreview }: { fileKey: string; type: '
       <button
         type="button"
         onClick={() => onPreview?.(fileKey)}
-        className="relative group w-24 h-24 rounded-xl border border-[#d2d2d7] overflow-hidden cursor-pointer"
+        className="relative group w-24 h-24 rounded-xl border border-[#d2d2d7] dark:border-slate-700 overflow-hidden cursor-pointer"
       >
         <AuthImage
           fileKey={fileKey}
           alt={fileKey.split('/').pop() || 'Image'}
           className="w-24 h-24 object-cover rounded-xl"
           fallback={
-            <div className="flex items-center justify-center w-24 h-24 rounded-xl bg-[#f5f5f7]">
-              <Camera className="h-6 w-6 text-[#86868b]" />
+            <div className="flex items-center justify-center w-24 h-24 rounded-xl bg-[#f5f5f7] dark:bg-slate-800">
+              <Camera className="h-6 w-6 text-[#86868b] dark:text-slate-500" />
             </div>
           }
         />
@@ -137,19 +139,19 @@ function MediaThumbnail({ fileKey, type, onPreview }: { fileKey: string; type: '
     <button
       type="button"
       onClick={handleOpen}
-      className="relative group flex items-center justify-center w-24 h-24 rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] hover:bg-[#f0f0f5] transition-colors overflow-hidden"
+      className="relative group flex items-center justify-center w-24 h-24 rounded-xl border border-[#d2d2d7] dark:border-slate-700 bg-[#f5f5f7] dark:bg-slate-800 hover:bg-[#f0f0f5] dark:hover:bg-slate-700 transition-colors overflow-hidden"
     >
       {loading ? (
         <Loader2 className="h-5 w-5 animate-spin text-[#86868b]" />
       ) : (
         <>
-          <Video className="h-6 w-6 text-[#86868b] group-hover:text-[#6e6e73] transition-colors" />
+          <Video className="h-6 w-6 text-[#86868b] dark:text-slate-500 group-hover:text-[#6e6e73] dark:group-hover:text-slate-300 transition-colors" />
           <div className="absolute inset-0 flex items-center justify-center bg-black/0 group-hover:bg-black/10 transition-colors">
             <Eye className="h-4 w-4 text-transparent group-hover:text-white transition-colors" />
           </div>
         </>
       )}
-      <span className="absolute bottom-0.5 text-[9px] text-[#86868b] truncate max-w-[90%] px-1">
+      <span className="absolute bottom-0.5 text-[9px] text-[#86868b] dark:text-slate-400 truncate max-w-[90%] px-1">
         {fileKey.split('/').pop()?.substring(0, 12)}
       </span>
     </button>
@@ -173,11 +175,11 @@ function CollapsibleSection({
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex items-center gap-2 w-full text-left py-2 text-sm font-medium text-[#3a3a3e] hover:text-[#1d1d1f]"
+        className="flex items-center gap-2 w-full text-left py-2 text-sm font-medium text-[#3a3a3e] dark:text-slate-300 hover:text-[#1d1d1f] dark:hover:text-slate-100"
       >
-        <Icon className="h-4 w-4 text-[#86868b]" />
+        <Icon className="h-4 w-4 text-[#86868b] dark:text-slate-500" />
         {title}
-        <span className="text-xs text-[#86868b] bg-[#f0f0f5] rounded-full px-2 py-0.5">
+        <span className="text-xs text-[#86868b] dark:text-slate-400 bg-[#f0f0f5] dark:bg-slate-800 rounded-full px-2 py-0.5">
           {count}
         </span>
         <span className="ml-auto">
@@ -198,20 +200,24 @@ function SummaryMetricCard({
   value: string;
   accent?: boolean;
 }) {
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
   return (
-    <div className={accent ? 'rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm' : 'rounded-2xl border border-[#d2d2d7] bg-white/80 p-4 shadow-sm'}>
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-[#1d1d1f] sm:text-base">{value}</p>
+    <div className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-2xl border border-[color:var(--color-border)]/60 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_34px_rgba(0,0,0,0.2)]`}>
+      <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{label}</p>
+      <p className={`mt-2 text-sm ${accent ? 'font-semibold' : 'font-semibold'} sm:text-base ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>{value}</p>
     </div>
   );
 }
 
 function TabPanelFallback({ message }: { message: string }) {
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
   return (
-    <div className="flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7]/80 px-5 py-8 text-center">
-      <Loader2 className="h-5 w-5 animate-spin text-[#6e6e73]" />
-      <p className="mt-3 text-sm font-medium text-[#1d1d1f]">Loading section</p>
-      <p className="mt-1 max-w-sm text-xs text-[#6e6e73]">{message}</p>
+    <div className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} flex min-h-[260px] flex-col items-center justify-center rounded-2xl border border-[color:var(--color-border)]/60 px-5 py-8 text-center`}>
+      <Loader2 className={`h-5 w-5 animate-spin ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
+      <p className={`mt-3 text-sm font-medium ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Loading section</p>
+      <p className={`mt-1 max-w-sm text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{message}</p>
     </div>
   );
 }
@@ -221,6 +227,8 @@ export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const location = useLocation();
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
 
   // Determine initial tab from URL path segment (e.g., /projects/:id/blueprint)
   const initialTab = useMemo<TabKey>(() => {
@@ -299,6 +307,7 @@ export function ProjectDetailPage() {
   const [initialDesignNotes, setInitialDesignNotes] = useState('');
   const [initialDesignBackfillReason, setInitialDesignBackfillReason] = useState('Synthetic demo backfill for a historical project that originally skipped the initial design step.');
   const [initialDesignUploading, setInitialDesignUploading] = useState(false);
+  const [reviewConfirmDecision, setReviewConfirmDecision] = useState<'approved' | 'declined' | null>(null);
 
   // ── Derived ──
   const visitReport: VisitReport | null = useMemo(() => {
@@ -375,6 +384,22 @@ export function ProjectDetailPage() {
   const [lightboxKey, setLightboxKey] = useState<string | null>(null);
   const [useNewSignature, setUseNewSignature] = useState(false);
   const { data: savedSignature } = useSignature();
+  const usingSavedContractSignature = Boolean(
+    savedSignature?.signatureKey && !useNewSignature && contractSignatureKey === savedSignature.signatureKey,
+  );
+
+  useEffect(() => {
+    if (useNewSignature) {
+      if (contractSignatureKey === savedSignature?.signatureKey) {
+        setContractSignatureKey('');
+      }
+      return;
+    }
+
+    if (savedSignature?.signatureKey) {
+      setContractSignatureKey((prev) => prev || savedSignature.signatureKey || '');
+    }
+  }, [contractSignatureKey, savedSignature?.signatureKey, useNewSignature]);
 
   const handleGenerateContract = async () => {
     try {
@@ -409,6 +434,15 @@ export function ProjectDetailPage() {
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to submit design review'));
     }
+  };
+
+  const requestReviewInitialDesign = (decision: 'approved' | 'declined') => {
+    if (decision === 'declined' && !designReviewNotes.trim()) {
+      toast.error('Add review notes before declining the initial design.');
+      return;
+    }
+
+    setReviewConfirmDecision(decision);
   };
 
   const handleResubmitInitialDesign = async () => {
@@ -542,19 +576,19 @@ export function ProjectDetailPage() {
           variant="ghost"
           size="icon"
           onClick={() => navigate(-1)}
-          className="rounded-xl hover:bg-[#f0f0f5] shrink-0 mt-0.5"
+          className="rounded-xl hover:bg-[color:var(--color-muted)]/85 dark:text-slate-300 dark:hover:text-slate-100 shrink-0 mt-0.5"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-[#1d1d1f] truncate">
+            <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--color-card-foreground)] truncate">
               {project.serviceType || project.title}
             </h1>
             <StatusBadge status={project.status} />
           </div>
-          <p className="text-xs sm:text-sm text-[#6e6e73] mt-0.5">
+          <p className="text-xs sm:text-sm text-[var(--text-metal-color)] dark:text-slate-300 mt-0.5">
             Created {format(new Date(project.createdAt), 'MMM d, yyyy')}
           </p>
         </div>
@@ -566,16 +600,16 @@ export function ProjectDetailPage() {
           {/* Mobile: compact progress bar */}
           <div className="sm:hidden">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-[#1d1d1f]">
+              <p className="text-sm font-semibold text-[var(--color-card-foreground)]">
                 {LIFECYCLE_STEPS[currentStepIndex]?.label}
               </p>
-              <p className="text-xs text-[#6e6e73]">
+              <p className="text-xs text-[var(--text-metal-color)] dark:text-slate-200">
                 Step {currentStepIndex + 1} of {LIFECYCLE_STEPS.length}
               </p>
             </div>
-            <div className="h-2 bg-[#f0f0f5] rounded-full overflow-hidden">
+            <div className="h-2 rounded-full overflow-hidden bg-[color:var(--color-muted)] dark:bg-white/10">
               <div
-                className="h-full bg-[#1d1d1f] rounded-full transition-all duration-500"
+                className="h-full bg-[var(--color-card-foreground)] rounded-full transition-all duration-500"
                 style={{ width: `${((currentStepIndex + 1) / LIFECYCLE_STEPS.length) * 100}%` }}
               />
             </div>
@@ -585,7 +619,7 @@ export function ProjectDetailPage() {
                   key={step.key}
                   className={cn(
                     'text-[10px] font-medium',
-                    i === currentStepIndex ? 'text-[#1d1d1f] font-semibold' : i < currentStepIndex ? 'text-[#6e6e73]' : 'text-[#c8c8cd]',
+                    i === currentStepIndex ? 'text-[var(--color-card-foreground)] font-semibold dark:text-slate-50' : i < currentStepIndex ? 'text-[var(--text-metal-color)] dark:text-slate-200' : 'text-[var(--color-border)] dark:text-slate-300',
                   )}
                 >
                   {i === 0 || i === LIFECYCLE_STEPS.length - 1 || i === currentStepIndex ? step.label : ''}
@@ -605,27 +639,27 @@ export function ProjectDetailPage() {
                     <div
                       className={cn(
                         'h-0.5 flex-1 min-w-4 mt-[18px]',
-                        isPast ? 'bg-[#1d1d1f]' : 'bg-[#e8e8ed]',
+                        isPast ? 'bg-[var(--color-card-foreground)]' : 'bg-[color:var(--color-border)] dark:bg-white/14',
                       )}
                     />
                   )}
                   <div className="flex flex-col items-center gap-1 shrink-0">
                     <div
                       className={cn(
-                        'flex items-center justify-center h-9 w-9 rounded-full text-sm font-bold transition-colors',
+                        'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors',
                         isCurrent
-                          ? 'bg-[#1d1d1f] text-white ring-2 ring-[#c8c8cd]'
+                          ? 'bg-[var(--color-card-foreground)] text-[var(--color-card)] ring-2 ring-[color:var(--color-border)] dark:ring-white/18'
                           : isPast
-                            ? 'bg-[#1d1d1f] text-white'
-                            : 'bg-[#f0f0f5] text-[#86868b]',
+                            ? 'bg-[var(--color-card-foreground)] text-[var(--color-card)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.08)]'
+                            : 'bg-[color:var(--color-muted)] text-[var(--text-metal-muted-color)] dark:border dark:border-white/14 dark:bg-white/[0.06] dark:text-slate-100',
                       )}
                     >
                       {isPast ? <Check className="h-4 w-4" /> : i + 1}
                     </div>
                     <span
                       className={cn(
-                        'text-xs font-medium whitespace-nowrap',
-                        isCurrent ? 'text-[#1d1d1f] font-semibold' : isPast ? 'text-[#6e6e73]' : 'text-[#86868b]',
+                        'whitespace-nowrap text-xs font-medium',
+                        isCurrent ? 'text-[var(--color-card-foreground)] font-semibold dark:text-slate-50' : isPast ? 'text-[var(--text-metal-color)] dark:text-slate-200' : 'text-[var(--text-metal-muted-color)] dark:text-slate-300',
                       )}
                     >
                       {step.label}
@@ -640,12 +674,15 @@ export function ProjectDetailPage() {
 
       {/* ── Customer Status Guide Banner ── */}
       {project.status === 'draft' && visitReport?.visitType === 'consultation' && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
+        <Card className={cn(
+          'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+          isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-blue-200 bg-blue-50/50'
+        )}>
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <Info className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-slate-300' : 'text-blue-600')} />
             <div>
-              <p className="text-sm font-semibold text-blue-900">Awaiting ocular visit</p>
-              <p className="text-xs text-blue-700 mt-0.5">
+              <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-blue-900')}>Awaiting ocular visit</p>
+              <p className={cn('mt-0.5 text-xs', isDark ? 'text-slate-400' : 'text-blue-700')}>
                 {isEngineer
                   ? 'Engineering work starts after the ocular visit is finalized and its report moves this project into the submitted stage.'
                   : 'This draft came from the consultation stage. The next step is to finalize the ocular visit before engineering begins.'}
@@ -655,78 +692,87 @@ export function ProjectDetailPage() {
         </Card>
       )}
       {isCustomer && project.status === 'submitted' && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
+        <Card className={cn(
+          'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+          isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-blue-200 bg-blue-50/50'
+        )}>
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <Info className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-slate-300' : 'text-blue-600')} />
             <div>
-              <p className="text-sm font-semibold text-blue-900">Project Submitted</p>
-              <p className="text-xs text-blue-700 mt-0.5">Your project has been created from the visit report. An engineer will be assigned to design your blueprint.</p>
+              <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-blue-900')}>Project Submitted</p>
+              <p className={cn('mt-0.5 text-xs', isDark ? 'text-slate-400' : 'text-blue-700')}>Your project has been created from the visit report. An engineer will be assigned to design your blueprint.</p>
             </div>
           </CardContent>
         </Card>
       )}
       {isCustomer && project.status === 'blueprint' && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
+        <Card className={cn(
+          'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+          isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-amber-200 bg-amber-50/50'
+        )}>
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <Info className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-amber-300' : 'text-amber-600')} />
             <div>
-              <p className="text-sm font-semibold text-amber-900">Blueprint In Progress</p>
-              <p className="text-xs text-amber-700 mt-0.5">The engineer is working on your blueprint and costing. You&apos;ll be notified once it&apos;s ready for your review.</p>
+              <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-amber-900')}>Blueprint In Progress</p>
+              <p className={cn('mt-0.5 text-xs', isDark ? 'text-slate-400' : 'text-amber-700')}>The engineer is working on your blueprint and costing. You&apos;ll be notified once it&apos;s ready for your review.</p>
             </div>
           </CardContent>
         </Card>
       )}
       {isCustomer && project.status === 'approved' && !paymentPlan && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 bg-emerald-50/50">
+        <Card className={cn(
+          'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+          isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-emerald-200 bg-emerald-50/50'
+        )}>
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <CreditCard className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <CreditCard className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-emerald-300' : 'text-emerald-600')} />
             <div>
-              <p className="text-sm font-semibold text-emerald-900">Choose Your Payment Plan</p>
-              <p className="text-xs text-emerald-700 mt-0.5">Your blueprint is approved. Open the Blueprint tab to choose full payment or installment, then your contract will be generated for signing.</p>
+              <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-emerald-900')}>Choose Your Payment Plan</p>
+              <p className={cn('mt-0.5 text-xs', isDark ? 'text-slate-400' : 'text-emerald-700')}>Your blueprint is approved. Open the Blueprint tab to choose full payment or installment, then your contract will be generated for signing.</p>
             </div>
           </CardContent>
         </Card>
       )}
       {isCustomer && project.status === 'payment_pending' && !project.contractSignedAt && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <PenTool className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <PenTool className="h-5 w-5 text-amber-600 dark:text-amber-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-amber-900">Contract Ready for Signature</p>
-              <p className="text-xs text-amber-700 mt-0.5">Your payment plan is set. Review and sign the contract before making your first payment.</p>
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Contract Ready for Signature</p>
+              <p className="text-xs text-amber-700 dark:text-amber-200 mt-0.5">Your payment plan is set. Review and sign the contract before making your first payment.</p>
             </div>
           </CardContent>
         </Card>
       )}
       {isCustomer && project.status === 'payment_pending' && !!project.contractSignedAt && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <CreditCard className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+            <CreditCard className="h-5 w-5 text-amber-600 dark:text-amber-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-amber-900">Payment Required</p>
-              <p className="text-xs text-amber-700 mt-0.5">Complete the required payments to begin fabrication. Go to the Payments tab to pay via QR or cash.</p>
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Payment Required</p>
+              <p className="text-xs text-amber-700 dark:text-amber-200 mt-0.5">Complete the required payments to begin fabrication. Go to the Payments tab to pay via QR or cash.</p>
             </div>
           </CardContent>
         </Card>
       )}
       {isCustomer && project.status === 'fabrication' && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-indigo-200 bg-indigo-50/50">
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-indigo-200 dark:border-indigo-900/60 bg-indigo-50/50 dark:bg-indigo-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Hammer className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
+            <Hammer className="h-5 w-5 text-indigo-600 dark:text-indigo-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-indigo-900">Fabrication In Progress</p>
-              <p className="text-xs text-indigo-700 mt-0.5">Your order is being fabricated. Check the Fabrication tab for progress updates and photos.</p>
+              <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">Fabrication In Progress</p>
+              <p className="text-xs text-indigo-700 dark:text-indigo-200 mt-0.5">Your order is being fabricated. Check the Fabrication tab for progress updates and photos.</p>
             </div>
           </CardContent>
         </Card>
       )}
       {isCustomer && project.status === 'completed' && (
-        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 bg-emerald-50/50">
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-emerald-200 dark:border-emerald-900/60 bg-emerald-50/50 dark:bg-emerald-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-emerald-900">Project Complete</p>
-              <p className="text-xs text-emerald-700 mt-0.5">Your project has been completed. Thank you for choosing our services!</p>
+              <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Project Complete</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-200 mt-0.5">Your project has been completed. Thank you for choosing our services!</p>
             </div>
           </CardContent>
         </Card>
@@ -762,18 +808,18 @@ export function ProjectDetailPage() {
       {isEngineer && (
         <>
           {canEngineerClaimProject && (
-            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-[#c8c8cd] bg-[#f0f0f5]/50">
+            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-[color:var(--color-border)] bg-[color:var(--color-muted)]/80">
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <UserPlus className="h-5 w-5 text-[#1d1d1f] shrink-0 mt-0.5 sm:mt-0" />
+                  <UserPlus className="h-5 w-5 text-[var(--color-card-foreground)] shrink-0 mt-0.5 sm:mt-0" />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[#1d1d1f]">This project needs an engineer</p>
-                    <p className="text-xs text-[#6e6e73]">Claim it to start working on the blueprint.</p>
+                    <p className="text-sm font-semibold text-[var(--color-card-foreground)]">This project needs an engineer</p>
+                    <p className="text-xs text-[var(--text-metal-color)]">Claim it to start working on the blueprint.</p>
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white w-full sm:w-auto"
+                  className="bg-[var(--color-card-foreground)] hover:opacity-90 text-[var(--color-card)] w-full sm:w-auto"
                   onClick={handleClaimProject}
                   disabled={assignEngineers.isPending}
                 >
@@ -784,23 +830,29 @@ export function ProjectDetailPage() {
             </Card>
           )}
           {project.status === 'blueprint' && isAssignedEngineer && !blueprint && (
-            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-blue-200 bg-blue-50/50">
+            <Card className={cn(
+              'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+              isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-blue-200 bg-blue-50/50'
+            )}>
               <CardContent className="p-4 flex items-center gap-3">
-                <Upload className="h-5 w-5 text-blue-600 shrink-0" />
+                <Upload className={cn('h-5 w-5 shrink-0', isDark ? 'text-slate-300' : 'text-blue-600')} />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-blue-800">Blueprint needed</p>
-                  <p className="text-xs text-blue-700">Upload the blueprint and costing for customer review.</p>
+                  <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-blue-800')}>Blueprint needed</p>
+                  <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-blue-700')}>Upload the blueprint and costing for customer review.</p>
                 </div>
               </CardContent>
             </Card>
           )}
           {blueprint?.status === 'revision_requested' && isAssignedEngineer && (
-            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 bg-amber-50/50">
+            <Card className={cn(
+              'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+              isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-amber-200 bg-amber-50/50'
+            )}>
               <CardContent className="p-4 flex items-center gap-3">
-                <Upload className="h-5 w-5 text-amber-600 shrink-0" />
+                <Upload className={cn('h-5 w-5 shrink-0', isDark ? 'text-amber-300' : 'text-amber-600')} />
                 <div className="flex-1">
-                  <p className="text-sm font-semibold text-amber-800">Revision requested</p>
-                  <p className="text-xs text-amber-700">
+                  <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-amber-800')}>Revision requested</p>
+                  <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-amber-700')}>
                     {blueprint.revisionNotes || 'The customer requested changes to the blueprint.'}
                   </p>
                 </div>
@@ -808,19 +860,27 @@ export function ProjectDetailPage() {
             </Card>
           )}
           {['approved', 'payment_pending'].includes(project.status) && isAssignedEngineer && !hasFabLead && (
-            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-violet-200 bg-violet-50/50">
+            <Card className={cn(
+              'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+              isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-violet-200 bg-violet-50/50'
+            )}>
               <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <Users className="h-5 w-5 text-violet-600 shrink-0 mt-0.5 sm:mt-0" />
+                  <Users className={cn('h-5 w-5 shrink-0 mt-0.5 sm:mt-0', isDark ? 'text-violet-300' : 'text-violet-600')} />
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-violet-800">Assign fabrication team</p>
-                    <p className="text-xs text-violet-700">Select a lead fabricator and assistants for this project.</p>
+                    <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-violet-800')}>Assign fabrication team</p>
+                    <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-violet-700')}>Select a lead fabricator and assistants for this project.</p>
                   </div>
                 </div>
                 <Button
                   size="sm"
                   variant="outline"
-                  className="border-violet-300 text-violet-700 hover:bg-violet-100 w-full sm:w-auto"
+                  className={cn(
+                    'w-full sm:w-auto',
+                    isDark
+                      ? 'border-white/12 bg-white/[0.05] text-slate-100 hover:bg-white/[0.08]'
+                      : 'border-violet-300 text-violet-700 hover:bg-violet-100'
+                  )}
                   onClick={() => setShowFabForm(true)}
                 >
                   <Users className="mr-1.5 h-4 w-4" />
@@ -835,7 +895,7 @@ export function ProjectDetailPage() {
       {/* Tabs */}
       <div className="-mx-3 sm:mx-0">
         <div
-          className="flex overflow-x-auto border-b border-[#d2d2d7] px-3 sm:px-0 no-scrollbar"
+          className="flex overflow-x-auto border-b border-[color:var(--color-border)] px-3 sm:px-0 no-scrollbar"
           role="tablist"
           aria-label="Project detail sections"
         >
@@ -853,8 +913,8 @@ export function ProjectDetailPage() {
               className={cn(
                 'flex items-center gap-1.5 sm:gap-2 whitespace-nowrap border-b-2 px-3.5 sm:px-4 py-3 text-sm font-medium transition-colors',
                 activeTab === tab.key
-                  ? 'border-[#1d1d1f] text-[#1d1d1f]'
-                  : 'border-transparent text-[#6e6e73] hover:text-[#1d1d1f]',
+                  ? 'border-[var(--color-card-foreground)] text-[var(--color-card-foreground)]'
+                  : 'border-transparent text-[var(--text-metal-color)] dark:text-slate-300 hover:text-[var(--color-card-foreground)] dark:hover:text-slate-100',
               )}
             >
               <tab.icon className="h-4 w-4" />
@@ -873,62 +933,62 @@ export function ProjectDetailPage() {
           aria-labelledby="project-tab-details"
         >
           {/* Project Info */}
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
             <CardHeader className="px-4 sm:px-6">
-              <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Project Info</CardTitle>
+              <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Project Info</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 px-4 sm:px-6">
               {project.description && (
                 <div>
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Description</p>
-                  <p className="text-sm text-[#3a3a3e] mt-1">{project.description}</p>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Description</p>
+                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.description}</p>
                 </div>
               )}
               {isStaff && project.customerName && (
                 <div>
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Customer</p>
-                  <p className="text-sm text-[#3a3a3e] mt-1">{project.customerName}</p>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Customer</p>
+                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.customerName}</p>
                 </div>
               )}
               {project.serviceType && (
                 <div>
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Service Type</p>
-                  <p className="text-sm text-[#3a3a3e] mt-1 capitalize">{project.serviceType.replace(/_/g, ' ')}</p>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Service Type</p>
+                  <p className={`mt-1 text-sm capitalize ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.serviceType.replace(/_/g, ' ')}</p>
                 </div>
               )}
               {project.siteAddress && (
                 <div>
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Site Address</p>
-                  <p className="text-sm text-[#3a3a3e] mt-1">{project.siteAddress}</p>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Site Address</p>
+                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.siteAddress}</p>
                 </div>
               )}
               <div>
-                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Status</p>
+                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Status</p>
                 <div className="mt-1"><StatusBadge status={project.status} /></div>
               </div>
             </CardContent>
           </Card>
 
           {isStaff && !hasInitialDesign && project.status !== 'draft' && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 bg-amber-50/60">
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/40">
               <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900 dark:text-amber-100">
                   <AlertTriangle className="h-5 w-5" />
                   Initial Design Missing
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 px-4 sm:px-6">
-                <p className="text-sm text-amber-900">
+                <p className="text-sm text-amber-900 dark:text-amber-100">
                   No initial design package was submitted by sales staff for this project.
                 </p>
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
                   Because there was nothing to review, engineering approval for the initial design was skipped on this record.
                 </p>
                 {canBackfillInitialDesign && (
-                  <div className="space-y-3 rounded-xl border border-amber-200 bg-white/80 p-4">
+                  <div className="space-y-3 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-white/80 dark:bg-slate-900/90 p-4">
                     <div>
-                      <p className="text-sm font-medium text-amber-950">Admin Historical Backfill</p>
-                      <p className="mt-1 text-xs text-amber-800">
+                      <p className="text-sm font-medium text-amber-950 dark:text-amber-100">Admin Historical Backfill</p>
+                      <p className="mt-1 text-xs text-amber-800 dark:text-amber-200">
                         Add synthetic demo-only initial design data for reference without pretending the original workflow happened on time.
                       </p>
                     </div>
@@ -946,13 +1006,13 @@ export function ProjectDetailPage() {
                       value={initialDesignNotes}
                       onChange={(e) => setInitialDesignNotes(e.target.value)}
                       placeholder="Describe the synthetic reference package, intended visual direction, or demo assumptions."
-                      className="min-h-[96px] rounded-xl border-amber-200 bg-white"
+                      className="min-h-[96px] rounded-xl border-amber-200 dark:border-amber-900/60 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                     <Textarea
                       value={initialDesignBackfillReason}
                       onChange={(e) => setInitialDesignBackfillReason(e.target.value)}
                       placeholder="Explain why this historical backfill is being added now."
-                      className="min-h-[96px] rounded-xl border-amber-200 bg-white"
+                      className="min-h-[96px] rounded-xl border-amber-200 dark:border-amber-900/60 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                     <Button
                       className="w-full bg-amber-900 text-white hover:bg-amber-950 sm:w-auto"
@@ -969,22 +1029,22 @@ export function ProjectDetailPage() {
           )}
 
           {isStaff && hasInitialDesign && hasBackfilledInitialDesign && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 bg-amber-50/80">
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/80 dark:bg-amber-950/40">
               <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900">
+                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900 dark:text-amber-100">
                   <AlertTriangle className="h-5 w-5" />
                   Historical Initial Design Backfill
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-2 px-4 sm:px-6">
-                <p className="text-sm text-amber-900">
+                <p className="text-sm text-amber-900 dark:text-amber-100">
                   This project originally skipped the initial design submission and engineer review step.
                 </p>
-                <p className="text-sm text-amber-800">
+                <p className="text-sm text-amber-800 dark:text-amber-200">
                   An admin later attached synthetic demo reference data on {initialDesignBackfill?.backfilledAt ? format(new Date(initialDesignBackfill.backfilledAt), 'MMM d, yyyy h:mm a') : 'a later date'} so the historical record is easier to demo and inspect.
                 </p>
                 {initialDesignBackfill?.reason && (
-                  <p className="text-sm text-amber-800">
+                  <p className="text-sm text-amber-800 dark:text-amber-200">
                     Reason: {initialDesignBackfill.reason}
                   </p>
                 )}
@@ -996,20 +1056,20 @@ export function ProjectDetailPage() {
             <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
               <CardHeader className="px-4 sm:px-6">
                 <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Initial Design Review</CardTitle>
+                  <CardTitle className="text-base sm:text-lg text-[#1d1d1f] dark:text-slate-100">Initial Design Review</CardTitle>
                   <span className={cn(
                     'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium w-fit capitalize',
-                    project.designReviewStatus === 'approved' && 'border-emerald-200 bg-emerald-50 text-emerald-700',
-                    project.designReviewStatus === 'declined' && 'border-red-200 bg-red-50 text-red-700',
-                    project.designReviewStatus === 'pending' && 'border-amber-200 bg-amber-50 text-amber-700',
-                    (!project.designReviewStatus || project.designReviewStatus === 'not_required') && 'border-gray-200 bg-gray-50 text-gray-600',
+                    project.designReviewStatus === 'approved' && 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200',
+                    project.designReviewStatus === 'declined' && 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200',
+                    project.designReviewStatus === 'pending' && 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
+                    (!project.designReviewStatus || project.designReviewStatus === 'not_required') && 'border-gray-200 bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
                   )}>
                     {(project.designReviewStatus || 'not_required').replace('_', ' ')}
                   </span>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4 px-4 sm:px-6">
-                <p className="text-sm text-[#6e6e73]">
+                <p className="text-sm text-[#6e6e73] dark:text-slate-400">
                   {hasBackfilledInitialDesign
                     ? 'This package was added later as synthetic demo reference data. It documents a backfill for this historical record and does not mean the original review step happened on time.'
                     : 'Sales uploaded the rough sketch, inspiration, or reference files collected during and after the ocular visit. Engineering should review this package before continuing.'}
@@ -1021,8 +1081,18 @@ export function ProjectDetailPage() {
                       <button
                         key={key}
                         type="button"
-                        onClick={() => openAuthenticatedFile(key)}
-                        className="group relative w-full overflow-hidden rounded-xl border border-[#d2d2d7] bg-[#f5f5f7] text-left"
+                        onClick={() => {
+                          if (isImageFileKey(key)) {
+                            setLightboxKey(key);
+                            return;
+                          }
+                          openAuthenticatedFile(key);
+                        }}
+                        className={cn(
+                          'group relative w-full overflow-hidden rounded-xl border border-[#d2d2d7] dark:border-slate-700 bg-[#f5f5f7] dark:bg-slate-800 text-left',
+                          isImageFileKey(key) ? 'cursor-zoom-in' : 'cursor-pointer',
+                        )}
+                        title={isImageFileKey(key) ? 'Click to preview image' : 'Open file'}
                       >
                         {isImageFileKey(key) ? (
                           <div className="relative aspect-[4/3]">
@@ -1031,12 +1101,12 @@ export function ProjectDetailPage() {
                               alt={getFileName(key) || 'Initial design'}
                               className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
                               fallback={
-                                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#f5f5f7] px-4 py-5 text-center">
-                                  <Image className="h-8 w-8 text-[#86868b]" />
-                                  <span className="line-clamp-2 break-words text-xs font-medium text-[#3a3a3e]">
+                                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#f5f5f7] dark:bg-slate-800 px-4 py-5 text-center">
+                                  <Image className="h-8 w-8 text-[#86868b] dark:text-slate-400" />
+                                  <span className="line-clamp-2 break-words text-xs font-medium text-[#3a3a3e] dark:text-slate-300">
                                     {getFileName(key)}
                                   </span>
-                                  <span className="text-[11px] uppercase tracking-[0.2em] text-[#86868b]">
+                                  <span className="text-[11px] uppercase tracking-[0.2em] text-[#86868b] dark:text-slate-400">
                                     {getFileExtension(key) || 'file'}
                                   </span>
                                 </div>
@@ -1050,17 +1120,17 @@ export function ProjectDetailPage() {
                           </div>
                         ) : (
                           <div className="flex min-h-[112px] items-center gap-3 px-4 py-4 sm:min-h-[132px]">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-[#6e6e73] shadow-sm">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-slate-800 text-[#6e6e73] dark:text-slate-400 shadow-sm">
                               <FileText className="h-6 w-6" />
                             </div>
                             <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-[#1d1d1f]">
+                              <p className="truncate text-sm font-medium text-[#1d1d1f] dark:text-slate-100">
                                 {getFileName(key)}
                               </p>
-                              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#86868b]">
+                              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#86868b] dark:text-slate-400">
                                 {getFileExtension(key) || 'file'}
                               </p>
-                              <p className="mt-2 text-xs text-[#6e6e73]">
+                              <p className="mt-2 text-xs text-[#6e6e73] dark:text-slate-400">
                                 Tap to open this reference file.
                               </p>
                             </div>
@@ -1073,10 +1143,10 @@ export function ProjectDetailPage() {
 
                 {project.initialDesignNotes && (
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73]">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73] dark:text-slate-400">
                       {hasBackfilledInitialDesign ? 'Backfill Notes' : 'Sales Notes'}
                     </p>
-                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] bg-[#f5f5f7] p-3 text-sm text-[#3a3a3e]">
+                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-[#f5f5f7] dark:bg-slate-800 p-3 text-sm text-[#3a3a3e] dark:text-slate-300">
                       {project.initialDesignNotes}
                     </p>
                   </div>
@@ -1084,18 +1154,18 @@ export function ProjectDetailPage() {
 
                 {project.designReviewNotes && (
                   <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73]">Latest Review Notes</p>
-                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] bg-white p-3 text-sm text-[#3a3a3e]">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73] dark:text-slate-400">Latest Review Notes</p>
+                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm text-[#3a3a3e] dark:text-slate-300">
                       {project.designReviewNotes}
                     </p>
                   </div>
                 )}
 
                 {canManageInitialDesign && (
-                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] bg-[#fbfbfd] p-4">
+                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-[#fbfbfd] dark:bg-slate-900/90 p-4">
                     <div>
-                      <p className="text-sm font-medium text-[#1d1d1f]">Sales Resubmission</p>
-                      <p className="mt-1 text-xs text-[#6e6e73]">
+                      <p className="text-sm font-medium text-[#1d1d1f] dark:text-slate-100">Sales Resubmission</p>
+                      <p className="mt-1 text-xs text-[#6e6e73] dark:text-slate-400">
                         {project.designReviewStatus === 'declined'
                           ? 'Engineering requested changes. Update the files or notes here and resubmit for review.'
                           : 'You can refine the initial design package before the engineer uploads the first blueprint.'}
@@ -1115,7 +1185,7 @@ export function ProjectDetailPage() {
                       value={initialDesignNotes}
                       onChange={(e) => setInitialDesignNotes(e.target.value)}
                       placeholder="Add sales notes, clarified customer preferences, or engineer-requested adjustments."
-                      className="min-h-[96px] rounded-xl border-[#d2d2d7] bg-white"
+                      className="min-h-[96px] rounded-xl border-[#d2d2d7] dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                     <Button
                       className="w-full bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] sm:w-auto"
@@ -1129,34 +1199,34 @@ export function ProjectDetailPage() {
                 )}
 
                 {canReviewInitialDesign && (
-                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] bg-[#fbfbfd] p-4">
+                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-[#fbfbfd] dark:bg-slate-900/90 p-4">
                     <div>
-                      <p className="text-sm font-medium text-[#1d1d1f]">Engineer Decision</p>
-                      <p className="mt-1 text-xs text-[#6e6e73]">Approve if the reference is sufficient to proceed, or decline it with notes for sales staff.</p>
+                      <p className="text-sm font-medium text-[#1d1d1f] dark:text-slate-100">Engineer Decision</p>
+                      <p className="mt-1 text-xs text-[#6e6e73] dark:text-slate-400">Approve if the reference is sufficient to proceed, or decline it with notes for sales staff.</p>
                     </div>
                     <Textarea
                       value={designReviewNotes}
                       onChange={(e) => setDesignReviewNotes(e.target.value)}
                       placeholder="Add internal review notes. Required when declining."
-                      className="min-h-[96px] rounded-xl border-[#d2d2d7] bg-white"
+                      className="min-h-[96px] rounded-xl border-[#d2d2d7] dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
-                    <div className="flex flex-col gap-2 sm:flex-row">
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
                       <Button
-                        className="w-full bg-emerald-600 text-white hover:bg-emerald-700 sm:w-auto"
-                        onClick={() => handleReviewInitialDesign('approved')}
-                        disabled={reviewInitialDesign.isPending}
-                      >
-                        {reviewInitialDesign.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                        Approve Initial Design
-                      </Button>
-                      <Button
-                        variant="outline"
-                        className="w-full border-red-200 text-red-700 hover:bg-red-50 sm:w-auto"
-                        onClick={() => handleReviewInitialDesign('declined')}
+                        variant="destructive"
+                        className="w-full sm:w-auto"
+                        onClick={() => requestReviewInitialDesign('declined')}
                         disabled={reviewInitialDesign.isPending}
                       >
                         <X className="mr-2 h-4 w-4" />
                         Decline Initial Design
+                      </Button>
+                      <Button
+                        className="w-full bg-[linear-gradient(180deg,#2ca36f_0%,#1e7c54_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_12px_24px_rgba(21,98,70,0.24)] hover:bg-[linear-gradient(180deg,#33b47b_0%,#238960_100%)] dark:border dark:border-emerald-600/40 dark:bg-[linear-gradient(180deg,#34c084_0%,#238960_100%)] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_14px_28px_rgba(7,58,40,0.28)] dark:hover:bg-[linear-gradient(180deg,#3ad18f_0%,#28976a_100%)] sm:ml-auto sm:w-auto"
+                        onClick={() => requestReviewInitialDesign('approved')}
+                        disabled={reviewInitialDesign.isPending}
+                      >
+                        {reviewInitialDesign.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                        Approve Initial Design
                       </Button>
                     </div>
                   </div>
@@ -1167,25 +1237,25 @@ export function ProjectDetailPage() {
 
           {/* Team (internal staff only — customers see simplified view) */}
           {isStaff ? (
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
             <CardHeader className="px-4 sm:px-6">
-              <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Team</CardTitle>
+              <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Team</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4 px-4 sm:px-6">
               {/* Engineers */}
               <div>
-                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Engineers</p>
+                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Engineers</p>
                 {project.engineerIds.length > 0 ? (
                   <div className="mt-1 space-y-2">
                     {project.engineerIds.map((eng: any) => (
                       <div key={String(eng._id || eng)} className="flex items-center gap-2">
-                        <p className="text-sm text-[#3a3a3e]">
+                        <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
                           {eng.firstName ? `${eng.firstName} ${eng.lastName}` : String(eng)}
                         </p>
                         {eng.phone && (
                           <a
                             href={`tel:${eng.phone}`}
-                            className="inline-flex items-center gap-1 text-xs text-[#1d1d1f] hover:text-[#3a3a3e]"
+                            className={`inline-flex items-center gap-1 text-xs ${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)]'}`}
                           >
                             <Phone className="h-3 w-3" />
                             {eng.phone}
@@ -1196,55 +1266,55 @@ export function ProjectDetailPage() {
                   </div>
                 ) : (
                   <div className="mt-2">
-                    <p className="text-sm text-[#86868b] italic">Not assigned yet</p>
+                    <p className={`text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
                   </div>
                 )}
               </div>
 
               {/* Fabrication Lead */}
               <div>
-                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Fabrication Lead</p>
+                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Lead</p>
                 {hasFabLead ? (
-                  <p className="text-sm text-[#3a3a3e] mt-1">
+                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
                     {(project.fabricationLeadId as any).firstName} {(project.fabricationLeadId as any).lastName}
                   </p>
                 ) : (
-                  <p className="text-sm text-[#86868b] italic mt-1">Not assigned yet</p>
+                  <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
                 )}
               </div>
 
               {/* Fabrication Assistants */}
               <div>
-                <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Fabrication Assistants</p>
+                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Assistants</p>
                 {project.fabricationAssistantIds.length > 0 ? (
                   <div className="mt-1 space-y-1">
                     {project.fabricationAssistantIds.map((a: any) => (
-                      <p key={String(a._id || a)} className="text-sm text-[#3a3a3e]">
+                      <p key={String(a._id || a)} className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
                         {a.firstName ? `${a.firstName} ${a.lastName}` : String(a)}
                       </p>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-sm text-[#86868b] italic mt-1">Not assigned yet</p>
+                  <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
                 )}
               </div>
 
               {/* Assign Fabrication Team (inline form for engineers) */}
               {isEngineer && isAssignedEngineer && (showFabForm || (!hasFabLead && ['approved', 'payment_pending', 'fabrication'].includes(project.status))) && (
-                <div className="mt-4 rounded-xl border border-violet-200 bg-violet-50/30 p-4 space-y-4">
-                  <p className="text-sm font-semibold text-violet-800 flex items-center gap-2">
+                <div className="mt-4 rounded-xl border border-violet-200 dark:border-violet-900/60 bg-violet-50/30 dark:bg-violet-950/30 p-4 space-y-4">
+                  <p className="text-sm font-semibold text-violet-800 dark:text-violet-200 flex items-center gap-2">
                     <Users className="h-4 w-4" />
                     Assign Fabrication Team
                   </p>
 
                   {/* Lead Select */}
                   <div>
-                    <label className="text-xs font-medium text-[#6e6e73] block mb-1">Lead Fabricator *</label>
+                    <label className="text-xs font-medium text-[#6e6e73] dark:text-slate-400 block mb-1">Lead Fabricator *</label>
                     <Select value={fabLeadId} onValueChange={setFabLeadId}>
-                      <SelectTrigger className="bg-white">
+                      <SelectTrigger className="bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
                         <SelectValue placeholder="Select lead fabricator" />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
                         {fabStaffList?.map((s) => (
                           <SelectItem key={s._id} value={s._id}>
                             {s.firstName} {s.lastName}
@@ -1256,8 +1326,8 @@ export function ProjectDetailPage() {
 
                   {/* Assistants Multi-Select (checkbox list) */}
                   <div>
-                    <label className="text-xs font-medium text-[#6e6e73] block mb-1">Assistants (optional)</label>
-                    <div className="max-h-40 overflow-y-auto rounded-lg border border-[#d2d2d7] bg-white divide-y divide-[#e8e8ed]">
+                    <label className="text-xs font-medium text-[#6e6e73] dark:text-slate-400 block mb-1">Assistants (optional)</label>
+                    <div className="max-h-40 overflow-y-auto rounded-lg border border-[#d2d2d7] dark:border-slate-700 bg-white dark:bg-slate-900 divide-y divide-[#e8e8ed] dark:divide-slate-700">
                       {fabStaffList
                         ?.filter((s) => s._id !== fabLeadId)
                         .map((s) => (
@@ -1266,8 +1336,8 @@ export function ProjectDetailPage() {
                             key={s._id}
                             onClick={() => toggleAssistant(s._id)}
                             className={cn(
-                              'flex items-center gap-2 w-full px-3 py-2 text-sm text-left hover:bg-[#f5f5f7] transition-colors',
-                              fabAssistantIds.includes(s._id) && 'bg-violet-50',
+                              'flex items-center gap-2 w-full px-3 py-2 text-sm text-left dark:text-slate-100 hover:bg-[#f5f5f7] dark:hover:bg-slate-800 transition-colors',
+                              fabAssistantIds.includes(s._id) && 'bg-violet-50 dark:bg-violet-950/40',
                             )}
                           >
                             <div
@@ -1275,7 +1345,7 @@ export function ProjectDetailPage() {
                                 'h-4 w-4 rounded border flex items-center justify-center',
                                 fabAssistantIds.includes(s._id)
                                   ? 'bg-violet-500 border-violet-500'
-                                  : 'border-[#c8c8cd]',
+                                    : 'border-[#c8c8cd] dark:border-slate-600',
                               )}
                             >
                               {fabAssistantIds.includes(s._id) && (
@@ -1286,11 +1356,11 @@ export function ProjectDetailPage() {
                           </button>
                         ))}
                       {(!fabStaffList || fabStaffList.filter((s) => s._id !== fabLeadId).length === 0) && (
-                        <p className="px-3 py-2 text-xs text-[#86868b]">No other fabrication staff available</p>
+                        <p className="px-3 py-2 text-xs text-[#86868b] dark:text-slate-400">No other fabrication staff available</p>
                       )}
                     </div>
                     {fabAssistantIds.length > 0 && (
-                      <p className="text-xs text-[#6e6e73] mt-1">{fabAssistantIds.length} selected</p>
+                      <p className="text-xs text-[#6e6e73] dark:text-slate-400 mt-1">{fabAssistantIds.length} selected</p>
                     )}
                   </div>
 
@@ -1333,18 +1403,18 @@ export function ProjectDetailPage() {
           </Card>
           ) : (
             /* Customer sees a simple info card instead of team details */
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
               <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Project Team</CardTitle>
+                <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Project Team</CardTitle>
               </CardHeader>
               <CardContent className="px-4 sm:px-6">
-                <p className="text-sm text-[#6e6e73]">
+                <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                   Your project is being handled by our expert team of engineers and fabrication specialists. 
                   We&apos;ll keep you updated on progress through notifications.
                 </p>
                 {project.engineerIds.length > 0 && (
-                  <p className="text-sm text-[#6e6e73] mt-3">
-                    <span className="font-medium text-[#3a3a3e]">{project.engineerIds.length}</span> engineer{project.engineerIds.length > 1 ? 's' : ''} assigned
+                  <p className={`mt-3 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                    <span className={`font-medium ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.engineerIds.length}</span> engineer{project.engineerIds.length > 1 ? 's' : ''} assigned
                   </p>
                 )}
               </CardContent>
@@ -1353,21 +1423,21 @@ export function ProjectDetailPage() {
 
           {/* ── Visit Report (Site Survey Data) — Staff only ── */}
           {isStaff && visitReport && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50 lg:col-span-2">
+            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
               <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-[#1d1d1f]">
+                <CardTitle className={`flex items-center gap-2 text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
                   <Camera className="h-5 w-5" />
                   Site Visit Report
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4 px-4 sm:px-6">
                 {visitReport.visitType === 'ocular' && !hasVisitMeasurements && (
-                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3">
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-3">
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600" />
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
                       <div>
-                        <p className="text-sm font-semibold text-amber-900">Measurements Missing</p>
-                        <p className="mt-1 text-sm text-amber-800">
+                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Measurements Missing</p>
+                        <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
                           This ocular report was submitted without measured line items or legacy dimensions. Engineering can only see the notes and attachments currently saved on the report.
                         </p>
                       </div>
@@ -1376,32 +1446,32 @@ export function ProjectDetailPage() {
                 )}
 
                 {visitReport.status === 'returned' && visitReport.returnReason && (
-                  <div className="rounded-xl border border-orange-200 bg-orange-50 px-4 py-3">
+                  <div className="rounded-xl border border-orange-200 dark:border-orange-900/60 bg-orange-50 dark:bg-orange-950/40 px-4 py-3">
                     <div className="flex items-start gap-3">
-                      <RotateCcw className="mt-0.5 h-5 w-5 shrink-0 text-orange-600" />
+                      <RotateCcw className="mt-0.5 h-5 w-5 shrink-0 text-orange-600 dark:text-orange-300" />
                       <div>
-                        <p className="text-sm font-semibold text-orange-900">Report Under Repair</p>
-                        <p className="mt-1 text-sm text-orange-800">{visitReport.returnReason}</p>
+                        <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">Report Under Repair</p>
+                        <p className="mt-1 text-sm text-orange-800 dark:text-orange-200">{visitReport.returnReason}</p>
                       </div>
                     </div>
                   </div>
                 )}
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                    <p className="text-[10px] uppercase text-[#86868b] font-medium">Report Status</p>
-                    <p className="text-sm text-[#3a3a3e] capitalize">{visitReport.status}</p>
+                  <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                    <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Report Status</p>
+                    <p className={`text-sm capitalize ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.status}</p>
                   </div>
                   {visitReport.actualVisitDateTime && (
-                    <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                      <p className="text-[10px] uppercase text-[#86868b] font-medium">Actual Visit Date</p>
-                      <p className="text-sm text-[#3a3a3e]">{format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')}</p>
+                    <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                      <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Actual Visit Date</p>
+                      <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')}</p>
                     </div>
                   )}
                   {(visitReport.measurementUnit || visitReport.measurements?.unit) && (
-                    <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                      <p className="text-[10px] uppercase text-[#86868b] font-medium">Measurement Unit</p>
-                      <p className="text-sm text-[#3a3a3e]">{visitReport.measurementUnit || visitReport.measurements?.unit}</p>
+                    <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                      <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Measurement Unit</p>
+                      <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.measurementUnit || visitReport.measurements?.unit}</p>
                     </div>
                   )}
                 </div>
@@ -1434,32 +1504,35 @@ export function ProjectDetailPage() {
                 {/* Line Items */}
                 {visitReport.lineItems && visitReport.lineItems.length > 0 && (
                   <div>
-                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">
+                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                       Line Items ({visitReport.measurementUnit || visitReport.measurements?.unit || 'cm'})
                     </p>
-                    <div className="-mx-4 sm:mx-0 overflow-x-auto sm:rounded-lg sm:border border-y sm:border-x border-[#d2d2d7]">
+                    <div className="-mx-4 overflow-x-auto border-y border-[color:var(--color-border)]/45 sm:mx-0 sm:rounded-xl sm:border sm:border-[color:var(--color-border)]/45">
                       <table className="min-w-full text-sm">
-                        <thead className="bg-[#f5f5f7]/80">
+                        <thead className={isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/75'}>
                           <tr>
-                            <th className="text-left px-3 py-2 text-xs font-medium text-[#6e6e73]">Item</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">Qty</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">L</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">W</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">H</th>
-                            <th className="text-center px-3 py-2 text-xs font-medium text-[#6e6e73]">Area</th>
-                            <th className="text-left px-3 py-2 text-xs font-medium text-[#6e6e73]">Notes</th>
+                            <th className={`px-3 py-2 text-left text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Item</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Qty</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>L</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>W</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>H</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Area</th>
+                            <th className={`px-3 py-2 text-left text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Notes</th>
                           </tr>
                         </thead>
-                        <tbody className="divide-y divide-[#e8e8ed]">
+                        <tbody className={cn(
+                          'divide-y divide-[color:var(--color-border)]/35',
+                          isDark ? 'bg-slate-950/55' : 'bg-white/70'
+                        )}>
                           {visitReport.lineItems.map((item, idx) => (
-                            <tr key={idx} className="hover:bg-[#f5f5f7]/50">
-                              <td className="px-3 py-2 font-medium text-[#3a3a3e]">{item.label}</td>
-                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.quantity}</td>
-                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.length ?? '—'}</td>
-                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.width ?? '—'}</td>
-                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.height ?? '—'}</td>
-                              <td className="px-3 py-2 text-center text-[#6e6e73]">{item.area ?? '—'}</td>
-                              <td className="px-3 py-2 text-[#6e6e73] text-xs">{item.notes || '—'}</td>
+                            <tr key={idx} className={isDark ? 'hover:bg-slate-900/45' : 'hover:bg-[color:var(--color-muted)]/65'}>
+                              <td className={`px-3 py-2 font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{item.label}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.quantity}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.length ?? '—'}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.width ?? '—'}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.height ?? '—'}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.area ?? '—'}</td>
+                              <td className={`px-3 py-2 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{item.notes || '—'}</td>
                             </tr>
                           ))}
                         </tbody>
@@ -1471,48 +1544,48 @@ export function ProjectDetailPage() {
                 {/* Site Conditions — ocular visits only */}
                 {visitReport.visitType === 'ocular' && visitReport.siteConditions && (
                   <div>
-                    <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider mb-2">Site Conditions</p>
+                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Site Conditions</p>
                     <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
                       {visitReport.siteConditions.environment && (
-                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Environment</p>
-                          <p className="text-sm text-[#3a3a3e] capitalize">{visitReport.siteConditions.environment}</p>
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Environment</p>
+                          <p className={`text-sm capitalize ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.environment}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.floorType && (
-                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Floor Type</p>
-                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.floorType}</p>
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Floor Type</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.floorType}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.wallMaterial && (
-                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Wall Material</p>
-                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.wallMaterial}</p>
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Wall Material</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.wallMaterial}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.hasElectrical !== undefined && (
-                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Electrical Access</p>
-                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.hasElectrical ? 'Yes' : 'No'}</p>
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Electrical Access</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.hasElectrical ? 'Yes' : 'No'}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.hasPlumbing !== undefined && (
-                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50">
-                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Plumbing Access</p>
-                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.hasPlumbing ? 'Yes' : 'No'}</p>
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Plumbing Access</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.hasPlumbing ? 'Yes' : 'No'}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.accessNotes && (
-                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50 sm:col-span-2 lg:col-span-3">
-                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Access Notes</p>
-                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.accessNotes}</p>
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3 sm:col-span-2 lg:col-span-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Access Notes</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.accessNotes}</p>
                         </div>
                       )}
                       {visitReport.siteConditions.obstaclesOrConstraints && (
-                        <div className="rounded-lg border border-[#c8c8cd]/50 p-3 bg-[#f5f5f7]/50 sm:col-span-2 lg:col-span-3">
-                          <p className="text-[10px] uppercase text-[#86868b] font-medium">Obstacles / Constraints</p>
-                          <p className="text-sm text-[#3a3a3e]">{visitReport.siteConditions.obstaclesOrConstraints}</p>
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3 sm:col-span-2 lg:col-span-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Obstacles / Constraints</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.obstaclesOrConstraints}</p>
                         </div>
                       )}
                     </div>
@@ -1523,32 +1596,32 @@ export function ProjectDetailPage() {
                 <div className="grid gap-3 sm:grid-cols-2">
                   {visitReport.customerRequirements && (
                     <div>
-                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Customer Requirements</p>
-                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.customerRequirements}</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Customer Requirements</p>
+                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.customerRequirements}</p>
                     </div>
                   )}
                   {visitReport.materials && (
                     <div>
-                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Materials</p>
-                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.materials}</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Materials</p>
+                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.materials}</p>
                     </div>
                   )}
                   {visitReport.finishes && (
                     <div>
-                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Finishes</p>
-                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.finishes}</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Finishes</p>
+                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.finishes}</p>
                     </div>
                   )}
                   {visitReport.preferredDesign && (
                     <div>
-                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Preferred Design</p>
-                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.preferredDesign}</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Preferred Design</p>
+                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.preferredDesign}</p>
                     </div>
                   )}
                   {visitReport.notes && (
                     <div className="sm:col-span-2">
-                      <p className="text-xs font-semibold text-[#6e6e73] uppercase tracking-wider">Notes</p>
-                      <p className="text-sm text-[#3a3a3e] mt-1">{visitReport.notes}</p>
+                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Notes</p>
+                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.notes}</p>
                     </div>
                   )}
                 </div>
@@ -1557,9 +1630,9 @@ export function ProjectDetailPage() {
           )}
 
           {/* Contract Card */}
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
             <CardHeader className="px-4 sm:px-6">
-              <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-[#1d1d1f]">
+              <CardTitle className={`flex items-center gap-2 text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
                 <ScrollText className="h-5 w-5" />
                 Contract
               </CardTitle>
@@ -1569,7 +1642,7 @@ export function ProjectDetailPage() {
                 <div className="space-y-4">
                   {/* Contract info + download */}
                   <div className="space-y-3">
-                    <p className="text-sm text-[#6e6e73]">
+                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                       Contract generated on{' '}
                       {project.contractGeneratedAt
                         ? format(new Date(project.contractGeneratedAt), 'MMM d, yyyy h:mm a')
@@ -1578,7 +1651,7 @@ export function ProjectDetailPage() {
                     <div className="flex flex-wrap gap-2">
                       <Button
                         size="sm"
-                        className="bg-[#1d1d1f] hover:bg-[#2d2d2f]"
+                        variant="prominent"
                         onClick={() => handleDownloadContract('original')}
                         disabled={!!project.originalContractDownloadedAt}
                       >
@@ -1591,6 +1664,7 @@ export function ProjectDetailPage() {
                         size="sm"
                         variant="outline"
                         onClick={() => handleDownloadContract('copy')}
+                        className={isDark ? 'border-white/12 bg-white/[0.05] text-slate-100 hover:bg-white/[0.08]' : 'border-[color:var(--color-border)] bg-white text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]'}
                       >
                         <Download className="mr-1.5 h-4 w-4" />
                         Download Copy
@@ -1601,6 +1675,7 @@ export function ProjectDetailPage() {
                           variant="ghost"
                           onClick={handleGenerateContract}
                           disabled={generateContract.isPending}
+                          className={isDark ? 'text-slate-300 hover:text-slate-100' : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)]'}
                         >
                           {generateContract.isPending && (
                             <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -1613,23 +1688,23 @@ export function ProjectDetailPage() {
 
                   {/* Signing status */}
                   {project.contractSignedAt ? (
-                    <div className="rounded-xl border border-[#d2d2d7]/60 bg-[#f0f0f5]/60 p-4">
-                      <div className="flex items-center gap-2 text-[#1d1d1f]">
+                    <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-4`}>
+                      <div className={`flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>
                         <Check className="h-5 w-5" />
                         <span className="text-sm font-semibold">Contract Signed</span>
                       </div>
-                      <p className="text-xs text-[#6e6e73] mt-1">
+                      <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                         Signed on {format(new Date(project.contractSignedAt), 'MMM d, yyyy h:mm a')}
                       </p>
                     </div>
                   ) : isCustomer ? (
-                    <div className="rounded-xl border-2 border-amber-300 bg-amber-50/50 p-3 space-y-2">
+                    <div className={`space-y-3 rounded-xl border-2 p-4 ${isDark ? 'border-amber-400/70 bg-[linear-gradient(180deg,rgba(120,53,15,0.18)_0%,rgba(15,23,42,0.96)_22%,rgba(2,6,23,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_48px_rgba(2,6,23,0.32)]' : 'border-amber-300 bg-amber-50/50'}`}>
                       <div>
-                        <p className="text-sm font-semibold text-amber-800 flex items-center gap-1.5">
+                        <p className={`flex items-center gap-1.5 text-sm font-semibold ${isDark ? 'text-amber-200' : 'text-amber-800'}`}>
                           <PenTool className="h-3.5 w-3.5" />
                           E-Sign Your Contract
                         </p>
-                        <p className="text-[11px] text-amber-700 mt-0.5">
+                        <p className={`mt-0.5 text-[11px] ${isDark ? 'text-amber-100/80' : 'text-amber-700'}`}>
                           Review the contract above, then sign below.
                         </p>
                       </div>
@@ -1637,8 +1712,8 @@ export function ProjectDetailPage() {
                       {/* Saved signature option */}
                       {savedSignature?.signatureKey && !useNewSignature && (
                         <div className="space-y-1.5">
-                          <p className="text-[10px] font-medium text-gray-500 uppercase tracking-wider">Your Saved Signature</p>
-                          <div className="flex items-center gap-2 bg-white rounded-lg border border-gray-200 p-2">
+                          <p className={`text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Your Saved Signature</p>
+                          <div className={`flex items-center gap-2 rounded-lg border p-2 transition-colors ${isDark ? (usingSavedContractSignature ? 'border-emerald-400/55 bg-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(52,211,153,0.18)]' : 'border-slate-700 bg-slate-950/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]') : (usingSavedContractSignature ? 'border-emerald-300 bg-white shadow-[0_0_0_1px_rgba(16,185,129,0.14)]' : 'border-gray-200 bg-white')}`}>
                             <AuthImage
                               fileKey={savedSignature.signatureKey}
                               alt="Saved signature"
@@ -1647,17 +1722,29 @@ export function ProjectDetailPage() {
                             <div className="flex-1" />
                             <Button
                               size="sm"
-                              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-lg"
+                              disabled={usingSavedContractSignature}
+                              className={isDark
+                                ? (usingSavedContractSignature
+                                  ? 'rounded-lg border border-emerald-400/45 bg-emerald-500/18 text-emerald-200 shadow-none disabled:opacity-100'
+                                  : 'rounded-lg border border-slate-300/70 bg-[linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_12px_28px_rgba(2,6,23,0.24)] hover:bg-[linear-gradient(180deg,#ffffff_0%,#edf2f7_100%)]')
+                                : (usingSavedContractSignature
+                                  ? 'rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 shadow-none disabled:opacity-100'
+                                  : 'rounded-lg bg-[#1d1d1f] text-white hover:bg-[#2d2d2f]')}
                               onClick={() => setContractSignatureKey(savedSignature.signatureKey!)}
                             >
                               <Check className="mr-1.5 h-3.5 w-3.5" />
-                              Use This
+                              {usingSavedContractSignature ? 'Selected' : 'Use This'}
                             </Button>
                           </div>
                           <button
                             type="button"
-                            className="text-[11px] text-amber-700 underline underline-offset-2 hover:text-amber-900"
-                            onClick={() => setUseNewSignature(true)}
+                            className={`text-[11px] underline underline-offset-2 ${isDark ? 'text-amber-300 hover:text-amber-200' : 'text-amber-700 hover:text-amber-900'}`}
+                            onClick={() => {
+                              setUseNewSignature(true);
+                              if (contractSignatureKey === savedSignature.signatureKey) {
+                                setContractSignatureKey('');
+                              }
+                            }}
                           >
                             Draw a new signature instead
                           </button>
@@ -1670,8 +1757,13 @@ export function ProjectDetailPage() {
                           {useNewSignature && (
                             <button
                               type="button"
-                              className="text-[11px] text-amber-700 underline underline-offset-2 hover:text-amber-900"
-                              onClick={() => setUseNewSignature(false)}
+                              className={`text-[11px] underline underline-offset-2 ${isDark ? 'text-amber-300 hover:text-amber-200' : 'text-amber-700 hover:text-amber-900'}`}
+                              onClick={() => {
+                                setUseNewSignature(false);
+                                if (savedSignature?.signatureKey) {
+                                  setContractSignatureKey(savedSignature.signatureKey);
+                                }
+                              }}
                             >
                               &larr; Use saved signature instead
                             </button>
@@ -1687,14 +1779,14 @@ export function ProjectDetailPage() {
                       )}
 
                       {contractSignatureKey && (
-                        <p className="text-xs text-[#6e6e73] flex items-center gap-1">
+                        <p className={`flex items-center gap-1 text-xs ${isDark ? 'text-emerald-300' : 'text-[#6e6e73]'}`}>
                           <Check className="h-3.5 w-3.5" /> Signature captured
                         </p>
                       )}
                       <Button
                         onClick={handleSignContract}
                         disabled={!contractSignatureKey || signContractMutation.isPending}
-                        className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-lg disabled:opacity-40"
+                        className={isDark ? 'w-full rounded-lg border border-emerald-400/60 bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_16px_32px_rgba(6,78,59,0.28)] hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none' : 'w-full rounded-lg bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] disabled:opacity-40'}
                       >
                         {signContractMutation.isPending ? (
                           <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
@@ -1705,8 +1797,8 @@ export function ProjectDetailPage() {
                       </Button>
                     </div>
                   ) : (
-                    <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-3">
-                      <p className="text-sm text-amber-700">
+                    <div className={`rounded-xl border p-3 ${isDark ? 'border-amber-500/35 bg-amber-500/10' : 'border-amber-200 bg-amber-50/50'}`}>
+                      <p className={`text-sm ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>
                         Awaiting customer signature. The customer must e-sign this contract before payments can proceed.
                       </p>
                     </div>
@@ -1715,10 +1807,10 @@ export function ProjectDetailPage() {
               ) : canGenerate &&
                 ['payment_pending', 'fabrication', 'completed'].includes(project.status) ? (
                 <div className="space-y-2">
-                  <p className="text-sm text-[#6e6e73]">No contract has been generated yet.</p>
+                  <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>No contract has been generated yet.</p>
                   <Button
                     size="sm"
-                    className="bg-[#1d1d1f] hover:bg-[#2d2d2f]"
+                    variant="prominent"
                     onClick={handleGenerateContract}
                     disabled={generateContract.isPending}
                   >
@@ -1730,7 +1822,7 @@ export function ProjectDetailPage() {
                   </Button>
                 </div>
               ) : (
-                <p className="text-sm text-[#6e6e73] py-2">
+                <p className={`py-2 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                   {project.status === 'approved'
                     ? 'Contract will be generated after the customer chooses a payment plan.'
                     : ['payment_pending', 'fabrication', 'completed'].includes(project.status)
@@ -1745,7 +1837,7 @@ export function ProjectDetailPage() {
 
       {/* ════════════════  BLUEPRINT TAB  ════════════════ */}
       <div
-        className={activeTab === 'blueprint' ? '' : 'hidden'}
+        className={cn('-mx-3 sm:mx-0', activeTab === 'blueprint' ? '' : 'hidden')}
         role="tabpanel"
         id="project-panel-blueprint"
         aria-labelledby="project-tab-blueprint"
@@ -1765,13 +1857,13 @@ export function ProjectDetailPage() {
           id="project-panel-payments"
           aria-labelledby="project-tab-payments"
         >
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
             <CardContent className="flex flex-col items-center text-center py-12 px-6">
-              <div className="flex h-14 w-14 items-center justify-center rounded-full bg-[#f5f5f7] mb-4">
-                <ScrollText className="h-7 w-7 text-[#6e6e73]" />
+              <div className="silver-sheen mb-4 flex h-14 w-14 items-center justify-center rounded-full">
+                <ScrollText className="h-7 w-7 text-[#33414d] dark:text-[#33414d]" />
               </div>
-              <h3 className="text-base font-semibold text-[#1d1d1f] mb-1">Sign Your Contract First</h3>
-              <p className="text-sm text-[#6e6e73] max-w-sm mb-6">
+              <h3 className={`mb-1 text-base font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Sign Your Contract First</h3>
+              <p className={`mb-6 max-w-sm text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                 {project?.status === 'approved' && !project?.contractKey
                   ? 'Choose your payment plan in the Blueprint tab first. That step generates the contract you need to sign.'
                   : project?.contractKey
@@ -1807,23 +1899,23 @@ export function ProjectDetailPage() {
           aria-labelledby="project-tab-payments"
         >
           {paymentPlan && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
               <CardHeader className="px-4 sm:px-6">
-                <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Payment Plan</CardTitle>
+                <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment Plan</CardTitle>
               </CardHeader>
               <CardContent className="px-4 sm:px-6">
                 <div className="space-y-3">
                   {paymentPlan.stages.map((stage) => (
                     <div
                       key={String(stage.stageId)}
-                      className="flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[#c8c8cd]/50 p-3.5 sm:p-4 bg-[#f5f5f7]/30 hover:bg-[#f5f5f7] transition-colors"
+                      className="metal-panel flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[color:var(--color-border)]/55 p-3.5 sm:p-4 transition-colors hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_32px_rgba(0,0,0,0.22)]"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">{String(stage.label)}</p>
+                        <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{String(stage.label)}</p>
                         {(stage as any).description && (
-                          <p className="text-[11px] text-[#86868b] mt-0.5">{(stage as any).description}</p>
+                          <p className={`mt-0.5 text-[11px] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{(stage as any).description}</p>
                         )}
-                        <p className="text-xs text-[#6e6e73]">
+                        <p className={`text-xs ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                           {String(stage.percentage)}% — {formatCurrency(Number(stage.amount))}
                         </p>
                       </div>
@@ -1835,9 +1927,9 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
+          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
             <CardHeader className="px-4 sm:px-6">
-              <CardTitle className="text-base sm:text-lg text-[#1d1d1f]">Payment History</CardTitle>
+              <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment History</CardTitle>
             </CardHeader>
             <CardContent className="px-4 sm:px-6">
               {payments && payments.length > 0 ? (
@@ -1845,17 +1937,17 @@ export function ProjectDetailPage() {
                   {payments.map((p) => (
                     <div
                       key={String(p._id)}
-                      className="flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[#c8c8cd]/50 p-3.5 sm:p-4"
+                      className="metal-panel flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[color:var(--color-border)]/55 p-3.5 sm:p-4"
                     >
                       <div>
-                        <p className="text-sm font-semibold text-[#1d1d1f]">
+                        <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>
                           {formatCurrency(Number(p.amountPaid))}
                         </p>
-                        <p className="text-xs text-[#6e6e73] capitalize">
+                        <p className={`text-xs capitalize ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                           {String(p.method || '').replace('_', ' ')}
                           {p.receiptNumber && ` · ${String(p.receiptNumber)}`}
                         </p>
-                        <p className="text-xs text-[#86868b]">
+                        <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                           {p.createdAt ? format(new Date(String(p.createdAt)), 'MMM d, yyyy') : ''}
                         </p>
                       </div>
@@ -1874,6 +1966,7 @@ export function ProjectDetailPage() {
       {/* ════════════════  FABRICATION TAB  ════════════════ */}
       {activeTab === 'fabrication' && (
         <div
+          className="-mx-3 sm:mx-0"
           role="tabpanel"
           id="project-panel-fabrication"
           aria-labelledby="project-tab-fabrication"
@@ -1935,6 +2028,43 @@ export function ProjectDetailPage() {
           </div>
         </div>
       )}
+
+      <ConfirmDialog
+        open={reviewConfirmDecision !== null}
+        onOpenChange={(open) => {
+          if (!open) setReviewConfirmDecision(null);
+        }}
+        title={reviewConfirmDecision === 'declined' ? 'Decline Initial Design' : 'Approve Initial Design'}
+        description={reviewConfirmDecision === 'declined'
+          ? 'This will decline the current initial design, notify sales staff, and require changes before blueprint work can continue. Are you sure?'
+          : 'This will approve the initial design and allow engineering to proceed to the next step. Are you sure?'}
+        confirmLabel={reviewConfirmDecision === 'declined' ? 'Decline Initial Design' : 'Approve Initial Design'}
+        variant={reviewConfirmDecision === 'declined' ? 'destructive' : 'default'}
+        confirmClassName={reviewConfirmDecision === 'approved'
+          ? 'bg-[linear-gradient(180deg,#2ca36f_0%,#1e7c54_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_12px_24px_rgba(21,98,70,0.24)] hover:bg-[linear-gradient(180deg,#33b47b_0%,#238960_100%)] dark:border dark:border-emerald-600/40 dark:bg-[linear-gradient(180deg,#34c084_0%,#238960_100%)] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_14px_28px_rgba(7,58,40,0.28)] dark:hover:bg-[linear-gradient(180deg,#3ad18f_0%,#28976a_100%)]'
+          : undefined}
+        isLoading={reviewInitialDesign.isPending}
+        onConfirm={async () => {
+          if (!reviewConfirmDecision) return;
+          await handleReviewInitialDesign(reviewConfirmDecision);
+          setReviewConfirmDecision(null);
+        }}
+      >
+        {designReviewNotes.trim() ? (
+          <div className="space-y-2">
+            <p className="text-xs font-semibold uppercase tracking-[0.16em] text-[#6a7480] dark:text-slate-400">
+              Review Notes
+            </p>
+            <p className="whitespace-pre-wrap text-sm text-[#46515f] dark:text-slate-200">
+              {designReviewNotes.trim()}
+            </p>
+          </div>
+        ) : (
+          <p className="text-sm text-[#5b6672] dark:text-slate-300/90">
+            No review notes will be attached to this approval.
+          </p>
+        )}
+      </ConfirmDialog>
     </div>
   );
 }

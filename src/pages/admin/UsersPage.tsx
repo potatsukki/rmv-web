@@ -56,6 +56,7 @@ import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import {
   useUsers,
   useCreateUser,
@@ -97,13 +98,13 @@ const userSchema = z.object({
 type UserFormData = z.infer<typeof userSchema>;
 
 const roleBadgeStyles: Record<string, string> = {
-  [Role.CUSTOMER]: 'border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470]',
-  [Role.APPOINTMENT_AGENT]: 'border-[#8eafbb] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] text-[#4f6d78]',
-  [Role.SALES_STAFF]: 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]',
-  [Role.ENGINEER]: 'border-[#98a6c4] bg-[linear-gradient(180deg,#eff1f9_0%,#dce2f0_100%)] text-[#5b6785]',
-  [Role.FABRICATION_STAFF]: 'border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f]',
-  [Role.CASHIER]: 'border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239]',
-  [Role.ADMIN]: 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]',
+  [Role.CUSTOMER]: 'border-[#c6ccd3] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] text-[#5b6470] dark:border-slate-600 dark:bg-slate-700/60 dark:text-slate-200',
+  [Role.APPOINTMENT_AGENT]: 'border-[#8eafbb] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)] text-[#4f6d78] dark:border-cyan-700/50 dark:bg-cyan-900/40 dark:text-cyan-200',
+  [Role.SALES_STAFF]: 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a] dark:border-emerald-700/50 dark:bg-emerald-900/40 dark:text-emerald-200',
+  [Role.ENGINEER]: 'border-[#98a6c4] bg-[linear-gradient(180deg,#eff1f9_0%,#dce2f0_100%)] text-[#5b6785] dark:border-indigo-700/50 dark:bg-indigo-900/40 dark:text-indigo-200',
+  [Role.FABRICATION_STAFF]: 'border-[#c4a07d] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)] text-[#7b5d3f] dark:border-orange-700/50 dark:bg-orange-900/40 dark:text-orange-200',
+  [Role.CASHIER]: 'border-[#c7aa7a] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)] text-[#7e6239] dark:border-amber-700/50 dark:bg-amber-900/40 dark:text-amber-200',
+  [Role.ADMIN]: 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f] dark:border-red-700/50 dark:bg-red-900/40 dark:text-red-200',
 };
 
 export function UsersPage() {
@@ -238,12 +239,13 @@ export function UsersPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#171b21]">User Management</h1>
-          <p className="mt-1 text-sm text-[#616a74]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#171b21] dark:text-slate-100">User Management</h1>
+          <p className="mt-1 text-sm text-[#616a74] dark:text-slate-400">
             Manage system access and employee roles.
           </p>
         </div>
         <Button
+          variant="prominent"
           onClick={openCreate}
           className="h-10"
         >
@@ -262,15 +264,6 @@ export function UsersPage() {
         filters={[{ value: 'all', label: 'All' }, ...ROLES]}
         activeFilter={roleFilter}
         onFilterChange={setRoleFilter}
-        action={
-          <Button
-            onClick={openCreate}
-            className="h-11 px-4"
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            Add User
-          </Button>
-        }
       />
 
       {/* Users */}
@@ -328,18 +321,18 @@ export function UsersPage() {
                   <div
                     className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
                       !u.isActive
-                        ? 'bg-gray-200 text-gray-400'
-                        : 'silver-sheen text-[#2b3138]'
+                        ? 'bg-slate-300 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                        : 'silver-sheen ring-1 ring-white/30 dark:ring-slate-500/40 text-[#11161c]'
                     }`}
                   >
                     {u.firstName[0]}{u.lastName[0]}
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium text-[#171b21]">
+                    <p className="truncate text-sm font-medium text-[#171b21] dark:text-slate-100">
                       {u.firstName} {u.lastName}
                     </p>
-                    <p className="truncate text-[11px] text-[#68727d]">{u.email}</p>
+                    <p className="truncate text-[11px] text-[#68727d] dark:text-slate-400">{u.email}</p>
                   </div>
                   {/* Actions */}
                   <DropdownMenu>
@@ -348,15 +341,15 @@ export function UsersPage() {
                         <MoreVertical className="h-4 w-4" />
                       </Button>
                     </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end" className="rounded-xl border border-[#d6dbe2] bg-[linear-gradient(180deg,rgba(250,251,252,0.98)_0%,rgba(236,240,244,0.96)_100%)] shadow-lg">
-                      <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                    <DropdownMenuContent align="end" className="rounded-xl border border-[#d6dbe2] bg-[linear-gradient(180deg,rgba(250,251,252,0.98)_0%,rgba(236,240,244,0.96)_100%)] shadow-lg dark:border-slate-700 dark:bg-none dark:bg-slate-900 dark:text-slate-100">
+                      <DropdownMenuLabel className="text-xs dark:text-slate-200">Actions</DropdownMenuLabel>
                       <DropdownMenuItem onClick={() => openEdit(u)}>
                         <Edit2 className="mr-2 h-4 w-4" /> Edit Details
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem
                         onClick={() => setDisableDialog({ open: true, user: u })}
-                        className={u.isActive ? 'text-red-600' : 'text-emerald-600'}
+                        className={u.isActive ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'}
                       >
                         {u.isActive ? (
                           <><XCircle className="mr-2 h-4 w-4" /> Disable User</>
@@ -380,16 +373,16 @@ export function UsersPage() {
                       {formatRole(r)}
                     </Badge>
                   ))}
-                  {!u.isActive && (
-                    <Badge variant="outline" className="h-5 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]">
-                      Disabled
-                    </Badge>
-                  )}
+                  <StatusBadge
+                    status={u.isActive ? 'enabled' : 'disabled'}
+                    label={u.isActive ? 'Active' : 'Disabled'}
+                    className="h-5 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider"
+                  />
                 </div>
               </div>
             ))}
             <div className="px-1 pt-1">
-              <p className="text-[11px] text-[#68727d]">
+              <p className="text-[11px] text-[#68727d] dark:text-slate-400">
                 {userList.length} user{userList.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -422,13 +415,13 @@ export function UsersPage() {
                         <div
                           className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
                             !u.isActive
-                              ? 'bg-gray-200 text-gray-400'
-                              : 'silver-sheen text-[#2b3138]'
+                              ? 'bg-slate-300 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
+                              : 'silver-sheen ring-1 ring-white/30 dark:ring-slate-500/40 text-[#11161c]'
                           }`}
                         >
                           {u.firstName[0]}{u.lastName[0]}
                         </div>
-                        <p className="truncate text-sm font-medium text-[#171b21]">
+                        <p className="truncate text-sm font-medium text-[#171b21] dark:text-slate-100">
                           {u.firstName} {u.lastName}
                         </p>
                       </div>
@@ -436,12 +429,12 @@ export function UsersPage() {
 
                     {/* Email */}
                     <TableCell className="py-4">
-                      <span className="text-sm text-[#616a74]">{u.email}</span>
+                      <span className="text-sm text-[#616a74] dark:text-slate-400">{u.email}</span>
                     </TableCell>
 
                     {/* Phone — hidden below lg */}
                     <TableCell className="py-4 hidden lg:table-cell">
-                      <span className="text-sm text-[#616a74]">{u.phone || '—'}</span>
+                      <span className="text-sm text-[#616a74] dark:text-slate-400">{u.phone || '—'}</span>
                     </TableCell>
 
                     {/* Role */}
@@ -463,16 +456,11 @@ export function UsersPage() {
 
                     {/* Status */}
                     <TableCell className="py-4">
-                      <Badge
-                        variant="outline"
-                        className={`text-[10px] font-bold uppercase tracking-wider ${
-                          u.isActive
-                            ? 'border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a]'
-                            : 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f]'
-                        }`}
-                      >
-                        {u.isActive ? 'Active' : 'Disabled'}
-                      </Badge>
+                      <StatusBadge
+                        status={u.isActive ? 'enabled' : 'disabled'}
+                        label={u.isActive ? 'Active' : 'Disabled'}
+                        className="text-[10px] font-bold uppercase tracking-wider"
+                      />
                     </TableCell>
 
                     {/* Actions */}
@@ -483,15 +471,15 @@ export function UsersPage() {
                             <MoreVertical className="h-4 w-4" />
                           </Button>
                         </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end" className="rounded-xl border border-[#d6dbe2] bg-[linear-gradient(180deg,rgba(250,251,252,0.98)_0%,rgba(236,240,244,0.96)_100%)] shadow-lg">
-                          <DropdownMenuLabel className="text-xs">Actions</DropdownMenuLabel>
+                        <DropdownMenuContent align="end" className="rounded-xl border border-[#d6dbe2] bg-[linear-gradient(180deg,rgba(250,251,252,0.98)_0%,rgba(236,240,244,0.96)_100%)] shadow-lg dark:border-slate-700 dark:bg-none dark:bg-slate-900 dark:text-slate-100">
+                          <DropdownMenuLabel className="text-xs dark:text-slate-200">Actions</DropdownMenuLabel>
                           <DropdownMenuItem onClick={() => openEdit(u)}>
                             <Edit2 className="mr-2 h-4 w-4" /> Edit Details
                           </DropdownMenuItem>
                           <DropdownMenuSeparator />
                           <DropdownMenuItem
                             onClick={() => setDisableDialog({ open: true, user: u })}
-                            className={u.isActive ? 'text-red-600' : 'text-emerald-600'}
+                            className={u.isActive ? 'text-red-600 dark:text-red-300' : 'text-emerald-600 dark:text-emerald-300'}
                           >
                             {u.isActive ? (
                               <><XCircle className="mr-2 h-4 w-4" /> Disable User</>
@@ -506,8 +494,8 @@ export function UsersPage() {
                 ))}
               </TableBody>
             </Table>
-            <div className="border-t border-[#dde3ea] bg-white/25 px-5 py-3">
-              <p className="text-xs text-[#68727d]">
+            <div className="border-t border-[#dde3ea] bg-white/25 px-5 py-3 dark:border-slate-700 dark:bg-slate-800/80">
+              <p className="text-xs text-[#68727d] dark:text-slate-300">
                 {userList.length} user{userList.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -519,10 +507,10 @@ export function UsersPage() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent className="max-w-md rounded-2xl">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">
+            <DialogTitle className="text-gray-900 dark:text-slate-100">
               {editingUser ? 'Edit User' : 'Add New User'}
             </DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogDescription className="text-gray-500 dark:text-slate-200">
               {editingUser
                 ? 'Modify user details and roles.'
                 : 'Create a new account for a team member.'}
@@ -533,7 +521,7 @@ export function UsersPage() {
               <div className="space-y-1.5">
                 <Label
                   htmlFor="firstName"
-                  className="text-gray-700 text-[13px] font-medium"
+                  className="text-gray-700 text-[13px] font-medium dark:text-slate-300"
                 >
                   First Name
                 </Label>
@@ -547,7 +535,7 @@ export function UsersPage() {
               <div className="space-y-1.5">
                 <Label
                   htmlFor="lastName"
-                  className="text-gray-700 text-[13px] font-medium"
+                  className="text-gray-700 text-[13px] font-medium dark:text-slate-300"
                 >
                   Last Name
                 </Label>
@@ -561,7 +549,7 @@ export function UsersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="email" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
                 Email Address
               </Label>
               <Input
@@ -576,11 +564,11 @@ export function UsersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="phone" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="phone" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
                 Phone Number (Optional)
               </Label>
-              <div className="flex h-11 rounded-lg overflow-hidden border border-gray-200 bg-gray-50/50 focus-within:border-[#6e6e73] focus-within:ring-2 focus-within:ring-[#6e6e73]/20 transition-all">
-                <span className="flex items-center px-3 text-sm font-medium text-[#3a3a3e] bg-gray-100/80 border-r border-gray-200 select-none shrink-0">+63</span>
+              <div className="flex h-11 rounded-lg overflow-hidden border border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-900/40 focus-within:border-[#6e6e73] focus-within:ring-2 focus-within:ring-[#6e6e73]/20 transition-all">
+                <span className="flex items-center px-3 text-sm font-medium text-[#3a3a3e] dark:text-slate-200 bg-gray-100/80 dark:bg-slate-800/60 border-r border-gray-200 dark:border-slate-700 select-none shrink-0">+63</span>
                 <input
                   id="phone"
                   type="tel"
@@ -592,7 +580,7 @@ export function UsersPage() {
                     const raw = e.target.value.replace(/\D/g, '').replace(/^0+/, '').slice(0, 10);
                     form.setValue('phone', raw ? `+63${raw}` : '', { shouldValidate: true });
                   }}
-                  className="flex-1 bg-transparent px-3 text-sm text-[#1d1d1f] outline-none placeholder:text-gray-400 min-w-0"
+                  className="flex-1 bg-transparent px-3 text-sm text-[#1d1d1f] dark:text-slate-100 outline-none placeholder:text-gray-400 dark:placeholder:text-slate-500 min-w-0"
                 />
               </div>
               {form.formState.errors.phone && (
@@ -601,17 +589,17 @@ export function UsersPage() {
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="role" className="text-gray-700 text-[13px] font-medium">
+              <Label htmlFor="role" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
                 Assigned Role
               </Label>
               <Select
                 value={form.watch('role')}
                 onValueChange={(v) => form.setValue('role', v as Role)}
               >
-                <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 text-sm focus:ring-2 focus:ring-[#6e6e73]/20">
+                <SelectTrigger className="h-11 rounded-xl border-gray-200 dark:border-slate-700 bg-gray-50/50 dark:bg-slate-800 text-sm dark:text-slate-100 focus:ring-2 focus:ring-[#6e6e73]/20">
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
-                <SelectContent className="rounded-xl bg-white shadow-lg border border-[#e8e8ed]">
+                <SelectContent className="rounded-xl bg-white dark:bg-slate-900 shadow-lg border border-[#e8e8ed] dark:border-slate-700 dark:text-slate-100">
                   {ROLES.map((r) => (
                     <SelectItem key={r.value} value={r.value} className="text-sm rounded-lg">
                       {r.label}
@@ -623,13 +611,13 @@ export function UsersPage() {
 
             <div className="space-y-1.5">
               <div className="flex items-center justify-between">
-                <Label htmlFor="password" className="text-gray-700 text-[13px] font-medium">
+                <Label htmlFor="password" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
                   {editingUser ? 'New Password (Optional)' : 'Password'}
                 </Label>
                 {!editingUser && (
                   <button
                     type="button"
-                    className="flex items-center gap-1 text-[11px] font-medium text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+                    className="flex items-center gap-1 text-[11px] font-medium text-[#6e6e73] dark:text-white hover:text-[#1d1d1f] dark:hover:text-white transition-colors"
                     onClick={() => {
                       const pw = generatePassword();
                       form.setValue('password', pw);
@@ -650,7 +638,7 @@ export function UsersPage() {
                 />
                 <button
                   type="button"
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] hover:text-[#3a3a3e] transition-colors"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-[#86868b] dark:text-slate-500 hover:text-[#3a3a3e] dark:hover:text-slate-200 transition-colors"
                   onClick={() => setShowPassword((p) => !p)}
                   tabIndex={-1}
                 >

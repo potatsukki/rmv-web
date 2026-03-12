@@ -5,6 +5,9 @@ import toast, { Toaster, ToastBar } from 'react-hot-toast';
 import { X } from 'lucide-react';
 import App from './App';
 import './index.css';
+import { bootstrapThemePreference } from './stores/theme.store';
+
+bootstrapThemePreference();
 
 const queryClient = new QueryClient({
   defaultOptions: {

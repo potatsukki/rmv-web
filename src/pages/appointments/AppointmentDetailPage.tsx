@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, RotateCcw, Mail, Banknote, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, extractLocalDateValue } from '@/lib/utils';
 import { reverseGeocodeLocation, fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -58,6 +58,12 @@ export function AppointmentDetailPage() {
   const { user } = useAuthStore();
   const { data: appt, isLoading, isError, refetch } = useAppointment(id!);
 
+  const savedProfileLocation =
+    user?.addressData?.lat != null && user?.addressData?.lng != null
+      ? { lat: user.addressData.lat, lng: user.addressData.lng }
+      : null;
+  const savedProfileFormattedAddress = user?.addressData?.formattedAddress || '';
+
   const confirmMutation = useConfirmAppointment();
   const completeMutation = useCompleteAppointment();
   const cancelMutation = useCancelAppointment();
@@ -68,8 +74,8 @@ export function AppointmentDetailPage() {
   const submitLocationMutation = useCustomerSubmitLocation();
 
   // Customer location submission state
-  const [customerLocationPin, setCustomerLocationPin] = useState<MapPoint | null>(null);
-  const [customerAddress, setCustomerAddress] = useState('');
+  const [customerLocationPin, setCustomerLocationPin] = useState<MapPoint | null>(savedProfileLocation);
+  const [customerAddress, setCustomerAddress] = useState(savedProfileFormattedAddress);
   const [feePreview, setFeePreview] = useState<OcularFeePreview | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
@@ -119,6 +125,16 @@ export function AppointmentDetailPage() {
   );
   // Philippines bounding box (rough)
   const PH_BOUNDS = { latMin: 4.5, latMax: 21.5, lngMin: 116.0, lngMax: 127.0 };
+
+  useEffect(() => {
+    if (!customerLocationPin && savedProfileLocation) {
+      setCustomerLocationPin(savedProfileLocation);
+    }
+
+    if (!customerAddress && savedProfileFormattedAddress) {
+      setCustomerAddress(savedProfileFormattedAddress);
+    }
+  }, [customerAddress, customerLocationPin, savedProfileFormattedAddress, savedProfileLocation]);
 
   // Live fee computation when customer moves pin
   useEffect(() => {
@@ -196,7 +212,6 @@ export function AppointmentDetailPage() {
     }
     try {
       await confirmMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
-      await refetch();
       toast.success(
         'Appointment confirmed! The assigned sales staff has been notified and can proceed with the scheduled visit flow.',
         { duration: 5000 },
@@ -209,7 +224,6 @@ export function AppointmentDetailPage() {
   const handleComplete = async () => {
     try {
       await completeMutation.mutateAsync(id!);
-      await refetch();
       toast.success(
         appt.type === 'ocular'
           ? 'Appointment completed! Sales staff can now submit the ocular report to update the project for engineering review.'
@@ -267,12 +281,12 @@ export function AppointmentDetailPage() {
     value: string;
   }) => (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 rounded-lg bg-[#f0f0f5] p-2">
-        <Icon className="h-4 w-4 text-[#6e6e73]" />
+      <div className="mt-0.5 rounded-lg bg-[#f0f0f5] dark:bg-slate-800 p-2">
+        <Icon className="h-4 w-4 text-[#6e6e73] dark:text-slate-400" />
       </div>
       <div>
-        <p className="text-[13px] font-medium text-[#3a3a3e]">{label}</p>
-        <p className="text-sm text-[#6e6e73]">{value}</p>
+        <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">{label}</p>
+        <p className="text-sm text-[#6e6e73] dark:text-slate-300">{value}</p>
       </div>
     </div>
   );
@@ -288,19 +302,19 @@ export function AppointmentDetailPage() {
   }) => (
     <div
       className={tone === 'accent'
-        ? 'rounded-2xl border border-blue-200 bg-blue-50/70 p-4 shadow-sm'
-        : 'rounded-2xl border border-[#d2d2d7] bg-white/80 p-4 shadow-sm'}
+        ? 'rounded-2xl border border-blue-200 dark:border-blue-800 bg-blue-50/70 dark:bg-blue-950/40 p-4 shadow-sm'
+        : 'rounded-2xl border border-[#d2d2d7] dark:border-slate-700 bg-white/80 dark:bg-slate-800/90 p-4 shadow-sm'}
     >
-      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b]">{label}</p>
-      <p className="mt-2 text-sm font-semibold text-[#1d1d1f] sm:text-base">{value}</p>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#86868b] dark:text-slate-400">{label}</p>
+      <p className="mt-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100 sm:text-base">{value}</p>
     </div>
   );
 
   const MapPanelFallback = ({ message }: { message: string }) => (
-    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-[#d2d2d7] bg-[#f5f5f7]/80 px-5 py-8 text-center">
-      <Loader2 className="h-5 w-5 animate-spin text-[#6e6e73]" />
-      <p className="mt-3 text-sm font-medium text-[#1d1d1f]">Loading map tools</p>
-      <p className="mt-1 max-w-sm text-xs text-[#6e6e73]">{message}</p>
+    <div className="flex min-h-[280px] flex-col items-center justify-center rounded-2xl border border-[#d2d2d7] dark:border-slate-700 bg-[#f5f5f7]/80 dark:bg-slate-800/80 px-5 py-8 text-center">
+      <Loader2 className="h-5 w-5 animate-spin text-[#6e6e73] dark:text-slate-400" />
+      <p className="mt-3 text-sm font-medium text-[#1d1d1f] dark:text-slate-100">Loading map tools</p>
+      <p className="mt-1 max-w-sm text-xs text-[#6e6e73] dark:text-slate-400">{message}</p>
     </div>
   );
 
@@ -312,13 +326,13 @@ export function AppointmentDetailPage() {
           variant="ghost"
           size="icon"
           onClick={() => navigate('/appointments')}
-          className="rounded-xl text-[#6e6e73] hover:text-[#1d1d1f]"
+          className="rounded-xl text-[#6e6e73] dark:text-slate-300 hover:text-[#1d1d1f] dark:hover:text-slate-100"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
             Appointment Details
           </h1>
         </div>
@@ -333,12 +347,14 @@ export function AppointmentDetailPage() {
 
       {/* ── Status Guide Banner ── */}
       {appt.status === AppointmentStatus.REQUESTED && (
-        <Card className="rounded-xl border-amber-200 bg-amber-50/50">
-          <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+        <Card className="rounded-xl border border-[#d7dce3] bg-[linear-gradient(135deg,rgba(255,255,255,0.98)_0%,rgba(246,248,251,0.98)_100%)] dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(18,24,34,0.94)_0%,rgba(9,14,22,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_16px_34px_rgba(0,0,0,0.2)]">
+          <CardContent className="flex items-start gap-3 px-4 py-3">
+            <div className="metal-pill mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#66707b] dark:text-slate-300">
+              <Info className="h-4 w-4" />
+            </div>
             <div>
-              <p className="text-sm font-semibold text-amber-900">Awaiting Confirmation</p>
-              <p className="text-xs text-amber-700 mt-0.5">
+              <p className="text-sm font-semibold text-[#2f3740] dark:text-slate-100">Awaiting Confirmation</p>
+              <p className="mt-0.5 text-xs text-[#69737d] dark:text-slate-400">
                 {isCustomer
                   ? appt.type === 'ocular' && !appt.customerLocation
                     ? 'Please submit your site location below so the agent can finalize your appointment.'
@@ -352,12 +368,12 @@ export function AppointmentDetailPage() {
         </Card>
       )}
       {appt.status === AppointmentStatus.CONFIRMED && (
-        <Card className="rounded-xl border-blue-200 bg-blue-50/50">
+        <Card className="rounded-xl border-blue-200 bg-blue-50/50 dark:border-blue-900/60 dark:bg-blue-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+            <Info className="h-5 w-5 text-blue-600 dark:text-blue-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-blue-900">Confirmed — Ready to Visit</p>
-              <p className="text-xs text-blue-700 mt-0.5">
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Confirmed - Ready to Visit</p>
+              <p className="text-xs text-blue-700 dark:text-blue-200 mt-0.5">
                 {isCustomer
                   ? 'Your appointment is confirmed. The assigned sales staff will visit on the scheduled date.'
                   : 'Mark yourself as "On the Way" when heading to the site, then mark "Complete" after the visit.'}
@@ -367,12 +383,14 @@ export function AppointmentDetailPage() {
         </Card>
       )}
       {appt.status === AppointmentStatus.ON_THE_WAY && (
-        <Card className="rounded-xl border-indigo-200 bg-indigo-50/50">
+        <Card className="rounded-xl border-indigo-200 bg-indigo-50/50 dark:border-indigo-900/60 dark:bg-indigo-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
+            <Info className="h-5 w-5 text-indigo-600 dark:text-indigo-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-indigo-900">Sales Staff En Route</p>
-              <p className="text-xs text-indigo-700 mt-0.5">
+              <p className="text-sm font-semibold text-indigo-900 dark:text-indigo-100">
+                {isCustomer ? 'Our staff is on the way' : 'On the Way to Visit'}
+              </p>
+              <p className="text-xs text-indigo-700 dark:text-indigo-200 mt-0.5">
                 {isCustomer
                   ? 'The sales staff is on their way to your location. Please be available at the site.'
                   : 'You are on the way. After the visit, mark this appointment as "Complete" and fill out the visit report.'}
@@ -382,12 +400,12 @@ export function AppointmentDetailPage() {
         </Card>
       )}
       {appt.status === AppointmentStatus.COMPLETED && (
-        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50">
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
-            <CheckCircle2 className="h-5 w-5 text-emerald-600 mt-0.5 shrink-0" />
+            <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300 mt-0.5 shrink-0" />
             <div>
-              <p className="text-sm font-semibold text-emerald-900">Visit Completed</p>
-              <p className="text-xs text-emerald-700 mt-0.5">
+              <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Visit Completed</p>
+              <p className="text-xs text-emerald-700 dark:text-emerald-200 mt-0.5">
                 {isCustomer
                   ? 'The visit is complete. The sales staff will submit a visit report, which will automatically create your project.'
                   : 'Visit complete. Submit the visit report to generate the project for this customer.'}
@@ -426,30 +444,33 @@ export function AppointmentDetailPage() {
       </div>
 
       {customerCanManageAppointment && (
-        <Card className="overflow-hidden rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm">
+        <Card className="overflow-hidden rounded-2xl border border-[#d5d8de] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(247,249,251,0.98)_55%,rgba(240,244,248,0.98)_100%)] shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_55%,rgba(6,12,19,1)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.28)]">
           <CardContent className="space-y-4 p-4 sm:p-5">
-            <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-white shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-start gap-3">
+                <div className="metal-pill flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl text-[#5c6672] ring-1 ring-white/20 shadow-[inset_0_1px_0_rgba(255,255,255,0.32),0_10px_22px_rgba(18,22,27,0.1)] dark:text-slate-400 dark:ring-white/8 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_24px_rgba(0,0,0,0.22)]">
                 <Clock className="h-4 w-4" />
               </div>
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">Manage This Appointment</p>
-                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#b42318] ring-1 ring-[#f3c7cf]">
-                    Active Booking
-                  </span>
+                  <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Manage This Appointment</p>
                 </div>
-                <p className="text-xs leading-5 text-[#6e6e73] sm:text-sm">
+                <p className="text-xs leading-5 text-[#6e6e73] dark:text-slate-400 sm:text-sm">
                   Need to free this slot so you can book again? You can reschedule or cancel this appointment here.
                 </p>
               </div>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-2 self-start rounded-full border border-[#a7b8c8]/45 bg-[linear-gradient(180deg,rgba(246,249,252,0.96)_0%,rgba(226,234,242,0.92)_100%)] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-[#5d7184] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] dark:border-[#7aa6c8]/26 dark:bg-[linear-gradient(180deg,rgba(40,57,75,0.72)_0%,rgba(18,27,38,0.92)_100%)] dark:text-[#c5d8ea] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_20px_rgba(0,0,0,0.16)]">
+                <span className="h-2 w-2 rounded-full bg-[#6f8faa] shadow-[0_0_0_3px_rgba(111,143,170,0.16)] dark:bg-[#8dc2ec] dark:shadow-[0_0_0_3px_rgba(141,194,236,0.14)]" />
+                Current Booking
+              </span>
             </div>
             <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
               {customerCanReschedule && (
                 <Button
                   asChild
                   variant="outline"
-                  className="h-11 w-full rounded-xl border-white/80 bg-white/80 text-[#3a3a3e] shadow-sm hover:bg-white sm:w-auto"
+                  className="h-11 w-full rounded-xl border-white/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800 text-[#3a3a3e] dark:text-slate-200 shadow-sm hover:bg-white dark:hover:bg-slate-700 sm:w-auto"
                 >
                   <Link to={`/appointments/book?reschedule=${appt._id}`}>
                     Reschedule
@@ -472,7 +493,7 @@ export function AppointmentDetailPage() {
         {/* Info */}
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-[#1d1d1f]">Appointment Info</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Appointment Info</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <InfoRow
@@ -501,8 +522,8 @@ export function AppointmentDetailPage() {
 
             {appt.purpose && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e]">Purpose</p>
-                <p className="text-sm text-[#6e6e73] mt-1">{appt.purpose}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Purpose</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300 mt-1">{appt.purpose}</p>
               </div>
             )}
 
@@ -520,15 +541,15 @@ export function AppointmentDetailPage() {
 
             {appt.distanceKm != null && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e]">Distance</p>
-                <p className="text-sm text-[#6e6e73]">{appt.distanceKm.toFixed(1)} km</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Distance</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300">{appt.distanceKm.toFixed(1)} km</p>
               </div>
             )}
 
             {/* Customer pin location map — visible to staff/admin */}
             {!isCustomer && appt.customerLocation && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e] mb-2">Customer Pin Location</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400 mb-2">Customer Pin Location</p>
                 <Suspense fallback={<MapPanelFallback message="Loading the saved site pin preview for staff review." />}>
                   <LazyLocationView lat={appt.customerLocation.lat} lng={appt.customerLocation.lng} />
                 </Suspense>
@@ -536,7 +557,7 @@ export function AppointmentDetailPage() {
                   href={`https://www.google.com/maps?q=${appt.customerLocation.lat},${appt.customerLocation.lng}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 hover:underline"
+                  className="inline-flex items-center gap-1 mt-2 text-xs text-blue-600 dark:text-blue-300 hover:underline"
                 >
                   <MapPin className="h-3 w-3" /> Open in Google Maps
                 </a>
@@ -548,7 +569,7 @@ export function AppointmentDetailPage() {
         {/* Ocular Fee & Reschedules */}
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-[#1d1d1f]">Additional Info</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Additional Info</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             {appt.ocularFee != null && appt.ocularFee > 0 && (
@@ -556,19 +577,19 @@ export function AppointmentDetailPage() {
                 {appt.ocularFeeStatus === 'refunded' ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <p className="text-[13px] font-medium text-[#3a3a3e]">Ocular Fee</p>
+                      <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Ocular Fee</p>
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-orange-700 bg-orange-50 border border-orange-200 rounded-full px-2.5 py-0.5">
                         Refunded
                       </span>
                     </div>
-                    <p className="text-lg font-semibold text-[#86868b] line-through mt-1">
+                    <p className="text-lg font-semibold text-[#86868b] dark:text-slate-500 line-through mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
                     {appt.ocularFeeRefundReason && (
                       <p className="text-xs text-red-600 mt-1">Reason: {appt.ocularFeeRefundReason}</p>
                     )}
                     {appt.ocularFeeRefundedAt && (
-                      <p className="text-xs text-[#86868b] mt-0.5">
+                      <p className="text-xs text-[#86868b] dark:text-slate-400 mt-0.5">
                         Refunded on {format(new Date(appt.ocularFeeRefundedAt), 'MMM d, yyyy h:mm a')}
                       </p>
                     )}
@@ -576,12 +597,12 @@ export function AppointmentDetailPage() {
                 ) : appt.ocularFeePaid ? (
                   <>
                     <div className="flex items-center justify-between">
-                      <p className="text-[13px] font-medium text-[#3a3a3e]">Ocular Fee</p>
+                      <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Ocular Fee</p>
                       <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
                         <CheckCircle2 className="h-3 w-3" /> Paid
                       </span>
                     </div>
-                    <p className="text-lg font-semibold text-[#1d1d1f] mt-1">
+                    <p className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100 mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
                     {/* Admin: Refund button */}
@@ -599,10 +620,10 @@ export function AppointmentDetailPage() {
                 ) : appt.ocularFeeStatus === 'pending' && isCustomer ? (
                   <div className="rounded-xl border border-[#c8c8cd] bg-[#f0f0f5] p-4 space-y-3">
                     <div className="flex items-center justify-between">
-                      <p className="text-sm font-semibold text-[#1d1d1f]">Ocular Fee Required</p>
-                      <p className="text-lg font-bold text-[#1d1d1f]">{formatCurrency(appt.ocularFee)}</p>
+                      <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Ocular Fee Required</p>
+                      <p className="text-lg font-bold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
                     </div>
-                    <p className="text-xs text-[#6e6e73]">Pay before your appointment can be confirmed.</p>
+                    <p className="text-xs text-[#6e6e73] dark:text-slate-400">Pay before your appointment can be confirmed.</p>
                     <Button
                       asChild
                       className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl h-10"
@@ -615,14 +636,14 @@ export function AppointmentDetailPage() {
                   </div>
                 ) : (
                   <>
-                    <p className="text-[13px] font-medium text-[#3a3a3e]">Ocular Fee</p>
-                    <p className="text-lg font-semibold text-[#1d1d1f] mt-1">
+                    <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Ocular Fee</p>
+                    <p className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100 mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
                   </>
                 )}
                 {appt.ocularFeeMethod && (
-                  <p className="text-xs text-[#6e6e73] capitalize mt-1">
+                  <p className="text-xs text-[#6e6e73] dark:text-slate-400 capitalize mt-1">
                     via {appt.ocularFeeMethod.replace('_', ' ')}
                   </p>
                 )}
@@ -630,22 +651,22 @@ export function AppointmentDetailPage() {
             )}
 
             <div>
-              <p className="text-[13px] font-medium text-[#3a3a3e]">Reschedules</p>
-              <p className="text-sm text-[#6e6e73]">
+              <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Reschedules</p>
+              <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                 {appt.rescheduleCount} / {appt.maxReschedules} used
               </p>
             </div>
 
             {appt.internalNotes && isStaff && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e]">Internal Notes</p>
-                <p className="text-sm text-[#6e6e73]">{appt.internalNotes}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Internal Notes</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300">{appt.internalNotes}</p>
               </div>
             )}
 
             <div>
-              <p className="text-[13px] font-medium text-[#3a3a3e]">Created</p>
-              <p className="text-sm text-[#6e6e73]">
+              <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Created</p>
+              <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                 {format(new Date(appt.createdAt), 'MMM d, yyyy h:mm a')}
               </p>
             </div>
@@ -656,15 +677,15 @@ export function AppointmentDetailPage() {
 
       {/* Customer: Submit Location for Ocular Visit */}
       {isCustomer && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && !appt.customerLocation && !appt.ocularFeePaid && (
-        <Card className="rounded-xl border-blue-200 bg-blue-50/50 shadow-sm lg:col-span-2">
+        <Card className="rounded-xl border-blue-200 bg-blue-50/50 shadow-sm dark:border-[#29476b] dark:bg-[linear-gradient(180deg,rgba(14,25,38,0.96)_0%,rgba(8,16,27,0.98)_100%)] lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg text-blue-900 flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-blue-600" />
+            <CardTitle className="flex items-center gap-2 text-lg text-blue-900 dark:text-[#d7e8ff]">
+              <MapPin className="h-5 w-5 text-blue-600 dark:text-[#72aeea]" />
               Provide Your Location
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-blue-800">
+            <p className="text-sm text-blue-800 dark:text-[#a9c9ee]">
               An ocular visit has been scheduled for{' '}
               <strong>{format(new Date(appt.date), 'MMMM d, yyyy')}</strong>.
               Please pin your site location on the map so we can calculate the visit fee and finalize your appointment.
@@ -684,26 +705,26 @@ export function AppointmentDetailPage() {
               />
             </Suspense>
             {customerAddress && (
-              <div className="rounded-lg border border-blue-200 bg-white p-3">
-                <p className="text-xs font-medium text-blue-700">Resolved Address</p>
-                <p className="text-sm text-[#3a3a3e] mt-0.5">{customerAddress}</p>
+              <div className="rounded-lg border border-blue-200 bg-white p-3 dark:border-[#35557d] dark:bg-[#0d1724]">
+                <p className="text-xs font-medium text-blue-700 dark:text-[#8dbcf2]">Resolved Address</p>
+                <p className="mt-0.5 text-sm text-[#3a3a3e] dark:text-slate-200">{customerAddress}</p>
               </div>
             )}
 
             {/* Official address */}
             <div className="space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-[#1d1d1f]">Official Site Address</p>
+                <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Official Site Address</p>
                 {!user?.addressData?.street && !user?.addressData?.city && (
-                  <span className="text-xs text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2 py-0.5">
+                  <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-600 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                     Not set in profile — please fill in
                   </span>
                 )}
               </div>
-              <p className="text-xs text-[#6e6e73]">This is the official address of the site to be visited. You can adjust it if needed.</p>
+              <p className="text-xs text-[#6e6e73] dark:text-slate-400">This is the official address of the site to be visited. You can adjust it if needed.</p>
               <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
                 <div className="sm:col-span-2">
-                  <Label htmlFor="addr-street" className="text-xs font-medium text-[#3a3a3e]">Street / Unit / Building</Label>
+                  <Label htmlFor="addr-street" className="text-xs font-medium text-[#3a3a3e] dark:text-slate-300">Street / Unit / Building</Label>
                   <Input
                     id="addr-street"
                     value={addrStreet}
@@ -713,7 +734,7 @@ export function AppointmentDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="addr-barangay" className="text-xs font-medium text-[#3a3a3e]">Barangay</Label>
+                  <Label htmlFor="addr-barangay" className="text-xs font-medium text-[#3a3a3e] dark:text-slate-300">Barangay</Label>
                   <Input
                     id="addr-barangay"
                     value={addrBarangay}
@@ -723,7 +744,7 @@ export function AppointmentDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="addr-city" className="text-xs font-medium text-[#3a3a3e]">City / Municipality</Label>
+                  <Label htmlFor="addr-city" className="text-xs font-medium text-[#3a3a3e] dark:text-slate-300">City / Municipality</Label>
                   <Input
                     id="addr-city"
                     value={addrCity}
@@ -733,7 +754,7 @@ export function AppointmentDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="addr-province" className="text-xs font-medium text-[#3a3a3e]">Province / Region</Label>
+                  <Label htmlFor="addr-province" className="text-xs font-medium text-[#3a3a3e] dark:text-slate-300">Province / Region</Label>
                   <Input
                     id="addr-province"
                     value={addrProvince}
@@ -743,7 +764,7 @@ export function AppointmentDetailPage() {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="addr-zip" className="text-xs font-medium text-[#3a3a3e]">ZIP Code</Label>
+                  <Label htmlFor="addr-zip" className="text-xs font-medium text-[#3a3a3e] dark:text-slate-300">ZIP Code</Label>
                   <Input
                     id="addr-zip"
                     value={addrZip}
@@ -757,41 +778,41 @@ export function AppointmentDetailPage() {
 
             {/* Live fee preview */}
             {feeLoading && (
-              <div className="flex items-center gap-2 text-sm text-blue-600">
+              <div className="flex items-center gap-2 text-sm text-blue-600 dark:text-[#8dbcf2]">
                 <Loader2 className="h-4 w-4 animate-spin" />
                 Calculating visit fee...
               </div>
             )}
             {feeError && (
-              <div className="rounded-lg border border-red-200 bg-red-50 p-3">
-                <p className="text-sm text-red-700">{feeError}</p>
+              <div className="rounded-lg border border-red-200 bg-red-50 p-3 dark:border-red-500/30 dark:bg-red-500/10">
+                <p className="text-sm text-red-700 dark:text-red-200">{feeError}</p>
               </div>
             )}
             {feePreview && !feeLoading && (
-              <div className={`rounded-lg border p-4 space-y-2 ${feePreview.fee.isWithinNCR ? 'border-emerald-200 bg-emerald-50' : 'border-amber-200 bg-amber-50'}`}>
+              <div className={`space-y-2 rounded-lg border p-4 ${feePreview.fee.isWithinNCR ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'}`}>
                 <div className="flex items-center justify-between">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">Ocular Visit Fee</p>
+                  <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Ocular Visit Fee</p>
                   {feePreview.fee.isWithinNCR ? (
-                    <span className="inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-100 rounded-full px-2.5 py-0.5">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200">
                       <CheckCircle2 className="h-3 w-3" /> FREE
                     </span>
                   ) : (
-                    <span className="text-lg font-bold text-amber-800">
+                    <span className="text-lg font-bold text-amber-800 dark:text-amber-200">
                       {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(feePreview.fee.total)}
                     </span>
                   )}
                 </div>
-                <div className="text-xs text-[#6e6e73] space-y-0.5">
+                <div className="space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-300">
                   <p>Distance: {feePreview.route.distanceKm.toFixed(1)} km · ~{feePreview.route.durationMinutes} min drive</p>
                   {feePreview.fee.isWithinNCR ? (
-                    <p className="text-emerald-700">Within Metro Manila — no ocular visit fee</p>
+                    <p className="text-emerald-700 dark:text-emerald-200">Within Metro Manila — no ocular visit fee</p>
                   ) : (
                     <>
                       <p>Base fee: ₱{feePreview.fee.baseFee} (first {feePreview.fee.baseCoveredKm} km)</p>
                       {feePreview.fee.additionalDistanceKm > 0 && (
                         <p>Additional: ₱{feePreview.fee.perKmRate}/km × {feePreview.fee.additionalDistanceKm.toFixed(1)} km = ₱{feePreview.fee.additionalFee}</p>
                       )}
-                      <p className="text-amber-700 font-medium mt-1">Payment required before your appointment can be confirmed.</p>
+                      <p className="mt-1 font-medium text-amber-700 dark:text-amber-200">Payment required before your appointment can be confirmed.</p>
                     </>
                   )}
                 </div>
@@ -832,9 +853,10 @@ export function AppointmentDetailPage() {
                 };
                 return feePreview.fee.isWithinNCR ? (
                   <Button
+                    variant="prominent"
                     onClick={() => handleSubmit(false)}
                     disabled={submitLocationMutation.isPending}
-                    className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl w-full sm:w-auto h-10"
+                    className="h-11 w-full rounded-xl font-semibold sm:w-auto"
                   >
                     {submitLocationMutation.isPending ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Submitting...</>
@@ -847,9 +869,10 @@ export function AppointmentDetailPage() {
                   </Button>
                 ) : (
                   <Button
+                    variant="prominent"
                     onClick={() => handleSubmit(true)}
                     disabled={submitLocationMutation.isPending}
-                    className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl w-full sm:w-auto h-10"
+                    className="h-11 w-full rounded-xl font-semibold sm:w-auto"
                   >
                     {submitLocationMutation.isPending ? (
                       <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Processing...</>
@@ -924,8 +947,8 @@ export function AppointmentDetailPage() {
       {appt.siteDetailsStatus === 'submitted' && appt.customerSiteDetails && (
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
-            <CardTitle className="text-lg text-[#1d1d1f] flex items-center gap-2">
-              <FileText className="h-5 w-5 text-[#6e6e73]" />
+            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100 flex items-center gap-2">
+              <FileText className="h-5 w-5 text-[#6e6e73] dark:text-slate-400" />
               Customer Site Details
               <span className="ml-auto inline-flex items-center gap-1 text-xs font-medium text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-full px-2.5 py-0.5">
                 <CheckCircle2 className="h-3 w-3" /> Submitted
@@ -935,21 +958,21 @@ export function AppointmentDetailPage() {
           <CardContent className="space-y-4">
             {appt.customerSiteDetails.serviceType && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e]">Service Type</p>
-                <p className="text-sm text-[#6e6e73]">{SERVICE_TYPE_LABELS[appt.customerSiteDetails.serviceType] || appt.customerSiteDetails.serviceType}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Service Type</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300">{SERVICE_TYPE_LABELS[appt.customerSiteDetails.serviceType] || appt.customerSiteDetails.serviceType}</p>
               </div>
             )}
 
             {appt.customerSiteDetails.customerRequirements && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e]">Customer Requirements</p>
-                <p className="text-sm text-[#6e6e73] whitespace-pre-wrap">{appt.customerSiteDetails.customerRequirements}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Customer Requirements</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300 whitespace-pre-wrap">{appt.customerSiteDetails.customerRequirements}</p>
               </div>
             )}
 
             {appt.customerSiteDetails.lineItems && appt.customerSiteDetails.lineItems.length > 0 && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e] mb-1">Measurements</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400 mb-1">Measurements</p>
                 <div className="rounded-lg border border-[#c8c8cd]/50 overflow-x-auto">
                   <table className="w-full text-sm">
                     <thead className="bg-[#f5f5f7] text-[#6e6e73]">
@@ -964,7 +987,7 @@ export function AppointmentDetailPage() {
                     <tbody className="divide-y divide-[#f0f0f5]">
                       {appt.customerSiteDetails.lineItems.map((item, i) => (
                         <tr key={i}>
-                          <td className="px-3 py-2 text-[#3a3a3e]">{item.label || `Item ${i + 1}`}</td>
+                          <td className="px-3 py-2 text-[#3a3a3e] dark:text-slate-300">{item.label || `Item ${i + 1}`}</td>
                           <td className="px-3 py-2 text-right text-[#6e6e73]">{item.length ?? '-'}</td>
                           <td className="px-3 py-2 text-right text-[#6e6e73]">{item.width ?? '-'}</td>
                           <td className="px-3 py-2 text-right text-[#6e6e73]">{item.height ?? '-'}</td>
@@ -979,24 +1002,24 @@ export function AppointmentDetailPage() {
 
             {appt.customerSiteDetails.siteConditions && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e] mb-1">Site Conditions</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400 mb-1">Site Conditions</p>
                 <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-2 text-sm">
                   {appt.customerSiteDetails.siteConditions.environment && (
                     <div>
                       <span className="text-[#6e6e73]">Environment:</span>{' '}
-                      <span className="text-[#3a3a3e] capitalize">{appt.customerSiteDetails.siteConditions.environment}</span>
+                      <span className="text-[#3a3a3e] dark:text-slate-300 capitalize">{appt.customerSiteDetails.siteConditions.environment}</span>
                     </div>
                   )}
                   {appt.customerSiteDetails.siteConditions.hasElectrical != null && (
                     <div>
                       <span className="text-[#6e6e73]">Electrical:</span>{' '}
-                      <span className="text-[#3a3a3e]">{appt.customerSiteDetails.siteConditions.hasElectrical ? 'Yes' : 'No'}</span>
+                      <span className="text-[#3a3a3e] dark:text-slate-300">{appt.customerSiteDetails.siteConditions.hasElectrical ? 'Yes' : 'No'}</span>
                     </div>
                   )}
                   {appt.customerSiteDetails.siteConditions.accessNotes && (
                     <div className="col-span-2">
                       <span className="text-[#6e6e73]">Access Notes:</span>{' '}
-                      <span className="text-[#3a3a3e]">{appt.customerSiteDetails.siteConditions.accessNotes}</span>
+                      <span className="text-[#3a3a3e] dark:text-slate-300">{appt.customerSiteDetails.siteConditions.accessNotes}</span>
                     </div>
                   )}
                 </div>
@@ -1005,16 +1028,16 @@ export function AppointmentDetailPage() {
 
             {(appt.customerSiteDetails.materials || appt.customerSiteDetails.finishes || appt.customerSiteDetails.preferredDesign) && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e] mb-1">Materials & Design</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400 mb-1">Materials & Design</p>
                 <div className="space-y-1 text-sm">
                   {appt.customerSiteDetails.materials && (
-                    <p><span className="text-[#6e6e73]">Materials:</span> <span className="text-[#3a3a3e]">{appt.customerSiteDetails.materials}</span></p>
+                    <p><span className="text-[#6e6e73] dark:text-slate-400">Materials:</span> <span className="text-[#3a3a3e] dark:text-slate-300">{appt.customerSiteDetails.materials}</span></p>
                   )}
                   {appt.customerSiteDetails.finishes && (
-                    <p><span className="text-[#6e6e73]">Finishes:</span> <span className="text-[#3a3a3e]">{appt.customerSiteDetails.finishes}</span></p>
+                    <p><span className="text-[#6e6e73] dark:text-slate-400">Finishes:</span> <span className="text-[#3a3a3e] dark:text-slate-300">{appt.customerSiteDetails.finishes}</span></p>
                   )}
                   {appt.customerSiteDetails.preferredDesign && (
-                    <p><span className="text-[#6e6e73]">Preferred Design:</span> <span className="text-[#3a3a3e]">{appt.customerSiteDetails.preferredDesign}</span></p>
+                    <p><span className="text-[#6e6e73] dark:text-slate-400">Preferred Design:</span> <span className="text-[#3a3a3e] dark:text-slate-300">{appt.customerSiteDetails.preferredDesign}</span></p>
                   )}
                 </div>
               </div>
@@ -1022,8 +1045,8 @@ export function AppointmentDetailPage() {
 
             {appt.customerSiteDetails.notes && (
               <div>
-                <p className="text-[13px] font-medium text-[#3a3a3e]">Additional Notes</p>
-                <p className="text-sm text-[#6e6e73] whitespace-pre-wrap">{appt.customerSiteDetails.notes}</p>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Additional Notes</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300 whitespace-pre-wrap">{appt.customerSiteDetails.notes}</p>
               </div>
             )}
 
@@ -1056,9 +1079,9 @@ export function AppointmentDetailPage() {
 
       {/* Agent: Assign Sales Staff & Confirm */}
       {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && appt.type !== 'ocular' && (
-        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)]">
           <CardHeader>
-            <CardTitle className="text-lg text-[#1d1d1f]">Assign Sales Staff & Confirm</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Assign Sales Staff & Confirm</CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
 
@@ -1069,17 +1092,17 @@ export function AppointmentDetailPage() {
               </div>
             ) : (
               <div>
-                <label className="block text-[13px] font-medium text-[#3a3a3e] mb-2.5">Sales Staff</label>
+                <label className="block text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400 mb-2.5">Sales Staff</label>
                 <Select
                   value={selectedSalesStaff}
                   onValueChange={(val) => setSelectedSalesStaff(val)}
                 >
-                  <SelectTrigger className="h-12 rounded-xl border-[#d2d2d7] bg-white px-4 text-base text-[#1d1d1f] focus:ring-1 focus:ring-[#e8e8ed] focus:ring-offset-0 focus:border-[#c8c8cd] w-full">
+                  <SelectTrigger className="h-12 w-full rounded-xl border-[#d2d2d7] bg-white px-4 text-base text-[#1d1d1f] focus:border-[#c8c8cd] focus:ring-1 focus:ring-[#e8e8ed] focus:ring-offset-0 dark:border-[#2f4563] dark:bg-[#1c2a42] dark:text-slate-100 dark:hover:border-[#3d587d] dark:focus:border-[#4f7097] dark:focus:ring-[#4f7097]/20">
                     <SelectValue placeholder="Choose a sales staff member..." />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg max-w-[calc(100vw-3rem)]">
+                  <SelectContent className="max-w-[calc(100vw-3rem)] rounded-xl border-[#d2d2d7] bg-white shadow-lg dark:border-[#2f4563] dark:bg-[#1c2a42]">
                     {salesStaffList.map((s) => (
-                      <SelectItem key={s._id} value={s._id} className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-[#f0f0f5] focus:text-[#1d1d1f] data-[highlighted]:bg-[#f0f0f5] data-[highlighted]:text-[#1d1d1f]">
+                      <SelectItem key={s._id} value={s._id} className="cursor-pointer rounded-lg py-2.5 text-sm text-[#1d1d1f] dark:text-slate-100 focus:bg-[#f0f0f5] focus:text-[#1d1d1f] dark:focus:bg-[#243754] dark:focus:text-white data-[highlighted]:bg-[#f0f0f5] data-[highlighted]:text-[#1d1d1f] dark:data-[highlighted]:bg-[#243754] dark:data-[highlighted]:text-white">
                         {s.firstName} {s.lastName}
                       </SelectItem>
                     ))}
@@ -1090,7 +1113,7 @@ export function AppointmentDetailPage() {
             <Button
               onClick={handleConfirm}
               disabled={confirmMutation.isPending || !selectedSalesStaff}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm"
+              className="h-10 w-full rounded-xl [background-image:none] bg-emerald-600 text-sm text-white hover:bg-emerald-700 disabled:opacity-100 dark:border dark:border-emerald-700/40 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667] dark:hover:border-emerald-500/40 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none sm:w-auto"
             >
               Confirm & Assign
             </Button>
@@ -1100,45 +1123,45 @@ export function AppointmentDetailPage() {
 
       {/* Agent: Finalize Ocular (for REQUESTED oculars where customer has submitted location) */}
       {canConfirmAppointment && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (
-        <Card className="rounded-xl border-emerald-200 bg-emerald-50 shadow-sm lg:col-span-2">
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50 shadow-sm dark:border-[#295447] dark:bg-[linear-gradient(180deg,rgba(10,28,24,0.96)_0%,rgba(8,19,19,0.98)_100%)] lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg text-emerald-900">Finalize Ocular Visit</CardTitle>
+            <CardTitle className="text-lg text-emerald-900 dark:text-emerald-200">Finalize Ocular Visit</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-emerald-800">
+            <p className="text-sm text-emerald-800 dark:text-emerald-100/85">
               Customer has submitted their location. {previousStaff ? 'The sales staff from the previous consultation will be assigned.' : 'Assign a sales staff member to finalize this ocular appointment.'}
             </p>
             {appt.address && (
-              <div className="rounded-lg bg-white/70 border border-emerald-200 p-3">
-                <p className="text-xs font-medium text-emerald-700">Customer Address</p>
-                <p className="text-sm text-emerald-900 mt-0.5">{appt.address}</p>
+              <div className="rounded-lg border border-emerald-200 bg-white/70 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-200">Customer Address</p>
+                <p className="mt-0.5 text-sm text-emerald-900 dark:text-slate-100">{appt.address}</p>
               </div>
             )}
             {appt.ocularFee != null && appt.ocularFee > 0 && (
-              <div className="rounded-lg bg-white/70 border border-emerald-200 p-3">
-                <p className="text-xs font-medium text-emerald-700">Ocular Fee</p>
-                <p className="text-sm font-semibold text-emerald-900 mt-0.5">{formatCurrency(appt.ocularFee)}</p>
+              <div className="rounded-lg border border-emerald-200 bg-white/70 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-200">Ocular Fee</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-900 dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
               </div>
             )}
             {previousStaffLoading ? (
-              <div className="flex items-center gap-2 text-sm text-emerald-700">
+              <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-200">
                 <Loader2 className="h-4 w-4 animate-spin" /> Looking up previous sales staff...
               </div>
             ) : previousStaff ? (
-              <div className="rounded-lg bg-white/70 border border-emerald-200 p-3">
-                <p className="text-xs font-medium text-emerald-700">Assigned Sales Staff (from consultation)</p>
-                <p className="text-sm font-semibold text-emerald-900 mt-0.5">{previousStaff.name}</p>
+              <div className="rounded-lg border border-emerald-200 bg-white/70 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
+                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-200">Assigned Sales Staff (from consultation)</p>
+                <p className="mt-0.5 text-sm font-semibold text-emerald-900 dark:text-slate-100">{previousStaff.name}</p>
               </div>
             ) : salesStaffList.length > 0 ? (
               <div>
-                <label className="block text-[13px] font-medium text-emerald-800 mb-2">Assign Sales Staff</label>
+                <label className="mb-2 block text-[13px] font-medium text-emerald-800 dark:text-emerald-200">Assign Sales Staff</label>
                 <Select value={finalizeSalesStaff} onValueChange={setFinalizeSalesStaff}>
-                  <SelectTrigger className="h-12 rounded-xl border-emerald-300 bg-white px-4 text-base text-[#1d1d1f] focus:ring-1 focus:ring-emerald-300 w-full">
+                  <SelectTrigger className="h-12 w-full rounded-xl border-emerald-300 bg-white px-4 text-base text-[#1d1d1f] focus:ring-1 focus:ring-emerald-300 dark:border-emerald-700/60 dark:bg-[#1c2a42] dark:text-slate-100 dark:focus:ring-emerald-500/20">
                     <SelectValue placeholder="Choose a sales staff member..." />
                   </SelectTrigger>
-                  <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg max-w-[calc(100vw-3rem)]">
+                  <SelectContent className="max-w-[calc(100vw-3rem)] rounded-xl border-[#d2d2d7] bg-white shadow-lg dark:border-[#2f4563] dark:bg-[#1c2a42]">
                     {salesStaffList.map((s) => (
-                      <SelectItem key={s._id} value={s._id} className="rounded-lg cursor-pointer text-sm py-2.5">
+                      <SelectItem key={s._id} value={s._id} className="cursor-pointer rounded-lg py-2.5 text-sm text-[#1d1d1f] dark:text-slate-100 dark:data-[highlighted]:bg-[#243754] dark:data-[highlighted]:text-white">
                         {s.firstName} {s.lastName}
                       </SelectItem>
                     ))}
@@ -1147,6 +1170,7 @@ export function AppointmentDetailPage() {
               </div>
             ) : null}
             <Button
+              variant="prominent"
               onClick={async () => {
                 const staffId = previousStaff?._id || finalizeSalesStaff;
                 if (!staffId && !previousStaff) {
@@ -1161,7 +1185,7 @@ export function AppointmentDetailPage() {
                 }
               }}
               disabled={finalizeMutation.isPending || (!previousStaff && !finalizeSalesStaff) || previousStaffLoading}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl w-full sm:w-auto h-10 text-sm"
+              className="h-11 w-full rounded-xl text-sm font-semibold sm:w-auto"
             >
               {finalizeMutation.isPending ? (
                 <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Finalizing...</>
@@ -1187,7 +1211,7 @@ export function AppointmentDetailPage() {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+                className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] dark:border-[#39577a] dark:bg-[#16253a] dark:text-[#c8dfff] dark:hover:border-[#4d7099] dark:hover:bg-[#1d314d] dark:hover:text-[#e2efff]"
               >
                 <Link to={`/visit-reports/${visitReports[0]!._id}`}>
                   <FileText className="mr-2 h-4 w-4" />
@@ -1198,7 +1222,7 @@ export function AppointmentDetailPage() {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+                className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] dark:border-[#39577a] dark:bg-[#16253a] dark:text-[#c8dfff] dark:hover:border-[#4d7099] dark:hover:bg-[#1d314d] dark:hover:text-[#e2efff]"
               >
                 <Link to="/visit-reports">
                   <FileText className="mr-2 h-4 w-4" />
@@ -1211,7 +1235,7 @@ export function AppointmentDetailPage() {
               <Button
                 onClick={() => visitStatusMutation.mutateAsync({ id: id!, status: 'on_the_way' }).then(() => toast.success('Status updated: On the Way — the customer has been notified.')).catch((err: unknown) => toast.error(extractErrorMessage(err, 'Failed to update')))}
                 disabled={visitStatusMutation.isPending}
-                className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+                className="rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:border dark:border-[#39577a] dark:[background-image:none] dark:bg-[#21364f] dark:text-[#e3efff] dark:shadow-[0_12px_24px_rgba(19,47,79,0.24)] dark:hover:bg-[#294465]"
               >
                 {visitStatusMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'On The Way'}
               </Button>
@@ -1221,16 +1245,15 @@ export function AppointmentDetailPage() {
               <Button
                 onClick={handleComplete}
                 disabled={completeMutation.isPending}
-                className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+                className="rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
               >
                 {completeMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</> : 'Mark Complete'}
               </Button>
             )}
             <Button
-              variant="outline"
               onClick={handleNoShow}
               disabled={noShowMutation.isPending}
-              className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+              className="rounded-xl border border-[#cb8b86] [background-image:none] bg-[#fff5f4] text-[#8a4a47] shadow-none hover:bg-[#fdeceb] hover:text-[#7a403c] dark:border-[#7d4342] dark:[background-image:none] dark:bg-[#3a1f21] dark:text-[#ffd7d2] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:hover:bg-[#482628] dark:hover:text-[#ffe7e3]"
             >
               {noShowMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Mark No-Show'}
             </Button>
@@ -1244,7 +1267,7 @@ export function AppointmentDetailPage() {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+                className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] dark:border-[#39577a] dark:bg-[#16253a] dark:text-[#c8dfff] dark:hover:border-[#4d7099] dark:hover:bg-[#1d314d] dark:hover:text-[#e2efff]"
               >
                 <Link to={`/visit-reports/${visitReports[0]!._id}`}>
                   <FileText className="mr-2 h-4 w-4" />
@@ -1255,7 +1278,7 @@ export function AppointmentDetailPage() {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+                className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] dark:border-[#39577a] dark:bg-[#16253a] dark:text-[#c8dfff] dark:hover:border-[#4d7099] dark:hover:bg-[#1d314d] dark:hover:text-[#e2efff]"
               >
                 <Link to="/visit-reports">
                   <FileText className="mr-2 h-4 w-4" />
@@ -1266,15 +1289,14 @@ export function AppointmentDetailPage() {
             <Button
               onClick={handleComplete}
               disabled={completeMutation.isPending}
-              className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+              className="rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
             >
               {completeMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</> : 'Mark Complete'}
             </Button>
             <Button
-              variant="outline"
               onClick={handleNoShow}
               disabled={noShowMutation.isPending}
-              className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+              className="rounded-xl border border-[#cb8b86] [background-image:none] bg-[#fff5f4] text-[#8a4a47] shadow-none hover:bg-[#fdeceb] hover:text-[#7a403c] dark:border-[#7d4342] dark:[background-image:none] dark:bg-[#3a1f21] dark:text-[#ffd7d2] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:hover:bg-[#482628] dark:hover:text-[#ffe7e3]"
             >
               {noShowMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Mark No-Show'}
             </Button>
@@ -1288,7 +1310,7 @@ export function AppointmentDetailPage() {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+                className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] dark:border-[#39577a] dark:bg-[#16253a] dark:text-[#c8dfff] dark:hover:border-[#4d7099] dark:hover:bg-[#1d314d] dark:hover:text-[#e2efff]"
               >
                 <Link to={`/visit-reports/${visitReports[0]!._id}`}>
                   <FileText className="mr-2 h-4 w-4" />
@@ -1299,7 +1321,7 @@ export function AppointmentDetailPage() {
               <Button
                 asChild
                 variant="outline"
-                className="border-[#d2d2d7] text-[#3a3a3e] rounded-xl"
+                className="rounded-xl border-[#d2d2d7] text-[#3a3a3e] dark:border-[#39577a] dark:bg-[#16253a] dark:text-[#c8dfff] dark:hover:border-[#4d7099] dark:hover:bg-[#1d314d] dark:hover:text-[#e2efff]"
               >
                 <Link to="/visit-reports">
                   <FileText className="mr-2 h-4 w-4" />
@@ -1313,7 +1335,7 @@ export function AppointmentDetailPage() {
         {/* Agent: Schedule Ocular Visit (for completed office appointments) */}
         {canConfirmAppointment && appt.status === AppointmentStatus.COMPLETED && appt.type === 'office' && (() => {
           const consultationReport = visitReports?.find(r => r.visitType === 'consultation');
-          const recDate = consultationReport?.recommendedOcularDate?.split('T')[0] ?? '';
+          const recDate = extractLocalDateValue(consultationReport?.recommendedOcularDate);
           const recSlot = consultationReport?.recommendedOcularSlot ?? '';
           const params = new URLSearchParams({
             ocularFor: appt.customerId,
@@ -1324,7 +1346,8 @@ export function AppointmentDetailPage() {
           return (
             <Button
               asChild
-              className="bg-blue-600 hover:bg-blue-700 text-white rounded-xl"
+              variant="prominent"
+              className="rounded-xl"
             >
               <Link to={`/appointments/create-for-customer?${params.toString()}`}>
                 <MapPin className="mr-2 h-4 w-4" />
@@ -1406,25 +1429,29 @@ export function AppointmentDetailPage() {
 
       {/* Cancel with reason dialog */}
       <Dialog open={cancelOpen} onOpenChange={(open) => { setCancelOpen(open); if (!open) setCancelReason(''); }}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="max-w-md rounded-2xl border border-[#d6d9df] bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(246,248,251,1)_100%)] text-[#111827] shadow-[0_28px_70px_rgba(15,23,42,0.18)] dark:border-white/12 dark:bg-[linear-gradient(180deg,rgba(9,14,22,1)_0%,rgba(6,10,17,1)_100%)] dark:text-slate-100 dark:shadow-[0_30px_80px_rgba(0,0,0,0.52)]">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Cancel Appointment</DialogTitle>
-            <DialogDescription className="text-[#6e6e73]">
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Cancel Appointment</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
               Please provide a reason for cancellation. This action cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Label htmlFor="cancel-reason" className="text-sm font-medium text-[#3a3a3e]">Reason for cancellation</Label>
+            <Label htmlFor="cancel-reason" className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">Reason for cancellation</Label>
             <Textarea
               id="cancel-reason"
               placeholder="e.g., Schedule conflict, changed plans..."
               value={cancelReason}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCancelReason(e.target.value)}
-              className="min-h-[80px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
+              className="min-h-[112px] rounded-2xl border border-[#cfd5dd] bg-[#ffffff] text-[#111827] placeholder:text-[#6b7280] shadow-[inset_0_1px_0_rgba(255,255,255,0.72)] focus-visible:ring-[#1f2937]/20 dark:border-white/14 dark:bg-[#0d1724] dark:text-slate-100 dark:placeholder:text-slate-500 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:focus-visible:ring-white/15"
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setCancelOpen(false); setCancelReason(''); }} className="rounded-xl border-[#d2d2d7]">
+            <Button
+              variant="outline"
+              onClick={() => { setCancelOpen(false); setCancelReason(''); }}
+              className="rounded-xl border-[#d4d7dd] bg-[#f7f8fa] text-[#1f2937] hover:bg-[#eef1f5] hover:text-[#111827] dark:border-white/12 dark:bg-[#182230] dark:text-slate-100 dark:hover:bg-[#202c3d] dark:hover:text-white"
+            >
               Keep Appointment
             </Button>
             <Button
@@ -1441,25 +1468,29 @@ export function AppointmentDetailPage() {
 
       {/* Refund Ocular Fee dialog (Admin only) */}
       <Dialog open={refundOpen} onOpenChange={(open) => { setRefundOpen(open); if (!open) setRefundReason(''); }}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="max-w-md rounded-2xl border border-[color:var(--color-border)]/65 bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)] shadow-[0_28px_70px_rgba(15,23,42,0.4)]">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Refund Ocular Fee</DialogTitle>
-            <DialogDescription className="text-[#6e6e73]">
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Refund Ocular Fee</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
               This will mark the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''} as refunded, record your reason on the appointment timeline, and notify the customer that finance follow-up will continue outside this booking.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-3 py-2">
-            <Label htmlFor="refund-reason" className="text-sm font-medium text-[#3a3a3e]">Reason for refund</Label>
+            <Label htmlFor="refund-reason" className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">Reason for refund</Label>
             <Textarea
               id="refund-reason"
               placeholder="e.g., Customer cancelled before visit, duplicate payment..."
               value={refundReason}
               onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRefundReason(e.target.value)}
-              className="min-h-[80px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
+              className="min-h-[112px] rounded-2xl border border-[color:var(--color-border)]/70 bg-[color:var(--color-card)]/78 text-[var(--color-card-foreground)] placeholder:text-[var(--text-metal-muted-color)] focus-visible:ring-[var(--color-card-foreground)]/35"
             />
           </div>
           <DialogFooter className="gap-2">
-            <Button variant="outline" onClick={() => { setRefundOpen(false); setRefundReason(''); }} className="rounded-xl border-[#d2d2d7]">
+            <Button
+              variant="outline"
+              onClick={() => { setRefundOpen(false); setRefundReason(''); }}
+              className="rounded-xl border-[color:var(--color-border)]/70 bg-[color:var(--color-card)]/55 text-[var(--color-card-foreground)] hover:bg-[color:var(--color-card)]/82 hover:text-[var(--color-card-foreground)]"
+            >
               Cancel
             </Button>
             <Button
@@ -1494,26 +1525,26 @@ export function AppointmentDetailPage() {
           setCustomerRefundBankName('');
         }
       }}>
-        <DialogContent className="rounded-2xl max-w-md">
+        <DialogContent className="max-w-md rounded-2xl border border-[color:var(--color-border)]/65 bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)] shadow-[0_28px_70px_rgba(15,23,42,0.4)]">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Request Refund</DialogTitle>
-            <DialogDescription className="text-[#6e6e73]">
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Request Refund</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
               Request a refund for the ocular fee of {appt.ocularFee ? formatCurrency(appt.ocularFee) : ''}. Your request will be reviewed by the cashier team, and the payout will be sent using the method you provide below if it is approved.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-2">
             <div>
-              <Label htmlFor="cr-reason" className="text-sm font-medium text-[#3a3a3e]">Reason for refund</Label>
+              <Label htmlFor="cr-reason" className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">Reason for refund</Label>
               <Textarea
                 id="cr-reason"
                 placeholder="e.g., Schedule conflict, changed plans..."
                 value={customerRefundReason}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setCustomerRefundReason(e.target.value)}
-                className="mt-1 min-h-[80px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
+                className="mt-1 min-h-[112px] rounded-2xl border border-[color:var(--color-border)]/70 bg-[color:var(--color-card)]/78 text-[var(--color-card-foreground)] placeholder:text-[var(--text-metal-muted-color)] focus-visible:ring-[var(--color-card-foreground)]/35"
               />
             </div>
             <div>
-              <Label className="text-sm font-medium text-[#3a3a3e]">Refund Method</Label>
+              <Label className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">Refund Method</Label>
               <div className="mt-1 flex gap-2">
                 <Button
                   type="button"
@@ -1536,7 +1567,7 @@ export function AppointmentDetailPage() {
               </div>
             </div>
             <div>
-              <Label htmlFor="cr-account-name" className="text-sm font-medium text-[#3a3a3e]">Account Name</Label>
+              <Label htmlFor="cr-account-name" className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">Account Name</Label>
               <Input
                 id="cr-account-name"
                 placeholder="Full name on account"
@@ -1546,7 +1577,7 @@ export function AppointmentDetailPage() {
               />
             </div>
             <div>
-              <Label htmlFor="cr-account-number" className="text-sm font-medium text-[#3a3a3e]">
+              <Label htmlFor="cr-account-number" className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">
                 {customerRefundMethod === 'gcash' ? 'GCash Number' : 'Account Number'}
               </Label>
               <Input
@@ -1559,7 +1590,7 @@ export function AppointmentDetailPage() {
             </div>
             {customerRefundMethod === 'bank_transfer' && (
               <div>
-                <Label htmlFor="cr-bank-name" className="text-sm font-medium text-[#3a3a3e]">Bank Name</Label>
+                <Label htmlFor="cr-bank-name" className="text-sm font-medium text-[#3a3a3e] dark:text-slate-300">Bank Name</Label>
                 <Input
                   id="cr-bank-name"
                   placeholder="e.g., BDO, BPI, Metrobank..."

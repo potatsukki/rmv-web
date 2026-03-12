@@ -4,7 +4,6 @@ import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -16,6 +15,7 @@ import {
 import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useVisitReports } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
 import { VisitReportStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
@@ -85,30 +85,26 @@ const STATUS_FILTERS = [
   { label: 'Completed', value: VisitReportStatus.COMPLETED },
 ];
 
-const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
+const statusConfig: Record<string, { label: string; dot: string }> = {
   [VisitReportStatus.DRAFT]: {
     label: 'Draft',
     dot: 'bg-[#9099a3]',
-    badge: 'border-[#d6dce3] text-[#616a74] bg-[linear-gradient(180deg,#f6f8fa_0%,#e7edf3_100%)]',
   },
   [VisitReportStatus.SUBMITTED]: {
     label: 'Submitted',
     dot: 'bg-[#8da4b8]',
-    badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]',
   },
   [VisitReportStatus.RETURNED]: {
     label: 'Returned',
     dot: 'bg-[#c7aa7a]',
-    badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]',
   },
   [VisitReportStatus.COMPLETED]: {
     label: 'Completed',
     dot: 'bg-[#93ad9d]',
-    badge: 'border-[#93ad9d] text-[#4e6c5a] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]',
   },
 };
 
-const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]', badge: 'border-[#d6dce3] text-[#616a74] bg-[linear-gradient(180deg,#f6f8fa_0%,#e7edf3_100%)]' };
+const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]' };
 
 /* ── Component ── */
 
@@ -164,10 +160,10 @@ export function VisitReportsListPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
             {pageTitle}
           </h1>
-          <p className="text-[#6e6e73] mt-1 text-sm">{pageDescription}</p>
+          <p className="text-[#6e6e73] dark:text-slate-400 mt-1 text-sm">{pageDescription}</p>
         </div>
       </div>
 
@@ -229,7 +225,7 @@ export function VisitReportsListPage() {
           action={(search || statusFilter) ? (
             <Button
               variant="outline"
-              className="text-[#171b21]"
+              className="text-[#171b21] dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
               onClick={() => {
                 setSearch('');
                 setStatusFilter('');
@@ -261,25 +257,24 @@ export function VisitReportsListPage() {
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
-                        <p className="font-medium text-[#1d1d1f] text-sm truncate">
+                        <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-sm truncate">
                           {custName}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <Badge
-                          variant="outline"
-                          className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${config.badge}`}
-                        >
-                          {config.label}
-                        </Badge>
-                        <ChevronRight className="h-4 w-4 text-[#c8c8cd]" />
+                        <StatusBadge
+                          status={status}
+                          label={config.label}
+                          className="h-5 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider"
+                        />
+                        <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500" />
                       </div>
                     </div>
 
                     {/* Row 2: Meta — visit type · project count */}
-                    <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-[11px] text-[#86868b]">
+                    <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-[11px] text-[#86868b] dark:text-slate-400">
                       <span className="capitalize">{group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}</span>
-                      <span className="text-[#d2d2d7]">·</span>
+                      <span className="text-[#d2d2d7] dark:text-slate-500">·</span>
                       <span>{projectCount} project{projectCount !== 1 ? 's' : ''}</span>
                     </div>
 
@@ -288,7 +283,7 @@ export function VisitReportsListPage() {
                       {projectLabels.map((label, i) => (
                         <span
                           key={i}
-                          className="metal-pill inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-[#171b21]"
+                          className="metal-pill inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-medium text-[#171b21] dark:text-slate-100"
                         >
                           {label}
                         </span>
@@ -299,7 +294,7 @@ export function VisitReportsListPage() {
               );
             })}
             <div className="px-1 pt-1">
-              <p className="text-[11px] text-[#86868b]">
+              <p className="text-[11px] text-[#86868b] dark:text-slate-400">
                 {groups.length} report group{groups.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -330,13 +325,13 @@ export function VisitReportsListPage() {
                     <TableRow
                       key={group.appointmentId}
                       onClick={() => navigate(`/visit-reports/${firstReport._id}`)}
-                      className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group"
+                      className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group dark:border-slate-700 dark:hover:bg-slate-800/50"
                     >
                       {/* Customer */}
                       <TableCell className="pl-5 py-4">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
-                          <p className="font-medium text-[#1d1d1f] text-sm truncate group-hover:text-[#0066cc] transition-colors">
+                          <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-sm truncate group-hover:text-[#0066cc] dark:group-hover:text-sky-300 transition-colors">
                             {custName}
                           </p>
                         </div>
@@ -344,18 +339,18 @@ export function VisitReportsListPage() {
 
                       {/* Visit Type */}
                       <TableCell className="py-4">
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-[#6e6e73]">
-                          <Layers className="h-3.5 w-3.5 text-[#86868b]" />
+                        <div className="flex items-center gap-1.5 text-xs font-medium text-[#6e6e73] dark:text-slate-400">
+                          <Layers className="h-3.5 w-3.5 text-[#86868b] dark:text-slate-500" />
                           <span>{group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}</span>
                         </div>
                       </TableCell>
 
                       {/* Projects */}
                       <TableCell className="py-4">
-                        <span className="text-sm text-[#1d1d1f] font-medium">
+                        <span className="text-sm text-[#1d1d1f] dark:text-slate-100 font-medium">
                           {projectCount}
                         </span>
-                        <span className="text-xs text-[#86868b] ml-1">
+                        <span className="text-xs text-[#86868b] dark:text-slate-400 ml-1">
                           project{projectCount !== 1 ? 's' : ''}
                         </span>
                       </TableCell>
@@ -366,7 +361,7 @@ export function VisitReportsListPage() {
                           {projectLabels.map((label, i) => (
                             <span
                               key={i}
-                              className="metal-pill inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-[#171b21]"
+                              className="metal-pill inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium text-[#171b21] dark:text-slate-100"
                             >
                               {label}
                             </span>
@@ -376,17 +371,16 @@ export function VisitReportsListPage() {
 
                       {/* Status */}
                       <TableCell className="py-4">
-                        <Badge
-                          variant="outline"
-                          className={`text-[10px] font-bold uppercase tracking-wider ${config.badge}`}
-                        >
-                          {config.label}
-                        </Badge>
+                        <StatusBadge
+                          status={status}
+                          label={config.label}
+                          className="text-[10px] font-bold uppercase tracking-wider"
+                        />
                       </TableCell>
 
                       {/* Arrow */}
                       <TableCell className="py-4 pr-5">
-                        <ChevronRight className="h-4 w-4 text-[#c8c8cd] group-hover:text-[#86868b] transition-colors" />
+                        <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500 group-hover:text-[#86868b] dark:group-hover:text-slate-300 transition-colors" />
                       </TableCell>
                     </TableRow>
                   );

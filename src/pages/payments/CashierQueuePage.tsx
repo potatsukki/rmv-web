@@ -14,6 +14,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { usePendingPayments, useVerifyPayment, useDeclinePayment, useOverduePayments } from '@/hooks/usePayments';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useThemeStore } from '@/stores/theme.store';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +37,8 @@ function getPaymentContext(p: any) {
 }
 
 export function CashierQueuePage() {
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
   const { data: payments, isLoading, isError, refetch } = usePendingPayments();
   const { data: overduePayments, isLoading: overdueLoading } = useOverduePayments();
   const verifyMutation = useVerifyPayment();
@@ -77,9 +80,9 @@ export function CashierQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">Cashier Queue</h1>
-        <p className="text-[#6e6e73] text-sm">Review and verify payment submissions</p>
+      <div className="metal-panel rounded-[1.75rem] p-5">
+        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-50">Cashier Queue</h1>
+        <p className="text-sm text-[#616a74] dark:text-slate-300">Review and verify payment submissions</p>
       </div>
 
       {isLoading ? (
@@ -103,38 +106,38 @@ export function CashierQueuePage() {
           {paymentList.map((p) => (
             <Card
               key={String(p._id)}
-              className="rounded-xl border-[#c8c8cd]/50 hover:shadow-md transition-shadow"
+              className="metal-panel rounded-xl border-[#c8c8cd]/50 transition-shadow hover:shadow-md dark:border-slate-700"
             >
               <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
-                <div className="space-y-1">
-                  <p className="font-semibold text-[#1d1d1f]">
+                <div className="space-y-1.5">
+                  <p className="font-semibold text-[#1d1d1f] dark:text-slate-100">
                     {getPaymentContext(p).customerName}
                   </p>
-                  <p className="text-sm text-[#6e6e73]">
+                  <p className="text-sm text-[#616a74] dark:text-slate-300">
                     {getPaymentContext(p).projectTitle}
                   </p>
-                  <div className="flex items-center gap-2 text-sm">
-                    <span className="font-bold text-[#1d1d1f]">{formatCurrency(Number(p.amountPaid))}</span>
+                  <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+                    <span className="font-bold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(Number(p.amountPaid))}</span>
                     {String(p.method) === 'qrph' ? (
-                      <span className="inline-flex items-center gap-1 rounded-full bg-violet-100 px-2 py-0.5 text-xs font-medium text-violet-700">
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${isDark ? 'border border-violet-400/35 bg-violet-500/15 text-violet-200' : 'bg-violet-100 text-violet-700'}`}>
                         <QrCode className="h-3 w-3" /> QR Payment
                       </span>
                     ) : (
-                      <span className="text-[#86868b] capitalize">
+                      <span className="capitalize text-[#86868b] dark:text-slate-400">
                         {String(p.method || '').replace('_', ' ')}
                       </span>
                     )}
                   </div>
                   {String(p.method) === 'qrph' && (
-                    <div className="inline-flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-1 text-xs text-emerald-700">
+                    <div className={`mt-1 inline-flex items-center gap-1.5 rounded-lg border px-2.5 py-1 text-xs ${isDark ? 'border-emerald-400/30 bg-emerald-500/12 text-emerald-200' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
                       <ShieldCheck className="h-3.5 w-3.5" />
                       Payment confirmed by PayMongo
                     </div>
                   )}
                   {p.referenceNumber && (
-                    <p className="text-xs text-[#86868b] font-mono">Ref: {String(p.referenceNumber)}</p>
+                    <p className="pt-1 text-xs font-mono text-[#86868b] dark:text-slate-400">Ref: {String(p.referenceNumber)}</p>
                   )}
-                  <p className="text-xs text-[#86868b]">
+                  <p className="text-xs text-[#86868b] dark:text-slate-400">
                     {p.createdAt
                       ? format(new Date(String(p.createdAt)), 'MMM d, yyyy h:mm a')
                       : ''}
@@ -148,7 +151,7 @@ export function CashierQueuePage() {
                 <div className="flex gap-2">
                   <Button
                     size="sm"
-                    className="bg-emerald-600 hover:bg-emerald-700 rounded-lg"
+                    className={isDark ? 'rounded-lg border border-emerald-400/45 bg-[linear-gradient(180deg,rgba(34,197,94,0.94)_0%,rgba(21,128,61,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_14px_28px_rgba(6,78,59,0.3)] hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.98)_0%,rgba(22,163,74,0.98)_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none' : 'rounded-lg border border-emerald-400 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)]'}
                     onClick={() => setVerifyId(String(p._id))}
                     disabled={verifyMutation.isPending}
                   >
@@ -173,7 +176,7 @@ export function CashierQueuePage() {
 
       {/* ── Overdue Payments Section ── */}
       {!overdueLoading && overduePaymentList.length > 0 && (
-        <Card className="rounded-xl border-red-200 bg-red-50/30">
+        <Card className="rounded-xl border-red-200 bg-red-50/30 dark:border-red-900/60 dark:bg-red-950/30">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-red-700">
               <AlertTriangle className="h-5 w-5" />
@@ -186,16 +189,16 @@ export function CashierQueuePage() {
               {overduePaymentList.map((item) => (
                 <div
                   key={`${item.projectId}-${item.stageId}`}
-                  className="flex items-center justify-between rounded-lg border border-red-100 bg-white p-3"
+                  className="flex items-center justify-between rounded-lg border border-red-100 bg-white p-3 dark:border-red-900/40 dark:bg-slate-950/70"
                 >
                   <div className="space-y-0.5">
-                    <p className="font-medium text-[#1d1d1f]">
+                    <p className="font-medium text-[#1d1d1f] dark:text-slate-100">
                       {item.customerName}
                     </p>
-                    <p className="text-sm text-[#6e6e73]">
+                    <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                       {item.projectTitle} — {item.stageLabel}
                     </p>
-                    <div className="flex items-center gap-2 text-xs text-[#86868b]">
+                    <div className="flex items-center gap-2 text-xs text-[#86868b] dark:text-slate-400">
                       <span className="font-semibold text-red-600">
                         {formatCurrency(item.amount)}
                       </span>
@@ -212,7 +215,7 @@ export function CashierQueuePage() {
                     </div>
                   </div>
                   <Link to={`/projects/${item.projectId}`}>
-                    <Button size="sm" variant="outline" className="border-red-200 text-red-700 hover:bg-red-50 rounded-lg">
+                    <Button size="sm" variant="outline" className="border-red-200 text-red-700 hover:bg-red-50 rounded-lg dark:border-red-800 dark:text-red-300 dark:hover:bg-red-950/50">
                       View Project
                     </Button>
                   </Link>
@@ -235,33 +238,36 @@ export function CashierQueuePage() {
             confirmLabel="Verify Payment"
             isLoading={verifyMutation.isPending}
             onConfirm={handleVerify}
+            confirmClassName={isDark
+              ? 'min-w-[8.5rem] border border-emerald-400/45 bg-[linear-gradient(180deg,rgba(34,197,94,0.94)_0%,rgba(21,128,61,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_14px_28px_rgba(6,78,59,0.3)] hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.98)_0%,rgba(22,163,74,0.98)_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none'
+              : 'min-w-[8.5rem] border border-emerald-400 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)]'}
           >
             {verifyPayment && (
-              <div className="rounded-xl border border-[#e8e8ed] bg-[#f5f5f7]/50 p-4 space-y-2.5 text-sm">
+              <div className={`space-y-2.5 rounded-xl border p-4 text-sm ${isDark ? 'border-slate-700 bg-slate-900/70 text-slate-200' : 'border-[#e8e8ed] bg-[#f5f5f7]/50'}`}>
                 <div className="flex justify-between">
-                  <span className="text-[#86868b]">Customer</span>
-                  <span className="font-medium text-[#1d1d1f]">{getPaymentContext(verifyPayment).customerName}</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Customer</span>
+                  <span className={`font-medium ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{getPaymentContext(verifyPayment).customerName}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#86868b]">Project</span>
-                  <span className="font-medium text-[#1d1d1f]">{getPaymentContext(verifyPayment).projectTitle}</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Project</span>
+                  <span className={`font-medium ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{getPaymentContext(verifyPayment).projectTitle}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#86868b]">Amount</span>
-                  <span className="font-bold text-[#1d1d1f]">{formatCurrency(Number(verifyPayment.amountPaid))}</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Amount</span>
+                  <span className={`font-bold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{formatCurrency(Number(verifyPayment.amountPaid))}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#86868b]">Method</span>
-                  <span className="capitalize text-[#1d1d1f]">{String(verifyPayment.method || '').replace('_', ' ')}</span>
+                  <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Method</span>
+                  <span className={`capitalize ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{String(verifyPayment.method || '').replace('_', ' ')}</span>
                 </div>
                 {verifyPayment.referenceNumber && (
                   <div className="flex justify-between">
-                    <span className="text-[#86868b]">Reference</span>
-                    <span className="font-mono text-xs text-[#1d1d1f]">{String(verifyPayment.referenceNumber)}</span>
+                    <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Reference</span>
+                    <span className={`font-mono text-xs ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{String(verifyPayment.referenceNumber)}</span>
                   </div>
                 )}
                 {String(verifyPayment.method) === 'qrph' && (
-                  <div className="mt-1 flex items-center gap-1.5 rounded-lg bg-emerald-50 border border-emerald-100 px-2.5 py-1.5 text-xs text-emerald-700">
+                  <div className={`mt-1 flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${isDark ? 'border-emerald-400/30 bg-emerald-500/12 text-emerald-200' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
                     <ShieldCheck className="h-3.5 w-3.5" />
                     This payment was confirmed by PayMongo
                   </div>
@@ -280,12 +286,12 @@ export function CashierQueuePage() {
           if (!open) setDeclineReason('');
         }}
       >
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="rounded-2xl dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Decline Payment</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Decline Payment</DialogTitle>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-[#3a3a3e] text-[13px] font-medium">Reason</Label>
+            <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Reason</Label>
             <Input
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}

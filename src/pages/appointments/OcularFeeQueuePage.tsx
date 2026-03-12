@@ -34,23 +34,23 @@ const statusBadge = (status?: string) => {
   switch (status) {
     case 'proof_submitted':
       return (
-        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">
+        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900/40 dark:text-blue-200 dark:hover:bg-blue-900/40">
           Proof Submitted
         </Badge>
       );
     case 'pending':
       return (
-        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100">
+        <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 dark:bg-amber-900/40 dark:text-amber-200 dark:hover:bg-amber-900/40">
           Awaiting Payment
         </Badge>
       );
     case 'declined':
       return (
-        <Badge className="bg-red-100 text-red-800 hover:bg-red-100">Declined</Badge>
+        <Badge className="bg-red-100 text-red-800 hover:bg-red-100 dark:bg-red-900/40 dark:text-red-200 dark:hover:bg-red-900/40">Declined</Badge>
       );
     case 'verified':
       return (
-        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100">
+        <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900/40 dark:text-emerald-200 dark:hover:bg-emerald-900/40">
           Verified
         </Badge>
       );
@@ -113,11 +113,11 @@ export function OcularFeeQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="metal-panel rounded-[1.75rem] p-5">
         <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
           Ocular Fee Queue
         </h1>
-        <p className="text-[#6e6e73] text-sm">
+        <p className="text-[#6e6e73] text-sm dark:text-slate-300">
           Review and verify ocular fee payments from customers
         </p>
       </div>
@@ -143,16 +143,16 @@ export function OcularFeeQueuePage() {
           {appointments.map((appt) => (
             <Card
               key={appt._id}
-              className="rounded-xl border-[#c8c8cd]/50 hover:shadow-md transition-shadow"
+              className="metal-panel rounded-xl border-[#c8c8cd]/50 transition-shadow hover:shadow-md dark:border-slate-700"
             >
               <CardContent className="p-5 space-y-3">
                 {/* Customer & status row */}
                 <div className="flex items-start justify-between gap-3">
                   <div className="space-y-1">
-                    <p className="font-semibold text-[#1d1d1f]">
+                    <p className="font-semibold text-[#1d1d1f] dark:text-slate-100">
                       {appt.customerName || 'Customer'}
                     </p>
-                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#6e6e73]">
+                    <div className="flex flex-wrap items-center gap-2 text-xs text-[#6e6e73] dark:text-slate-300">
                       <span className="flex items-center gap-1">
                         <Calendar className="h-3.5 w-3.5" />
                         {format(new Date(appt.date), 'MMM d, yyyy')}
@@ -169,8 +169,8 @@ export function OcularFeeQueuePage() {
                 {/* Fee details */}
                 <div className="flex flex-wrap items-center gap-4 text-sm">
                   <div>
-                    <span className="text-[#6e6e73]">Fee: </span>
-                    <span className="font-semibold text-[#1d1d1f]">
+                    <span className="text-[#6e6e73] dark:text-slate-300">Fee: </span>
+                    <span className="font-semibold text-[#1d1d1f] dark:text-slate-100">
                       {formatCurrency(
                         appt.ocularFee ?? appt.ocularFeeBreakdown?.total ?? 0,
                       )}
@@ -178,16 +178,16 @@ export function OcularFeeQueuePage() {
                   </div>
                   {appt.ocularFeeReferenceNumber && (
                     <div>
-                      <span className="text-[#6e6e73]">Ref: </span>
-                      <span className="font-medium">
+                      <span className="text-[#6e6e73] dark:text-slate-300">Ref: </span>
+                      <span className="font-medium text-[#1d1d1f] dark:text-slate-100">
                         {appt.ocularFeeReferenceNumber}
                       </span>
                     </div>
                   )}
                   {appt.distanceKm != null && (
                     <div>
-                      <span className="text-[#6e6e73]">Distance: </span>
-                      <span className="font-medium">
+                      <span className="text-[#6e6e73] dark:text-slate-300">Distance: </span>
+                      <span className="font-medium text-[#1d1d1f] dark:text-slate-100">
                         {appt.distanceKm.toFixed(1)} km
                       </span>
                     </div>
@@ -200,7 +200,7 @@ export function OcularFeeQueuePage() {
                     <Button
                       size="sm"
                       variant="outline"
-                      className="rounded-lg border-[#d2d2d7]"
+                      className="rounded-lg border-[#d2d2d7] dark:border-slate-600"
                       onClick={() => handleViewProof(appt.ocularFeeProofKey!)}
                       disabled={getDownloadUrl.isPending}
                     >
@@ -212,7 +212,8 @@ export function OcularFeeQueuePage() {
                     <>
                       <Button
                         size="sm"
-                        className="bg-emerald-600 hover:bg-emerald-700 rounded-lg"
+                        variant="prominent"
+                        className="rounded-lg"
                         onClick={() => setVerifyId(appt._id)}
                         disabled={verifyMutation.isPending}
                       >
@@ -258,12 +259,12 @@ export function OcularFeeQueuePage() {
           if (!open) setDeclineReason('');
         }}
       >
-        <DialogContent className="rounded-2xl">
+        <DialogContent className="rounded-2xl dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Decline Ocular Fee</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Decline Ocular Fee</DialogTitle>
           </DialogHeader>
           <div className="space-y-1.5">
-            <Label className="text-[#3a3a3e] text-[13px] font-medium">Reason</Label>
+            <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Reason</Label>
             <Input
               value={declineReason}
               onChange={(e) => setDeclineReason(e.target.value)}
@@ -293,9 +294,9 @@ export function OcularFeeQueuePage() {
 
       {/* Proof Image Viewer */}
       <Dialog open={proofViewOpen} onOpenChange={setProofViewOpen}>
-        <DialogContent className="rounded-2xl max-w-lg">
+        <DialogContent className="rounded-2xl max-w-lg dark:border-slate-700 dark:bg-slate-950">
           <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f]">Payment Proof</DialogTitle>
+            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Payment Proof</DialogTitle>
           </DialogHeader>
           {proofImageUrl ? (
             <img

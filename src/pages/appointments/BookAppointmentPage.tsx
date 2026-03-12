@@ -188,6 +188,16 @@ export function BookAppointmentPage() {
     }
   };
 
+  const backButtonClassName =
+    'rounded-xl border-[#d2d2d7] text-[#6e6e73] hover:text-[#1d1d1f] dark:border-white/[0.14] dark:bg-transparent dark:text-slate-400 dark:hover:border-white/[0.24] dark:hover:bg-white/[0.05] dark:hover:text-slate-200';
+
+  const nextButtonClassName =
+    'rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#3a3a3e] disabled:opacity-50 dark:border dark:border-white/12 dark:[background-image:none] dark:bg-white dark:text-[#0f1923] dark:shadow-[0_8px_24px_rgba(0,0,0,0.38)] dark:hover:bg-slate-100 dark:hover:border-white/20 dark:disabled:border-white/10 dark:disabled:bg-white/[0.08] dark:disabled:text-slate-500 disabled:opacity-100';
+
+  const submitButtonClassName = rescheduleId
+    ? nextButtonClassName
+    : 'rounded-xl border border-[#d7b267] bg-[linear-gradient(135deg,#f5dfab_0%,#ddb66a_42%,#b88233_100%)] text-[#24180b] shadow-[0_20px_40px_rgba(165,118,44,0.28),inset_0_1px_0_rgba(255,248,225,0.7)] hover:bg-[linear-gradient(135deg,#f8e6bb_0%,#e4c078_42%,#c38c3d_100%)] hover:text-[#1f1509] disabled:opacity-50 dark:border-[#d8bb72] dark:bg-[linear-gradient(180deg,rgba(255,247,225,0.98)_0%,rgba(240,210,132,0.96)_52%,rgba(214,166,58,0.94)_100%)] dark:text-[#1f1404] dark:shadow-[0_0_0_1px_rgba(216,187,114,0.34),0_18px_38px_rgba(196,145,45,0.32),inset_0_1px_0_rgba(255,255,255,0.62)] dark:hover:bg-[linear-gradient(180deg,rgba(255,250,234,1)_0%,rgba(244,216,141,0.98)_52%,rgba(221,174,64,0.96)_100%)] dark:hover:text-[#160d02] disabled:opacity-50';
+
   return (
     <div className="mx-auto max-w-2xl space-y-6">
       {/* Header */}
@@ -196,16 +206,16 @@ export function BookAppointmentPage() {
           variant="ghost"
           size="icon"
           onClick={() => (currentStep > 0 ? handleBack() : navigate(-1))}
-          className="rounded-xl text-[#6e6e73] hover:text-[#1d1d1f]"
+          className="rounded-xl text-[#6e6e73] hover:text-[#1d1d1f] dark:text-slate-400 dark:hover:bg-white/[0.06] dark:hover:text-slate-100"
           aria-label="Go back"
         >
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
             {rescheduleId ? 'Reschedule Appointment' : 'Book Office Consultation'}
           </h1>
-          <p className="text-[#6e6e73] text-sm">
+          <p className="text-[#6e6e73] text-sm dark:text-slate-400">
             {rescheduleId
               ? 'Choose a new date and time'
               : 'Schedule a consultation at our Quezon City office'}
@@ -227,9 +237,9 @@ export function BookAppointmentPage() {
                 disabled={idx > currentStep}
                 className={cn(
                   'flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-all w-full justify-center',
-                  isActive && 'bg-[#f0f0f5] text-[#1d1d1f] ring-1 ring-[#d2d2d7]',
-                  isCompleted && 'bg-emerald-50 text-emerald-700 cursor-pointer hover:bg-emerald-100',
-                  !isActive && !isCompleted && 'text-[#86868b]',
+                  isActive && 'bg-[#f0f0f5] text-[#1d1d1f] ring-1 ring-[#d2d2d7] dark:bg-[linear-gradient(180deg,rgba(248,250,252,0.98)_0%,rgba(228,233,239,0.96)_100%)] dark:text-slate-950 dark:ring-white/25',
+                  isCompleted && 'bg-emerald-50 text-emerald-700 cursor-pointer hover:bg-emerald-100 dark:bg-emerald-500/12 dark:text-emerald-200 dark:hover:bg-emerald-500/18',
+                  !isActive && !isCompleted && 'text-[#86868b] dark:text-slate-400',
                 )}
               >
                 <Icon className="h-3.5 w-3.5 flex-shrink-0" />
@@ -238,7 +248,7 @@ export function BookAppointmentPage() {
               {idx < steps.length - 1 && (
                 <div className={cn(
                   'h-px w-4 flex-shrink-0 mx-1',
-                  idx < currentStep ? 'bg-emerald-300' : 'bg-[#d2d2d7]',
+                  idx < currentStep ? 'bg-emerald-300 dark:bg-emerald-400/60' : 'bg-[#d2d2d7] dark:bg-white/15',
                 )} />
               )}
             </div>
@@ -295,10 +305,10 @@ export function BookAppointmentPage() {
         {/* Step: Service & Notes */}
         {steps[currentStep]?.key === 'service' && (
           <div className="space-y-6">
-            <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
+            <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,23,30,0.9)_0%,rgba(8,12,18,0.96)_100%)]">
               <CardHeader>
-                <CardTitle className="text-lg text-[#1d1d1f]">What do you need?</CardTitle>
-                <CardDescription className="text-[#6e6e73]">
+                <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">What do you need?</CardTitle>
+                <CardDescription className="text-[#6e6e73] dark:text-slate-400">
                   Select the type of fabrication service and add any notes for our team.
                 </CardDescription>
               </CardHeader>
@@ -312,16 +322,16 @@ export function BookAppointmentPage() {
                   }}
                 />
                 <div className="space-y-1.5">
-                  <label className="text-[13px] font-medium text-[#3a3a3e]">
-                    Additional Notes <span className="text-[#86868b]">(optional)</span>
+                  <label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">
+                    Additional Notes <span className="text-[#86868b] dark:text-slate-500">(optional)</span>
                   </label>
                   <Textarea
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Describe what you're looking for (e.g., stainless steel railings for 2nd floor balcony, kitchen countertop with L-shape)..."
-                    className="min-h-[100px] rounded-xl border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73]"
+                    className="min-h-[100px] rounded-xl border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73] dark:border-white/15 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#d6b36a]/35 dark:focus:ring-[#d6b36a]/25"
                   />
-                  <p className="text-xs text-[#86868b]">
+                  <p className="text-xs text-[#86868b] dark:text-slate-500">
                     Our sales staff will discuss all the details during your office consultation.
                   </p>
                 </div>
@@ -333,21 +343,21 @@ export function BookAppointmentPage() {
         {/* Step: Date & Time */}
         {steps[currentStep]?.key === 'date' && (
           <>
-            <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
+            <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,23,30,0.9)_0%,rgba(8,12,18,0.96)_100%)]">
               <CardHeader>
-                <CardTitle className="text-lg text-[#1d1d1f]">Pick a Date</CardTitle>
-                <CardDescription className="text-[#6e6e73]">
+                <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Pick a Date</CardTitle>
+                <CardDescription className="text-[#6e6e73] dark:text-slate-400">
                   Choose your preferred appointment date
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="mb-4 flex items-start gap-3 rounded-xl bg-[#f0f0f5]/70 border border-[#d2d2d7]/50 p-3.5">
-                  <Info className="h-4 w-4 text-[#6e6e73] mt-0.5 shrink-0" />
-                  <div className="text-sm text-[#3a3a3e] space-y-0.5">
+                <div className="mb-4 flex items-start gap-3 rounded-xl border border-[#d2d2d7]/50 bg-[#f0f0f5]/70 p-3.5 dark:border-white/10 dark:bg-white/[0.04]">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6e6e73] dark:text-[#d6b36a]" />
+                  <div className="space-y-0.5 text-sm text-[#3a3a3e] dark:text-slate-300">
                     <p className="font-medium">Scheduling Rules</p>
-                    <ul className="list-disc list-inside text-xs text-[#6e6e73] space-y-0.5">
-                      <li>Appointments must be booked <span className="font-medium text-[#1d1d1f]">at least 3 days</span> in advance</li>
-                      <li>Weekends <span className="font-medium text-[#1d1d1f]">(Saturday &amp; Sunday)</span> are not available</li>
+                    <ul className="list-inside list-disc space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
+                      <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least 3 days</span> in advance</li>
+                      <li>Weekends <span className="font-medium text-[#1d1d1f] dark:text-slate-100">(Saturday &amp; Sunday)</span> are not available</li>
                     </ul>
                   </div>
                 </div>
@@ -360,22 +370,22 @@ export function BookAppointmentPage() {
                     }}
                     disabled={isDateDisabled}
                     fromMonth={new Date()}
-                    className="rounded-xl border border-[#c8c8cd]/50"
+                    className="rounded-xl border border-[#c8c8cd]/50 dark:border-white/10 dark:bg-white/[0.02]"
                   />
                 </div>
                 {selectedDate && (
-                  <p className="text-center text-sm text-[#6e6e73] mt-3">
-                    Selected: <span className="font-medium text-[#1d1d1f]">{format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}</span>
+                  <p className="mt-3 text-center text-sm text-[#6e6e73] dark:text-slate-400">
+                    Selected: <span className="font-medium text-[#1d1d1f] dark:text-slate-100">{format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}</span>
                   </p>
                 )}
                 {errors.date && <p className="text-sm text-red-500 mt-2">{errors.date.message}</p>}
               </CardContent>
             </Card>
 
-            <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
+            <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,23,30,0.9)_0%,rgba(8,12,18,0.96)_100%)]">
               <CardHeader>
-                <CardTitle className="text-lg text-[#1d1d1f]">Select a Time Slot</CardTitle>
-                <CardDescription className="text-[#6e6e73]">
+                <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Select a Time Slot</CardTitle>
+                <CardDescription className="text-[#6e6e73] dark:text-slate-400">
                   {selectedDate
                     ? `Showing slots for ${format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}`
                     : 'Select a date first'}
@@ -384,7 +394,7 @@ export function BookAppointmentPage() {
               <CardContent>
                 {slotsLoading ? (
                   <div className="flex items-center justify-center py-8">
-                    <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73]" />
+                    <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73] dark:text-slate-400" />
                   </div>
                 ) : (
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
@@ -402,10 +412,10 @@ export function BookAppointmentPage() {
                           className={cn(
                             'rounded-xl border-2 p-3 text-center transition-all',
                             selectedSlot === slot
-                              ? 'border-[#86868b] bg-[#f5f5f7]/50 text-[#1d1d1f] ring-2 ring-[#d2d2d7]'
+                              ? 'border-[#86868b] bg-[#f5f5f7]/50 text-[#1d1d1f] ring-2 ring-[#d2d2d7] dark:border-[#d6b36a]/35 dark:bg-[linear-gradient(180deg,rgba(255,248,235,0.88)_0%,rgba(224,209,181,0.78)_100%)] dark:text-[#4a3617] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-[#d6b36a]/12'
                               : available
-                                ? 'border-[#d2d2d7] hover:border-[#c8c8cd]'
-                                : 'cursor-not-allowed border-[#c8c8cd]/50 bg-[#f5f5f7] text-[#86868b] opacity-50',
+                                ? 'border-[#d2d2d7] hover:border-[#c8c8cd] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/[0.05]'
+                                : 'cursor-not-allowed border-[#c8c8cd]/50 bg-[#f5f5f7] text-[#86868b] opacity-50 dark:border-white/8 dark:bg-white/[0.02] dark:text-slate-500',
                           )}
                         >
                           <p className="text-sm font-medium">{formatSlotTime(slot)}</p>
@@ -427,15 +437,15 @@ export function BookAppointmentPage() {
 
         {/* Step: Reason (reschedule only) */}
         {steps[currentStep]?.key === 'reason' && (
-          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
+          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,23,30,0.9)_0%,rgba(8,12,18,0.96)_100%)]">
             <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f]">Reason for Reschedule</CardTitle>
+              <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Reason for Reschedule</CardTitle>
             </CardHeader>
             <CardContent>
               <textarea
                 {...register('purpose')}
                 placeholder="Why are you rescheduling?"
-                className="w-full rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 px-4 py-3 text-sm placeholder:text-[#86868b] focus:border-[#c8c8cd] focus:outline-none focus:ring-2 focus:ring-[#6e6e73]"
+                className="w-full rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 px-4 py-3 text-sm placeholder:text-[#86868b] focus:border-[#c8c8cd] focus:outline-none focus:ring-2 focus:ring-[#6e6e73] dark:border-white/15 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#d6b36a]/35 dark:focus:ring-[#d6b36a]/25"
                 rows={3}
               />
             </CardContent>
@@ -444,35 +454,35 @@ export function BookAppointmentPage() {
 
         {/* Step: Review & Confirm */}
         {steps[currentStep]?.key === 'review' && (
-          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
+          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,23,30,0.9)_0%,rgba(8,12,18,0.96)_100%)]">
             <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f]">Review Your Booking</CardTitle>
-              <CardDescription className="text-[#6e6e73]">
+              <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Review Your Booking</CardTitle>
+              <CardDescription className="text-[#6e6e73] dark:text-slate-400">
                 Confirm the details below before submitting
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4">
-                  <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">Visit Type</p>
-                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">Office Consultation</p>
+                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#86868b] dark:text-slate-500">Visit Type</p>
+                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Office Consultation</p>
                 </div>
-                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4">
-                  <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">Date</p>
-                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
+                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#86868b] dark:text-slate-500">Date</p>
+                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
                     {selectedDate ? format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy') : '—'}
                   </p>
                 </div>
-                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4">
-                  <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">Time Slot</p>
-                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f]">
+                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#86868b] dark:text-slate-500">Time Slot</p>
+                  <p className="mt-1 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
                     {selectedSlot ? formatSlotTime(selectedSlot) : '—'}
                   </p>
                 </div>
                 {serviceType && (
-                  <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4">
-                    <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">Service Type</p>
-                    <p className="mt-1 text-sm font-semibold text-[#1d1d1f] capitalize">
+                  <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                    <p className="text-xs font-medium uppercase tracking-wider text-[#86868b] dark:text-slate-500">Service Type</p>
+                    <p className="mt-1 text-sm font-semibold capitalize text-[#1d1d1f] dark:text-slate-100">
                       {serviceType === ServiceType.CUSTOM && serviceTypeCustom ? serviceTypeCustom : serviceType.replace(/_/g, ' ')}
                     </p>
                   </div>
@@ -480,15 +490,15 @@ export function BookAppointmentPage() {
               </div>
 
               {notes && (
-                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4">
-                  <p className="text-xs font-medium text-[#86868b] uppercase tracking-wider">Notes</p>
-                  <p className="mt-1 text-sm text-[#1d1d1f] whitespace-pre-wrap leading-relaxed">{notes}</p>
+                <div className="rounded-xl border border-[#c8c8cd]/50 bg-[#f5f5f7]/30 p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                  <p className="text-xs font-medium uppercase tracking-wider text-[#86868b] dark:text-slate-500">Notes</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#1d1d1f] dark:text-slate-100">{notes}</p>
                 </div>
               )}
 
-              <div className="flex items-start gap-3 rounded-xl bg-blue-50 border border-blue-200 p-3.5">
-                <Info className="h-4 w-4 text-blue-600 mt-0.5 shrink-0" />
-                <p className="text-sm text-blue-800">
+              <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3.5 dark:border-sky-500/20 dark:bg-sky-500/10">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-sky-300" />
+                <p className="text-sm text-blue-800 dark:text-sky-100/90">
                   After the consultation, our agent will schedule an ocular site visit if needed. Our sales staff will take measurements at your location.
                 </p>
               </div>
@@ -503,7 +513,7 @@ export function BookAppointmentPage() {
               type="button"
               variant="outline"
               onClick={handleBack}
-              className="rounded-xl border-[#d2d2d7] text-[#6e6e73] hover:text-[#1d1d1f]"
+              className={backButtonClassName}
             >
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back
@@ -515,7 +525,7 @@ export function BookAppointmentPage() {
                 type="button"
                 onClick={handleNext}
                 disabled={!canProceed}
-                className="rounded-xl bg-[#1d1d1f] text-white hover:bg-[#3a3a3e] disabled:opacity-50"
+                className={nextButtonClassName}
               >
                 Next
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -525,7 +535,7 @@ export function BookAppointmentPage() {
                 type="button"
                 onClick={onSubmit}
                 disabled={isPending || !selectedSlot}
-                className="rounded-xl bg-[#1d1d1f] text-white hover:bg-[#3a3a3e] disabled:opacity-50"
+                className={submitButtonClassName}
               >
                 {isPending ? (
                   <Loader2 className="mr-2 h-4 w-4 animate-spin" />

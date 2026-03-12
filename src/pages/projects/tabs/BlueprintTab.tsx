@@ -36,6 +36,7 @@ import { useConfigs } from '@/hooks/useConfig';
 import { uploadFileToR2 } from '@/hooks/useUploads';
 import { useProject, useSelectProjectPaymentPlan } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
+import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { Role } from '@/lib/constants';
 import type { Blueprint, VisitReport } from '@/lib/types';
@@ -113,6 +114,8 @@ function FilePickerWithPreview({
   label: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
   const isImage = file?.type.startsWith('image/');
   const previewUrl = useMemo(
     () => (file && isImage ? URL.createObjectURL(file) : null),
@@ -134,7 +137,7 @@ function FilePickerWithPreview({
 
   return (
     <div>
-      <label className="text-xs text-[#6e6e73] block mb-1.5">{label}</label>
+      <label className={`mb-1.5 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>{label}</label>
       <input
         ref={inputRef}
         type="file"
@@ -143,14 +146,14 @@ function FilePickerWithPreview({
         className="hidden"
       />
       {file ? (
-        <div className="relative group rounded-xl border border-[#c8c8cd]/50 overflow-hidden bg-[#f5f5f7]/30">
+        <div className={`relative group overflow-hidden rounded-xl border ${isDark ? 'border-slate-700/80 bg-slate-950/55 shadow-[0_18px_38px_rgba(2,6,23,0.34)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/30'}`}>
           <button
             type="button"
             onClick={handlePreview}
-            className="w-full text-left hover:bg-[#f0f0f5]/50 transition-colors"
+            className={`w-full text-left transition-colors ${isDark ? 'hover:bg-slate-900/70' : 'hover:bg-[#f0f0f5]/50'}`}
           >
             {isImage && previewUrl ? (
-              <div className="aspect-[3/2] bg-[#f5f5f7] flex items-center justify-center p-2">
+              <div className={`aspect-[3/2] flex items-center justify-center p-2 ${isDark ? 'bg-slate-950/80' : 'bg-[#f5f5f7]'}`}>
                 <img
                   src={previewUrl}
                   alt={file.name}
@@ -158,18 +161,18 @@ function FilePickerWithPreview({
                 />
               </div>
             ) : (
-              <div className="aspect-[3/2] bg-[#f5f5f7] flex flex-col items-center justify-center gap-2">
-                <FileText className="h-10 w-10 text-[#86868b]" />
-                <span className="text-[10px] text-[#86868b] uppercase tracking-wider font-medium">
+              <div className={`aspect-[3/2] flex flex-col items-center justify-center gap-2 ${isDark ? 'bg-slate-950/80' : 'bg-[#f5f5f7]'}`}>
+                <FileText className={`h-10 w-10 ${isDark ? 'text-slate-300' : 'text-[#86868b]'}`} />
+                <span className={`text-[10px] uppercase tracking-wider font-medium ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>
                   {file.name.split('.').pop()}
                 </span>
               </div>
             )}
-            <div className="p-3 border-t border-[#c8c8cd]/30">
-              <p className="text-xs font-medium text-[#3a3a3e] truncate">{file.name}</p>
+            <div className={`p-3 ${isDark ? 'border-t border-slate-800/80' : 'border-t border-[#c8c8cd]/30'}`}>
+              <p className={`truncate text-xs font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>{file.name}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className="text-[10px] text-[#86868b]">{formatSize(file.size)}</p>
-                <span className="text-[10px] text-[#0066cc]">Click to preview</span>
+                <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>{formatSize(file.size)}</p>
+                <span className={`text-[10px] ${isDark ? 'text-sky-300' : 'text-[#0066cc]'}`}>Click to preview</span>
               </div>
             </div>
           </button>
@@ -200,11 +203,11 @@ function FilePickerWithPreview({
         <button
           type="button"
           onClick={() => inputRef.current?.click()}
-          className="w-full rounded-xl border-2 border-dashed border-[#c8c8cd] p-6 text-center hover:border-[#86868b] hover:bg-[#f5f5f7]/30 transition-colors cursor-pointer"
+          className={`w-full cursor-pointer rounded-xl border-2 border-dashed p-6 text-center transition-colors ${isDark ? 'border-slate-700 bg-slate-950/45 hover:border-slate-500 hover:bg-slate-900/70' : 'border-[#c8c8cd] hover:border-[#86868b] hover:bg-[#f5f5f7]/30'}`}
         >
-          <Upload className="h-6 w-6 text-[#86868b] mx-auto mb-1.5" />
-          <p className="text-xs font-medium text-[#3a3a3e]">Choose file</p>
-          <p className="text-[10px] text-[#86868b] mt-0.5">
+          <Upload className={`mx-auto mb-1.5 h-6 w-6 ${isDark ? 'text-slate-300' : 'text-[#86868b]'}`} />
+          <p className={`text-xs font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Choose file</p>
+          <p className={`mt-0.5 text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>
             {accept.replace(/\./g, '').split(',').join(', ').toUpperCase()}
           </p>
         </button>
@@ -217,19 +220,21 @@ function FilePickerWithPreview({
 // -- Inline preview thumbnail (loads signed URL via hook) --
 function FilePreviewThumb({ fileKey, label }: { fileKey: string | undefined | null; label: string }) {
   const { url, isLoading } = useAuthenticatedUrl(fileKey ?? null);
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
   const isImage = fileKey ? /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(fileKey) : false;
 
   if (isLoading) {
     return (
-      <div className="aspect-[4/3] bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100">
-        <Loader2 className="h-8 w-8 text-gray-300 animate-spin" />
+      <div className={`${isDark ? 'bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.14),rgba(2,6,23,0.94)_62%)] dark:bg-slate-900/70' : 'bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),rgba(241,245,249,0.95)_62%)]'} aspect-[4/3] rounded-xl border border-[color:var(--color-border)]/55 flex items-center justify-center dark:border-slate-700`}>
+        <Loader2 className={`h-8 w-8 animate-spin ${isDark ? 'text-gray-300 dark:text-slate-500' : 'text-[var(--text-metal-muted-color)]'}`} />
       </div>
     );
   }
 
   if (url && isImage) {
     return (
-      <div className="aspect-[4/3] bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100 overflow-hidden">
+      <div className={`${isDark ? 'bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.14),rgba(2,6,23,0.94)_62%)] dark:bg-slate-900/70' : 'bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),rgba(241,245,249,0.95)_62%)]'} aspect-[4/3] rounded-xl border border-[color:var(--color-border)]/55 flex items-center justify-center overflow-hidden dark:border-slate-700`}>
         <img src={url} alt={label} className="max-h-full max-w-full object-contain" />
       </div>
     );
@@ -239,17 +244,17 @@ function FilePreviewThumb({ fileKey, label }: { fileKey: string | undefined | nu
   const isPdf = fileKey ? /\.pdf$/i.test(fileKey) : false;
   const isSpreadsheet = fileKey ? /\.(xlsx?|csv)$/i.test(fileKey) : false;
   return (
-    <div className="aspect-[4/3] bg-gray-50 rounded-xl flex items-center justify-center border border-gray-100">
+    <div className={`${isDark ? 'bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.14),rgba(2,6,23,0.94)_62%)] dark:bg-slate-900/70' : 'bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.7),rgba(241,245,249,0.95)_62%)]'} aspect-[4/3] rounded-xl border border-[color:var(--color-border)]/55 flex items-center justify-center dark:border-slate-700`}>
       <div className="text-center p-6">
         {isPdf ? (
-          <FileText className="h-12 w-12 text-red-300 mx-auto mb-3" />
+          <FileText className={`mx-auto mb-3 h-12 w-12 ${isDark ? 'text-red-300' : 'text-red-500'}`} />
         ) : isSpreadsheet ? (
-          <Info className="h-12 w-12 text-emerald-300 mx-auto mb-3" />
+          <Info className={`mx-auto mb-3 h-12 w-12 ${isDark ? 'text-emerald-300' : 'text-emerald-600'}`} />
         ) : (
-          <Image className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+          <Image className={`mx-auto mb-3 h-12 w-12 ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
         )}
-        <p className="text-sm font-medium text-gray-600">{label}</p>
-        <p className="text-xs text-gray-400 mt-1">Click to view full document</p>
+        <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{label}</p>
+        <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>Click to view full document</p>
       </div>
     </div>
   );
@@ -258,6 +263,8 @@ function FilePreviewThumb({ fileKey, label }: { fileKey: string | undefined | nu
 export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
   const isEngineer = user?.roles?.some((r: string) => r === 'engineer');
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
@@ -475,7 +482,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     setQuotLineItems(prev => prev.filter((_, i) => i !== idx));
   };
 
-  const inputCls = 'w-full h-9 px-3 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]';
+  const inputCls = `w-full h-9 rounded-lg border px-3 text-sm transition-colors focus:outline-none focus:ring-2 ${isDark ? 'border-slate-700 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-sky-400/70 focus:ring-sky-400/25' : 'border-[#d2d2d7] bg-[#f5f5f7]/50 focus:border-[#b8b8bd] focus:ring-[#6e6e73]'}`;
+  const uploadActionButtonClass = isDark
+    ? 'inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-300/70 bg-[linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] px-3 text-sm font-medium text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_12px_28px_rgba(2,6,23,0.28)] transition-[background,color,border-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:bg-[linear-gradient(180deg,#ffffff_0%,#edf2f7_100%)] disabled:cursor-not-allowed disabled:opacity-100 disabled:border-slate-600 disabled:bg-[#94a3b8] disabled:text-slate-800 disabled:shadow-none'
+    : 'inline-flex h-9 items-center justify-center gap-2 rounded-lg bg-[#1d1d1f] px-3 text-sm font-medium text-white transition-colors hover:bg-[#2d2d2f] disabled:cursor-not-allowed disabled:opacity-100 disabled:bg-[#c8c8cd] disabled:text-[#3a3a3e]';
 
   const formatCurrency = (n: number | undefined | null) => {
     const val = Number(n);
@@ -484,14 +494,14 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
   // Shared quotation form used in both first-upload and revision-upload
   const quotationFormJSX = (
-    <div className="border-t border-[#c8c8cd]/50 pt-3 space-y-4">
-      <p className="text-sm font-medium text-[#3a3a3e]">Quotation Details <span className="text-xs text-red-500">*</span></p>
+    <div className={`space-y-4 border-t pt-3 ${isDark ? 'border-slate-800/80' : 'border-[#c8c8cd]/50'}`}>
+      <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Quotation Details <span className="text-xs text-red-500">*</span></p>
 
       {/* ── Itemized pricing table ── */}
       {quotLineItems.length > 0 && (
         <div className="space-y-2">
           {/* Table header (hidden on small screens, visible on >=640) */}
-          <div className="hidden sm:grid sm:grid-cols-[1fr_60px_100px_100px_90px_32px] gap-2 px-1 text-[10px] uppercase tracking-wider font-medium text-[#86868b]">
+          <div className={`hidden gap-2 px-1 text-[10px] font-medium uppercase tracking-wider sm:grid sm:grid-cols-[1fr_60px_100px_100px_90px_32px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>
             <span>Item</span>
             <span>Qty</span>
             <span>Materials (₱)</span>
@@ -503,33 +513,33 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           {quotLineItems.map((li, idx) => {
             const rowTotal = quotItemTotals[idx] || 0;
             return (
-              <div key={idx} className="rounded-lg border border-[#d2d2d7]/60 bg-white p-3 sm:p-0 sm:border-0 sm:bg-transparent space-y-2 sm:space-y-0 sm:grid sm:grid-cols-[1fr_60px_100px_100px_90px_32px] sm:gap-2 sm:items-center">
+              <div key={idx} className={`space-y-2 rounded-lg p-3 sm:grid sm:grid-cols-[1fr_60px_100px_100px_90px_32px] sm:items-center sm:gap-2 sm:space-y-0 sm:border-0 sm:bg-transparent sm:p-0 ${isDark ? 'border border-slate-800/80 bg-slate-950/45' : 'border border-[#d2d2d7]/60 bg-white'}`}>
                 {/* Item name */}
                 <div>
-                  <span className="sm:hidden text-[10px] uppercase tracking-wider font-medium text-[#86868b] block mb-1">Item</span>
+                  <span className={`mb-1 block text-[10px] font-medium uppercase tracking-wider sm:hidden ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Item</span>
                   <input value={li.label} onChange={e => updateLineItem(idx, 'label', e.target.value)} placeholder="Item name" className={inputCls} />
                 </div>
                 {/* Quantity */}
                 <div>
-                  <span className="sm:hidden text-[10px] uppercase tracking-wider font-medium text-[#86868b] block mb-1">Qty</span>
+                  <span className={`mb-1 block text-[10px] font-medium uppercase tracking-wider sm:hidden ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Qty</span>
                   <input type="number" value={li.quantity} onChange={e => updateLineItem(idx, 'quantity', Math.max(1, Number(e.target.value) || 1))} min={1} className={inputCls} />
                 </div>
                 <div className="grid grid-cols-2 gap-2 sm:contents">
                   <div>
-                    <span className="sm:hidden text-[10px] uppercase tracking-wider font-medium text-[#86868b] block mb-1">Materials (₱)</span>
+                    <span className={`mb-1 block text-[10px] font-medium uppercase tracking-wider sm:hidden ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Materials (₱)</span>
                     <input type="number" value={li.materials} onChange={e => updateLineItem(idx, 'materials', e.target.value)} min={0} step={0.01} placeholder="0.00" className={inputCls} />
                   </div>
                   <div>
-                    <span className="sm:hidden text-[10px] uppercase tracking-wider font-medium text-[#86868b] block mb-1">Labor (₱)</span>
+                    <span className={`mb-1 block text-[10px] font-medium uppercase tracking-wider sm:hidden ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Labor (₱)</span>
                     <input type="number" value={li.labor} onChange={e => updateLineItem(idx, 'labor', e.target.value)} min={0} step={0.01} placeholder="0.00" className={inputCls} />
                   </div>
                 </div>
                 <div className="flex items-center justify-between sm:justify-end">
-                  <span className="sm:hidden text-[10px] uppercase tracking-wider font-medium text-[#86868b]">Total</span>
-                  <p className="text-sm font-semibold text-[#1d1d1f] h-9 flex items-center">{formatCurrency(rowTotal)}</p>
+                  <span className={`text-[10px] font-medium uppercase tracking-wider sm:hidden ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Total</span>
+                  <p className={`flex h-9 items-center text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{formatCurrency(rowTotal)}</p>
                 </div>
                 <div className="flex justify-end">
-                  <button type="button" onClick={() => removeLineItem(idx)} className="text-red-400 hover:text-red-600 p-1 rounded transition-colors" title="Remove item">
+                  <button type="button" onClick={() => removeLineItem(idx)} className={`rounded p-1 transition-colors ${isDark ? 'text-red-300 hover:text-red-200' : 'text-red-400 hover:text-red-600'}`} title="Remove item">
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
@@ -539,23 +549,29 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
         </div>
       )}
 
-      <button type="button" onClick={addLineItem} className="flex items-center gap-1.5 text-xs font-medium text-[#6e6e73] hover:text-[#1d1d1f] transition-colors">
+      <Button
+        type="button"
+        size="sm"
+        variant="secondary"
+        onClick={addLineItem}
+        className={isDark ? 'w-fit border border-slate-600/80 text-slate-100' : 'w-fit border border-[#d2d2d7]/80 text-[#3a3a3e]'}
+      >
         <Plus className="h-3.5 w-3.5" /> Add Item
-      </button>
+      </Button>
 
       {/* Other Fees */}
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-[#6e6e73] block mb-1">Other Fees (₱)</label>
+          <label className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Other Fees (₱)</label>
           <input type="number" value={quotFees} onChange={(e) => setQuotFees(e.target.value)} min={0} step={0.01} placeholder="Delivery, permits, etc." className={inputCls} />
         </div>
         <div>
-          <label className="text-xs text-[#6e6e73] block mb-1">Quotation Validity</label>
+          <label className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Quotation Validity</label>
           <Select value={quotValidityDays} onValueChange={setQuotValidityDays}>
-            <SelectTrigger className="h-9 w-full rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 px-3 text-sm focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]">
+            <SelectTrigger className={`h-9 w-full rounded-lg border px-3 text-sm transition-colors focus:outline-none focus:ring-2 ${isDark ? 'border-slate-700 bg-slate-950/70 text-slate-100 focus:border-sky-400/70 focus:ring-sky-400/25' : 'border-[#d2d2d7] bg-[#f5f5f7]/50 focus:border-[#b8b8bd] focus:ring-[#6e6e73]'}`}>
               <SelectValue />
             </SelectTrigger>
-            <SelectContent className="rounded-xl border border-[#d2d2d7] bg-white shadow-lg">
+            <SelectContent className={`rounded-xl border shadow-lg ${isDark ? 'border-slate-700 bg-slate-950 text-slate-100' : 'border-[#d2d2d7] bg-white'}`}>
               <SelectItem value="15" className="rounded-lg text-sm">15 days</SelectItem>
               <SelectItem value="30" className="rounded-lg text-sm">30 days</SelectItem>
               <SelectItem value="45" className="rounded-lg text-sm">45 days</SelectItem>
@@ -567,22 +583,22 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
       {/* Live totals */}
       {quotGrandTotal > 0 && (
-        <div className="rounded-lg bg-[#f5f5f7] border border-[#e8e8ed] p-3 space-y-1.5">
-          <div className="flex justify-between text-xs text-[#6e6e73]">
+        <div className={`space-y-1.5 rounded-lg border p-3 ${isDark ? 'border-slate-800 bg-slate-950/60' : 'border-[#e8e8ed] bg-[#f5f5f7]'}`}>
+          <div className={`flex justify-between text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>
             <span>Materials</span>
             <span>{formatCurrency(quotTotalMaterials)}</span>
           </div>
-          <div className="flex justify-between text-xs text-[#6e6e73]">
+          <div className={`flex justify-between text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>
             <span>Labor</span>
             <span>{formatCurrency(quotTotalLabor)}</span>
           </div>
           {quotFeesNum > 0 && (
-            <div className="flex justify-between text-xs text-[#6e6e73]">
+            <div className={`flex justify-between text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>
               <span>Other Fees</span>
               <span>{formatCurrency(quotFeesNum)}</span>
             </div>
           )}
-          <div className="flex justify-between text-sm font-bold text-emerald-700 pt-1.5 border-t border-[#d2d2d7]">
+          <div className={`flex justify-between border-t pt-1.5 text-sm font-bold ${isDark ? 'border-slate-800 text-emerald-300' : 'border-[#d2d2d7] text-emerald-700'}`}>
             <span>Grand Total</span>
             <span>{formatCurrency(quotGrandTotal)}</span>
           </div>
@@ -592,31 +608,31 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       {/* Duration + Scope + Notes */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div>
-          <label className="text-xs text-[#6e6e73] block mb-1">Estimated Duration</label>
+          <label className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Estimated Duration</label>
           <input value={quotDuration} onChange={e => setQuotDuration(e.target.value)} placeholder="e.g. 2-3 weeks" className={inputCls} />
         </div>
       </div>
       <div>
-        <label className="text-xs text-[#6e6e73] block mb-1">Scope of Work</label>
-        <textarea value={quotBreakdown} onChange={e => setQuotBreakdown(e.target.value)} placeholder="Describe what will be fabricated and installed..." rows={3} className="w-full px-3 py-2 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
+        <label className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Scope of Work</label>
+        <textarea value={quotBreakdown} onChange={e => setQuotBreakdown(e.target.value)} placeholder="Describe what will be fabricated and installed..." rows={3} className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 ${isDark ? 'border-slate-700 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-sky-400/70 focus:ring-sky-400/25' : 'border-[#d2d2d7] bg-[#f5f5f7]/50 focus:border-[#b8b8bd] focus:ring-[#6e6e73]'}`} />
       </div>
       <div>
-        <label className="text-xs text-[#6e6e73] block mb-1">Engineer Notes</label>
-        <textarea value={quotNotes} onChange={e => setQuotNotes(e.target.value)} placeholder="Any additional notes for the customer..." rows={2} className="w-full px-3 py-2 text-sm rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 focus:outline-none focus:ring-2 focus:ring-[#6e6e73] focus:border-[#b8b8bd]" />
+        <label className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Engineer Notes</label>
+        <textarea value={quotNotes} onChange={e => setQuotNotes(e.target.value)} placeholder="Any additional notes for the customer..." rows={2} className={`w-full rounded-lg border px-3 py-2 text-sm transition-colors focus:outline-none focus:ring-2 ${isDark ? 'border-slate-700 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-sky-400/70 focus:ring-sky-400/25' : 'border-[#d2d2d7] bg-[#f5f5f7]/50 focus:border-[#b8b8bd] focus:ring-[#6e6e73]'}`} />
       </div>
 
       {/* ── Installment Payment Milestones ── */}
       {quotMilestones.length > 0 && (
-        <div className="border-t border-[#c8c8cd]/50 pt-3 space-y-3">
+        <div className={`space-y-3 border-t pt-3 ${isDark ? 'border-slate-800/80' : 'border-[#c8c8cd]/50'}`}>
           <div>
-            <p className="text-sm font-medium text-[#3a3a3e]">Installment Payment Schedule</p>
-            <p className="text-[10px] text-[#86868b] mt-0.5">Describe when each payment stage is due. Only applies if the customer chooses installment.</p>
+            <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Installment Payment Schedule</p>
+            <p className={`mt-0.5 text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Describe when each payment stage is due. Only applies if the customer chooses installment.</p>
           </div>
           {quotMilestones.map((ms, idx) => (
-            <div key={idx} className="rounded-lg border border-[#d2d2d7]/60 bg-[#f5f5f7]/30 p-3 space-y-2">
+            <div key={idx} className={`space-y-2 rounded-lg border p-3 ${isDark ? 'border-slate-800 bg-slate-950/55' : 'border-[#d2d2d7]/60 bg-[#f5f5f7]/30'}`}>
               <div className="flex items-center gap-2">
-                <span className="shrink-0 text-[10px] uppercase tracking-wider font-medium text-[#86868b]">Stage {idx + 1}</span>
-                <span className="shrink-0 text-xs font-semibold text-[#6e6e73] bg-[#e8e8ed] rounded px-1.5 py-0.5">{cfgSplit[idx]}%</span>
+                <span className={`shrink-0 text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Stage {idx + 1}</span>
+                <span className={`shrink-0 rounded px-1.5 py-0.5 text-xs font-semibold ${isDark ? 'bg-slate-800 text-slate-200' : 'bg-[#e8e8ed] text-[#6e6e73]'}`}>{cfgSplit[idx]}%</span>
               </div>
               <input
                 value={ms.label}
@@ -826,9 +842,9 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   // ═══════════════════════════════════════════
   if (isEngineer) {
     return (
-      <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-[#c8c8cd]/50">
+      <Card className={`-mx-3 rounded-none border-x-0 sm:mx-0 sm:rounded-xl sm:border-x ${isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60 dark:border-slate-700 dark:bg-slate-950/85' : 'border-[#c8c8cd]/50'}`}>
         <CardHeader className="px-4 sm:px-6">
-          <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
+          <CardTitle className={`flex items-center gap-2 text-lg ${isDark ? 'text-slate-50' : 'text-[#1d1d1f]'}`}>
             <Image className="h-5 w-5" />
             Blueprint & Design
           </CardTitle>
@@ -837,51 +853,51 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           {blueprint ? (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-[#1d1d1f]">Version {blueprint.version}</p>
+                <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Version {blueprint.version}</p>
                 <StatusBadge status={blueprint.status} />
               </div>
               <div className="grid gap-3 sm:grid-cols-3">
-                <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Blueprint</p>
-                  <p className="mt-1 text-[10px] text-[#86868b]">Technical (for fabrication)</p>
+                <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Blueprint</p>
+                  <p className={`mt-1 text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Technical (for fabrication)</p>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="mt-2 text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
+                    className={`mt-2 h-auto p-0 text-xs ${isDark ? 'text-slate-100 hover:bg-transparent hover:text-white' : 'text-[#1d1d1f] hover:text-[#3a3a3e]'}`}
                     onClick={() => handleDownloadFile(blueprint.blueprintKey)}
                   >
                     <Download className="mr-1 h-3 w-3" />
                     Download
                   </Button>
                 </div>
-                <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Design</p>
-                  <p className="mt-1 text-sm font-medium">
+                <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Design</p>
+                  <p className={`mt-1 text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>
                     {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
                   </p>
                   {blueprint.designKey ? (
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="mt-2 text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
+                      className={`mt-2 h-auto p-0 text-xs ${isDark ? 'text-slate-100 hover:bg-transparent hover:text-white' : 'text-[#1d1d1f] hover:text-[#3a3a3e]'}`}
                       onClick={() => handleDownloadFile(blueprint.designKey!)}
                     >
                       <Download className="mr-1 h-3 w-3" />
                       Download
                     </Button>
                   ) : (
-                    <p className="mt-1 text-[10px] text-[#86868b] italic">Not uploaded</p>
+                    <p className={`mt-1 text-[10px] italic ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Not uploaded</p>
                   )}
                 </div>
-                <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/50">
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Costing</p>
-                  <p className="mt-1 text-sm font-medium">
+                <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Costing</p>
+                  <p className={`mt-1 text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>
                     {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
                   </p>
                   <Button
                     size="sm"
                     variant="ghost"
-                    className="mt-2 text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
+                    className={`mt-2 h-auto p-0 text-xs ${isDark ? 'text-slate-100 hover:bg-transparent hover:text-white' : 'text-[#1d1d1f] hover:text-[#3a3a3e]'}`}
                     onClick={() => handleDownloadFile(blueprint.costingKey)}
                   >
                     <Download className="mr-1 h-3 w-3" />
@@ -890,10 +906,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 </div>
               </div>
               {(blueprint.revisionNotes || (blueprint.revisionRefKeys && blueprint.revisionRefKeys.length > 0)) && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 space-y-3">
-                  <p className="text-xs font-medium text-amber-600 uppercase tracking-wider">Revision Notes</p>
+                <div className={`space-y-3 rounded-xl border p-4 ${isDark ? 'border-amber-500/35 bg-amber-500/10' : 'border-amber-200 bg-amber-50/50'}`}>
+                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-amber-300' : 'text-amber-600'}`}>Revision Notes</p>
                   {blueprint.revisionNotes && (
-                    <p className="text-sm text-amber-800">{blueprint.revisionNotes}</p>
+                    <p className={`text-sm ${isDark ? 'text-amber-100' : 'text-amber-800'}`}>{blueprint.revisionNotes}</p>
                   )}
                   {blueprint.revisionRefKeys && blueprint.revisionRefKeys.length > 0 && (
                     <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 pt-2">
@@ -922,8 +938,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
               {/* Revision upload (when revision requested) */}
               {blueprint.status === 'revision_requested' && isAssigned && (
-                <div className="rounded-xl border border-dashed border-[#c8c8cd] p-4 space-y-3">
-                  <p className="text-sm font-medium text-[#3a3a3e]">Upload Revision</p>
+                <div className={`space-y-3 rounded-xl border border-dashed p-4 ${isDark ? 'border-slate-700 bg-slate-950/35' : 'border-[#c8c8cd]'}`}>
+                  <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Upload Revision</p>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <FilePickerWithPreview
                       file={blueprintFile}
@@ -947,15 +963,15 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
                   {quotationFormJSX}
 
-                  <Button
-                    size="sm"
-                    className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
+                  <button
+                    type="button"
+                    className={uploadActionButtonClass}
                     onClick={handleBlueprintUpload}
                     disabled={uploading || !blueprintFile || !designFile || !costingFile}
                   >
                     {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
                     Upload Revision
-                  </Button>
+                  </button>
                 </div>
               )}
             </div>
@@ -963,8 +979,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
             <div>
               {/* First blueprint upload */}
               {isAssigned && project && ['blueprint', 'submitted'].includes(project.status) ? (
-                <div className="rounded-xl border border-dashed border-[#c8c8cd] p-4 space-y-3">
-                  <p className="text-sm font-medium text-[#3a3a3e]">Upload Blueprint, Design & Costing</p>
+                <div className={`space-y-3 rounded-xl border border-dashed p-4 ${isDark ? 'border-slate-700 bg-slate-950/35' : 'border-[#c8c8cd]'}`}>
+                  <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Upload Blueprint, Design & Costing</p>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <FilePickerWithPreview
                       file={blueprintFile}
@@ -988,15 +1004,15 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
                   {quotationFormJSX}
 
-                  <Button
-                    size="sm"
-                    className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white"
+                  <button
+                    type="button"
+                    className={uploadActionButtonClass}
                     onClick={handleBlueprintUpload}
                     disabled={uploading || !blueprintFile || !designFile || !costingFile}
                   >
                     {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
                     Upload Blueprint
-                  </Button>
+                  </button>
                 </div>
               ) : (
                 <p className="text-sm text-[#6e6e73] py-4">No blueprint uploaded yet.</p>
@@ -1041,10 +1057,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
         {/* Version + status row */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Badge variant="outline" className="border-[#c8c8cd] text-[#3a3a3e] font-medium rounded-lg">
+            <Badge variant="outline" className="border-white/12 bg-slate-900/65 text-slate-200 font-medium rounded-lg dark:border-white/12 dark:bg-slate-900/65 dark:text-slate-200">
               v{blueprint.version}
             </Badge>
-            <span className="text-xs text-[#86868b]">
+            <span className="text-xs text-slate-400">
               {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
             </span>
           </div>
@@ -1054,26 +1070,27 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
         {/* Two file cards: Blueprint + Design */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Technical Blueprint */}
-          <Card className="border-gray-100 rounded-none sm:rounded-xl border-x-0 sm:border-x">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 bg-gray-50/50 border-b border-gray-100 sm:rounded-t-xl px-4 sm:px-6">
+          <Card className="metal-panel-strong border-[color:var(--color-border)]/60 rounded-none sm:rounded-xl border-x-0 sm:border-x dark:border-slate-700 dark:bg-slate-950/85">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 bg-slate-900/35 border-b border-[color:var(--color-border)]/55 sm:rounded-t-xl px-4 sm:px-6 dark:border-slate-700 dark:bg-slate-900/70">
               <div className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-[#6e6e73]" />
-                <h3 className="font-semibold text-gray-900">Technical Blueprint</h3>
+                <FileText className="h-5 w-5 text-slate-300" />
+                <h3 className="font-semibold text-slate-50">Technical Blueprint</h3>
               </div>
-              <span className="text-[10px] text-[#86868b] bg-[#f0f0f5] px-1.5 py-0.5 rounded">Fabrication reference</span>
+              <span className="rounded-md border border-white/12 bg-white/8 px-2 py-1 text-[10px] font-medium text-slate-300">Fabrication reference</span>
             </CardHeader>
             <CardContent className="pt-6 space-y-3 px-4 sm:px-6">
-              <p className="text-xs text-[#86868b]">Engineering drawing for fabrication use.</p>
+              <p className="text-xs text-slate-300">Engineering drawing for fabrication use.</p>
               <div className="flex gap-2">
                 <Button
-                  className="flex-1 bg-gray-900 text-white hover:bg-gray-800 rounded-xl"
+                  variant="prominent"
+                  className="flex-1 rounded-xl"
                   onClick={() => handleViewFile(blueprint.blueprintKey)}
                 >
                   <Eye className="mr-2 h-4 w-4" /> View
                 </Button>
                 <Button
                   variant="outline"
-                  className="flex-1 rounded-xl border-gray-200"
+                  className="flex-1 rounded-xl border-white/12 bg-slate-900/55 text-slate-100 hover:bg-slate-800/80"
                   onClick={() => handleDownloadFile(blueprint.blueprintKey)}
                 >
                   <Download className="mr-2 h-4 w-4" /> Download
@@ -1083,11 +1100,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           </Card>
 
           {/* Design */}
-          <Card className="border-gray-100 rounded-none sm:rounded-xl border-x-0 sm:border-x">
-            <CardHeader className="flex flex-row items-center justify-between pb-3 bg-gray-50/50 border-b border-gray-100 sm:rounded-t-xl px-4 sm:px-6">
+          <Card className="metal-panel-strong border-[color:var(--color-border)]/60 rounded-none sm:rounded-xl border-x-0 sm:border-x dark:border-slate-700 dark:bg-slate-950/85">
+            <CardHeader className="flex flex-row items-center justify-between pb-3 bg-slate-900/35 border-b border-[color:var(--color-border)]/55 sm:rounded-t-xl px-4 sm:px-6 dark:border-slate-700 dark:bg-slate-900/70">
               <div className="flex items-center gap-2">
-                <Image className="h-5 w-5 text-[#6e6e73]" />
-                <h3 className="font-semibold text-gray-900">Design</h3>
+                <Image className="h-5 w-5 text-slate-300" />
+                <h3 className="font-semibold text-slate-50">Design</h3>
               </div>
               {blueprint.blueprintApproved ? (
                 <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 shadow-none hover:bg-emerald-100">
@@ -1100,25 +1117,26 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
               )}
             </CardHeader>
             <CardContent className="pt-6 space-y-3 px-4 sm:px-6">
-              <p className="text-xs text-[#86868b]">Customer-facing design render.</p>
+              <p className="text-xs text-slate-300">Customer-facing design render.</p>
               {blueprint.designKey ? (
                 <div className="flex gap-2">
                   <Button
-                    className="flex-1 bg-gray-900 text-white hover:bg-gray-800 rounded-xl"
+                    variant="prominent"
+                    className="flex-1 rounded-xl"
                     onClick={() => handleViewFile(blueprint.designKey!)}
                   >
                     <Eye className="mr-2 h-4 w-4" /> View
                   </Button>
                   <Button
                     variant="outline"
-                    className="flex-1 rounded-xl border-gray-200"
+                    className="flex-1 rounded-xl border-white/12 bg-slate-900/55 text-slate-100 hover:bg-slate-800/80"
                     onClick={() => handleDownloadFile(blueprint.designKey!)}
                   >
                     <Download className="mr-2 h-4 w-4" /> Download
                   </Button>
                 </div>
               ) : (
-                <p className="text-xs text-[#86868b] italic">Not uploaded yet.</p>
+                <p className="text-xs italic text-slate-400">Not uploaded yet.</p>
               )}
             </CardContent>
           </Card>
@@ -1204,10 +1222,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           {/* Version header */}
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Badge variant="outline" className="border-[#c8c8cd] text-[#3a3a3e] font-medium rounded-lg">
+              <Badge variant="outline" className={`${isDark ? 'border-white/12 bg-slate-900/65 text-slate-200' : 'border-[color:var(--color-border)] bg-white text-[var(--text-metal-color)]'} font-medium rounded-lg`}>
                 v{bp.version}
               </Badge>
-              <span className="text-xs text-[#86868b]">
+              <span className={`text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                 {format(new Date(bp.createdAt), 'MMM d, yyyy h:mm a')}
               </span>
             </div>
@@ -1216,9 +1234,9 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
           {/* ── Customer Step Guide ── */}
           {canReviewBlueprint && ['uploaded', 'revision_uploaded', 'approved'].includes(bp.status) && (
-            <div className="rounded-none sm:rounded-xl border border-[#e8e8ed] border-x-0 sm:border-x bg-white overflow-hidden">
-              <div className="px-4 sm:px-5 py-3 bg-[#f5f5f7]/60 border-b border-[#e8e8ed]">
-                <p className="text-xs font-semibold text-[#1d1d1f] uppercase tracking-wider">Your Review Progress</p>
+            <div className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} overflow-hidden rounded-none border border-[color:var(--color-border)]/60 sm:rounded-xl border-x-0 sm:border-x dark:border-slate-700`}>
+              <div className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} border-b border-[color:var(--color-border)]/55 px-4 py-3 sm:px-5 dark:border-slate-700`}>
+                <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>Your Review Progress</p>
               </div>
               <div className="px-4 sm:px-5 py-4">
                 <div className="flex items-center gap-0">
@@ -1226,38 +1244,38 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 ${
                       bp.blueprintApproved
-                        ? 'bg-emerald-100 text-emerald-700'
-                        : 'bg-[#1d1d1f] text-white'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
+                        : 'bg-[#1d1d1f] text-white dark:bg-slate-100 dark:text-slate-900'
                     }`}>
                       {bp.blueprintApproved ? <CheckCircle className="h-4 w-4" /> : '1'}
                     </div>
-                    <span className={`text-xs font-medium truncate ${bp.blueprintApproved ? 'text-emerald-700' : 'text-[#1d1d1f]'}`}>Design</span>
+                    <span className={`text-xs font-medium truncate ${bp.blueprintApproved ? 'text-emerald-700 dark:text-emerald-300' : 'text-[#1d1d1f] dark:text-slate-100'}`}>Design</span>
                   </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-[#c8c8cd] flex-shrink-0 mx-1" />
+                  <ArrowRight className="mx-1 h-3.5 w-3.5 flex-shrink-0 text-[#c8c8cd] dark:text-slate-500" />
                   {/* Step 2 */}
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 ${
                       bp.costingApproved
-                        ? 'bg-emerald-100 text-emerald-700'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-300'
                         : bp.blueprintApproved
-                          ? 'bg-[#1d1d1f] text-white'
-                          : 'bg-[#e8e8ed] text-[#86868b]'
+                          ? 'bg-[#1d1d1f] text-white dark:bg-slate-100 dark:text-slate-900'
+                          : 'bg-[#e8e8ed] text-[#86868b] dark:bg-slate-800 dark:text-slate-400'
                     }`}>
                       {bp.costingApproved ? <CheckCircle className="h-4 w-4" /> : '2'}
                     </div>
-                    <span className={`text-xs font-medium truncate ${bp.costingApproved ? 'text-emerald-700' : bp.blueprintApproved ? 'text-[#1d1d1f]' : 'text-[#86868b]'}`}>Costing</span>
+                    <span className={`text-xs font-medium truncate ${bp.costingApproved ? 'text-emerald-700 dark:text-emerald-300' : bp.blueprintApproved ? 'text-[#1d1d1f] dark:text-slate-100' : 'text-[#86868b] dark:text-slate-400'}`}>Costing</span>
                   </div>
-                  <ArrowRight className="h-3.5 w-3.5 text-[#c8c8cd] flex-shrink-0 mx-1" />
+                  <ArrowRight className="mx-1 h-3.5 w-3.5 flex-shrink-0 text-[#c8c8cd] dark:text-slate-500" />
                   {/* Step 3 */}
                   <div className="flex items-center gap-2 flex-1 min-w-0">
                     <div className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold flex-shrink-0 ${
                       bp.blueprintApproved && bp.costingApproved
-                        ? 'bg-[#1d1d1f] text-white animate-pulse'
-                        : 'bg-[#e8e8ed] text-[#86868b]'
+                        ? 'bg-[#1d1d1f] text-white animate-pulse dark:bg-slate-100 dark:text-slate-900'
+                        : 'bg-[#e8e8ed] text-[#86868b] dark:bg-slate-800 dark:text-slate-400'
                     }`}>
                       3
                     </div>
-                    <span className={`text-xs font-medium truncate ${bp.blueprintApproved && bp.costingApproved ? 'text-[#1d1d1f] font-semibold' : 'text-[#86868b]'}`}>Payment</span>
+                    <span className={`text-xs font-medium truncate ${bp.blueprintApproved && bp.costingApproved ? 'font-semibold text-[#1d1d1f] dark:text-slate-100' : 'text-[#86868b] dark:text-slate-400'}`}>Payment</span>
                   </div>
                 </div>
               </div>
@@ -1267,18 +1285,18 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           {/* Design + Costing cards (customer sees these) + Blueprint (staff only) */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Design Card — shown to everyone */}
-            <Card className="border-gray-100 rounded-none sm:rounded-xl border-x-0 sm:border-x">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 bg-gray-50/50 border-b border-gray-100 sm:rounded-t-xl px-4 sm:px-6">
+            <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
+              <CardHeader className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} flex flex-row items-center justify-between border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6 dark:border-slate-700`}>
                 <div className="flex items-center gap-2">
-                  <Image className="h-5 w-5 text-[#6e6e73]" />
-                  <h3 className="font-semibold text-gray-900">Design</h3>
+                  <Image className={`h-5 w-5 ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
+                  <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Design</h3>
                 </div>
                 {bp.blueprintApproved ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 shadow-none hover:bg-emerald-100">
+                  <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700 shadow-none hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
                     <CheckCircle className="mr-1 h-3 w-3" /> Approved
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300">
                     Pending Review
                   </Badge>
                 )}
@@ -1287,7 +1305,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 <FilePreviewThumb fileKey={bp.designKey || bp.blueprintKey} label="Design Preview" />
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   <Button
-                    className="flex-1 bg-gray-900 text-white hover:bg-gray-800 rounded-xl"
+                    variant="prominent"
+                    className="flex-1 rounded-xl"
                     onClick={() => handleViewFile(bp.designKey || bp.blueprintKey)}
                   >
                     <Eye className="mr-2 h-4 w-4" /> View Design
@@ -1310,18 +1329,18 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
             </Card>
 
             {/* Costing Card */}
-            <Card className="border-gray-100 rounded-none sm:rounded-xl border-x-0 sm:border-x">
-              <CardHeader className="flex flex-row items-center justify-between pb-3 bg-gray-50/50 border-b border-gray-100 sm:rounded-t-xl px-4 sm:px-6">
+            <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
+              <CardHeader className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} flex flex-row items-center justify-between border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6 dark:border-slate-700`}>
                 <div className="flex items-center gap-2">
-                  <Info className="h-5 w-5 text-[#6e6e73]" />
-                  <h3 className="font-semibold text-gray-900">Costing Sheet</h3>
+                  <Info className={`h-5 w-5 ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
+                  <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Costing Sheet</h3>
                 </div>
                 {bp.costingApproved ? (
-                  <Badge className="bg-emerald-100 text-emerald-700 border-emerald-200 shadow-none hover:bg-emerald-100">
+                  <Badge className="border-emerald-200 bg-emerald-100 text-emerald-700 shadow-none hover:bg-emerald-100 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
                     <CheckCircle className="mr-1 h-3 w-3" /> Approved
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
+                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300">
                     Pending Review
                   </Badge>
                 )}
@@ -1329,7 +1348,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
               <CardContent className="pt-6 space-y-4 px-4 sm:px-6">
                 <FilePreviewThumb fileKey={bp.costingKey} label="Costing Sheet" />
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <Button className="flex-1 bg-gray-900 text-white hover:bg-gray-800 rounded-xl" onClick={() => handleViewFile(bp.costingKey)}>
+                  <Button variant="prominent" className="flex-1 rounded-xl" onClick={() => handleViewFile(bp.costingKey)}>
                       <Eye className="mr-2 h-4 w-4" /> View Sheet
                   </Button>
                   {canReviewBlueprint && !bp.costingApproved && (
@@ -1352,17 +1371,17 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
           {/* Technical Blueprint — staff/engineer/admin only, hidden from customers */}
           {!canReviewBlueprint && (
-            <div className="rounded-xl border border-[#c8c8cd]/50 p-4 bg-[#f5f5f7]/30">
+            <div className="metal-panel-strong rounded-[1.25rem] border border-[color:var(--color-border)]/60 px-4 py-3.5 dark:border-slate-700 dark:bg-slate-950/85">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-[#6e6e73]" />
-                  <p className="text-xs font-medium text-[#6e6e73] uppercase tracking-wider">Technical Blueprint</p>
-                  <span className="text-[10px] text-[#86868b] bg-[#f0f0f5] px-1.5 py-0.5 rounded">Fabrication only</span>
+                  <FileText className="h-4 w-4 text-slate-300" />
+                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300">Technical Blueprint</p>
+                  <span className="rounded-md border border-white/12 bg-white/8 px-2 py-1 text-[10px] font-medium text-slate-200">Fabrication only</span>
                 </div>
                 <Button
                   size="sm"
                   variant="ghost"
-                  className="text-[#1d1d1f] hover:text-[#3a3a3e] p-0 h-auto text-xs"
+                  className="h-auto p-0 text-xs font-semibold text-slate-100 hover:bg-transparent hover:text-white"
                   onClick={() => handleViewFile(bp.blueprintKey)}
                 >
                   <Eye className="mr-1 h-3 w-3" />
@@ -1375,10 +1394,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           {/* -- Prominent Accept CTA -- shown when both approved and customer hasn't accepted yet */}
           {canReviewBlueprint && bp.blueprintApproved && bp.costingApproved &&
            ['uploaded', 'revision_uploaded', 'approved'].includes(bp.status) && (
-            <Card className="border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-50/50 rounded-none sm:rounded-xl border-x-0 sm:border-x shadow-sm">
+            <Card className="rounded-none border-x-0 border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-50/50 shadow-sm sm:rounded-xl sm:border-x dark:border-emerald-500/35 dark:from-emerald-500/12 dark:to-slate-900 dark:bg-none">
               <CardContent className="flex flex-col sm:flex-row items-center gap-4 py-5 px-4 sm:px-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 flex-shrink-0">
-                  <CreditCard className="h-6 w-6 text-emerald-700" />
+                <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-500/20">
+                  <CreditCard className="h-6 w-6 text-emerald-700 dark:text-emerald-300" />
                 </div>
                 {project && ['payment_pending', 'in_progress', 'fabrication', 'ready_for_delivery', 'delivered', 'completed'].includes(project.status) ? (
                   /* Payment plan exists — show contract-aware CTA */
@@ -1386,8 +1405,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                     /* Contract signed — Go to Payments */
                     <>
                       <div className="flex-1 text-center sm:text-left">
-                        <p className="text-sm font-semibold text-emerald-900">Contract Signed &amp; Payment Plan Ready!</p>
-                        <p className="text-xs text-emerald-700 mt-0.5">Your contract is signed. Head to Payments to view or pay.</p>
+                        <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Contract Signed &amp; Payment Plan Ready!</p>
+                        <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">Your contract is signed. Head to Payments to view or pay.</p>
                       </div>
                       <Button
                         className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
@@ -1401,8 +1420,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                     /* Contract generated but not signed — prompt to sign */
                     <>
                       <div className="flex-1 text-center sm:text-left">
-                        <p className="text-sm font-semibold text-emerald-900">Contract Ready for Signing</p>
-                        <p className="text-xs text-emerald-700 mt-0.5">Your contract has been generated. Please read and sign it before proceeding to payments.</p>
+                        <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Contract Ready for Signing</p>
+                        <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">Your contract has been generated. Please read and sign it before proceeding to payments.</p>
                       </div>
                       <Button
                         className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
@@ -1416,10 +1435,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                     /* Payment plan selected but contract still syncing */
                     <>
                       <div className="flex-1 text-center sm:text-left">
-                        <p className="text-sm font-semibold text-emerald-900">Payment Plan Created!</p>
-                        <p className="text-xs text-emerald-700 mt-0.5">Your contract is being finalized. Refresh in a moment if the signing prompt doesn&apos;t appear right away.</p>
+                        <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Payment Plan Created!</p>
+                        <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">Your contract is being finalized. Refresh in a moment if the signing prompt doesn&apos;t appear right away.</p>
                       </div>
-                      <div className="flex items-center gap-2 text-emerald-600 px-4">
+                      <div className="flex items-center gap-2 px-4 text-emerald-600 dark:text-emerald-300">
                         <Clock className="h-4 w-4 animate-pulse" />
                         <span className="text-xs font-medium">Pending</span>
                       </div>
@@ -1429,11 +1448,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                   /* No plan yet — show payment-plan CTA */
                   <>
                     <div className="flex-1 text-center sm:text-left">
-                      <p className="text-sm font-semibold text-emerald-900">Blueprint Approved</p>
-                      <p className="text-xs text-emerald-700 mt-0.5">Choose your payment plan to generate the contract and move into signing.</p>
+                      <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Blueprint Approved</p>
+                      <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">Choose your payment plan to generate the contract and move into signing.</p>
                     </div>
                     <Button
-                      className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
+                      className="w-full flex-shrink-0 rounded-xl border border-emerald-500/70 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] px-6 text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_16px_32px_rgba(8,68,39,0.28)] hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)] hover:text-white sm:w-auto dark:border-emerald-400/55 dark:bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_18px_34px_rgba(6,78,59,0.36)] dark:hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)]"
                       onClick={() => setAcceptDialog({ open: true, blueprint: bp })}
                     >
                       <CheckCircle className="mr-2 h-4 w-4" />
@@ -1447,11 +1466,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
           {/* Revision Notes Banner */}
           {(bp.revisionNotes || (bp.revisionRefKeys && bp.revisionRefKeys.length > 0)) && (
-            <div className="bg-red-50 border border-red-100 rounded-xl p-4 space-y-3 text-sm text-red-800">
+            <div className="space-y-3 rounded-xl border border-red-100 bg-red-50 p-4 text-sm text-red-800 dark:border-red-500/35 dark:bg-red-500/10 dark:text-red-200">
               <div className="flex gap-3">
-                <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+                <AlertCircle className="h-5 w-5 shrink-0 text-red-600 dark:text-red-300" />
                 <div>
-                  <p className="font-semibold text-red-900">Revision Requested</p>
+                  <p className="font-semibold text-red-900 dark:text-red-100">Revision Requested</p>
                   {bp.revisionNotes && <p className="mt-1">{bp.revisionNotes}</p>}
                 </div>
               </div>
@@ -1462,7 +1481,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                       key={idx}
                       type="button"
                       onClick={() => openAuthenticatedFile(key)}
-                      className="group relative aspect-[4/3] bg-white rounded-lg overflow-hidden border border-red-200 block"
+                      className="group relative block aspect-[4/3] overflow-hidden rounded-lg border border-red-200 bg-white dark:border-red-500/35 dark:bg-slate-900/85"
                     >
                       <AuthImage
                         fileKey={key}
@@ -1479,12 +1498,12 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
           {/* Quotation Summary */}
           {bp.quotation && bp.quotation.total > 0 && (
-            <Card className="border-gray-100 rounded-none sm:rounded-xl border-x-0 sm:border-x">
-              <CardHeader className="pb-3 bg-gray-50/50 border-b border-gray-100 sm:rounded-t-xl px-4 sm:px-6">
+            <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
+              <CardHeader className={`${isDark ? 'bg-slate-900/70 dark:border-slate-700' : 'bg-[color:var(--color-muted)]/55'} border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6`}>
                 <div className="flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-900">Quotation Summary</h3>
+                    <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Quotation Summary</h3>
                   {bp.quotation.validityDays && (
-                    <div className="flex items-center gap-1.5 text-xs text-[#86868b]">
+                    <div className={`flex items-center gap-1.5 text-xs ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`}>
                       <Calendar className="h-3.5 w-3.5" />
                       <span>Valid {bp.quotation.validityDays} days</span>
                     </div>
@@ -1496,23 +1515,23 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 {bp.quotation.lineItems && bp.quotation.lineItems.length > 0 && (
                   <div className="mb-4">
                     {/* Table header */}
-                    <div className={`hidden sm:grid gap-2 px-2 pb-2 text-[10px] uppercase tracking-wider font-medium text-gray-400 border-b border-gray-100 ${!canReviewBlueprint ? 'sm:grid-cols-[1fr_50px_100px_100px_100px]' : 'sm:grid-cols-[1fr_60px_100px]'}`}>
+                    <div className={`hidden sm:grid gap-2 border-b border-[color:var(--color-border)]/45 px-2 pb-2 text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400 dark:border-slate-700 dark:text-slate-500' : 'text-[var(--text-metal-muted-color)]'} ${!canReviewBlueprint ? 'sm:grid-cols-[1fr_50px_100px_100px_100px]' : 'sm:grid-cols-[1fr_60px_100px]'}`}>
                       <span>Item</span>
                       <span>Qty</span>
                       {!canReviewBlueprint && <span>Materials</span>}
                       {!canReviewBlueprint && <span>Labor</span>}
                       <span className="text-right">{canReviewBlueprint ? 'Amount' : 'Total'}</span>
                     </div>
-                    <div className="divide-y divide-gray-50">
+                    <div className={`divide-y divide-[color:var(--color-border)]/35 ${isDark ? 'dark:divide-slate-800' : ''}`}>
                       {bp.quotation.lineItems.map((li: { label: string; quantity: number; materials: number; labor: number; amount: number }, liIdx: number) => (
                         <div key={liIdx} className="py-2.5 px-2">
                           {/* Mobile: stacked */}
                           <div className="sm:hidden space-y-1">
                             <div className="flex justify-between items-center">
-                              <p className="text-sm font-medium text-gray-900">{li.label}</p>
-                              <p className="text-sm font-semibold text-gray-900">{formatCurrency(li.amount)}</p>
+                              <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{li.label}</p>
+                              <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{formatCurrency(li.amount)}</p>
                             </div>
-                            <div className="flex gap-3 text-xs text-gray-500">
+                            <div className={`flex gap-3 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                               <span>Qty: {li.quantity}</span>
                               {!canReviewBlueprint && <span>Mat: {formatCurrency(li.materials * li.quantity)}</span>}
                               {!canReviewBlueprint && <span>Lab: {formatCurrency(li.labor * li.quantity)}</span>}
@@ -1520,11 +1539,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                           </div>
                           {/* Desktop: grid */}
                           <div className={`hidden sm:grid gap-2 items-center ${!canReviewBlueprint ? 'sm:grid-cols-[1fr_50px_100px_100px_100px]' : 'sm:grid-cols-[1fr_60px_100px]'}`}>
-                            <p className="text-sm text-gray-900">{li.label}</p>
-                            <p className="text-sm text-gray-600">{li.quantity}</p>
-                            {!canReviewBlueprint && <p className="text-sm text-gray-600">{formatCurrency(li.materials * li.quantity)}</p>}
-                            {!canReviewBlueprint && <p className="text-sm text-gray-600">{formatCurrency(li.labor * li.quantity)}</p>}
-                            <p className="text-sm font-semibold text-gray-900 text-right">{formatCurrency(li.amount)}</p>
+                            <p className={`text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{li.label}</p>
+                            <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{li.quantity}</p>
+                            {!canReviewBlueprint && <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{formatCurrency(li.materials * li.quantity)}</p>}
+                            {!canReviewBlueprint && <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{formatCurrency(li.labor * li.quantity)}</p>}
+                            <p className={`text-right text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{formatCurrency(li.amount)}</p>
                           </div>
                         </div>
                       ))}
@@ -1533,26 +1552,26 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 )}
 
                 {/* Fee + Totals */}
-                <div className="rounded-lg bg-gray-50/80 border border-gray-100 p-3 space-y-1.5">
+                <div className={`space-y-1.5 rounded-xl border border-[color:var(--color-border)]/50 p-3 ${isDark ? 'bg-slate-900/45 dark:border-slate-700 dark:bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'}`}>
                   {!canReviewBlueprint && (
                     <>
-                      <div className="flex justify-between text-xs text-gray-500">
+                      <div className={`flex justify-between text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                         <span>Materials Subtotal</span>
                         <span>{formatCurrency(bp.quotation.materials)}</span>
                       </div>
-                      <div className="flex justify-between text-xs text-gray-500">
+                      <div className={`flex justify-between text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                         <span>Labor Subtotal</span>
                         <span>{formatCurrency(bp.quotation.labor)}</span>
                       </div>
                     </>
                   )}
                   {bp.quotation.fees > 0 && (
-                    <div className="flex justify-between text-xs text-gray-500">
+                    <div className={`flex justify-between text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                       <span>Other Fees</span>
                       <span>{formatCurrency(bp.quotation.fees)}</span>
                     </div>
                   )}
-                  <div className="flex justify-between text-sm font-bold text-emerald-700 pt-1.5 border-t border-gray-200">
+                  <div className={`flex justify-between border-t border-[color:var(--color-border)]/55 pt-1.5 text-sm font-bold ${isDark ? 'text-emerald-300 dark:border-slate-600' : 'text-emerald-600'}`}>
                     <span>Grand Total</span>
                     <span>{formatCurrency(bp.quotation.total)}</span>
                   </div>
@@ -1561,8 +1580,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 {/* Duration + Validity */}
                 <div className="flex flex-wrap gap-x-6 gap-y-2 mt-3">
                   {bp.quotation.estimatedDuration && (
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Clock className="h-4 w-4 text-gray-400" />
+                    <div className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                      <Clock className={`h-4 w-4 ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`} />
                       <span className="font-medium">Duration:</span>
                       <span>{bp.quotation.estimatedDuration}</span>
                     </div>
@@ -1571,18 +1590,18 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
                 {/* Scope + Notes — staff only */}
                 {!canReviewBlueprint && (bp.quotation.breakdown || bp.quotation.engineerNotes) && (
-                  <div className="space-y-3 border-t border-gray-100 pt-4 mt-3">
+                  <div className="mt-3 space-y-3 border-t border-gray-100 pt-4 dark:border-slate-700">
                     {bp.quotation.breakdown && (
-                      <div className="text-sm text-gray-600">
-                        <p className="font-medium text-gray-700 mb-1">Scope of Work:</p>
-                        <p className="whitespace-pre-wrap bg-gray-50 p-3 rounded-lg border border-gray-100">
+                      <div className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                        <p className={`mb-1 font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>Scope of Work:</p>
+                        <p className={`whitespace-pre-wrap rounded-lg border border-[color:var(--color-border)]/50 p-3 ${isDark ? 'bg-slate-900/45 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200' : 'bg-[color:var(--color-muted)]/45 text-[var(--text-metal-color)]'}`}>
                           {bp.quotation.breakdown}
                         </p>
                       </div>
                     )}
                     {bp.quotation.engineerNotes && (
-                      <div className="flex items-start gap-2 text-sm text-gray-600">
-                        <MessageSquare className="h-4 w-4 mt-0.5 text-gray-400" />
+                      <div className={`flex items-start gap-2 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                        <MessageSquare className={`mt-0.5 h-4 w-4 ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`} />
                         <div>
                           <span className="font-medium">Engineer Notes:</span>
                           <p className="mt-0.5">{bp.quotation.engineerNotes}</p>
@@ -1594,9 +1613,9 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
                 {/* Customer sees scope of work too (if provided) */}
                 {canReviewBlueprint && bp.quotation.breakdown && (
-                  <div className="text-sm text-gray-600 border-t border-gray-100 pt-3 mt-3">
-                    <p className="font-medium text-gray-700 mb-1">Scope of Work:</p>
-                    <p className="whitespace-pre-wrap bg-gray-50 p-3 rounded-lg border border-gray-100">
+                  <div className={`mt-3 border-t border-[color:var(--color-border)]/45 pt-3 text-sm ${isDark ? 'text-slate-300 dark:border-slate-700' : 'text-[var(--text-metal-color)]'}`}>
+                    <p className={`mb-1 font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>Scope of Work:</p>
+                    <p className={`whitespace-pre-wrap rounded-lg border border-[color:var(--color-border)]/50 p-3 ${isDark ? 'bg-slate-900/45 dark:border-slate-700 dark:bg-slate-900/70 dark:text-slate-200' : 'bg-[color:var(--color-muted)]/45 text-[var(--text-metal-color)]'}`}>
                       {bp.quotation.breakdown}
                     </p>
                   </div>
@@ -1628,26 +1647,26 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           if (!open) setApproveConfirmDialog({ open: false, blueprintId: '', component: null });
         }}
       >
-        <DialogContent className="sm:max-w-[420px] rounded-2xl">
+          <DialogContent className="sm:max-w-[420px] rounded-2xl dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">
+            <DialogTitle className="text-gray-900 dark:text-slate-100">
               Approve {approveConfirmDialog.component === 'blueprint' ? 'Design' : 'Costing Sheet'}?
             </DialogTitle>
-            <DialogDescription className="text-gray-500 pt-1">
+            <DialogDescription className="pt-1 text-gray-500 dark:text-slate-400">
               Please make sure you have carefully reviewed the{' '}
-              <span className="font-medium text-gray-700">
+              <span className="font-medium text-gray-700 dark:text-slate-200">
                 {approveConfirmDialog.component === 'blueprint' ? 'design' : 'costing sheet'}
               </span>{' '}
               before approving.
             </DialogDescription>
           </DialogHeader>
-          <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 flex gap-3 my-1">
+          <div className="my-1 flex gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-500/35 dark:bg-amber-500/10">
             <span className="shrink-0 text-amber-500 mt-0.5">
               <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="h-5 w-5">
                 <path fillRule="evenodd" d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z" clipRule="evenodd" />
               </svg>
             </span>
-            <p className="text-sm text-amber-800">
+            <p className="text-sm text-amber-800 dark:text-amber-200">
               Once you approve <span className="font-semibold">both</span> the design and costing sheet, you will{' '}
               <span className="font-semibold">no longer be able to request a revision</span>. This action is final.
             </p>
@@ -1655,7 +1674,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           <DialogFooter className="mt-2">
             <Button
               variant="outline"
-              className="border-gray-200 rounded-lg"
+              className="rounded-lg border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
               onClick={() => setApproveConfirmDialog({ open: false, blueprintId: '', component: null })}
             >
               Go Back
@@ -1686,31 +1705,31 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           }
         }}
       >
-        <DialogContent className="sm:max-w-[480px] rounded-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[480px] dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Request Revision</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className="text-gray-900 dark:text-slate-100">Request Revision</DialogTitle>
+            <DialogDescription className="text-gray-500 dark:text-slate-400">
               Provide detailed feedback for the engineering team regarding required changes.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <div className="grid gap-2">
-              <Label htmlFor="notes" className="text-[13px] font-medium text-gray-700">
+              <Label htmlFor="notes" className="text-[13px] font-medium text-gray-700 dark:text-slate-200">
                 Revision Notes
               </Label>
               <Textarea
                 id="notes"
                 placeholder="Describe the changes needed..."
-                className="col-span-3 min-h-[100px] bg-gray-50/50 border-gray-200 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20"
+                className="col-span-3 min-h-[100px] border-gray-200 bg-gray-50/50 focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-400"
                 value={revisionNotes}
                 onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) => setRevisionNotes(e.target.value)}
               />
             </div>
             <div className="grid gap-2">
-              <Label className="text-[13px] font-medium text-gray-700">
+              <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-200">
                 Reference Files (optional)
               </Label>
-              <p className="text-xs text-gray-500">
+              <p className="text-xs text-gray-500 dark:text-slate-400">
                 Attach photos, sketches, or documents to help illustrate the changes you need.
               </p>
               <FileUpload
@@ -1731,7 +1750,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 setRevisionDialog({ open: false, blueprintId: '' });
                 setRevisionRefKeys([]);
               }}
-              className="border-gray-200 rounded-lg"
+              className="rounded-lg border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
             >
               Cancel
             </Button>
@@ -1756,10 +1775,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           }
         }}
       >
-        <DialogContent className="sm:max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-md dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
-            <DialogTitle className="text-gray-900">Choose Payment Plan</DialogTitle>
-            <DialogDescription className="text-gray-500">
+            <DialogTitle className="text-gray-900 dark:text-slate-100">Choose Payment Plan</DialogTitle>
+            <DialogDescription className="text-gray-500 dark:text-slate-400">
               Select how you want to pay. This generates your contract for signing.
             </DialogDescription>
           </DialogHeader>
@@ -1767,17 +1786,17 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           {acceptDialog.blueprint?.quotation && (
             <div className="space-y-5 mt-2">
               {/* Quotation Summary */}
-              <div className="bg-gray-50 rounded-xl p-4 space-y-3">
-                <p className="text-sm font-semibold text-gray-700">Quotation Summary</p>
+              <div className="space-y-3 rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
+                <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">Quotation Summary</p>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-                  <span className="text-gray-500">Materials</span>
-                  <span className="text-right font-medium">{formatCurrency(acceptDialog.blueprint.quotation.materials)}</span>
-                  <span className="text-gray-500">Labor</span>
-                  <span className="text-right font-medium">{formatCurrency(acceptDialog.blueprint.quotation.labor)}</span>
-                  <span className="text-gray-500">Other Fees</span>
-                  <span className="text-right font-medium">{formatCurrency(acceptDialog.blueprint.quotation.fees)}</span>
-                  <span className="text-gray-700 font-semibold border-t border-gray-200 pt-2">Base Total</span>
-                  <span className="text-right font-bold text-emerald-700 border-t border-gray-200 pt-2">
+                  <span className="text-gray-500 dark:text-slate-400">Materials</span>
+                  <span className="text-right font-medium dark:text-slate-100">{formatCurrency(acceptDialog.blueprint.quotation.materials)}</span>
+                  <span className="text-gray-500 dark:text-slate-400">Labor</span>
+                  <span className="text-right font-medium dark:text-slate-100">{formatCurrency(acceptDialog.blueprint.quotation.labor)}</span>
+                  <span className="text-gray-500 dark:text-slate-400">Other Fees</span>
+                  <span className="text-right font-medium dark:text-slate-100">{formatCurrency(acceptDialog.blueprint.quotation.fees)}</span>
+                  <span className="border-t border-gray-200 pt-2 font-semibold text-gray-700 dark:border-slate-600 dark:text-slate-200">Base Total</span>
+                  <span className="border-t border-gray-200 pt-2 text-right font-bold text-emerald-700 dark:border-slate-600 dark:text-emerald-300">
                     {formatCurrency(acceptDialog.blueprint.quotation.total)}
                   </span>
                 </div>
@@ -1785,14 +1804,14 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
               {/* Payment Type Selection */}
               <div className="space-y-3">
-                <p className="text-sm font-semibold text-gray-700">Payment Option</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">Payment Option</p>
 
                 {/* Full Payment */}
                 <label
                   className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentType === 'full'
-                      ? 'border-emerald-500 bg-emerald-50/50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-emerald-500 bg-emerald-50/50 dark:border-emerald-500/50 dark:bg-emerald-500/10'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-slate-600 dark:hover:border-slate-500'
                   }`}
                 >
                   <input
@@ -1804,11 +1823,11 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                     className="mt-0.5 accent-emerald-600"
                   />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">Full Payment</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Full Payment</p>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">
                       Pay the full amount in one go — no surcharge.
                     </p>
-                    <p className="text-sm font-bold text-emerald-700 mt-1">
+                    <p className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300">
                       {formatCurrency(acceptDialog.blueprint.quotation.total)}
                     </p>
                   </div>
@@ -1818,8 +1837,8 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 <label
                   className={`flex items-start gap-3 p-3 rounded-xl border-2 cursor-pointer transition-all ${
                     paymentType === 'installment'
-                      ? 'border-blue-500 bg-blue-50/50'
-                      : 'border-gray-200 hover:border-gray-300'
+                      ? 'border-blue-500 bg-blue-50/50 dark:border-blue-500/50 dark:bg-blue-500/10'
+                      : 'border-gray-200 hover:border-gray-300 dark:border-slate-600 dark:hover:border-slate-500'
                   }`}
                 >
                   <input
@@ -1831,16 +1850,16 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                     className="mt-0.5 accent-blue-600"
                   />
                   <div className="flex-1">
-                    <p className="text-sm font-semibold text-gray-900">Installment</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
+                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Installment</p>
+                    <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">
                       Split into multiple stages with a {surchargePercent}% surcharge.
                     </p>
-                    <p className="text-sm font-bold text-blue-700 mt-1">
+                    <p className="mt-1 text-sm font-bold text-blue-700 dark:text-blue-300">
                       {formatCurrency(
                         (acceptDialog.blueprint.quotation.total || 0) *
                           (1 + surchargePercent / 100),
                       )}{' '}
-                      <span className="text-xs font-normal text-gray-400">
+                      <span className="text-xs font-normal text-gray-400 dark:text-slate-500">
                         (+{surchargePercent}%)
                       </span>
                     </p>
@@ -1856,10 +1875,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                             const stageAmount = Math.round(installTotal * pct / 100 * 100) / 100;
                             return (
                               <div key={idx} className="flex items-start gap-2">
-                                <span className="shrink-0 text-[10px] font-semibold text-blue-600 bg-blue-100 rounded px-1.5 py-0.5 mt-0.5">{pct}%</span>
+                                <span className="mt-0.5 shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-500/20 dark:text-blue-300">{pct}%</span>
                                 <div className="flex-1 min-w-0">
-                                  <p className="text-xs font-medium text-gray-800">{stageLabel} — {formatCurrency(stageAmount)}</p>
-                                  {stageDesc && <p className="text-[10px] text-gray-500">{stageDesc}</p>}
+                                  <p className="text-xs font-medium text-gray-800 dark:text-slate-200">{stageLabel} — {formatCurrency(stageAmount)}</p>
+                                  {stageDesc && <p className="text-[10px] text-gray-500 dark:text-slate-400">{stageDesc}</p>}
                                 </div>
                               </div>
                             );
@@ -1880,14 +1899,14 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 setAcceptDialog({ open: false, blueprint: null });
                 setPaymentType('full');
               }}
-              className="border-gray-200 rounded-lg"
+              className="rounded-lg border-gray-200 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
             >
               Cancel
             </Button>
             <Button
               onClick={handleChoosePaymentPlan}
               disabled={selectPaymentPlanMutation.isPending}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+              className="rounded-lg border border-emerald-500/70 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.22),0_16px_32px_rgba(8,68,39,0.28)] hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)] hover:text-white dark:border-emerald-400/55 dark:bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.18),0_18px_34px_rgba(6,78,59,0.36)] dark:hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)]"
             >
               {selectPaymentPlanMutation.isPending ? 'Creating Plan...' : 'Create Plan & Generate Contract'}
             </Button>
