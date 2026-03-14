@@ -3,13 +3,13 @@ import { ArrowLeft, FileText } from 'lucide-react';
 
 export function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f1419] to-[#1a202a] text-white/90">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[#d2d2d7]/60 bg-white/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1419]/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-4">
           <Link
             to="/"
-            className="flex items-center gap-1.5 text-sm text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+            className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -20,17 +20,17 @@ export function TermsOfServicePage() {
       {/* Content */}
       <main className="mx-auto max-w-3xl px-6 py-12">
         <div className="flex items-center gap-3 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1d1d1f]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c9a96f]/20 border border-[#c9a96f]/40">
             <FileText className="h-5 w-5 text-white" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#1d1d1f]">Terms of Service</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-white">Terms of Service</h1>
         </div>
 
-        <div className="prose prose-gray max-w-none space-y-6 text-[#3a3a3e]">
-          <p className="text-sm text-[#86868b]">Last updated: March 4, 2026</p>
+        <div className="max-w-none space-y-6 text-white/75">
+          <p className="text-sm text-white/50">Last updated: March 4, 2026</p>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">1. Acceptance of Terms</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">1. Acceptance of Terms</h2>
             <p className="text-sm leading-relaxed">
               By accessing and using the RMV Stainless Steel Fabrication project management system
               (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree
@@ -38,8 +38,8 @@ export function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">2. Description of Service</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">2. Description of Service</h2>
             <p className="text-sm leading-relaxed">
               The Service is an online project management platform designed for stainless steel fabrication
               projects. It provides tools for:
@@ -54,8 +54,8 @@ export function TermsOfServicePage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">3. User Accounts</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">3. User Accounts</h2>
             <ul className="list-disc pl-5 text-sm space-y-1.5">
               <li>You must provide accurate and complete information during registration.</li>
               <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
@@ -65,8 +65,8 @@ export function TermsOfServicePage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">4. Payments & Refunds</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">4. Payments & Refunds</h2>
             <ul className="list-disc pl-5 text-sm space-y-1.5">
               <li>Payment plans are generated based on your approved project specifications.</li>
               <li>Stage-based payments must follow the payment schedule established in your contract.</li>
@@ -76,8 +76,8 @@ export function TermsOfServicePage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">5. Blueprint & Project Workflows</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">5. Blueprint & Project Workflows</h2>
             <ul className="list-disc pl-5 text-sm space-y-1.5">
               <li>Blueprints submitted for review may be approved, revised, or rejected by administrators.</li>
               <li>Once a blueprint is accepted, the associated payment plan is generated and the project moves forward.</li>
@@ -86,8 +86,8 @@ export function TermsOfServicePage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">6. Intellectual Property</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">6. Intellectual Property</h2>
             <p className="text-sm leading-relaxed">
               All content, designs, and materials provided through the Service — including system interfaces,
               logos, and generated documents — are the property of RMV Stainless Steel Fabrication.
@@ -96,8 +96,8 @@ export function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">7. Limitation of Liability</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">7. Limitation of Liability</h2>
             <p className="text-sm leading-relaxed">
               The Service is provided &quot;as is&quot; without warranties of any kind, either express or implied.
               RMV Stainless Steel Fabrication shall not be liable for any indirect, incidental, or
@@ -106,8 +106,8 @@ export function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">8. Prohibited Conduct</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">8. Prohibited Conduct</h2>
             <ul className="list-disc pl-5 text-sm space-y-1.5">
               <li>Attempting to bypass authentication, authorization, or security mechanisms.</li>
               <li>Uploading malicious files, scripts, or content.</li>
@@ -117,8 +117,8 @@ export function TermsOfServicePage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">9. Governing Law</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">9. Governing Law</h2>
             <p className="text-sm leading-relaxed">
               These Terms shall be governed by and construed in accordance with the laws of the Republic of
               the Philippines. Any disputes arising from these terms shall be subject to the exclusive
@@ -126,8 +126,8 @@ export function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">10. Changes to Terms</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">10. Changes to Terms</h2>
             <p className="text-sm leading-relaxed">
               We reserve the right to modify these Terms at any time. Changes will be effective upon posting
               to this page with an updated date. Continued use of the Service after changes constitutes
@@ -135,8 +135,8 @@ export function TermsOfServicePage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">11. Contact</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">11. Contact</h2>
             <p className="text-sm leading-relaxed">
               For questions about these Terms of Service, contact us at:
             </p>
@@ -150,3 +150,4 @@ export function TermsOfServicePage() {
     </div>
   );
 }
+

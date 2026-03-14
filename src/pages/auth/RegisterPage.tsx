@@ -245,7 +245,7 @@ export function RegisterPage() {
   };
 
   const inputClasses =
-    'metal-input h-10 rounded-xl border-white/10 bg-white/[0.05] text-sm text-[#f5f7fa] placeholder:text-[#7f8895] shadow-none focus-visible:ring-[#d6b36a]/35';
+    'auth-input h-10 rounded-xl border-white/10 bg-white/[0.05] text-sm text-[#f5f7fa] placeholder:text-[#7f8895] shadow-none focus-visible:ring-[#d6b36a]/35';
 
   return (
     <div className="relative flex min-h-screen overflow-hidden bg-[#05070a]">

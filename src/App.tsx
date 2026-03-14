@@ -7,6 +7,7 @@ import { getStoredRefreshToken } from '@/lib/auth-session';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { ProtectedRoute } from '@/components/auth/ProtectedRoute';
 import { PageLoader } from '@/components/shared/PageLoader';
+import { LandingPageLoader } from '@/components/shared/LandingPageLoader';
 import { Role } from '@/lib/constants';
 
 const LoginPage = lazy(() =>
@@ -254,7 +255,7 @@ export default function App() {
     <BrowserRouter>
       <Suspense fallback={<PageLoader />}>
         <Routes>
-          <Route path="/" element={<LandingPage />} />
+          <Route path="/" element={<Suspense fallback={<LandingPageLoader />}><LandingPage /></Suspense>} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/verify-otp" element={<VerifyOTPPage />} />

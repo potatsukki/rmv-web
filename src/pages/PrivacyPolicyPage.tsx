@@ -3,13 +3,13 @@ import { ArrowLeft, Shield } from 'lucide-react';
 
 export function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-[#f5f5f7]">
+    <div className="min-h-screen bg-gradient-to-b from-[#0f1419] to-[#1a202a] text-white/90">
       {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-[#d2d2d7]/60 bg-white/80 backdrop-blur-xl">
+      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1419]/80 backdrop-blur-md">
         <div className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-4">
           <Link
             to="/"
-            className="flex items-center gap-1.5 text-sm text-[#6e6e73] hover:text-[#1d1d1f] transition-colors"
+            className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
           >
             <ArrowLeft className="h-4 w-4" />
             Back
@@ -20,17 +20,17 @@ export function PrivacyPolicyPage() {
       {/* Content */}
       <main className="mx-auto max-w-3xl px-6 py-12">
         <div className="flex items-center gap-3 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#1d1d1f]">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c9a96f]/20 border border-[#c9a96f]/40">
             <Shield className="h-5 w-5 text-white" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-[#1d1d1f]">Privacy Policy</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-white">Privacy Policy</h1>
         </div>
 
-        <div className="prose prose-gray max-w-none space-y-6 text-[#3a3a3e]">
-          <p className="text-sm text-[#86868b]">Last updated: March 4, 2026</p>
+        <div className="max-w-none space-y-6 text-white/75">
+          <p className="text-sm text-white/50">Last updated: March 4, 2026</p>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">1. Information We Collect</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">1. Information We Collect</h2>
             <p className="text-sm leading-relaxed">
               RMV Stainless Steel Fabrication (&quot;we&quot;, &quot;our&quot;, or &quot;the Company&quot;) collects the following
               information when you use our project management system:
@@ -45,8 +45,8 @@ export function PrivacyPolicyPage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">2. How We Use Your Information</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">2. How We Use Your Information</h2>
             <ul className="list-disc pl-5 text-sm space-y-1.5">
               <li>Manage your fabrication projects, appointments, and payment schedules.</li>
               <li>Send notifications about project status, payment reminders, and important updates via email and in-app alerts.</li>
@@ -56,8 +56,8 @@ export function PrivacyPolicyPage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">3. Data Storage & Security</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">3. Data Storage & Security</h2>
             <p className="text-sm leading-relaxed">
               Your data is stored securely using encrypted databases and cloud storage services. We implement
               industry-standard security measures including:
@@ -70,8 +70,8 @@ export function PrivacyPolicyPage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">4. Third-Party Services</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">4. Third-Party Services</h2>
             <p className="text-sm leading-relaxed">We use the following third-party services:</p>
             <ul className="list-disc pl-5 text-sm space-y-1.5">
               <li><strong>Google Firebase:</strong> Authentication (Google Sign-In).</li>
@@ -81,8 +81,22 @@ export function PrivacyPolicyPage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">5. Your Rights</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">5. Google API Services User Data Policy</h2>
+            <p className="text-sm leading-relaxed">
+              RMV Stainless Steel Fabrication complies with the Google API Services User Data Policy, including the Limited Use requirements. If you sign in using your Google account:
+            </p>
+            <ul className="list-disc pl-5 text-sm space-y-1.5">
+              <li><strong>Data Accessed:</strong> Our application accesses only your basic Google account profile information (specifically, your name, email address, and profile picture URL) provided during the Google Sign-In or OAuth authentication flow.</li>
+              <li><strong>Data Usage:</strong> We use your Google account information solely to verify your identity, create and manage your user account, and communicate with you about your projects and appointments within our system.</li>
+              <li><strong>Data Sharing:</strong> We do not share, transfer, or sell your Google user data to any third parties for any purpose, including marketing, advertising, or analytics. Your data is strictly used for authentication and providing our core fabrication project management services.</li>
+              <li><strong>Data Storage & Protection:</strong> Your Google data (name and email) is securely stored in our encrypted database. We use HTTPS for all data transfers and employ strict role-based access control and rate-limiting to ensure your data is protected against unauthorized access.</li>
+              <li><strong>Data Retention & Deletion:</strong> Your data is retained as long as your account remains active. You can request the complete deletion of your account and all associated Google user data at any time by contacting us at rmvstainless@gmail.com or through your account settings. Upon request, your data will be permanently deleted from our servers within 30 days.</li>
+            </ul>
+          </section>
+
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">6. Your Rights</h2>
             <p className="text-sm leading-relaxed">Under the Philippine Data Privacy Act of 2012 (RA 10173), you have the right to:</p>
             <ul className="list-disc pl-5 text-sm space-y-1.5">
               <li>Access your personal data stored in our system.</li>
@@ -92,8 +106,8 @@ export function PrivacyPolicyPage() {
             </ul>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">6. Data Retention</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">7. Data Retention</h2>
             <p className="text-sm leading-relaxed">
               We retain your data for as long as your account is active or as needed to provide services.
               Project records and payment history may be retained for up to 5 years for legal and accounting
@@ -101,8 +115,8 @@ export function PrivacyPolicyPage() {
             </p>
           </section>
 
-          <section className="rounded-2xl border border-[#d2d2d7]/50 bg-white p-6 space-y-4 shadow-sm">
-            <h2 className="text-lg font-semibold text-[#1d1d1f]">7. Contact Us</h2>
+          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
+            <h2 className="text-lg font-semibold text-white">8. Contact Us</h2>
             <p className="text-sm leading-relaxed">
               If you have questions about this privacy policy or wish to exercise your data rights, contact us at:
             </p>
@@ -116,3 +130,4 @@ export function PrivacyPolicyPage() {
     </div>
   );
 }
+

@@ -27,7 +27,7 @@ export function VerifyOTPPage() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const otpInputClasses =
-    'metal-input h-14 w-12 rounded-xl border-white/10 bg-white/[0.05] text-center text-xl font-bold text-[#f5f7fa] shadow-none placeholder:text-[#7f8895] focus-visible:ring-[#d6b36a]/35';
+    'auth-input h-14 w-12 rounded-xl border-white/10 bg-white/[0.05] text-center text-xl font-bold text-[#f5f7fa] shadow-none placeholder:text-[#7f8895] focus-visible:ring-[#d6b36a]/35';
 
   useEffect(() => {
     if (!email) navigate('/login', { replace: true });

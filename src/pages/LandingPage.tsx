@@ -6,7 +6,6 @@ import {
   LayoutDashboard,
   CheckCircle,
   Clock,
-  Settings,
   Flame,
   Utensils,
 
@@ -279,17 +278,11 @@ export function LandingPage() {
   const heroGlowScale = useTransform(heroProgress, [0, 1], [1, 1.3]);
   const heroGlowOpacity = useTransform(heroProgress, [0, 0.7, 1], [0.45, 0.2, 0]);
 
-  // About section parallax
+  // About section anchor
   const aboutRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: aboutProgress } = useScroll({ target: aboutRef, offset: ['start end', 'end start'] });
-  const aboutBlobY = useTransform(aboutProgress, [0, 1], [100, -100]);
-  const aboutCardY = useTransform(aboutProgress, [0, 1], [80, -60]);
 
   // Workflow section parallax
   const workflowRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: workflowProgress } = useScroll({ target: workflowRef, offset: ['start end', 'end start'] });
-  const workflowGlowY = useTransform(workflowProgress, [0, 1], [120, -120]);
-  const workflowGlow2Y = useTransform(workflowProgress, [0, 1], [-80, 80]);
 
   // Section refs for scroll anchoring
   const capabilitiesRef = useRef<HTMLDivElement>(null);
@@ -297,8 +290,6 @@ export function LandingPage() {
 
   // Testimonials section parallax
   const testimonialsRef = useRef<HTMLDivElement>(null);
-  const { scrollYProgress: testimonialsProgress } = useScroll({ target: testimonialsRef, offset: ['start end', 'end start'] });
-  const testimonialsGlowScale = useTransform(testimonialsProgress, [0, 1], [0.8, 1.3]);
 
   const ctaRef = useRef<HTMLDivElement>(null);
   const sectorsRef = useRef<HTMLDivElement>(null);
@@ -346,20 +337,20 @@ export function LandingPage() {
 
   return (
     <LazyMotion features={domAnimation} strict>
-      <div className="min-h-screen bg-[linear-gradient(180deg,#0d1117_0%,#1a212b_18%,#cbd3db_46%,#dde4ea_68%,#141a22_100%)] font-sans text-[#1d1d1f] selection:bg-[#1d1d1f] selection:text-white">
+      <div className="min-h-screen bg-gradient-to-b from-[#0f1419] to-[#1a202a] font-sans text-white/90 selection:bg-white/20 selection:text-white">
         
         {/* Navigation */}
         <motion.header
           initial={{ y: -100, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 1, ease: SMOOTH_240 }}
-          className="fixed top-0 z-50 w-full border-b border-white/10 bg-[linear-gradient(180deg,rgba(8,12,18,0.88)_0%,rgba(18,26,35,0.76)_58%,rgba(29,38,49,0.68)_100%)] backdrop-blur-2xl shadow-[0_10px_40px_rgba(6,8,12,0.24)] gpu-reveal"
+          className="fixed top-0 z-50 w-full border-b border-white/5 bg-[#0f1419]/80 backdrop-blur-md gpu-reveal"
         >
           <div className="mx-auto flex h-14 md:h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
             <Link to="/" className="flex items-center gap-2 group">
-              <BrandLogo className="h-6 w-6 text-[#f2f5f8] transition-transform duration-500 group-hover:scale-110" />
-              <span className="text-sm font-bold tracking-tight text-[#f2f5f8]">
-                RMV Stainless Steel Fabrication
+              <BrandLogo className="h-6 w-6 text-white transition-opacity duration-500 hover:opacity-80" />
+              <span className="text-sm font-bold tracking-tight text-white">
+                RMV Stainless & Steel Fabrication
               </span>
             </Link>
 
@@ -367,23 +358,24 @@ export function LandingPage() {
               {[
                 { label: 'Home', href: '#hero' },
                 { label: 'About', href: '#about' },
-                { label: 'Services', href: '#capabilities' },
                 { label: 'Projects', href: '#projects' },
                 { label: 'Contact', href: '#contact' },
               ].map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
-                  className="relative text-[13px] font-medium text-[#c6d0da] transition-colors hover:text-white after:absolute after:bottom-0 after:left-0 after:h-[1.5px] after:w-0 hover:after:w-full after:bg-[#d9b36a] after:transition-all after:duration-300"
+                  className="text-[13px] font-medium text-white/70 hover:text-white transition-colors"
                 >
                   {item.label}
                 </a>
               ))}
+              <Link to="/privacy" className="text-[13px] font-medium text-white/70 hover:text-white transition-colors">Privacy</Link>
+              <Link to="/terms" className="text-[13px] font-medium text-white/70 hover:text-white transition-colors">Terms</Link>
             </nav>
 
             <div className="hidden lg:flex items-center gap-3">
               {isLoggedIn ? (
-                <Button asChild variant="ghost" className="h-9 rounded-full px-5 text-[13px] font-medium text-white hover:bg-white/10">
+                <Button asChild variant="ghost" className="h-9 rounded-md px-5 text-[13px] font-medium text-white hover:bg-white/5">
                   <Link to="/dashboard">
                     <LayoutDashboard className="mr-2 h-4 w-4" />
                     Dashboard
@@ -391,11 +383,11 @@ export function LandingPage() {
                 </Button>
               ) : (
                 <>
-                  <Link to="/login" className="px-3 py-2 text-[13px] font-medium text-[#c6d0da] transition-colors hover:text-white">
+                  <Link to="/login" className="px-3 py-2 text-[13px] font-medium text-white/70 hover:text-white transition-colors">
                     Sign In
                   </Link>
-                  <Button asChild className="h-9 rounded-full bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] px-6 text-[13px] font-semibold text-[#11161c] transition-all duration-300 hover:scale-105 hover:brightness-105 hover:bg-[linear-gradient(135deg,#ebc274_0%,#cf943f_48%,#f5ddb0_100%)] hover:text-[#11161c] active:scale-95 shadow-[0_10px_26px_rgba(186,131,49,0.28)]">
-                    <Link to="/register" className="text-[#11161c] hover:text-[#11161c]">Get Started</Link>
+                  <Button asChild style={{ background: 'linear-gradient(135deg, #c9a96f 0%, #e2cba1 50%, #b89552 100%)' }} className="h-9 rounded-md border-none px-6 text-[13px] font-bold text-zinc-950 shadow-[0_4px_14px_rgba(201,169,111,0.2)] transition-transform hover:scale-105">
+                    <Link to="/register">Get Started</Link>
                   </Button>
                 </>
               )}
@@ -403,7 +395,7 @@ export function LandingPage() {
 
             <button
               type="button"
-              className="-mr-1 rounded-xl p-2.5 text-[#f2f5f8] transition-colors hover:bg-white/10 lg:hidden"
+              className="-mr-1 rounded-md p-2.5 text-white/70 hover:text-white hover:bg-white/5 transition-colors lg:hidden"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             >
               {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
@@ -416,32 +408,37 @@ export function LandingPage() {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="fixed inset-0 z-40 overflow-y-auto bg-[linear-gradient(180deg,#081019_0%,#111923_52%,#1d2733_100%)] px-6 pt-20 lg:hidden"
+            className="fixed inset-0 z-40 overflow-y-auto bg-[#0f1419] px-6 pt-20 lg:hidden"
           >
             <nav className="flex flex-col gap-1 mt-4">
                {[
                  { label: 'Home', href: '#hero' },
                  { label: 'About', href: '#about' },
-                 { label: 'Services', href: '#capabilities' },
                  { label: 'Projects', href: '#projects' },
                  { label: 'Contact', href: '#contact' },
                ].map((item) => (
-                 <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="border-b border-white/10 py-4 text-2xl font-semibold tracking-tight text-[#f3f6f9] transition-all hover:pl-2">
+                 <a key={item.label} href={item.href} onClick={() => setMobileMenuOpen(false)} className="border-b border-white/10 py-4 text-xl font-medium tracking-tight text-white/90 transition-colors hover:text-white">
                    {item.label}
                  </a>
                ))}
+               <Link to="/privacy" onClick={() => setMobileMenuOpen(false)} className="border-b border-white/10 py-4 text-xl font-medium tracking-tight text-white/90 transition-colors hover:text-white">
+                 Privacy Policy
+               </Link>
+               <Link to="/terms" onClick={() => setMobileMenuOpen(false)} className="border-b border-white/10 py-4 text-xl font-medium tracking-tight text-white/90 transition-colors hover:text-white">
+                 Terms of Service
+               </Link>
                <div className="pt-8 flex flex-col gap-4">
                  {isLoggedIn ? (
-                   <Button asChild className="h-14 w-full rounded-2xl bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] text-base font-semibold text-[#11161c]">
+                   <Button asChild style={{ background: 'linear-gradient(135deg, #c9a96f 0%, #e2cba1 50%, #b89552 100%)' }} className="h-12 w-full rounded-md border-none text-base font-bold text-zinc-950 shadow-[0_4px_14px_rgba(201,169,111,0.2)] transition-transform hover:scale-105">
                      <Link to="/dashboard" onClick={() => setMobileMenuOpen(false)}>Dashboard</Link>
                    </Button>
                  ) : (
                    <>
-                     <Button asChild className="h-14 w-full rounded-2xl bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] text-base font-semibold text-[#11161c] hover:bg-[linear-gradient(135deg,#ebc274_0%,#cf943f_48%,#f5ddb0_100%)] hover:text-[#11161c]">
-                       <Link to="/register" onClick={() => setMobileMenuOpen(false)} className="text-[#11161c] hover:text-[#11161c]">Get Started</Link>
+                     <Button asChild style={{ background: 'linear-gradient(135deg, #c9a96f 0%, #e2cba1 50%, #b89552 100%)' }} className="h-12 w-full rounded-md border-none text-base font-bold text-zinc-950 shadow-[0_4px_14px_rgba(201,169,111,0.2)] transition-transform hover:scale-105">
+                       <Link to="/register" onClick={() => setMobileMenuOpen(false)}>Get Started</Link>
                      </Button>
-                     <Button asChild variant="outline" className="h-14 w-full rounded-2xl border-[#d6dde6]/70 bg-[linear-gradient(180deg,rgba(245,247,250,0.98)_0%,rgba(222,228,235,0.94)_100%)] text-base font-semibold text-[#14181d] shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_12px_24px_rgba(0,0,0,0.12)] hover:bg-[linear-gradient(180deg,rgba(250,251,253,1)_0%,rgba(228,233,239,0.98)_100%)] hover:text-[#14181d]">
-                       <Link to="/login" onClick={() => setMobileMenuOpen(false)} className="text-[#14181d] hover:text-[#14181d]">Sign In</Link>
+                     <Button asChild style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)' }} variant="outline" className="h-12 w-full rounded-md border-white/20 text-base font-medium text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-colors hover:bg-white/10">
+                       <Link to="/login" onClick={() => setMobileMenuOpen(false)}>Sign In</Link>
                      </Button>
                    </>
                  )}
@@ -560,34 +557,23 @@ export function LandingPage() {
           
           <motion.div
             style={{ y: heroContentY, opacity: heroContentOpacity, scale: heroContentScale }}
-            className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-4 text-center will-change-transform sm:px-6 md:mt-0"
+            className="relative z-10 mx-auto flex w-full max-w-[100vw] sm:max-w-5xl flex-col items-center px-4 text-center will-change-transform sm:px-6 md:mt-0"
           >
-            {/* Chrome SVG heading for true metallic texture */}
             <motion.h1
               initial={{ opacity: 0, y: 80, scale: 0.96 }}
               animate={{ opacity: 1, y: 0, scale: 1 }}
               transition={{ duration: 1.4, ease: SMOOTH_240 }}
-              className="mb-4 py-2 text-center text-[2.6rem] font-bold leading-[0.95] tracking-tighter drop-shadow-[0_12px_30px_rgba(0,0,0,0.28)] sm:text-6xl md:mb-5 md:text-7xl lg:text-[108px] gpu-reveal"
+              className="mb-4 py-2 text-center text-[12.5vw] min-[400px]:text-[56px] sm:text-[64px] md:text-[88px] lg:text-[104px] font-bold leading-[1.05] tracking-tight sm:max-w-4xl gpu-reveal"
             >
-              <span
-                className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage: 'linear-gradient(135deg, #f8edd2 0%, #f2d491 16%, #9eb6cf 33%, #dfe8f2 48%, #b7863a 66%, #f7e7bf 82%, #eef5fb 100%)',
-                }}
-              >Precision</span><br />
-              <span
-                className="bg-clip-text text-transparent"
-                style={{
-                  backgroundImage: 'linear-gradient(135deg, #e7edf4 0%, #9bb2c9 12%, #f5db9e 30%, #fcf2d9 45%, #c78d35 60%, #dbe5ef 76%, #f7ecd2 100%)',
-                }}
-              >Engineering.</span>
+              <span className="bg-gradient-to-b from-white via-zinc-100 to-zinc-400 bg-clip-text text-transparent drop-shadow-sm">Precision</span><br />
+              <span className="bg-gradient-to-r from-[#c9a96f] via-[#f3e0b8] to-[#ab8438] bg-clip-text text-transparent drop-shadow-sm">Engineering.</span>
             </motion.h1>
             
             <motion.p
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.25, ease: SMOOTH_240 }}
-              className="mb-3 max-w-2xl px-2 text-lg font-medium tracking-tight text-[#e6edf4] gpu-reveal sm:text-xl md:mb-4 md:text-2xl"
+              className="mb-3 max-w-2xl px-2 text-[18px] md:text-[22px] font-medium tracking-normal text-white/90 gpu-reveal"
             >
               Uncompromising quality in every weld.
             </motion.p>
@@ -595,7 +581,7 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 50 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.35, ease: SMOOTH_240 }}
-              className="mb-5 max-w-xl px-4 text-sm font-normal text-[#c5d0dc] gpu-reveal sm:text-base md:mb-6 md:text-lg"
+              className="mb-8 max-w-xl px-4 text-[15px] md:text-[16px] font-normal text-white/70 gpu-reveal"
             >
               Manage your fabrication project with clearer approvals, payment tracking, and progress updates from start to finish.
             </motion.p>
@@ -604,16 +590,18 @@ export function LandingPage() {
               initial={{ opacity: 0, y: 60 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 1, delay: 0.5, ease: SMOOTH_240 }}
-              className="flex w-full flex-col gap-3 overflow-visible pb-3 gpu-reveal sm:w-auto sm:flex-row md:pb-4"
+              className="flex w-full flex-col gap-4 overflow-visible pb-3 gpu-reveal sm:w-auto sm:flex-row md:pb-4"
             >
-              <Button asChild className="h-14 w-full rounded-full bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] px-8 text-base font-semibold text-[#11161c] transition-all duration-300 active:scale-95 sm:w-auto md:h-16 md:px-10 shadow-[0_16px_40px_rgba(186,131,49,0.28)] hover:brightness-105 hover:bg-[linear-gradient(135deg,#ebc274_0%,#cf943f_48%,#f5ddb0_100%)] hover:text-[#11161c]">
-                <Link to="/register" className="text-[#11161c] hover:text-[#11161c]">
-                  Commission a Project
-                  <ArrowRight className="ml-2 h-5 w-5" />
+              <Button asChild style={{ background: 'linear-gradient(135deg, #c9a96f 0%, #e2cba1 50%, #b89552 100%)' }} className="group relative h-14 w-full overflow-hidden rounded-md px-8 text-[15px] font-bold text-zinc-950 shadow-[0_4px_24px_rgba(201,169,111,0.25)] transition-transform hover:scale-105 active:scale-95 border-none sm:w-auto md:h-14 md:px-10">
+                <Link to="/register">
+                  <span className="relative z-10 flex items-center">
+                    Commission a Project
+                    <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
+                  </span>
                 </Link>
               </Button>
-              <Button asChild className="relative w-full overflow-hidden rounded-full border border-white/18 bg-white/8 px-8 text-base font-semibold text-[#f4f6f8] backdrop-blur-md transition-all duration-300 active:scale-95 hover:border-[#f0d498]/48 hover:bg-white/14 sm:w-auto md:h-16 md:px-10 shadow-[0_12px_30px_rgba(4,7,12,0.22)]" style={{ boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.16), 0 12px 30px rgba(4,7,12,0.22)' }}>
-                <a href="#capabilities" className="text-[#f4f6f8]">Explore Services</a>
+              <Button asChild style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)' }} className="h-14 w-full rounded-md border border-white/20 px-8 text-[15px] font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-colors hover:bg-white/10 active:scale-95 sm:w-auto md:h-14 md:px-10">
+                <a href="#capabilities">Explore Services</a>
               </Button>
             </motion.div>
 
@@ -623,124 +611,103 @@ export function LandingPage() {
           <div className="absolute bottom-0 left-1/2 h-px w-[min(82vw,76rem)] -translate-x-1/2 bg-gradient-to-r from-transparent via-[#f0d7a1]/70 to-transparent" />
         </section>
 
-        <section className="relative overflow-hidden bg-[linear-gradient(160deg,#0d131a_0%,#17202b_26%,#263444_54%,#111820_100%)] py-16 md:py-24">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-          <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent" />
-          <div className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-[#d9b36a]/50 to-transparent" />
-          <div className="absolute -left-20 top-1/2 h-72 w-72 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(125,150,181,0.18)_0%,transparent_68%)] blur-3xl" />
-          <div className="absolute -right-16 top-10 h-80 w-80 rounded-full bg-[radial-gradient(circle,rgba(241,212,154,0.18)_0%,transparent_72%)] blur-3xl" />
-
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <section className="relative border-t border-white/10 bg-[#0f1419] py-24 md:py-32">
+          
+          <div className="relative mx-auto max-w-7xl px-6 lg:px-8">
             <motion.div
-              initial={{ opacity: 0, y: 70 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 1.05, ease: SMOOTH_240 }}
-              className="mb-8 text-center gpu-reveal md:mb-12"
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="mb-16 md:mb-24"
             >
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#e4bf79]/30 bg-[#e4bf79]/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.22em] text-[#f5dca9]">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#c9a96f]/30 bg-[#c9a96f]/10 px-4 py-1.5 text-xs font-semibold tracking-widest text-[#c9a96f] uppercase">
                 <Sparkles className="h-3.5 w-3.5" />
                 Client Portal
               </div>
-              <h2 className="mx-auto max-w-4xl text-2xl font-bold tracking-tighter text-white sm:text-4xl md:text-6xl">
+              <h2 className="max-w-3xl text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl lg:text-5xl">
                 Stay informed from drawing approval to final installation.
               </h2>
-              <p className="mx-auto mt-4 max-w-3xl text-[15px] font-medium leading-7 text-[#bcc8d3] md:text-lg">
+              <p className="mt-6 max-w-2xl text-lg leading-relaxed text-white/60">
                 The RMV client portal helps you review drawings, track payments, and follow project progress without relying on scattered messages or manual follow-ups.
               </p>
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 70 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.12 }}
-              transition={{ duration: 1.1, delay: 0.12, ease: SMOOTH_240 }}
-              className="relative overflow-hidden rounded-[1.5rem] border border-white/14 bg-[linear-gradient(145deg,rgba(9,13,18,0.78)_0%,rgba(17,24,33,0.92)_36%,rgba(30,40,52,0.88)_68%,rgba(12,18,24,0.82)_100%)] p-3 shadow-[0_28px_90px_rgba(3,6,10,0.34)] backdrop-blur-xl sm:rounded-[2rem] sm:p-4 md:p-6 gpu-reveal"
+              viewport={{ once: true }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              className="grid gap-6 lg:grid-cols-[1fr,1.5fr]"
             >
-              <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0.02)_18%,rgba(241,212,154,0.06)_50%,rgba(255,255,255,0.02)_82%,rgba(255,255,255,0.07)_100%)] opacity-80" />
-              <div className="absolute inset-x-6 top-0 h-px bg-gradient-to-r from-transparent via-white/40 to-transparent" />
-              <div className="absolute inset-x-10 bottom-0 h-px bg-gradient-to-r from-transparent via-[#d8b26a]/60 to-transparent" />
-
-              <div className="relative grid items-stretch gap-2.5 sm:gap-3 lg:grid-cols-[1fr,1.8fr] lg:gap-4">
-                <div className="flex h-full flex-col justify-center rounded-[1.25rem] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.06)_0%,rgba(255,255,255,0.02)_100%)] p-4 text-center shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] sm:rounded-[1.6rem] sm:p-5 md:p-6">
-                  <h3 className="mx-auto max-w-md text-[1.55rem] font-bold tracking-tight text-white sm:text-lg md:text-[1.85rem]">
+              <div className="flex flex-col justify-between rounded-2xl border border-white/20 bg-white/5 p-8 md:p-10">
+                <div>
+                  <h3 className="mb-4 text-2xl font-bold tracking-tight text-white">
                     A clearer project experience for every client.
                   </h3>
-                  <p className="mx-auto mt-3 max-w-md text-[15px] font-medium leading-7 text-[#bcc8d3] sm:text-sm">
+                  <p className="leading-relaxed text-white/60">
                     Instead of chasing updates manually, clients can review drawings, confirm payments, and monitor progress through each stage of the job.
                   </p>
-                  <div className="mx-auto mt-4 grid w-full max-w-2xl gap-2.5 sm:mt-5 sm:gap-3 sm:grid-cols-2">
-                    <div className="rounded-[1.1rem] border border-white/10 bg-black/18 px-4 py-3 sm:rounded-2xl">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#8ea4bb]">Faster Decisions</p>
-                      <p className="mt-1 text-sm font-semibold text-white">Review drawings without back-and-forth</p>
-                    </div>
-                    <div className="rounded-[1.1rem] border border-white/10 bg-black/18 px-4 py-3 sm:rounded-2xl">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#d8c08c]">Clear Visibility</p>
-                      <p className="mt-1 text-sm font-semibold text-white">See payments and progress in one place</p>
-                    </div>
+                </div>
+                
+                <div className="mt-8 grid gap-4 sm:grid-cols-2">
+                  <div className="rounded-xl border border-white/10 bg-black/20 p-5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-white/40">Faster Decisions</p>
+                    <p className="mt-2 text-sm font-medium text-white">Review drawings without back-and-forth</p>
+                  </div>
+                  <div className="rounded-xl border border-[#c9a96f]/20 bg-[#c9a96f]/5 p-5">
+                    <p className="text-xs font-bold uppercase tracking-wider text-[#c9a96f]">Clear Visibility</p>
+                    <p className="mt-2 text-sm font-medium text-white">See payments and progress in one place</p>
                   </div>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-2 gap-2.5 sm:gap-3 md:grid-cols-3">
-                  {HERO_SIGNAL_CARDS.map((card, index) => (
-                    <div
-                      key={card.label}
-                      className={`group relative flex min-h-[148px] flex-col overflow-hidden rounded-[1.1rem] border border-white/10 bg-[linear-gradient(160deg,rgba(255,255,255,0.07)_0%,rgba(255,255,255,0.025)_100%)] p-3 text-left shadow-[inset_0_1px_0_rgba(255,255,255,0.08)] transition-transform duration-300 hover:-translate-y-1 sm:min-h-[210px] sm:rounded-[1.6rem] sm:p-4 md:p-5 ${index === 2 ? 'col-span-2 md:col-span-1' : ''}`}
-                    >
-                      <div className="absolute inset-x-0 top-0 h-20 bg-[linear-gradient(180deg,rgba(243,214,154,0.12)_0%,rgba(243,214,154,0)_100%)] opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-                      <div className="relative flex items-start justify-between gap-3">
-                        <div className="min-w-0">
-                          <p className="text-[9px] font-bold uppercase tracking-[0.18em] text-[#91a4b8] sm:text-[10px] sm:tracking-[0.22em]">{card.label}</p>
-                          <p className="mt-2 text-[1.05rem] font-bold leading-[1.05] tracking-tight text-white sm:text-xl md:text-[1.7rem]">{card.value}</p>
-                        </div>
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[1rem] border border-[#dfbe86]/30 bg-[linear-gradient(145deg,rgba(226,181,102,0.16)_0%,rgba(125,150,181,0.14)_100%)] text-[#f3d79f] shadow-[0_10px_22px_rgba(0,0,0,0.18)] sm:h-11 sm:w-11 sm:rounded-2xl">
-                          <card.icon className="h-4 w-4 sm:h-5 sm:w-5" />
-                        </div>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2">
+                {HERO_SIGNAL_CARDS.map((card, index) => (
+                  <div
+                    key={card.label}
+                    className={`group relative flex flex-col justify-between rounded-2xl border border-white/10 bg-white/[0.02] p-6 transition-colors hover:bg-white/[0.04] ${index === 2 ? 'sm:col-span-2' : ''}`}
+                  >
+                    <div className="mb-8 flex items-start justify-between gap-4">
+                      <div>
+                        <p className="mb-2 text-xs font-bold uppercase tracking-wider text-white/40">{card.label}</p>
+                        <p className="text-2xl font-bold tracking-tight text-white">{card.value}</p>
                       </div>
-                      <p className="relative mt-3 hidden text-sm font-medium leading-7 text-[#c3ced8] sm:block">{card.detail}</p>
+                      <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-black/20 text-[#c9a96f]">
+                        <card.icon className="h-5 w-5" />
+                      </div>
                     </div>
-                  ))}
-                </div>
+                    <p className="text-sm leading-relaxed text-white/50">{card.detail}</p>
+                  </div>
+                ))}
               </div>
             </motion.div>
           </div>
         </section>
 
         {/* Built on Trust Section */}
-        <section ref={aboutRef} id="about" className="relative z-10 -mt-10 overflow-hidden rounded-t-[40px] bg-[linear-gradient(180deg,#f4ead5_0%,#e8edf2_16%,#d9e1e8_44%,#cfd8e1_74%,#f2e1b7_100%)] pt-20 pb-16 md:-mt-16 md:rounded-t-[80px] md:pt-40 md:pb-32">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.03]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-          {/* Blueprint corner decoration */}
-          <div className="absolute top-8 right-8 w-[200px] md:w-[280px] pointer-events-none hidden md:block">
-            <svg viewBox="0 0 280 280" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.07]">
-              <rect x="20" y="20" width="240" height="240" rx="2" stroke="#5a5a60" strokeWidth="0.8" fill="none" />
-              <rect x="40" y="40" width="200" height="200" rx="1" stroke="#5a5a60" strokeWidth="0.5" strokeDasharray="6 4" fill="none" />
-              <line x1="140" y1="20" x2="140" y2="260" stroke="#5a5a60" strokeWidth="0.4" strokeDasharray="4 3" />
-              <line x1="20" y1="140" x2="260" y2="140" stroke="#5a5a60" strokeWidth="0.4" strokeDasharray="4 3" />
-              <circle cx="140" cy="140" r="60" stroke="#5a5a60" strokeWidth="0.8" />
-              <circle cx="140" cy="140" r="30" stroke="#5a5a60" strokeWidth="0.5" />
-              <circle cx="140" cy="140" r="8" stroke="#5a5a60" strokeWidth="1" fill="#5a5a60" fillOpacity="0.06" />
-              <text x="140" y="275" textAnchor="middle" fill="#5a5a60" fontSize="7" fontFamily="monospace">DETAIL B — SCALE 1:4</text>
-            </svg>
-          </div>
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="grid md:grid-cols-2 gap-10 md:gap-16 items-center">
+        <section ref={aboutRef} id="about" style={{ background: 'linear-gradient(180deg, #ffffff 0%, #fdfbf7 50%, #f7f1e1 100%)' }} className="relative z-10 -mt-10 overflow-hidden rounded-t-[40px] border-t border-[#e2cba1]/30 pt-24 pb-16 shadow-[0_-20px_40px_rgba(0,0,0,0.4)] md:-mt-16 md:rounded-t-[80px] md:pt-40 md:pb-32">
+          
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="grid items-center gap-10 md:gap-16 lg:grid-cols-2">
               
               <motion.div
-                initial={{ opacity: 0, y: 70 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, amount: 0.15 }}
-                transition={{ duration: 1.1, ease: SMOOTH_240 }}
-                className="gpu-reveal"
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
               >
-                <h2 className="mb-6 text-3xl font-bold leading-tight tracking-tighter sm:text-4xl md:text-6xl">
-                  <span className="text-[#171b21] drop-shadow-[0_1px_0_rgba(255,255,255,0.24)]">Built on Trust,</span><br/>
-                  <span className="text-[#5f6772] drop-shadow-[0_1px_0_rgba(255,255,255,0.18)]">Delivered with Precision.</span>
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-zinc-100 px-4 py-1.5 text-xs font-semibold tracking-widest text-zinc-600 uppercase">
+                  Our Story
+                </div>
+                <h2 className="mb-6 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl md:text-5xl">
+                  Built on Trust,<br className="hidden sm:block"/> Delivered with Precision.
                 </h2>
-                <p className="text-base md:text-xl text-[#6e6e73] font-medium mb-8 md:mb-10 leading-relaxed max-w-lg">
+                <p className="mb-8 max-w-lg text-lg leading-relaxed text-zinc-600">
                   Founded in October 2018, RMV Stainless Steel Fabrication has grown into a trusted name in commercial kitchen fabrication. We combine traditional craftsmanship with modern technology to deliver outstanding results.
                 </p>
                 
-                <ul className="space-y-6">
+                <ul className="space-y-5">
                   {[
                     'Real-time project tracking through your online portal',
                     'Transparent pricing with detailed cost breakdowns',
@@ -748,119 +715,69 @@ export function LandingPage() {
                     'Professional installation by certified technicians',
                     'On-time delivery with milestone-based updates'
                   ].map((text, i) => (
-                     <li key={i} className="flex items-start gap-3 md:gap-4">
-                       <div className="mt-1 flex-shrink-0 w-6 h-6 rounded-full bg-gradient-to-br from-[#d2d2d7] to-white flex items-center justify-center border border-[#c0c0c4] shadow-sm">
-                         <CheckCircle className="h-4 w-4 text-[#1d1d1f]" />
+                     <li key={i} className="flex items-start gap-4">
+                       <div className="mt-1 flex shrink-0 h-6 w-6 items-center justify-center rounded-full border border-[#c9a96f]/40 bg-[#c9a96f]/10">
+                         <CheckCircle className="h-3.5 w-3.5 text-[#c9a96f]" />
                        </div>
-                       <span className="text-[#1d1d1f] font-medium text-base md:text-lg tracking-tight">{text}</span>
+                       <span className="font-medium text-zinc-800">{text}</span>
                      </li>
                   ))}
                 </ul>
               </motion.div>
 
-              {/* Portal UI Mockup inside minimalist card — parallax float */}
-              <motion.div
-                initial={{ opacity: 0, y: 70 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ rotateX: -3, rotateY: 4, z: 25, transition: { type: 'spring', stiffness: 260, damping: 20 } }}
-                viewport={{ once: true, amount: 0.15 }}
-                transition={{ duration: 1.1, delay: 0.2, ease: SMOOTH_240 }}
-                style={{ y: aboutCardY, transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                className="relative mx-auto w-full max-w-[500px] gpu-reveal will-change-transform"
-              >
-                <div className="relative overflow-hidden rounded-[2rem] border border-[#d4bc89]/24 bg-[linear-gradient(160deg,#0d141c_0%,#182231_42%,#243345_74%,#0d1620_100%)] p-5 shadow-[0_30px_80px_rgba(10,14,20,0.3)] md:rounded-[2.5rem] md:p-7">
-                  <motion.div style={{ y: aboutBlobY }} className="pointer-events-none absolute inset-x-8 top-0 h-24 bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.08)_0%,rgba(255,255,255,0)_72%)] will-change-transform" />
-                  <div className="pointer-events-none absolute inset-0 rounded-[inherit] ring-1 ring-inset ring-white/8" />
-
-                  <div className="relative flex items-center gap-4 pb-6">
-                    <div className="flex h-12 w-12 items-center justify-center rounded-[1.15rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.11)_0%,rgba(255,255,255,0.05)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.12)]">
-                      <Settings className="h-6 w-6 text-white" />
-                    </div>
-                    <div>
-                      <h4 className="text-lg font-semibold text-white">RMV Portal</h4>
-                      <p className="text-sm text-[#8e98a5]">Client Dashboard</p>
-                    </div>
-                  </div>
-
-                  <div className="relative space-y-4">
-                    <div className="flex items-center justify-between rounded-[1.35rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                      <span className="text-sm font-medium text-[#a5afba]">Project Status</span>
-                      <span className="rounded-full bg-[linear-gradient(180deg,#f7f7f8_0%,#e6e7ea_100%)] px-3 py-1 text-xs font-bold text-[#101317] shadow-[0_8px_16px_rgba(0,0,0,0.14)]">Fabrication</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-[1.35rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                      <span className="text-sm font-medium text-[#a5afba]">Completion</span>
-                      <span className="text-[1.05rem] font-bold tracking-tight text-white">78%</span>
-                    </div>
-                    <div className="flex items-center justify-between rounded-[1.35rem] border border-white/8 bg-[linear-gradient(180deg,rgba(255,255,255,0.05)_0%,rgba(255,255,255,0.025)_100%)] px-5 py-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]">
-                      <span className="text-sm font-medium text-[#a5afba]">Next Milestone</span>
-                      <span className="text-sm font-bold text-white">Quality Check</span>
-                    </div>
-                  </div>
-
-                  <div className="relative mt-7 border-t border-white/8 pt-6">
-                     <div className="mb-3 flex justify-between text-xs font-medium text-[#8e98a5]">
-                       <span>Overall Progress</span>
-                       <span>78%</span>
-                     </div>
-                     <div className="h-2 rounded-full bg-white/10 overflow-hidden">
-                       <div className="h-full w-[78%] rounded-full bg-[linear-gradient(90deg,#f4f5f7_0%,#ffffff_100%)] shadow-[0_0_18px_rgba(255,255,255,0.16)]" />
-                     </div>
+              <div className="relative mx-auto w-full max-w-[620px]">
+                <div className="relative overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50 p-2 md:p-3 shadow-xl shadow-zinc-200/50">
+                  <div className="relative overflow-hidden rounded-xl bg-zinc-900">
+                    <img
+                      src="/image.png"
+                      alt="RMV stainless fabrication showcase"
+                      className="relative block h-auto w-full object-cover"
+                      loading="lazy"
+                    />
                   </div>
                 </div>
-              </motion.div>
+              </div>
 
             </div>
           </div>
         </section>
 
         {/* Streamlined Workflow */}
-        <section ref={workflowRef} id="workflow" className="relative py-16 md:py-32 bg-gradient-to-br from-[#1a1a1c] via-[#0f0f11] to-[#1d1d1f] text-white overflow-hidden">
-          {/* Subtle silver light leaks — parallax drift */}
-          <motion.div style={{ y: workflowGlowY }} className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-[radial-gradient(circle,rgba(180,180,190,0.06)_0%,transparent_70%)] pointer-events-none will-change-transform" />
-          <motion.div style={{ y: workflowGlow2Y }} className="absolute bottom-0 right-1/4 w-[400px] h-[400px] bg-[radial-gradient(circle,rgba(200,200,210,0.05)_0%,transparent_70%)] pointer-events-none will-change-transform" />
-          {/* Blueprint technical decoration */}
-          <div className="absolute top-8 right-8 w-[160px] md:w-[220px] pointer-events-none hidden lg:block">
-            <svg viewBox="0 0 220 300" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.04]">
-              <rect x="20" y="20" width="180" height="260" rx="2" stroke="#a0a0a6" strokeWidth="0.6" fill="none" />
-              <line x1="20" y1="80" x2="200" y2="80" stroke="#a0a0a6" strokeWidth="0.4" strokeDasharray="4 3" />
-              <line x1="20" y1="150" x2="200" y2="150" stroke="#a0a0a6" strokeWidth="0.4" strokeDasharray="4 3" />
-              <line x1="20" y1="220" x2="200" y2="220" stroke="#a0a0a6" strokeWidth="0.4" strokeDasharray="4 3" />
-              <line x1="110" y1="20" x2="110" y2="280" stroke="#a0a0a6" strokeWidth="0.3" strokeDasharray="3 3" />
-              <text x="60" y="55" fill="#a0a0a6" fontSize="7" fontFamily="monospace">STEP 01</text>
-              <text x="60" y="120" fill="#a0a0a6" fontSize="7" fontFamily="monospace">STEP 02</text>
-              <text x="60" y="190" fill="#a0a0a6" fontSize="7" fontFamily="monospace">STEP 03</text>
-              <text x="60" y="255" fill="#a0a0a6" fontSize="7" fontFamily="monospace">STEP 04</text>
-            </svg>
-          </div>
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="grid lg:grid-cols-3 gap-10 md:gap-16">
+        <section ref={workflowRef} id="workflow" style={{ background: 'linear-gradient(180deg, #f7f1e1 0%, #fdfbf7 50%, #ffffff 100%)' }} className="relative border-t border-[#e2cba1]/30 py-24 md:py-32">
+          
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="grid gap-10 md:gap-16 lg:grid-cols-3">
               
               <div className="lg:col-span-1">
                 <motion.div
-                  initial={{ opacity: 0, y: 70 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true, amount: 0.15 }}
-                  transition={{ duration: 1.1, ease: SMOOTH_240 }}
-                  className="sticky top-32 gpu-reveal"
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8 }}
+                  className="sticky top-32"
                 >
-                  <div className="inline-flex items-center gap-2 border border-white/20 bg-white/5 rounded-full px-4 py-1.5 mb-8">
-                    <Clock className="h-4 w-4 text-[#a1a1a6]" />
-                    <span className="text-sm font-medium text-[#a1a1a6]">How It Works</span>
+                  <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-black/10 bg-zinc-200/50 px-4 py-1.5 text-xs font-semibold tracking-widest text-zinc-600 uppercase">
+                    <Clock className="h-3.5 w-3.5" />
+                    How It Works
                   </div>
-                  <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter leading-none mb-6">
-                    <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #7a7a80 0%, #e0e0e4 20%, #9a9a9f 40%, #c8c8cd 60%, #858589 80%, #d0d0d5 100%)' }}>Streamlined</span><br />
-                    <span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #9e9ea3 0%, #c8c8cd 12%, #a0a0a5 22%, #e0e0e4 35%, #b0b0b5 45%, #8e8e93 55%, #d0d0d5 65%, #a8a8ad 78%, #c5c5ca 88%, #9a9a9f 100%)' }}>Workflow.</span>
+                  <h2 className="mb-6 text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl md:text-5xl">
+                    Streamlined<br />Workflow.
                   </h2>
-                  <p className="text-[#a1a1a6] text-lg font-medium mb-10 max-w-md leading-relaxed">
+                  <p className="mb-10 max-w-md text-lg leading-relaxed text-zinc-600">
                     From initial consultation to final delivery — complete transparency at every step of your fabrication journey.
                   </p>
-                  <Button asChild className="rounded-full bg-[linear-gradient(135deg,#f2d28d_0%,#d8a64c_52%,#f4ddb0_100%)] px-8 text-base font-semibold text-[#11161c] shadow-[0_14px_34px_rgba(178,128,46,0.22)] transition-all duration-300 hover:scale-105 hover:brightness-105 hover:bg-[linear-gradient(135deg,#f5daa0_0%,#dfae57_52%,#f7e3bb_100%)] hover:text-[#11161c] active:scale-95 h-14">
-                    <Link to="/register" className="text-[#11161c] hover:text-[#11161c]">Get Started Now</Link>
+                  <Button asChild style={{ background: 'linear-gradient(135deg, #c9a96f 0%, #e2cba1 50%, #b89552 100%)' }} className="group relative h-12 overflow-hidden rounded-md px-8 text-[15px] font-bold text-zinc-950 shadow-[0_4px_20px_rgba(201,169,111,0.25)] transition-transform hover:scale-105 active:scale-95 border-none">
+                    <Link to="/register">
+                      <span className="relative z-10 flex items-center">
+                        Get Started Now
+                        <ArrowRight className="ml-2 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </span>
+                    </Link>
                   </Button>
                 </motion.div>
               </div>
 
-              <div className="lg:col-span-2 space-y-6">
+              <div className="space-y-6 lg:col-span-2">
                 {[
                   { step: "01", title: "Consultation", desc: "Book online. We visit for measurements or meet to discuss your vision." },
                   { step: "02", title: "Design & Costing", desc: "Receive CAD blueprints and transparent cost breakdowns for approval." },
@@ -869,23 +786,20 @@ export function LandingPage() {
                 ].map((item, idx) => (
                   <motion.div
                     key={item.step}
-                    initial={{ opacity: 0, y: 70 }}
+                    initial={{ opacity: 0, y: 30 }}
                     whileInView={{ opacity: 1, y: 0 }}
-                    whileHover={{ rotateX: -2, rotateY: 2, z: 15, transition: { type: 'spring', stiffness: 280, damping: 22 } }}
-                    viewport={{ once: true, amount: 0.1 }}
-                    transition={{ duration: 1, delay: 0.15 * idx, ease: SMOOTH_240 }}
-                    style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                    className="group gpu-reveal"
+                    viewport={{ once: true }}
+                    transition={{ duration: 0.8, delay: 0.1 * idx }}
                   >
-                    <div className="bg-gradient-to-r from-white/[0.06] to-white/[0.02] border border-white/10 hover:border-white/25 rounded-2xl md:rounded-3xl p-6 md:p-10 transition-[border-color,box-shadow] duration-500 flex flex-col md:flex-row gap-5 md:gap-10 hover:shadow-[0_8px_32px_rgba(255,255,255,0.03)]">
-                      <div className="flex-shrink-0">
-                        <div className="w-14 h-14 rounded-full bg-gradient-to-br from-white via-[#e0e0e4] to-[#c8c8cc] text-black flex items-center justify-center text-xl font-bold tracking-tight shadow-lg shadow-white/10">
+                    <div className="flex flex-col gap-6 rounded-2xl border border-zinc-200 bg-white p-8 transition-all hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-200/40 md:flex-row md:gap-8">
+                      <div className="shrink-0">
+                        <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-zinc-200 bg-zinc-50 text-xl font-bold text-zinc-400">
                           {item.step}
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-2xl font-semibold tracking-tight mb-3 text-white group-hover:text-white transition-colors">{item.title}</h3>
-                        <p className="text-[#86868b] text-base md:text-lg font-medium leading-relaxed">
+                        <h3 className="mb-2 text-xl font-bold tracking-tight text-zinc-900">{item.title}</h3>
+                        <p className="leading-relaxed text-zinc-600">
                           {item.desc}
                         </p>
                       </div>
@@ -899,35 +813,30 @@ export function LandingPage() {
         </section>
 
         {/* Fabrication Collections */}
-        <section ref={capabilitiesRef} id="capabilities" className="relative overflow-hidden bg-[linear-gradient(155deg,#0d1218_0%,#1a2430_20%,#d0b171_44%,#edf2f6_60%,#c0cad4_78%,#18202a_100%)] py-16 md:py-32">
+        <section ref={capabilitiesRef} id="capabilities" className="relative border-t border-white/10 bg-[#12181f] py-24 md:py-32">
           <div ref={projectsRef} id="projects" className="absolute inset-x-0 top-20 h-px" />
-          <div className="absolute inset-0 pointer-events-none opacity-[0.04]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-          <div className="absolute -top-28 right-0 h-[26rem] w-[26rem] rounded-full bg-[radial-gradient(circle,rgba(255,255,255,0.6)_0%,rgba(255,255,255,0)_68%)] blur-3xl" />
-          <div className="absolute -bottom-28 left-0 h-[24rem] w-[24rem] rounded-full bg-[radial-gradient(circle,rgba(93,104,118,0.2)_0%,rgba(93,104,118,0)_70%)] blur-3xl" />
-          <div className="absolute left-0 right-0 top-0 h-px bg-gradient-to-r from-transparent via-[#9aa4b0] to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#9aa4b0] to-transparent" />
-
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <motion.div
-              initial={{ opacity: 0, y: 70 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 1.1, ease: SMOOTH_240 }}
-              className="mb-10 text-center md:mb-12 gpu-reveal"
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="mb-16 text-center md:mb-24"
             >
-              <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-[#f1d39d]/55 bg-[rgba(17,22,29,0.58)] px-4 py-1.5 text-[11px] font-bold uppercase tracking-[0.24em] text-[#f4dcae] shadow-[0_10px_28px_rgba(0,0,0,0.16)] backdrop-blur-md">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#c9a96f]/30 bg-[#c9a96f]/10 px-4 py-1.5 text-xs font-semibold tracking-widest text-[#c9a96f] uppercase">
                 <Sparkles className="h-3.5 w-3.5" />
                 Collections
               </div>
-              <h2 className="text-3xl font-bold tracking-tighter sm:text-4xl md:text-6xl">
-                <span className="text-[#1a212b] drop-shadow-[0_1px_0_rgba(255,255,255,0.2)]">Fabrication Collections</span>
+              <h2 className="mb-6 text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl">
+                Fabrication Collections
               </h2>
-              <p className="mx-auto mt-4 max-w-3xl text-sm font-medium leading-7 text-[#273544] md:text-lg">
-                Each collection is presented like a premium portfolio track, so the landing page sells capability instead of feeling like a plain brochure.
+              <p className="mx-auto max-w-2xl text-lg leading-relaxed text-white/60">
+                Explore our portfolio of premium installations. Each track represents a different sector and scale of our manufacturing capabilities.
               </p>
             </motion.div>
 
-            <div className="grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {SHOWCASE_COLLECTIONS.map((collection, index) => {
                   const isActiveCollection = index === activeCollectionIndex;
 
@@ -935,23 +844,24 @@ export function LandingPage() {
                     <motion.button
                       key={collection.id}
                       type="button"
-                      initial={{ opacity: 0, y: 60 }}
+                      initial={{ opacity: 0, y: 30 }}
                       whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true, amount: 0.12 }}
-                      transition={{ duration: 0.9, delay: index * 0.08, ease: SMOOTH_240 }}
+                      viewport={{ once: true }}
+                      transition={{ duration: 0.8, delay: index * 0.1 }}
                       onClick={() => {
                         setActiveCollectionIndex(index);
                         setActiveProjectIndex(0);
                       }}
-                      className={`group relative aspect-[16/11] overflow-hidden rounded-[2rem] border text-left shadow-[0_22px_50px_rgba(14,18,23,0.16)] transition-all duration-500 will-change-transform ${isActiveCollection ? 'border-[#f1f4f8]/70 ring-2 ring-white/55' : 'border-white/25 hover:-translate-y-1 hover:border-white/45'}`}
+                      className={`group relative aspect-[4/3] overflow-hidden rounded-2xl border text-left transition-all ${isActiveCollection ? 'border-[#c9a96f] ring-1 ring-[#c9a96f]/50' : 'border-white/10 hover:-translate-y-1 hover:border-white/30'}`}
                     >
-                      <img src={collection.coverImage} alt={collection.label} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-[1.03] transform-gpu will-change-transform" />
-                      <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(14,18,23,0.04)_0%,rgba(14,18,23,0.1)_45%,rgba(14,18,23,0.48)_100%)]" />
-                      <div className="absolute left-5 bottom-5 rounded-full border border-white/20 bg-black/20 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/92 backdrop-blur-sm md:left-6 md:bottom-6">
+                      <img src={collection.coverImage} alt={collection.label} className="absolute inset-0 h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-[#0f1419]/90 via-[#0f1419]/20 to-transparent" />
+                      
+                      <div className="absolute bottom-6 left-6 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-md">
                         {collection.label}
                       </div>
-                      <div className="absolute right-5 top-5 rounded-full border border-white/16 bg-white/10 p-2 text-white/85 backdrop-blur-sm md:right-6 md:top-6">
-                        <ArrowRight className={`h-4 w-4 transition-transform duration-300 ${isActiveCollection ? 'translate-x-1' : 'group-hover:translate-x-1'}`} />
+                      <div className={`absolute right-6 top-6 rounded-full border border-white/20 bg-black/40 p-2 text-white backdrop-blur-md transition-transform duration-300 ${isActiveCollection ? 'translate-x-1' : 'group-hover:translate-x-1'}`}>
+                        <ArrowRight className="h-4 w-4" />
                       </div>
                     </motion.button>
                   );
@@ -963,25 +873,25 @@ export function LandingPage() {
         <AnimatePresence initial={false}>
           {activeCollection && activeProject && (
             <motion.div
-              className="fixed inset-0 z-[9999] flex items-center justify-center p-3 sm:p-5 lg:p-8"
+              className="fixed inset-0 z-[9999] flex items-center justify-center p-4 sm:p-6 lg:p-8"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              transition={{ duration: 0.22, ease: SMOOTH_240 }}
+              transition={{ duration: 0.2 }}
               onClick={() => {
                 setActiveCollectionIndex(null);
                 setActiveProjectIndex(null);
               }}
             >
-              <motion.div className="absolute inset-0 bg-[rgba(6,8,12,0.78)] backdrop-blur-xl" />
+              <motion.div className="absolute inset-0 bg-black/80 backdrop-blur-sm" />
 
               <motion.div
-                initial={{ opacity: 0, y: 26, scale: 0.985 }}
+                initial={{ opacity: 0, y: 20, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: 18, scale: 0.985 }}
-                transition={{ duration: 0.3, ease: SMOOTH_240 }}
+                exit={{ opacity: 0, y: 20, scale: 0.95 }}
+                transition={{ duration: 0.3 }}
                 onClick={(event) => event.stopPropagation()}
-                className="modal-gallery-scroll relative z-10 flex max-h-[94vh] w-full max-w-[72rem] flex-col overflow-y-auto overflow-x-hidden rounded-[2rem] border border-white/10 bg-[radial-gradient(circle_at_top,rgba(88,97,110,0.12),transparent_30%),linear-gradient(160deg,#12161c_0%,#090b10_48%,#171d26_100%)] shadow-[0_36px_120px_rgba(0,0,0,0.56)] transform-gpu will-change-transform"
+                className="relative z-10 flex max-h-[96vh] w-full max-w-[72rem] lg:max-w-[80rem] flex-col overflow-y-auto overflow-x-hidden rounded-2xl border border-white/10 bg-[#0f1419] shadow-2xl"
               >
                 <button
                   type="button"
@@ -989,49 +899,48 @@ export function LandingPage() {
                     setActiveCollectionIndex(null);
                     setActiveProjectIndex(null);
                   }}
-                  className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/34 text-white/88 backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-black/50"
+                  className="absolute right-4 top-4 z-20 flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/50 text-white backdrop-blur-md transition-all hover:bg-black/80"
                   aria-label="Close image preview"
                 >
                   <X className="h-5 w-5" />
                 </button>
 
-                <div className="relative aspect-[16/8.6] overflow-hidden bg-black">
+                <div className="relative w-full bg-[#0f1419]">
                   <AnimatePresence mode="wait">
                     <motion.img
                       key={activeProject.image}
                       src={activeProject.image}
                       alt={activeProject.title}
-                      className="absolute inset-0 h-full w-full object-cover transform-gpu will-change-transform"
-                      initial={{ opacity: 0, scale: 1.018 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.992 }}
-                      transition={{ duration: 0.28, ease: SMOOTH_240 }}
+                      className="w-full h-auto max-h-[85vh] object-cover block"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.3 }}
                     />
                   </AnimatePresence>
-                  <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(9,11,16,0.04)_0%,rgba(9,11,16,0.08)_44%,rgba(9,11,16,0.8)_100%)]" />
-                  <div className="absolute left-4 top-4 rounded-full border border-white/16 bg-black/22 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.22em] text-white/88 backdrop-blur-md sm:left-6 sm:top-6">
+                  <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#0f1419] to-transparent pointer-events-none" />
+                  <div className="absolute left-6 top-6 rounded-full border border-white/20 bg-black/40 px-3 py-1.5 text-xs font-bold uppercase tracking-wider text-white backdrop-blur-md">
                     {activeCollection.label}
                   </div>
                 </div>
 
-                <div className="flex min-h-0 flex-1 flex-col bg-[linear-gradient(180deg,rgba(255,255,255,0.025)_0%,rgba(255,255,255,0.01)_100%)] p-4 sm:p-5 lg:p-6">
-                  <div className="mb-4 border-b border-white/8 pb-4">
-                    <h3 className="text-[1.7rem] font-bold tracking-tight text-white sm:text-[1.95rem] lg:text-[2.1rem]">{activeProject.title}</h3>
-                    <p className="mt-1.5 flex items-center gap-2 text-sm font-semibold text-[#adb7c3]">
+                <div className="flex flex-col bg-[#0f1419] p-6 lg:p-8">
+                  <div className="mb-6 border-b border-white/10 pb-6">
+                    <h3 className="text-2xl font-bold tracking-tight text-white lg:text-3xl">{activeProject.title}</h3>
+                    <p className="mt-2 flex items-center gap-2 text-sm font-medium text-[#c9a96f]">
                       <MapPin className="h-4 w-4" />
                       {activeProject.location}
                     </p>
-                    <p className="mt-3 max-w-4xl text-sm font-medium leading-7 text-[#d4dbe3] sm:text-[15px]">
+                    <p className="mt-4 max-w-4xl text-base leading-relaxed text-white/70">
                       {activeProject.description}
                     </p>
                   </div>
 
-                  <div className="min-h-0">
-                    <div className="mb-3 flex items-center justify-between gap-4">
-                      <p className="text-[11px] font-bold uppercase tracking-[0.22em] text-[#96a1ad]">Image carousel</p>
-                      <p className="text-xs font-medium text-[#7f8a97]">Select an image to update the preview.</p>
+                  <div>
+                    <div className="mb-4 flex items-center justify-between">
+                      <p className="text-xs font-bold uppercase tracking-wider text-white/40">Gallery</p>
                     </div>
-                    <div className="grid auto-cols-[78%] grid-flow-col gap-3 overflow-x-auto pb-1 snap-x snap-mandatory no-scrollbar sm:auto-cols-[33%] lg:auto-cols-[24%]">
+                    <div className="grid auto-cols-[80%] grid-flow-col gap-4 overflow-x-auto pb-4 snap-x snap-mandatory sm:auto-cols-[40%] lg:auto-cols-[25%]">
                       {activeCollection.projects.map((project, index) => {
                         const isSelected = activeProjectIndex === index;
 
@@ -1040,16 +949,15 @@ export function LandingPage() {
                             key={`${activeCollection.id}-${project.title}`}
                             type="button"
                             onClick={() => setActiveProjectIndex(index)}
-                            className={`group relative snap-start overflow-hidden rounded-[1.35rem] border text-left transition-all duration-300 transform-gpu will-change-transform ${isSelected ? 'scale-[0.985] border-[#f3f6fb]/60 bg-white/[0.06] shadow-[0_18px_42px_rgba(0,0,0,0.4)] ring-1 ring-white/18' : 'border-white/10 bg-white/[0.02] hover:-translate-y-0.5 hover:border-white/24 hover:bg-white/[0.04]'}`}
+                            className={`group relative snap-start overflow-hidden rounded-xl border text-left transition-all ${isSelected ? 'border-[#c9a96f] ring-1 ring-[#c9a96f]/50' : 'border-white/10 hover:border-white/30'}`}
                           >
-                            <div className="relative aspect-video overflow-hidden">
-                              <img src={project.image} alt={project.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105 transform-gpu will-change-transform" />
-                              <div className={`absolute inset-0 transition-all duration-300 ${isSelected ? 'bg-[linear-gradient(180deg,rgba(9,11,16,0.02)_0%,rgba(9,11,16,0.5)_100%)]' : 'bg-[linear-gradient(180deg,rgba(9,11,16,0.08)_0%,rgba(9,11,16,0.64)_100%)]'}`} />
-                              <div className={`absolute inset-0 ring-1 ring-inset transition-opacity duration-300 ${isSelected ? 'ring-white/30' : 'ring-white/0 group-hover:ring-white/12'}`} />
+                            <div className="relative aspect-video w-full overflow-hidden">
+                              <img src={project.image} alt={project.title} className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                              <div className={`absolute inset-0 transition-opacity ${isSelected ? 'bg-black/20' : 'bg-black/60 group-hover:bg-black/40'}`} />
                               <div className="absolute inset-x-0 bottom-0 p-3">
-                                <div className="flex items-end justify-between gap-3">
-                                  <p className="text-[11px] font-semibold leading-4 text-white/92">{project.title}</p>
-                                  <span className={`h-2.5 w-2.5 rounded-full transition-all duration-300 ${isSelected ? 'bg-white shadow-[0_0_12px_rgba(255,255,255,0.65)]' : 'bg-white/40'}`} />
+                                <div className="flex items-end justify-between gap-2">
+                                  <p className="line-clamp-1 text-xs font-medium text-white">{project.title}</p>
+                                  <span className={`h-2 w-2 shrink-0 rounded-full transition-colors ${isSelected ? 'bg-[#c9a96f]' : 'bg-white/30'}`} />
                                 </div>
                               </div>
                             </div>
@@ -1065,35 +973,21 @@ export function LandingPage() {
         </AnimatePresence>
 
         {/* Sectors We Serve */}
-        <section ref={sectorsRef} className="relative overflow-hidden bg-[linear-gradient(145deg,#121821_0%,#1f2a37_18%,#d5b573_42%,#e7edf2_62%,#ccd5dd_78%,#19212b_100%)] py-16 md:py-24">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
-          <div className="absolute bottom-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
-          {/* Blueprint grid decoration */}
-          <div className="absolute -bottom-4 -right-4 w-[180px] md:w-[240px] pointer-events-none hidden md:block">
-            <svg viewBox="0 0 240 240" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.06]">
-              <rect x="20" y="20" width="200" height="200" stroke="#5a5a60" strokeWidth="0.6" fill="none" />
-              <line x1="20" y1="120" x2="220" y2="120" stroke="#5a5a60" strokeWidth="0.4" strokeDasharray="4 3" />
-              <line x1="120" y1="20" x2="120" y2="220" stroke="#5a5a60" strokeWidth="0.4" strokeDasharray="4 3" />
-              <line x1="70" y1="20" x2="70" y2="220" stroke="#5a5a60" strokeWidth="0.3" strokeDasharray="3 3" />
-              <line x1="170" y1="20" x2="170" y2="220" stroke="#5a5a60" strokeWidth="0.3" strokeDasharray="3 3" />
-              <line x1="20" y1="70" x2="220" y2="70" stroke="#5a5a60" strokeWidth="0.3" strokeDasharray="3 3" />
-              <line x1="20" y1="170" x2="220" y2="170" stroke="#5a5a60" strokeWidth="0.3" strokeDasharray="3 3" />
-              <text x="120" y="235" textAnchor="middle" fill="#5a5a60" fontSize="7" fontFamily="monospace">GRID REF — 50mm</text>
-            </svg>
-          </div>
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+        <section ref={sectorsRef} className="relative border-t border-white/10 bg-[#0f1419] py-24 md:py-32">
+          
+          <div className="mx-auto max-w-7xl px-6 text-center lg:px-8">
             <motion.div
-              initial={{ opacity: 0, y: 70 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 1.1, ease: SMOOTH_240 }}
-              className="mb-16 gpu-reveal"
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="mb-16"
             >
-              <h2 className="mb-4 text-3xl font-bold tracking-tighter sm:text-4xl md:text-5xl"><span className="text-[#18202a] drop-shadow-[0_1px_0_rgba(255,255,255,0.18)]">Sectors We Serve</span></h2>
-              <p className="text-base font-medium text-[#253544] md:text-xl">Trusted by businesses across diverse industries in the food and hospitality sector.</p>
+              <h2 className="mb-4 text-3xl font-bold tracking-tight text-white sm:text-4xl md:text-5xl">Sectors We Serve</h2>
+              <p className="text-lg text-white/60">Trusted by businesses across diverse industries in the food and hospitality sector.</p>
             </motion.div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
               {[
                 { icon: Utensils, label: "Restaurants" },
                 { icon: ShoppingBag, label: "Shopping Malls" },
@@ -1106,18 +1000,16 @@ export function LandingPage() {
               ].map((sector, i) => (
                 <motion.div
                   key={sector.label}
-                  initial={{ opacity: 0, y: 50 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  whileHover={{ rotateX: -4, rotateY: 4, z: 15, scale: 1.04, transition: { type: 'spring', stiffness: 300, damping: 22 } }}
-                  viewport={{ once: true, amount: 0.1 }}
-                  transition={{ duration: 0.9, delay: 0.08 * i, ease: SMOOTH_240 }}
-                  style={{ transformPerspective: 600, transformStyle: 'preserve-3d' }}
-                  className="gpu-reveal flex flex-col items-center justify-center gap-3 rounded-2xl border border-white/26 bg-[linear-gradient(145deg,rgba(255,255,255,0.82)_0%,rgba(240,227,197,0.92)_24%,rgba(213,223,232,0.9)_62%,rgba(255,255,255,0.78)_100%)] p-5 shadow-[0_18px_40px_rgba(13,18,24,0.14)] transition-[border-color,box-shadow,transform] duration-300 group hover:-translate-y-1 hover:shadow-[0_24px_48px_rgba(13,18,24,0.2)] md:rounded-3xl md:p-8"
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.6, delay: 0.05 * i }}
+                  className="group flex flex-col items-center justify-center gap-4 rounded-2xl border border-white/10 bg-white/5 p-6 transition-colors hover:bg-white/[0.07] md:p-8"
                 >
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-[#e5cb95]/55 bg-[linear-gradient(145deg,#121821_0%,#243243_100%)] text-[#f3d79f] shadow-[0_10px_26px_rgba(10,14,20,0.2)] transition-all duration-300 group-hover:scale-105 group-hover:text-white md:h-12 md:w-12 md:rounded-2xl">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c9a96f]/10 text-[#c9a96f] transition-transform group-hover:scale-110">
                     <sector.icon className="h-6 w-6" />
                   </div>
-                  <span className="font-semibold text-sm tracking-tight text-[#1d1d1f] text-center">{sector.label}</span>
+                  <span className="text-sm font-semibold tracking-tight text-white">{sector.label}</span>
                 </motion.div>
               ))}
             </div>
@@ -1125,32 +1017,21 @@ export function LandingPage() {
         </section>
 
         {/* Testimonials */}
-        <section ref={testimonialsRef} id="testimonials" className="relative py-16 md:py-32 bg-gradient-to-br from-[#1a1a1c] via-[#0d0d0f] to-[#1d1d1f] text-white overflow-hidden">
-          <motion.div style={{ scale: testimonialsGlowScale }} className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[radial-gradient(circle,rgba(180,180,190,0.04)_0%,transparent_60%)] pointer-events-none will-change-transform" />
-          {/* Blueprint circle decoration */}
-          <div className="absolute bottom-8 left-8 w-[140px] md:w-[180px] pointer-events-none hidden lg:block">
-            <svg viewBox="0 0 180 180" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.04]">
-              <circle cx="90" cy="90" r="80" stroke="#a0a0a6" strokeWidth="0.6" />
-              <circle cx="90" cy="90" r="55" stroke="#a0a0a6" strokeWidth="0.4" />
-              <circle cx="90" cy="90" r="30" stroke="#a0a0a6" strokeWidth="0.5" />
-              <line x1="10" y1="90" x2="170" y2="90" stroke="#a0a0a6" strokeWidth="0.3" strokeDasharray="4 3" />
-              <line x1="90" y1="10" x2="90" y2="170" stroke="#a0a0a6" strokeWidth="0.3" strokeDasharray="4 3" />
-              <text x="90" y="178" textAnchor="middle" fill="#a0a0a6" fontSize="6" fontFamily="monospace">SEAL DETAIL</text>
-            </svg>
-          </div>
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+        <section ref={testimonialsRef} id="testimonials" style={{ background: 'radial-gradient(ellipse at 50% -20%, #fdfbf7 0%, #ffffff 50%)' }} className="relative border-t border-[#e2cba1]/30 py-24 md:py-32">
+          
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
             <motion.div
-              initial={{ opacity: 0, y: 70 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 1.1, ease: SMOOTH_240 }}
-              className="text-center mb-20 gpu-reveal"
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="text-center mb-16 md:mb-24"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-6xl font-bold tracking-tighter mb-4"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #7a7a80 0%, #e0e0e4 15%, #9a9a9f 30%, #d0d0d5 45%, #c8c8cd 55%, #8e8e93 65%, #e0e0e4 80%, #a8a8ad 90%, #c5c5ca 100%)' }}>What Our Clients Say</span></h2>
-              <p className="text-base sm:text-xl md:text-2xl font-medium text-[#86868b]">Hear from business owners who trust RMV for their fabrication needs.</p>
+              <h2 className="text-3xl font-bold tracking-tight text-zinc-900 sm:text-4xl md:text-5xl mb-4">What Our Clients Say</h2>
+              <p className="text-lg text-zinc-600">Hear from business owners who trust RMV for their fabrication needs.</p>
             </motion.div>
 
-            <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+            <div className="grid gap-6 sm:grid-cols-2 md:grid-cols-3">
               {[
                 { 
                   text: "RMV delivered our complete kitchen setup ahead of schedule. The stainless steel work is top quality and the team was very professional throughout the entire process.",
@@ -1170,24 +1051,22 @@ export function LandingPage() {
               ].map((testimonial, i) => (
                 <motion.div
                   key={i}
-                  initial={{ opacity: 0, y: 70 }}
+                  initial={{ opacity: 0, y: 30 }}
                   whileInView={{ opacity: 1, y: 0 }}
-                  whileHover={{ rotateX: -3, rotateY: 3, z: 20, transition: { type: 'spring', stiffness: 260, damping: 20 } }}
-                  viewport={{ once: true, amount: 0.1 }}
-                  transition={{ duration: 1, delay: 0.15 * i, ease: SMOOTH_240 }}
-                  style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                  className="gpu-reveal bg-gradient-to-br from-white/[0.07] to-white/[0.02] border border-white/10 rounded-2xl md:rounded-[2rem] p-6 md:p-10 flex flex-col justify-between hover:border-white/20 transition-[border-color] duration-500"
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.8, delay: 0.1 * i }}
+                  className="flex flex-col justify-between rounded-2xl border border-zinc-200 bg-zinc-50 p-8 transition-all hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-200/40"
                 >
                   <div>
-                    <Quote className="h-8 w-8 md:h-10 md:w-10 text-[#86868b] mb-4 md:mb-6 opacity-30 fill-current" />
-                    <p className="text-base md:text-lg text-white/90 leading-relaxed font-medium mb-8 md:mb-10">"{testimonial.text}"</p>
+                    <Quote className="mb-6 h-8 w-8 fill-[#c9a96f] text-[#c9a96f] opacity-50" />
+                    <p className="mb-8 leading-relaxed text-zinc-700">"{testimonial.text}"</p>
                   </div>
                   <div>
-                    <div className="flex gap-1 mb-4">
-                      {[1,2,3,4,5].map(star => <Star key={star} className="h-4 w-4 fill-white text-white" />)}
+                    <div className="mb-4 flex gap-1">
+                      {[1,2,3,4,5].map(star => <Star key={star} className="h-4 w-4 fill-[#c9a96f] text-[#c9a96f]" />)}
                     </div>
-                    <p className="font-semibold text-white tracking-tight mb-1">{testimonial.author}</p>
-                    <p className="text-[#86868b] text-sm">{testimonial.biz}</p>
+                    <p className="font-semibold text-zinc-900 tracking-tight">{testimonial.author}</p>
+                    <p className="text-sm text-zinc-500">{testimonial.biz}</p>
                   </div>
                 </motion.div>
               ))}
@@ -1196,68 +1075,54 @@ export function LandingPage() {
         </section>
 
         {/* Our Purpose */}
-        <section ref={purposeRef} className="relative overflow-hidden bg-[linear-gradient(165deg,#f2e3bb_0%,#e9edf2_18%,#d8e0e7_50%,#cfd7df_74%,#17202a_100%)] py-16 md:py-24">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.025]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-          {/* Blueprint dimension decoration */}
-          <div className="absolute top-6 left-6 w-[160px] md:w-[200px] pointer-events-none hidden md:block">
-            <svg viewBox="0 0 200 200" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.06]">
-              <path d="M10 190 L10 10 L190 10" stroke="#5a5a60" strokeWidth="0.8" fill="none" />
-              <line x1="10" y1="10" x2="190" y2="190" stroke="#5a5a60" strokeWidth="0.4" strokeDasharray="5 3" />
-              <circle cx="100" cy="100" r="40" stroke="#5a5a60" strokeWidth="0.6" />
-              <circle cx="100" cy="100" r="5" fill="#5a5a60" fillOpacity="0.08" stroke="#5a5a60" strokeWidth="0.5" />
-              <text x="100" y="195" textAnchor="middle" fill="#5a5a60" fontSize="7" fontFamily="monospace">DATUM A</text>
-            </svg>
-          </div>
-          <div className="max-w-7xl mx-auto px-6 lg:px-8 text-center">
+        <section ref={purposeRef} style={{ background: 'linear-gradient(180deg, #ffffff 0%, #fdfbf7 50%, #f7f1e1 100%)' }} className="relative border-t border-[#e2cba1]/30 py-24 md:py-32">
+          
+          <div className="mx-auto max-w-7xl px-6 lg:px-8 text-center">
             <motion.div
-              initial={{ opacity: 0, y: 70 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 1.1, ease: SMOOTH_240 }}
-              className="mb-16 gpu-reveal"
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
+              className="mb-16"
             >
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold tracking-tighter mb-4"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(145deg, #4a4a4e 0%, #1d1d1f 15%, #6e6e73 30%, #2d2d2f 45%, #8e8e93 55%, #3a3a3e 65%, #1d1d1f 80%, #5a5a5e 90%, #2d2d2f 100%)' }}>Our Purpose</span></h2>
-              <p className="text-base md:text-xl font-medium text-[#6e6e73]">What drives us every day in the workshop and on-site.</p>
+              <h2 className="text-3xl font-bold tracking-tight text-zinc-900 mb-4 sm:text-4xl md:text-5xl">Our Purpose</h2>
+              <p className="text-lg text-zinc-600">What drives us every day in the workshop and on-site.</p>
             </motion.div>
 
-            <div className="grid md:grid-cols-2 gap-6 text-left">
+            <div className="grid gap-6 md:grid-cols-2 text-left">
               <motion.div
-                initial={{ opacity: 0, y: 70 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ rotateX: -3, rotateY: 3, z: 20, transition: { type: 'spring', stiffness: 260, damping: 20 } }}
-                viewport={{ once: true, amount: 0.15 }}
-                transition={{ duration: 1, ease: SMOOTH_240 }}
-                style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                className="gpu-reveal rounded-2xl border border-white/24 bg-[linear-gradient(145deg,rgba(255,255,255,0.92)_0%,rgba(243,227,191,0.86)_20%,rgba(224,232,239,0.9)_64%,rgba(255,255,255,0.84)_100%)] p-7 shadow-[0_18px_40px_rgba(12,16,22,0.12)] transition-[border-color,background,box-shadow] duration-300 hover:shadow-[0_24px_48px_rgba(12,16,22,0.18)] md:rounded-[2rem] md:p-10"
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                className="rounded-2xl border border-zinc-200 bg-white p-8 transition-all hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-200/40 md:p-10"
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#e2c587] bg-[linear-gradient(145deg,#11171f_0%,#253140_100%)] text-[#f4d79f] shadow-[0_12px_28px_rgba(10,14,20,0.18)]">
-                    <Star className="h-5 w-5 text-[#f4d79f]" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c9a96f]/10 text-[#c9a96f]">
+                    <Star className="h-5 w-5" />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f]">Our Mission</h3>
+                  <h3 className="text-2xl font-bold tracking-tight text-zinc-900">Our Mission</h3>
                 </div>
-                <p className="text-[#6e6e73] text-base md:text-lg font-medium leading-relaxed">
+                <p className="text-zinc-600 leading-relaxed text-lg">
                   We are committed to delivering quality manufacturing services to our customers, fostering an environment of continuous growth for both our customers and investors.
                 </p>
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, y: 70 }}
+                initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
-                whileHover={{ rotateX: -3, rotateY: 3, z: 20, transition: { type: 'spring', stiffness: 260, damping: 20 } }}
-                viewport={{ once: true, amount: 0.15 }}
-                transition={{ duration: 1, delay: 0.2, ease: SMOOTH_240 }}
-                style={{ transformPerspective: 800, transformStyle: 'preserve-3d' }}
-                className="gpu-reveal rounded-2xl border border-white/24 bg-[linear-gradient(145deg,rgba(255,255,255,0.92)_0%,rgba(243,227,191,0.86)_20%,rgba(224,232,239,0.9)_64%,rgba(255,255,255,0.84)_100%)] p-7 shadow-[0_18px_40px_rgba(12,16,22,0.12)] transition-[border-color,background,box-shadow] duration-300 hover:shadow-[0_24px_48px_rgba(12,16,22,0.18)] md:rounded-[2rem] md:p-10"
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="rounded-2xl border border-zinc-200 bg-white p-8 transition-all hover:border-zinc-300 hover:shadow-lg hover:shadow-zinc-200/40 md:p-10"
               >
                 <div className="flex items-center gap-4 mb-6">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[#e2c587] bg-[linear-gradient(145deg,#11171f_0%,#253140_100%)] text-[#f4d79f] shadow-[0_12px_28px_rgba(10,14,20,0.18)]">
-                    <Layers className="h-5 w-5 text-[#f4d79f]" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-[#c9a96f]/10 text-[#c9a96f]">
+                    <Layers className="h-5 w-5" />
                   </div>
-                  <h3 className="text-xl md:text-2xl font-bold tracking-tight text-[#1d1d1f]">Our Vision</h3>
+                  <h3 className="text-2xl font-bold tracking-tight text-zinc-900">Our Vision</h3>
                 </div>
-                <p className="text-[#6e6e73] text-base md:text-lg font-medium leading-relaxed">
-                  Aspiring to be a world-class manufacturer, we aim to produce quality, custom, precision parts and fabrications that surpass customer expectations. Our success lies in providing on-time or early deliveries, affordable prices, and innovative ideas, services, and solutions that enhance our customers' products and businesses.
+                <p className="text-zinc-600 leading-relaxed text-lg">
+                  Aspiring to be a world-class manufacturer, we aim to produce quality, custom, precision parts and fabrications that surpass customer expectations. Our success lies in providing on-time or early deliveries, affordable prices, and innovative ideas.
                 </p>
               </motion.div>
             </div>
@@ -1265,48 +1130,26 @@ export function LandingPage() {
         </section>
 
         {/* Call to Action */}
-        <section ref={ctaRef} className="relative overflow-hidden bg-[linear-gradient(145deg,#081019_0%,#13202d_18%,#243445_42%,#d4b16e_70%,#f1dfb5_100%)] py-20 md:py-32">
-          <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-[#a0a0a6] to-transparent" />
-          {/* Blueprint corner decoration */}
-          <div className="absolute bottom-4 left-4 w-[160px] md:w-[220px] pointer-events-none hidden md:block">
-            <svg viewBox="0 0 220 220" fill="none" xmlns="http://www.w3.org/2000/svg" className="w-full h-auto opacity-[0.06]">
-              <path d="M20 200 L20 20 L200 20" stroke="#5a5a60" strokeWidth="0.8" fill="none" />
-              <path d="M40 180 L40 40 L180 40" stroke="#5a5a60" strokeWidth="0.5" strokeDasharray="5 3" fill="none" />
-              <circle cx="20" cy="20" r="10" stroke="#5a5a60" strokeWidth="0.6" />
-              <line x1="10" y1="210" x2="210" y2="210" stroke="#5a5a60" strokeWidth="0.6" />
-              <line x1="10" y1="207" x2="10" y2="213" stroke="#5a5a60" strokeWidth="0.6" />
-              <line x1="210" y1="207" x2="210" y2="213" stroke="#5a5a60" strokeWidth="0.6" />
-              <text x="110" y="220" textAnchor="middle" fill="#5a5a60" fontSize="7" fontFamily="monospace">200mm REF</text>
-            </svg>
-          </div>
-          <div className="max-w-4xl mx-auto px-6 text-center">
-            <div className="absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(244,213,151,0.22)_0%,rgba(155,177,202,0.12)_34%,transparent_66%)] blur-3xl" />
+        <section ref={ctaRef} className="relative border-t border-white/10 bg-[#12181f] py-24 md:py-32">
+          
+          <div className="mx-auto max-w-4xl px-6 text-center">
             <motion.div
-              initial={{ opacity: 0, y: 70 }}
+              initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true, amount: 0.15 }}
-              transition={{ duration: 1.1, ease: SMOOTH_240 }}
-              className="gpu-reveal"
+              viewport={{ once: true }}
+              transition={{ duration: 0.8 }}
             >
-              <h2 className="mb-4 text-3xl font-bold tracking-tighter sm:text-4xl md:mb-6 md:text-7xl"><span className="bg-clip-text text-transparent" style={{ backgroundImage: 'linear-gradient(135deg,#f8edd2 0%,#e5edf6 16%,#9eb6cf 34%,#f3d89d 58%,#fff4da 78%,#dce7f1 100%)' }}>Start your build.</span></h2>
-              <p className="mx-auto mb-8 max-w-2xl text-base font-medium text-[#e2e9f0] sm:text-xl md:mb-10 md:text-2xl">Access the portal to manage quotes, track projects, and communicate directly with the workshop.</p>
-              <div className="mx-auto mb-8 grid max-w-3xl gap-3 text-left sm:grid-cols-3 md:mb-10">
-                {[
-                  'Project milestones stay visible from approval to turnover.',
-                  'Collections and sectors now read like a premium fabrication catalog.',
-                  'The visual language aligns better with engineered stainless work.',
-                ].map((item) => (
-                  <div key={item} className="rounded-2xl border border-white/12 bg-white/8 px-4 py-3 text-sm font-medium leading-6 text-[#f0f4f8] backdrop-blur-md shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
-                    {item}
-                  </div>
-                ))}
-              </div>
+              <h2 className="mb-6 text-4xl font-bold tracking-tight text-white md:text-6xl">Start your build.</h2>
+              <p className="mx-auto mb-10 max-w-2xl text-lg text-white/60 md:text-xl">Access the portal to manage quotes, track projects, and communicate directly with the workshop.</p>
+              
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button asChild className="h-14 rounded-full bg-[linear-gradient(135deg,#e2b566_0%,#c38a37_48%,#f1d49a_100%)] px-8 text-base font-semibold text-[#11161c] transition-all duration-300 hover:scale-105 hover:brightness-105 hover:bg-[linear-gradient(135deg,#ebc274_0%,#cf943f_48%,#f5ddb0_100%)] hover:text-[#11161c] active:scale-95 md:h-16 md:px-10 shadow-[0_16px_40px_rgba(186,131,49,0.28)]">
-                  <Link to="/register" className="text-[#11161c] hover:text-[#11161c]">Create Account</Link>
+                <Button asChild style={{ background: 'linear-gradient(135deg, #c9a96f 0%, #e2cba1 50%, #b89552 100%)' }} className="group relative h-14 overflow-hidden rounded-md px-8 text-base font-bold text-zinc-950 shadow-[0_4px_24px_rgba(201,169,111,0.25)] transition-transform hover:scale-105 active:scale-95 md:px-10 border-none">
+                  <Link to="/register">
+                    <span className="relative z-10">Create Account</span>
+                  </Link>
                 </Button>
-                <Button asChild className="h-14 rounded-full border border-white/18 bg-white/10 px-8 text-base font-semibold text-[#f4f6f8] backdrop-blur-md transition-all duration-300 hover:scale-105 hover:bg-white/16 active:scale-95 md:h-16 md:px-10 shadow-[0_12px_30px_rgba(4,7,12,0.24)]">
-                  <a href="mailto:rmvstainless@gmail.com" className="text-[#f4f6f8]">Contact Sales</a>
+                <Button asChild style={{ background: 'linear-gradient(135deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0) 100%)' }} className="h-14 rounded-md border border-white/20 px-8 text-base font-semibold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.1)] transition-colors hover:bg-white/10 active:scale-95 md:px-10">
+                  <a href="mailto:rmvstainless@gmail.com">Contact Sales</a>
                 </Button>
               </div>
             </motion.div>
@@ -1314,63 +1157,62 @@ export function LandingPage() {
         </section>
 
         {/* Global Footer based on exact details */}
-        <footer id="contact" className="relative border-t border-white/10 bg-[linear-gradient(145deg,#0a1016_0%,#16202b_24%,#243445_48%,#101822_100%)] pt-16 pb-10 text-white md:pt-20 md:pb-12">
-          <div className="absolute inset-0 pointer-events-none opacity-[0.02]" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg viewBox=%270 0 256 256%27 xmlns=%27http://www.w3.org/2000/svg%27%3E%3Cfilter id=%27n%27%3E%3CfeTurbulence type=%27fractalNoise%27 baseFrequency=%270.9%27 numOctaves=%274%27 stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect width=%27100%25%27 height=%27100%25%27 filter=%27url(%23n)%27/%3E%3C/svg%3E")' }} />
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-12 mb-12 md:mb-16">
+        <footer id="contact" className="relative border-t border-white/10 bg-[#0f1419] py-16 text-white md:pb-12 md:pt-20">
+          <div className="mx-auto max-w-7xl px-6 lg:px-8">
+            <div className="mb-12 grid grid-cols-2 gap-8 md:mb-16 md:grid-cols-4 md:gap-12">
               
-              <div className="space-y-4 md:space-y-6 col-span-2 md:col-span-1">
+              <div className="col-span-2 space-y-6 md:col-span-1">
                 <div className="flex items-center gap-2">
-                  <BrandLogo className="h-7 w-7 text-[#f3f6f9] md:h-8 md:w-8" />
-                  <span className="text-base font-bold tracking-tight text-[#f3f6f9] md:text-lg">RMV Stainless Steel Fabrication</span>
+                  <BrandLogo className="h-7 w-7 text-white md:h-8 md:w-8" />
+                  <span className="text-base font-bold tracking-tight text-white md:text-lg">RMV Stainless Steel Fabrication</span>
                 </div>
-                <p className="pr-4 text-sm font-medium leading-relaxed text-[#c3ced8]">
+                <p className="pr-4 text-sm leading-relaxed text-white/60">
                   Precision stainless steel fabrication for residential and commercial industries.<br/>
                   Quality you can trust.
                 </p>
               </div>
 
               <div>
-                <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#f6d69e] md:mb-6">Services</h4>
-                <ul className="space-y-3 md:space-y-4">
+                <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-[#c9a96f] md:mb-6">Services</h4>
+                <ul className="space-y-4">
                   {['Kitchen SS Fabrication', 'Kitchen Remodeling', 'LPG Gas Pipeline', 'Fire Suppression', 'Exhaust Systems', 'Railings'].map(link => (
-                    <li key={link}><button type="button" onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">{link}</button></li>
+                    <li key={link}><button type="button" onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-white/60 transition-colors hover:text-white">{link}</button></li>
                   ))}
                 </ul>
               </div>
 
               <div>
-                <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#f6d69e] md:mb-6">Company</h4>
-                <ul className="space-y-3 md:space-y-4">
-                  <li><button type="button" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">About Us</button></li>
-                  <li><button type="button" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Projects</button></li>
-                  <li><button type="button" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Contact</button></li>
-                  <li><Link to="/privacy" className="text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Privacy Policy</Link></li>
-                  <li><Link to="/terms" className="text-sm font-medium text-[#c3ced8] transition-colors hover:text-white">Terms of Service</Link></li>
+                <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-[#c9a96f] md:mb-6">Company</h4>
+                <ul className="space-y-4">
+                  <li><button type="button" onClick={() => document.getElementById('about')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-white/60 transition-colors hover:text-white">About Us</button></li>
+                  <li><button type="button" onClick={() => document.getElementById('projects')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-white/60 transition-colors hover:text-white">Projects</button></li>
+                  <li><button type="button" onClick={() => document.getElementById('contact')?.scrollIntoView({ behavior: 'smooth' })} className="cursor-pointer text-sm font-medium text-white/60 transition-colors hover:text-white">Contact</button></li>
+                  <li><Link to="/privacy" className="text-sm font-medium text-white/60 transition-colors hover:text-white">Privacy Policy</Link></li>
+                  <li><Link to="/terms" className="text-sm font-medium text-white/60 transition-colors hover:text-white">Terms of Service</Link></li>
                 </ul>
               </div>
 
               <div className="col-span-2 md:col-span-1">
-                <h4 className="mb-4 text-sm font-bold uppercase tracking-widest text-[#f6d69e] md:mb-6">Contact</h4>
-                <ul className="space-y-3 md:space-y-4">
-                  <li className="flex items-start gap-3">
-                    <MapPin className="h-5 w-5 shrink-0 text-[#f6d69e]" />
-                    <span className="text-sm font-medium text-[#c3ced8]">BIR Village, Novaliches, Quezon City, Philippines 1118</span>
+                <h4 className="mb-4 text-xs font-bold uppercase tracking-widest text-[#c9a96f] md:mb-6">Contact</h4>
+                <ul className="space-y-4">
+                  <li className="flex items-start gap-3 text-white/60">
+                    <MapPin className="h-5 w-5 shrink-0 text-[#c9a96f]" />
+                    <span className="text-sm font-medium">BIR Village, Novaliches, Quezon City, Philippines 1118</span>
                   </li>
-                  <li className="flex items-start gap-3">
-                    <Phone className="h-5 w-5 shrink-0 text-[#f6d69e]" />
-                    <span className="text-sm font-medium text-[#c3ced8]">02-9506187<br/>0945 285 2974</span>
+                  <li className="flex items-start gap-3 text-white/60">
+                    <Phone className="h-5 w-5 shrink-0 text-[#c9a96f]" />
+                    <span className="text-sm font-medium">02-9506187<br/>0945 285 2974</span>
                   </li>
-                  <li className="flex items-center gap-3">
-                    <Mail className="h-5 w-5 shrink-0 text-[#f6d69e]" />
-                    <span className="text-sm font-medium text-[#c3ced8]">rmvstainless@gmail.com</span>
+                  <li className="flex items-center gap-3 text-white/60">
+                    <Mail className="h-5 w-5 shrink-0 text-[#c9a96f]" />
+                    <span className="text-sm font-medium">rmvstainless@gmail.com</span>
                   </li>
                 </ul>
               </div>
             </div>
 
             {/* Interactive Google Map */}
-            <div className="mb-10 h-[250px] w-full overflow-hidden rounded-2xl border border-white/12 shadow-[0_20px_48px_rgba(0,0,0,0.28)] transition-all duration-700 hover:grayscale-0 md:mb-12 md:h-[300px] md:rounded-3xl grayscale">
+            <div className="mb-10 h-[250px] w-full overflow-hidden rounded-2xl border border-white/10 md:mb-12 md:h-[300px]">
               <iframe
                 title="RMV Stainless Steel Fabrication Location"
                 src="https://maps.google.com/maps?q=Natanawan+Residence,+Dahlia+Ext,+Quezon+City,+Metro+Manila&z=17&output=embed"
@@ -1380,20 +1222,21 @@ export function LandingPage() {
                 allowFullScreen
                 loading="lazy"
                 referrerPolicy="no-referrer-when-downgrade"
+                className="grayscale transition-all duration-700 hover:grayscale-0"
               />
             </div>
 
             <div className="flex flex-col items-center justify-between gap-4 border-t border-white/10 pt-8 md:flex-row">
-              <p className="text-sm font-medium text-[#c3ced8]">
+              <p className="text-sm font-medium text-white/60">
                 &copy; {new Date().getFullYear()} RMV Stainless Steel Fabrication. All rights reserved.
               </p>
               <div className="flex items-center gap-6">
                 <div className="flex items-center gap-4 text-sm font-medium">
-                  <Link to="/privacy" className="text-[#c3ced8] transition-colors hover:text-white">Privacy Policy</Link>
-                  <Link to="/terms" className="text-[#c3ced8] transition-colors hover:text-white">Terms of Service</Link>
+                  <Link to="/privacy" className="text-white/60 transition-colors hover:text-white">Privacy Policy</Link>
+                  <Link to="/terms" className="text-white/60 transition-colors hover:text-white">Terms of Service</Link>
                 </div>
-                <div className="flex items-center gap-2 text-sm font-medium text-[#c3ced8]">
-                  <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)] animate-pulse" />
+                <div className="flex items-center gap-2 text-sm font-medium text-white/60">
+                  <div className="h-2 w-2 rounded-full bg-emerald-500 shadow-[0_0_8px_rgba(16,185,129,0.8)]" />
                   All Systems Operational
                 </div>
               </div>
@@ -1405,3 +1248,5 @@ export function LandingPage() {
     </LazyMotion>
   );
 }
+
+

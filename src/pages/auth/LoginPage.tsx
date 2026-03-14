@@ -64,7 +64,7 @@ export function LoginPage() {
   });
 
   const inputClasses =
-    'metal-input h-11 rounded-xl border-white/10 bg-white/[0.05] text-[#f5f7fa] placeholder:text-[#7f8895] shadow-none focus-visible:ring-[#d6b36a]/35';
+    'auth-input h-11 rounded-xl border-white/10 bg-white/[0.05] text-[#f5f7fa] placeholder:text-[#7f8895] shadow-none focus-visible:ring-[#d6b36a]/35';
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);

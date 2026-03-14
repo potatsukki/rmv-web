@@ -39,7 +39,7 @@ export function VerifyTwoFactorPage() {
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const otpInputClasses =
-    'metal-input h-12 w-10 rounded-lg border-white/10 bg-white/[0.05] text-center text-lg font-bold text-[#f5f7fa] shadow-none placeholder:text-[#7f8895] focus-visible:ring-[#d6b36a]/35 min-[360px]:w-11 sm:h-14 sm:w-12 sm:rounded-xl sm:text-xl';
+    'auth-input h-12 w-10 rounded-lg border-white/10 bg-white/[0.05] text-center text-lg font-bold text-[#f5f7fa] shadow-none placeholder:text-[#7f8895] focus-visible:ring-[#d6b36a]/35 min-[360px]:w-11 sm:h-14 sm:w-12 sm:rounded-xl sm:text-xl';
 
   useEffect(() => {
     if (!tempToken || !email) navigate('/login', { replace: true });

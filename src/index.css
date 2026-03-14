@@ -318,6 +318,31 @@ a, button, input, select, textarea,
   box-shadow: var(--metal-input-shadow);
 }
 
+/* Auth inputs must remain dark regardless of active app/system theme. */
+.auth-input {
+  color-scheme: dark;
+  background: linear-gradient(180deg, rgba(21, 28, 35, 0.96) 0%, rgba(15, 20, 26, 0.94) 100%) !important;
+  border: 1px solid rgba(89, 102, 114, 0.46) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04) !important;
+  color: #f5f7fa !important;
+  caret-color: #f5f7fa;
+}
+
+.auth-input::placeholder {
+  color: #7f8895 !important;
+  opacity: 1;
+}
+
+.auth-input:-webkit-autofill,
+.auth-input:-webkit-autofill:hover,
+.auth-input:-webkit-autofill:focus,
+.auth-input:-webkit-autofill:active {
+  -webkit-text-fill-color: #f5f7fa !important;
+  -webkit-box-shadow: 0 0 0 1000px #10151b inset !important;
+  box-shadow: 0 0 0 1000px #10151b inset !important;
+  transition: background-color 9999s ease-out 0s;
+}
+
 @utility metal-divider {
   border-color: var(--metal-divider-color);
 }
