@@ -43,6 +43,7 @@ function isDateDisabled(day: Date): boolean {
 }
 
 const bookingSchema = z.object({
+  type: z.literal('office'),
   date: z.string().min(1, 'Please select a date'),
   slotCode: z.string().min(1, 'Please select a time slot'),
   purpose: z.string().max(500).optional(),
@@ -63,6 +64,7 @@ export function BookAppointmentPage() {
   } = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
+      type: 'office',
       date: format(getNextValidBookingDate(), 'yyyy-MM-dd'),
     },
   });
@@ -77,8 +79,9 @@ export function BookAppointmentPage() {
 
   const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(
     selectedDate,
-    'office', // always office
+    'office',
   );
+
   const activeAppointmentsQuery = useAppointments();
 
   const requestMutation = useRequestAppointment();
@@ -116,12 +119,17 @@ export function BookAppointmentPage() {
 
   const canProceed = useMemo(() => {
     const stepKey = steps[currentStep]?.key;
-    if (stepKey === 'service') return true; // service type has default, notes optional
+    if (stepKey === 'service') return true;
     if (stepKey === 'date') return !!selectedDate && !!selectedSlot;
     if (stepKey === 'reason') return true;
     if (stepKey === 'review') return true;
     return false;
-  }, [currentStep, steps, selectedDate, selectedSlot]);
+  }, [
+    currentStep,
+    steps,
+    selectedDate,
+    selectedSlot,
+  ]);
 
   const handleNext = () => {
     if (currentStep < steps.length - 1) setCurrentStep((s) => s + 1);
@@ -213,12 +221,12 @@ export function BookAppointmentPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
-            {rescheduleId ? 'Reschedule Appointment' : 'Book Office Consultation'}
+            {rescheduleId ? 'Reschedule Appointment' : 'Book Appointment'}
           </h1>
           <p className="text-[#6e6e73] text-sm dark:text-slate-400">
             {rescheduleId
               ? 'Choose a new date and time'
-              : 'Schedule a consultation at our Quezon City office'}
+              : 'Book your office consultation first'}
           </p>
         </div>
       </div>
@@ -257,24 +265,24 @@ export function BookAppointmentPage() {
       </div>
 
       {!rescheduleId && activeAppointment && (
-        <Card className="rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm">
+        <Card className="rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm dark:border-red-900/40 dark:bg-[linear-gradient(135deg,rgba(40,20,25,0.9)_0%,rgba(25,12,15,0.85)_100%)]">
           <CardContent className="space-y-4 p-5">
             <div className="flex items-start gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-white shadow-sm">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-[#1d1d1f] text-white shadow-sm dark:bg-white/10 dark:text-red-200">
                 <Calendar className="h-4 w-4" />
               </div>
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-[#1d1d1f]">You already have an active appointment</p>
-                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#b42318] ring-1 ring-[#f3c7cf]">
+                  <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">You already have an active appointment</p>
+                  <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#b42318] ring-1 ring-[#f3c7cf] dark:bg-red-500/20 dark:text-red-200 dark:ring-red-500/30">
                     Booking blocked
                   </span>
                 </div>
-                <p className="text-sm leading-6 text-[#6e6e73]">
+                <p className="text-sm leading-6 text-[#6e6e73] dark:text-slate-300">
                   View or manage your current appointment before starting a new booking. This saves you from choosing dates and slots you cannot submit anyway.
                 </p>
-                <p className="text-xs text-[#86868b]">
-                  Current status: <span className="font-semibold capitalize text-[#1d1d1f]">{activeAppointment.status.replace(/_/g, ' ')}</span>
+                <p className="text-xs text-[#86868b] dark:text-slate-400">
+                  Current status: <span className="font-semibold capitalize text-[#1d1d1f] dark:text-slate-100">{activeAppointment.status.replace(/_/g, ' ')}</span>
                 </p>
               </div>
             </div>
@@ -282,7 +290,7 @@ export function BookAppointmentPage() {
               <Button
                 asChild
                 variant="outline"
-                className="h-11 rounded-xl border-white/80 bg-white/80 text-[#3a3a3e] shadow-sm hover:bg-white"
+                className="h-11 rounded-xl border-white/80 bg-white/80 text-[#3a3a3e] shadow-sm hover:bg-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200 dark:hover:bg-red-500/20 dark:hover:text-red-100"
               >
                 <button type="button" onClick={() => navigate(`/appointments/${activeAppointment._id}`)}>
                   View Active Appointment
@@ -290,7 +298,7 @@ export function BookAppointmentPage() {
               </Button>
               <Button
                 asChild
-                className="h-11 rounded-xl bg-[#1d1d1f] text-white shadow-sm hover:bg-[#2d2d2f]"
+                className="h-11 rounded-xl bg-[#1d1d1f] text-white shadow-sm hover:bg-[#2d2d2f] dark:bg-red-900/80 dark:text-red-50 dark:hover:bg-red-800"
               >
                 <button type="button" onClick={() => navigate(`/appointments/book?reschedule=${activeAppointment._id}`)}>
                   Reschedule Instead
@@ -313,6 +321,14 @@ export function BookAppointmentPage() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
+                <div className="space-y-2.5">
+                  <label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Visit Type</label>
+                  <div className="rounded-xl border border-[#c8c8cd] bg-[#f8f9fb] p-3 text-left text-[#1d1d1f] ring-1 ring-[#d7dbe0] dark:border-white/15 dark:bg-[#0f1722] dark:text-slate-100 dark:ring-white/10">
+                    <p className="text-sm font-semibold">Office Consultation</p>
+                    <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-300">Meet at our office first. Ocular scheduling is handled after consultation.</p>
+                  </div>
+                </div>
+
                 <ServiceTypePicker
                   value={serviceType}
                   customValue={serviceTypeCustom}
@@ -329,12 +345,13 @@ export function BookAppointmentPage() {
                     value={notes}
                     onChange={(e) => setNotes(e.target.value)}
                     placeholder="Describe what you're looking for (e.g., stainless steel railings for 2nd floor balcony, kitchen countertop with L-shape)..."
-                    className="min-h-[100px] rounded-xl border-[#d2d2d7] focus:border-[#c8c8cd] focus:ring-[#6e6e73] dark:border-white/15 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#d6b36a]/35 dark:focus:ring-[#d6b36a]/25"
+                    className="min-h-[100px] rounded-xl border-[#d2d2d7] focus:border-[#9aa3ad] focus:ring-[#9aa3ad]/40 dark:border-white/15 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#7f96b3] dark:focus:ring-[#7f96b3]/30"
                   />
                   <p className="text-xs text-[#86868b] dark:text-slate-500">
                     Our sales staff will discuss all the details during your office consultation.
                   </p>
                 </div>
+
               </CardContent>
             </Card>
           </div>
@@ -352,7 +369,7 @@ export function BookAppointmentPage() {
               </CardHeader>
               <CardContent>
                 <div className="mb-4 flex items-start gap-3 rounded-xl border border-[#d2d2d7]/50 bg-[#f0f0f5]/70 p-3.5 dark:border-white/10 dark:bg-white/[0.04]">
-                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6e6e73] dark:text-[#d6b36a]" />
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6e6e73] dark:text-slate-300" />
                   <div className="space-y-0.5 text-sm text-[#3a3a3e] dark:text-slate-300">
                     <p className="font-medium">Scheduling Rules</p>
                     <ul className="list-inside list-disc space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
@@ -499,7 +516,7 @@ export function BookAppointmentPage() {
               <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3.5 dark:border-sky-500/20 dark:bg-sky-500/10">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-sky-300" />
                 <p className="text-sm text-blue-800 dark:text-sky-100/90">
-                  After the consultation, our agent will schedule an ocular site visit if needed. Our sales staff will take measurements at your location.
+                  After the consultation, our team may schedule an ocular site visit if needed. Our sales staff will take measurements at your location.
                 </p>
               </div>
             </CardContent>

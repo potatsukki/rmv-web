@@ -8,6 +8,10 @@ describe('auth routing guards', () => {
       path: '/appointments/create-for-customer',
       redirectReason: null,
     });
+    expect(resolvePostLoginPath('/appointments/create-for-customer', [Role.SALES_STAFF])).toEqual({
+      path: '/appointments/create-for-customer',
+      redirectReason: null,
+    });
   });
 
   it('redirects role-exclusive routes to dashboard when the new role cannot access them', () => {

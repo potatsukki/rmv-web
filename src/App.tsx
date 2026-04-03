@@ -203,7 +203,7 @@ const UnauthorizedPage = lazy(() =>
 const REPORT_ROLES = [Role.CASHIER, Role.ADMIN];
 const ADMIN_ROLES = [Role.ADMIN];
 const SLOT_MGMT_ROLES = [Role.ADMIN, Role.APPOINTMENT_AGENT];
-const AGENT_ROLES = [Role.APPOINTMENT_AGENT];
+const AGENT_ROLES = [Role.APPOINTMENT_AGENT, Role.SALES_STAFF];
 
 export default function App() {
   const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();

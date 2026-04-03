@@ -64,7 +64,7 @@ export function FabricationTab({
   canManageUpdates,
   showAssignmentNotice,
 }: FabricationTabProps) {
-  const { user } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const queryClient = useQueryClient();
@@ -97,7 +97,8 @@ export function FabricationTab({
   // ── Live updates via WebSocket ──
   useEffect(() => {
     if (!projectId) return;
-    const sock = connectSocket();
+    const sock = connectSocket(accessToken);
+    if (!sock) return;
 
     const handleFabricationUpdate = (data: { projectId: string }) => {
       if (data.projectId !== projectId) return;
@@ -112,7 +113,7 @@ export function FabricationTab({
     return () => {
       sock.off('fabrication:update', handleFabricationUpdate);
     };
-  }, [projectId, queryClient]);
+  }, [projectId, queryClient, accessToken]);
 
   const addUpdateMutation = useCreateFabricationUpdate();
   const updateMutation = useUpdateFabricationUpdate(projectId);

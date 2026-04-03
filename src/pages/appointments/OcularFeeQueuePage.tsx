@@ -245,7 +245,7 @@ export function OcularFeeQueuePage() {
         open={!!verifyId}
         onOpenChange={(open) => !open && setVerifyId('')}
         title="Verify Ocular Fee"
-        description="Confirm that this customer's ocular fee payment has been received. The appointment agent will then be able to assign a sales staff."
+        description="Confirm that this customer's ocular fee payment has been received. The assigned sales staff can then finalize and proceed with the ocular visit."
         confirmLabel="Verify"
         isLoading={verifyMutation.isPending}
         onConfirm={handleVerify}

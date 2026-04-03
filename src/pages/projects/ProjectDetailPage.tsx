@@ -973,18 +973,26 @@ export function ProjectDetailPage() {
       {isEngineer && (
         <>
           {canEngineerClaimProject && (
-            <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-[color:var(--color-border)] bg-[color:var(--color-muted)]/80">
-              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-3">
+            <Card className={cn(
+              'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x transition-all duration-300',
+              isDark ? 'border-sky-900/60 bg-[linear-gradient(135deg,rgba(12,25,45,0.9)_0%,rgba(10,20,35,0.85)_100%)] shadow-md shadow-sky-900/10' : 'border-sky-200 bg-sky-50/80'
+            )}>
+              <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
                 <div className="flex items-start gap-3 flex-1 min-w-0">
-                  <UserPlus className="h-5 w-5 text-[var(--color-card-foreground)] shrink-0 mt-0.5 sm:mt-0" />
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-semibold text-[var(--color-card-foreground)]">This project needs an engineer</p>
-                    <p className="text-xs text-[var(--text-metal-color)]">Claim it to start working on the blueprint.</p>
+                  <div className={cn("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl shadow-sm", isDark ? "bg-sky-500/10 text-sky-300" : "bg-sky-100 text-sky-700")}>
+                    <UserPlus className="h-5 w-5" />
+                  </div>
+                  <div className="flex-1 min-w-0 mt-0.5">
+                    <p className={cn("text-sm font-semibold", isDark ? "text-sky-50" : "text-sky-950")}>This project needs an engineer</p>
+                    <p className={cn("text-xs mt-0.5", isDark ? "text-sky-200/80" : "text-sky-700")}>Claim it to start working on the blueprint.</p>
                   </div>
                 </div>
                 <Button
                   size="sm"
-                  className="bg-[var(--color-card-foreground)] hover:opacity-90 text-[var(--color-card)] w-full sm:w-auto"
+                  className={cn(
+                    "w-full sm:w-auto text-white shadow-sm transition-all border-0",
+                    isDark ? "bg-[linear-gradient(180deg,#0ea5e9_0%,#0284c7_100%)] hover:bg-[linear-gradient(180deg,#38bdf8_0%,#0ea5e9_100%)]" : "bg-[linear-gradient(180deg,#0284c7_0%,#0369a1_100%)] hover:bg-[linear-gradient(180deg,#0369a1_0%,#075985_100%)]"
+                  )}
                   onClick={handleClaimProject}
                   disabled={assignEngineers.isPending}
                 >

@@ -42,7 +42,7 @@ import { Role, AppointmentStatus } from '@/lib/constants';
 import { SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { Suspense, lazy, useState, useEffect } from 'react';
 import { api } from '@/lib/api';
-import type { ApiResponse, Appointment } from '@/lib/types';
+import type { ApiResponse } from '@/lib/types';
 
 const LazyLocationPicker = lazy(() =>
   import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
@@ -105,10 +105,7 @@ export function AppointmentDetailPage() {
   const [refundOpen, setRefundOpen] = useState(false);
   const [refundReason, setRefundReason] = useState('');
   const [selectedSalesStaff, setSelectedSalesStaff] = useState('');
-  const [finalizeSalesStaff, setFinalizeSalesStaff] = useState('');
   const [salesStaffList, setSalesStaffList] = useState<{ _id: string; firstName: string; lastName: string }[]>([]);
-  const [previousStaff, setPreviousStaff] = useState<{ _id: string; name: string } | null>(null);
-  const [previousStaffLoading, setPreviousStaffLoading] = useState(false);
 
   // Customer refund request form state
   const [customerRefundOpen, setCustomerRefundOpen] = useState(false);
@@ -119,6 +116,7 @@ export function AppointmentDetailPage() {
   const [customerRefundBankName, setCustomerRefundBankName] = useState('');
 
   const canConfirmAppointment = !!(isAgent || isAdmin);
+  const canFinalizeOcular = !!isSalesStaff;
   const canCompleteAppointment = !!user?.roles.includes(Role.SALES_STAFF);
   const isStaff = user?.roles.some((r) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(r),
@@ -168,7 +166,7 @@ export function AppointmentDetailPage() {
     return () => { cancelled = true; clearTimeout(timer); };
   }, [customerLocationPin]);
 
-  // Fetch sales staff list when the agent views a requested appointment
+  // Fetch sales staff list for consultation assignment
   useEffect(() => {
     if (canConfirmAppointment) {
       api.get<ApiResponse<{ _id: string; firstName: string; lastName: string }[]>>('/users/sales-staff')
@@ -176,23 +174,6 @@ export function AppointmentDetailPage() {
         .catch(() => {});
     }
   }, [canConfirmAppointment]);
-
-  // Auto-detect previous consultation's sales staff for ocular appointments
-  useEffect(() => {
-    if (!canConfirmAppointment || !appt || appt.type !== 'ocular') return;
-    setPreviousStaffLoading(true);
-    api.get<ApiResponse<{ items: Appointment[] }>>('/appointments', { params: { customerId: appt.customerId, type: 'office', limit: 5, sortBy: 'date', sortOrder: 'desc' } })
-      .then(res => {
-        const items = res.data.data?.items || [];
-        const found = items.find((a: Appointment) => a.salesStaffId && a.salesStaffName);
-        if (found?.salesStaffId && found?.salesStaffName) {
-          setPreviousStaff({ _id: found.salesStaffId, name: found.salesStaffName });
-          setFinalizeSalesStaff(found.salesStaffId);
-        }
-      })
-      .catch(() => {})
-      .finally(() => setPreviousStaffLoading(false));
-  }, [canConfirmAppointment, appt?.customerId, appt?.type]);
 
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
@@ -357,9 +338,9 @@ export function AppointmentDetailPage() {
               <p className="mt-0.5 text-xs text-[#69737d] dark:text-slate-400">
                 {isCustomer
                   ? appt.type === 'ocular' && !appt.customerLocation
-                    ? 'Please submit your site location below so the agent can finalize your appointment.'
+                    ? 'Please submit your site location below so your assigned sales staff can finalize your appointment.'
                     : appt.type === 'ocular' && !appt.ocularFeePaid
-                    ? 'Please pay the ocular visit fee to proceed. An agent will confirm your appointment once payment is received.'
+                    ? 'Please pay the ocular visit fee to proceed. Your assigned sales staff will finalize your appointment once payment is received.'
                     : 'Your appointment request has been received. An agent will review and confirm it shortly.'
                   : 'Review this appointment request and assign a sales staff member to confirm it.'}
               </p>
@@ -845,7 +826,7 @@ export function AppointmentDetailPage() {
                     if (redirect) {
                       navigate(`/appointments/${id}/pay-ocular-fee`);
                     } else {
-                      toast.success('Location submitted! The agent will finalize your appointment.');
+                      toast.success('Location submitted! Your assigned sales staff will finalize your appointment.');
                     }
                   } catch (err) {
                     toast.error(extractErrorMessage(err, 'Failed to submit location'));
@@ -890,7 +871,7 @@ export function AppointmentDetailPage() {
         </Card>
       )}
 
-      {/* Customer: Waiting for agent finalization (within NCR — no payment needed) */}
+      {/* Customer: Waiting for sales staff finalization (within NCR — no payment needed) */}
       {isCustomer && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (appt.ocularFeeBreakdown?.isWithinNCR || appt.ocularFeePaid) && (
         <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 shadow-sm lg:col-span-2">
           <CardContent className="py-5">
@@ -902,7 +883,7 @@ export function AppointmentDetailPage() {
                 <p className="text-sm font-semibold text-emerald-900">Location Submitted</p>
                 <p className="text-xs text-emerald-700 mt-0.5">
                   {appt.address || 'Your location has been submitted.'}
-                  {' '}Waiting for our agent to finalize your appointment.
+                  {' '}Waiting for your assigned sales staff to finalize your appointment.
                 </p>
               </div>
             </div>
@@ -1121,15 +1102,15 @@ export function AppointmentDetailPage() {
         </Card>
       )}
 
-      {/* Agent: Finalize Ocular (for REQUESTED oculars where customer has submitted location) */}
-      {canConfirmAppointment && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (
+      {/* Sales Staff: Finalize Ocular (for REQUESTED oculars where customer has submitted location) */}
+      {canFinalizeOcular && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (
         <Card className="rounded-xl border-emerald-200 bg-emerald-50 shadow-sm dark:border-[#295447] dark:bg-[linear-gradient(180deg,rgba(10,28,24,0.96)_0%,rgba(8,19,19,0.98)_100%)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-emerald-900 dark:text-emerald-200">Finalize Ocular Visit</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-sm text-emerald-800 dark:text-emerald-100/85">
-              Customer has submitted their location. {previousStaff ? 'The sales staff from the previous consultation will be assigned.' : 'Assign a sales staff member to finalize this ocular appointment.'}
+              Customer has submitted their location. Finalize this ocular visit to proceed with your on-site workflow.
             </p>
             {appt.address && (
               <div className="rounded-lg border border-emerald-200 bg-white/70 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
@@ -1143,48 +1124,17 @@ export function AppointmentDetailPage() {
                 <p className="mt-0.5 text-sm font-semibold text-emerald-900 dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
               </div>
             )}
-            {previousStaffLoading ? (
-              <div className="flex items-center gap-2 text-sm text-emerald-700 dark:text-emerald-200">
-                <Loader2 className="h-4 w-4 animate-spin" /> Looking up previous sales staff...
-              </div>
-            ) : previousStaff ? (
-              <div className="rounded-lg border border-emerald-200 bg-white/70 p-3 dark:border-emerald-500/25 dark:bg-emerald-500/10">
-                <p className="text-xs font-medium text-emerald-700 dark:text-emerald-200">Assigned Sales Staff (from consultation)</p>
-                <p className="mt-0.5 text-sm font-semibold text-emerald-900 dark:text-slate-100">{previousStaff.name}</p>
-              </div>
-            ) : salesStaffList.length > 0 ? (
-              <div>
-                <label className="mb-2 block text-[13px] font-medium text-emerald-800 dark:text-emerald-200">Assign Sales Staff</label>
-                <Select value={finalizeSalesStaff} onValueChange={setFinalizeSalesStaff}>
-                  <SelectTrigger className="h-12 w-full rounded-xl border-emerald-300 bg-white px-4 text-base text-[#1d1d1f] focus:ring-1 focus:ring-emerald-300 dark:border-emerald-700/60 dark:bg-[#1c2a42] dark:text-slate-100 dark:focus:ring-emerald-500/20">
-                    <SelectValue placeholder="Choose a sales staff member..." />
-                  </SelectTrigger>
-                  <SelectContent className="max-w-[calc(100vw-3rem)] rounded-xl border-[#d2d2d7] bg-white shadow-lg dark:border-[#2f4563] dark:bg-[#1c2a42]">
-                    {salesStaffList.map((s) => (
-                      <SelectItem key={s._id} value={s._id} className="cursor-pointer rounded-lg py-2.5 text-sm text-[#1d1d1f] dark:text-slate-100 dark:data-[highlighted]:bg-[#243754] dark:data-[highlighted]:text-white">
-                        {s.firstName} {s.lastName}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-            ) : null}
             <Button
               variant="prominent"
               onClick={async () => {
-                const staffId = previousStaff?._id || finalizeSalesStaff;
-                if (!staffId && !previousStaff) {
-                  toast.error('Please select a sales staff member');
-                  return;
-                }
                 try {
-                  await finalizeMutation.mutateAsync({ id: id!, ...(staffId ? { salesStaffId: staffId } : {}) });
-                  toast.success('Ocular visit finalized! The customer will be asked to pay the ocular fee, then sales staff can proceed with the site visit.', { duration: 5000 });
+                  await finalizeMutation.mutateAsync({ id: id! });
+                  toast.success('Ocular visit finalized. You can now proceed with the site visit workflow.', { duration: 5000 });
                 } catch (err) {
                   toast.error(extractErrorMessage(err, 'Failed to finalize ocular'));
                 }
               }}
-              disabled={finalizeMutation.isPending || (!previousStaff && !finalizeSalesStaff) || previousStaffLoading}
+              disabled={finalizeMutation.isPending}
               className="h-11 w-full rounded-xl text-sm font-semibold sm:w-auto"
             >
               {finalizeMutation.isPending ? (
@@ -1332,8 +1282,8 @@ export function AppointmentDetailPage() {
           </>
         )}
 
-        {/* Agent: Schedule Ocular Visit (for completed office appointments) */}
-        {canConfirmAppointment && appt.status === AppointmentStatus.COMPLETED && appt.type === 'office' && (() => {
+        {/* Sales Staff: Schedule Ocular Visit (for completed office appointments) */}
+        {isSalesStaff && appt.status === AppointmentStatus.COMPLETED && appt.type === 'office' && (() => {
           const consultationReport = visitReports?.find(r => r.visitType === 'consultation');
           const recDate = extractLocalDateValue(consultationReport?.recommendedOcularDate);
           const recSlot = consultationReport?.recommendedOcularSlot ?? '';

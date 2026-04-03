@@ -24,11 +24,12 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAvailableSlots, useAgentCreateAppointment, useAgentCreateOcular } from '@/hooks/useAppointments';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
-import { AppointmentType, SLOT_CODES } from '@/lib/constants';
+import { AppointmentType, Role, SLOT_CODES } from '@/lib/constants';
 import type { MapPoint } from '@/lib/maps';
 import { cn } from '@/lib/utils';
 import { api } from '@/lib/api';
 import type { ApiResponse } from '@/lib/types';
+import { useAuthStore } from '@/stores/auth.store';
 
 /* ── Helpers ── */
 
@@ -56,11 +57,13 @@ type BookingForm = z.infer<typeof bookingSchema>;
 
 export function AgentBookAppointmentPage() {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const [searchParams] = useSearchParams();
   const ocularForCustomerId = searchParams.get('ocularFor');
   const recommendedDate = searchParams.get('recommendedDate');
   const recommendedSlot = searchParams.get('recommendedSlot');
   const isOcularMode = !!ocularForCustomerId;
+  const canBookOcularAsStaff = !!user?.roles?.includes(Role.SALES_STAFF);
 
   /* ── Step 1: Customer Search ── */
   const [searchTerm, setSearchTerm] = useState('');
@@ -88,7 +91,7 @@ export function AgentBookAppointmentPage() {
   } = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      type: isOcularMode ? 'ocular' : 'office',
+      type: isOcularMode && canBookOcularAsStaff ? 'ocular' : 'office',
       date: defaultDate,
       ...(recommendedSlot && { slotCode: recommendedSlot }),
     },
@@ -126,6 +129,12 @@ export function AgentBookAppointmentPage() {
     }
   }, [isOcularBooking]);
 
+  useEffect(() => {
+    if (!canBookOcularAsStaff && selectedType === AppointmentType.OCULAR) {
+      setValue('type', AppointmentType.OFFICE);
+    }
+  }, [canBookOcularAsStaff, selectedType, setValue]);
+
   const onSubmit = async (data: BookingForm) => {
     if (!selectedCustomer) {
       toast.error('Please select a customer first.');
@@ -134,6 +143,11 @@ export function AgentBookAppointmentPage() {
 
     try {
       if (data.type === AppointmentType.OCULAR) {
+        if (!canBookOcularAsStaff) {
+          toast.error('Only sales staff can schedule ocular visits after consultation.');
+          return;
+        }
+
         // New flow: create ocular without location, customer provides later
         await createOcularMutation.mutateAsync({
           customerId: selectedCustomer._id,
@@ -374,12 +388,16 @@ export function AgentBookAppointmentPage() {
                     <button
                       key={opt.value}
                       type="button"
+                      disabled={opt.value === AppointmentType.OCULAR && !canBookOcularAsStaff}
                       onClick={() => setValue('type', opt.value)}
                       className={cn(
                         'rounded-xl border-2 p-4 text-left transition-all',
                         selectedType === opt.value
                           ? 'border-[#86868b] bg-[#f5f5f7]/50 ring-2 ring-[#d2d2d7] dark:border-[#5b7699] dark:bg-[#162235] dark:ring-[#4f7097]/30'
                           : 'border-[#d2d2d7] hover:border-[#c8c8cd] dark:border-[#2f4563] dark:bg-white/[0.02] dark:hover:border-[#456182]',
+                        opt.value === AppointmentType.OCULAR && !canBookOcularAsStaff
+                          ? 'cursor-not-allowed opacity-60 hover:border-[#d2d2d7] dark:hover:border-[#2f4563]'
+                          : '',
                       )}
                     >
                       <p className="font-medium text-[#1d1d1f] dark:text-slate-100">{opt.label}</p>
@@ -387,6 +405,11 @@ export function AgentBookAppointmentPage() {
                     </button>
                   ))}
                 </div>
+                {!canBookOcularAsStaff && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Ocular scheduling is available only to the sales staff assigned after a completed consultation.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">

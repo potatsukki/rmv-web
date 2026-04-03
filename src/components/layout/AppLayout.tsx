@@ -241,7 +241,7 @@ const CATEGORY_META: Record<FlatResult['type'], { label: string; icon: React.Ele
 export function AppLayout() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user } = useAuthStore();
+  const { user, accessToken } = useAuthStore();
   const { unreadCount, setNotifications, addNotification } = useNotificationStore();
   const { data: notificationsData } = useNotifications({ limit: '50' });
   const queryClient = useQueryClient();
@@ -289,7 +289,8 @@ export function AppLayout() {
 
   useEffect(() => {
     if (!user) return;
-    const sock = connectSocket();
+    const sock = connectSocket(accessToken);
+    if (!sock) return;
 
     const handleNewNotification = (n: import('@/lib/types').Notification) => {
       addNotificationRef.current(n);
@@ -331,7 +332,7 @@ export function AppLayout() {
       sock.off('notification:new', handleNewNotification);
       sock.off('payments:queue-updated', handlePaymentsQueueUpdate);
     };
-  }, [user]);
+  }, [user, accessToken]);
 
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearchOpen, setIsSearchOpen] = useState(false);

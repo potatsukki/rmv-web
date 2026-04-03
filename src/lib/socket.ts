@@ -2,11 +2,23 @@ import { io, Socket } from 'socket.io-client';
 
 let socket: Socket | null = null;
 
-export function connectSocket(): Socket {
+export function connectSocket(accessToken?: string | null): Socket | null {
+  if (!accessToken) {
+    if (socket) {
+      socket.disconnect();
+      socket = null;
+    }
+    return null;
+  }
+
   if (socket?.connected) return socket;
 
   // If socket exists but disconnected, just reconnect
   if (socket) {
+    socket.auth = {
+      ...(socket.auth || {}),
+      token: accessToken,
+    };
     socket.connect();
     return socket;
   }
@@ -19,7 +31,7 @@ export function connectSocket(): Socket {
     reconnectionDelay: 1000,
     reconnectionDelayMax: 10000,
     auth: {
-      token: sessionStorage.getItem('accessToken') || '',
+      token: accessToken,
     },
   });
 

@@ -12,7 +12,7 @@ const PROTECTED_ROUTE_RULES: RouteRule[] = [
   { pattern: /^\/account(?:\/.*)?$/i, allowedRoles: null },
   { pattern: /^\/profile\/?$/i, allowedRoles: null },
   { pattern: /^\/change-password\/?$/i, allowedRoles: null },
-  { pattern: /^\/appointments\/create-for-customer\/?$/i, allowedRoles: [Role.APPOINTMENT_AGENT] },
+  { pattern: /^\/appointments\/create-for-customer\/?$/i, allowedRoles: [Role.APPOINTMENT_AGENT, Role.SALES_STAFF] },
   { pattern: /^\/appointments\/[^/]+(?:\/pay-ocular-fee)?\/?$/i, allowedRoles: null },
   { pattern: /^\/appointments(?:\/book)?\/?$/i, allowedRoles: null },
   { pattern: /^\/ocular-fee-queue\/?$/i, allowedRoles: [Role.CASHIER, Role.ADMIN] },

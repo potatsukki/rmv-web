@@ -50,7 +50,7 @@ export const sidebarNavGroups: NavGroup[] = [
         label: 'Create Appointment',
         path: '/appointments/create-for-customer',
         icon: CalendarPlus,
-        roles: [Role.APPOINTMENT_AGENT],
+        roles: [Role.APPOINTMENT_AGENT, Role.SALES_STAFF],
       },
       {
         label: 'Visit Reports',
@@ -202,7 +202,7 @@ export const mobileMenuItems: NavItem[] = [
   },
   { label: 'Manage Accounts', path: '/users', icon: Users, roles: [Role.ADMIN] },
   { label: 'Slot Management', path: '/slot-management', icon: CalendarOff, roles: [Role.ADMIN, Role.APPOINTMENT_AGENT] },
-  { label: 'Create Appointment', path: '/appointments/create-for-customer', icon: CalendarPlus, roles: [Role.APPOINTMENT_AGENT] },
+  { label: 'Create Appointment', path: '/appointments/create-for-customer', icon: CalendarPlus, roles: [Role.APPOINTMENT_AGENT, Role.SALES_STAFF] },
   { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
   { label: 'Help Center', path: '/help', icon: LifeBuoy, roles: Object.values(Role) },
 ];
