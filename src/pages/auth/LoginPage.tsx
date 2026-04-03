@@ -68,8 +68,25 @@ export function LoginPage() {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
+
+    // Firebase is slow to detect a closed popup (5-10s polling).
+    // When the user closes the popup and this window regains focus,
+    // we give Firebase a short grace period and then clear the spinner.
+    let settled = false;
+    const onFocus = () => {
+      setTimeout(() => {
+        if (!settled) {
+          settled = true;
+          setGoogleLoading(false);
+        }
+      }, 1500);
+    };
+    window.addEventListener('focus', onFocus);
+
     try {
       const result = await signInWithPopup(auth, googleProvider);
+      settled = true; // success — don't let the focus handler interfere
+
       const idToken = await result.user.getIdToken();
 
       const csrfToken = await fetchCsrfToken();
@@ -125,6 +142,8 @@ export function LoginPage() {
       if (error.code === 'auth/popup-closed-by-user') return;
       toast.error(error.response?.data?.error?.message || 'Google sign-in failed. Please try again.');
     } finally {
+      window.removeEventListener('focus', onFocus);
+      settled = true;
       setGoogleLoading(false);
     }
   };
