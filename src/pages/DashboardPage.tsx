@@ -307,22 +307,24 @@ function getRoleActions(role: Role): QuickAction[] {
       break;
     case Role.ENGINEER:
       actions.push(
-        { label: 'Report Queue', path: '/visit-reports', icon: FileText, description: 'Review visit reports', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
-        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'Blueprints & fabrication', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
+        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'Blueprints & fabrication', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
+        { label: 'Visit Reports', path: '/visit-reports', icon: FileText, description: 'Review site inspections', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
+        { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Analytics & metrics', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
       );
       break;
     case Role.CASHIER:
       actions.push(
         { label: 'Cashier Queue', path: '/cashier-queue', icon: CreditCard, description: 'Verify payment proofs', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
         { label: 'Cash Flow', path: '/cash', icon: Banknote, description: 'Record cash collections', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
-        { label: 'Refund Requests', path: '/refund-requests', icon: Receipt, description: 'Pending refunds', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
+        { label: 'Refund Requests', path: '/payments', icon: Receipt, description: 'Pending refunds', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
         { label: 'Reports', path: '/reports', icon: TrendingUp, description: 'Financial analytics', color: 'from-[#5a5a5e] to-[#4a4a4e]' },
       );
       break;
     case Role.FABRICATION_STAFF:
       actions.push(
-        { label: 'Job Queue', path: '/projects', icon: Hammer, description: 'Pending tasks', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
-        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'All projects', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
+        { label: 'Job Queue', path: '/projects', icon: Hammer, description: 'Active fabrication tasks', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
+        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'All assigned projects', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
+        { label: 'Visit Reports', path: '/visit-reports', icon: FileText, description: 'Site inspection data', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
       );
       break;
     case Role.ADMIN:

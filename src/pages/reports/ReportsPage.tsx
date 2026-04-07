@@ -8,6 +8,7 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
+  Cell,
 } from 'recharts';
 import {
   DollarSign,
@@ -38,6 +39,7 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { VisitReportsListPage } from '../visit-reports/VisitReportsListPage';
 import {
   useRevenueReport,
   useProjectPipelineReport,
@@ -220,6 +222,7 @@ export function ReportsPage() {
   const canAccessCashierReports = user?.roles?.some((role) => [Role.CASHIER, Role.ADMIN].includes(role));
   const [revenueGroupBy, setRevenueGroupBy] = useState<GroupBy>('month');
   const [lifecycleRange, setLifecycleRange] = useState<LifecycleRange>('7d');
+  const [activeTab, setActiveTab] = useState<'analytics' | 'visit_reports'>('analytics');
 
   const lifecycleParams = useMemo(
     () => buildLifecycleRangeParams(lifecycleRange),
@@ -338,7 +341,32 @@ export function ReportsPage() {
   const anyKpiLoading = revLoading || psLoading || (isAdmin ? convLoading || dashLoading : false);
 
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
+      <div className="flex space-x-2 border-b border-[color:var(--color-border)]/60 mb-2 pb-2">
+        <button
+          onClick={() => setActiveTab('analytics')}
+          className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors ${
+            activeTab === 'analytics'
+              ? 'text-[var(--color-card-foreground)] border-b-2 border-cyan-500 bg-[color:var(--color-muted)]/40'
+              : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]/20'
+          }`}
+        >
+          Analytics Dashboard
+        </button>
+        <button
+          onClick={() => setActiveTab('visit_reports')}
+          className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors ${
+            activeTab === 'visit_reports'
+              ? 'text-[var(--color-card-foreground)] border-b-2 border-cyan-500 bg-[color:var(--color-muted)]/40'
+              : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]/20'
+          }`}
+        >
+          Visit Reports
+        </button>
+      </div>
+
+      {activeTab === 'analytics' && (
+      <div className="space-y-5">
       {/* ── Header ── */}
       <div className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-[1.75rem] p-5`}>
         <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
@@ -470,7 +498,7 @@ export function ReportsPage() {
                         : 'border-[color:var(--color-border)]/70 bg-white/90 text-[var(--color-card-foreground)] hover:bg-white'
                     }`}
                   >
-                    <a href="#lifecycle-hotspots">Open Hotspots Table</a>
+                    <a href="#lifecycle-hotspots">View Transition Details</a>
                   </Button>
                 </div>
               </div>
@@ -742,7 +770,7 @@ export function ReportsPage() {
                       <Tooltip cursor={false} content={<ChartTooltip />} />
                       <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={24} activeBar={false}>
                         {pipeline.map((p, i) => (
-                          <rect key={i} fill={PIPELINE_COLORS[p.status] || '#8fa3b7'} />
+                          <Cell key={i} fill={PIPELINE_COLORS[p.status] || '#8fa3b7'} />
                         ))}
                       </Bar>
                     </BarChart>
@@ -805,7 +833,7 @@ export function ReportsPage() {
                     <Tooltip cursor={false} content={<ChartTooltip />} />
                     <Bar dataKey="count" radius={[0, 6, 6, 0]} barSize={24} activeBar={false}>
                       {paymentStages.byStatus.map((p, i) => (
-                        <rect key={i} fill={STAGE_COLORS[p.status] || '#9aaabd'} />
+                        <Cell key={i} fill={STAGE_COLORS[p.status] || '#9aaabd'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -1143,6 +1171,12 @@ export function ReportsPage() {
             </p>
           </CardContent>
         </Card>
+      )}
+      </div>
+      )}
+
+      {activeTab === 'visit_reports' && (
+        <VisitReportsListPage isEmbedded />
       )}
     </div>
   );

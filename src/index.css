@@ -1,4 +1,4 @@
-﻿@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@200;300;400;500;600;700;800&display=swap');
 @import "tailwindcss";
 
 /* Dark mode variant: use data-theme attribute instead of prefers-color-scheme */
@@ -6,6 +6,7 @@
 
 /* 240Hz-smooth scrolling & global GPU hints */
 html {
+  font-size: 112.5%; /* Scale root form 16px -> 18px, effectively scaling all REM-based Tailwind classes up */
   scroll-behavior: smooth;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

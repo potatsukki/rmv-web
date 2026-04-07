@@ -108,7 +108,7 @@ const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]' };
 
 /* ── Component ── */
 
-export function VisitReportsListPage() {
+export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = {}) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [statusFilter, setStatusFilter] = useState('');
@@ -156,8 +156,9 @@ export function VisitReportsListPage() {
     : 'Manage your visit reports and site inspection records.';
 
   return (
-    <div className="space-y-6">
+    <div className={isEmbedded ? "space-y-4" : "space-y-6"}>
       {/* Header */}
+      {!isEmbedded && (
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
@@ -166,6 +167,7 @@ export function VisitReportsListPage() {
           <p className="text-[#6e6e73] dark:text-slate-400 mt-1 text-sm">{pageDescription}</p>
         </div>
       </div>
+      )}
 
       {/* Filters */}
       <CollectionToolbar

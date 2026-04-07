@@ -38,6 +38,10 @@ import {
 } from '@/components/ui/dialog';
 import { useUnpaidOcularFees } from '@/hooks/useAppointments';
 import { useThemeStore } from '@/stores/theme.store';
+import { InlineRefundDetails } from './InlineRefundDetails';
+import { RefundQueueList } from './components/RefundQueueList';
+import { CashierQueuePage } from './CashierQueuePage';
+import { OcularFeeQueuePage } from '../appointments/OcularFeeQueuePage';
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
@@ -57,6 +61,7 @@ export function PaymentsPage() {
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [activeTab, setActiveTab] = useState('payments');
 
 
   const { data: projects } = useProjects();
@@ -237,12 +242,40 @@ export function PaymentsPage() {
               <div>
                 <h1 className="text-2xl font-bold tracking-tight text-[var(--color-card-foreground)] dark:text-slate-50">Payments</h1>
                 <p className="mt-1 text-sm text-[var(--text-metal-color)] dark:text-slate-300">
-              {isCustomer ? 'Select a project to manage payments' : 'View payment details by project'}
+              {isCustomer ? 'Select a project to manage payments' : 'Manage queues and project payments'}
                 </p>
               </div>
             </div>
           </div>
 
+          {/* ── Tab Bar ── */}
+          <div className="flex items-center gap-1 overflow-x-auto rounded-xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-muted)]/40 p-1">
+            {[
+              { key: 'payments', label: 'Payments', show: true },
+              { key: 'cashier-queue', label: 'Cashier Queue', show: !!isCashier },
+              { key: 'ocular-fees', label: 'Ocular Fees', show: !!isCashier },
+              { key: 'refunds', label: isCustomer ? 'My Refunds' : 'Refunds', show: true },
+            ]
+              .filter((tab) => tab.show)
+              .map((tab) => (
+                <button
+                  key={tab.key}
+                  type="button"
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                    activeTab === tab.key
+                      ? 'bg-[color:var(--color-card)] text-[var(--color-card-foreground)] shadow-sm'
+                      : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] hover:bg-[color:var(--color-card)]/50'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+          </div>
+
+          {/* ── TAB: Payments ── */}
+          {activeTab === 'payments' && (
+            <>
           {/* Unpaid Ocular Fees */}
           {isCustomer && actionableOcularFees.length > 0 && (
             <Card className="rounded-none border-x-0 border-[#c7aa7a]/60 bg-[linear-gradient(180deg,rgba(248,240,229,0.82)_0%,rgba(235,220,198,0.58)_100%)] sm:rounded-xl sm:border-x">
@@ -379,7 +412,7 @@ export function PaymentsPage() {
             </div>
           </Card>
 
-          {/* ── Unified Payment History (Customer only, on list view) ── */}
+          {/* ── Unified Payment History (Customer only) ── */}
           {isCustomer && (
             <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
               <CardHeader className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 px-4 sm:px-6">
@@ -449,9 +482,7 @@ export function PaymentsPage() {
                         >
                           {/* Mobile */}
                           <div className="sm:hidden flex items-center gap-3">
-                            <div
-                              className="silver-sheen flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.68),0_8px_18px_rgba(18,22,27,0.1)]"
-                            >
+                            <div className="silver-sheen flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.68),0_8px_18px_rgba(18,22,27,0.1)]">
                               {isOcular ? <MapPin className="h-4 w-4 text-[#a36c32]" /> : <CreditCard className="h-4 w-4 text-[#546474]" />}
                             </div>
                             <div className="min-w-0 flex-1">
@@ -468,9 +499,7 @@ export function PaymentsPage() {
                           {/* Desktop */}
                           <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px] gap-3 items-center">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div
-                                className="silver-sheen flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.68),0_8px_18px_rgba(18,22,27,0.1)]"
-                              >
+                              <div className="silver-sheen flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.68),0_8px_18px_rgba(18,22,27,0.1)]">
                                 {isOcular ? <MapPin className="h-4 w-4 text-[#a36c32]" /> : <CreditCard className="h-4 w-4 text-[#546474]" />}
                               </div>
                               <div className="min-w-0">
@@ -492,6 +521,40 @@ export function PaymentsPage() {
                 )}
               </CardContent>
             </Card>
+          )}
+            </>
+          )}
+
+          {/* ── TAB: Cashier Queue ── */}
+          {activeTab === 'cashier-queue' && isCashier && (
+            <CashierQueuePage />
+          )}
+
+          {/* ── TAB: Ocular Fees ── */}
+          {activeTab === 'ocular-fees' && isCashier && (
+            <OcularFeeQueuePage isEmbedded />
+          )}
+
+          {/* ── TAB: Refunds ── */}
+          {activeTab === 'refunds' && (
+            <>
+              {isCashier && <RefundQueueList />}
+              {isCustomer && (
+                <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x border-cyan-200/60 bg-gradient-to-r from-cyan-50/60 to-sky-50/50 dark:border-cyan-800/40 dark:from-cyan-950/30 dark:to-sky-950/20">
+                  <CardContent className="flex items-start gap-3 px-4 py-3 sm:px-6">
+                    <ScrollText className="mt-0.5 h-4 w-4 shrink-0 text-cyan-600 dark:text-cyan-400" />
+                    <div>
+                      <p className="text-sm font-medium text-cyan-900 dark:text-cyan-200">
+                        How to request a refund
+                      </p>
+                      <p className="mt-0.5 text-xs text-cyan-700 dark:text-cyan-300">
+                        Go to the <strong>Payments</strong> tab, tap on any <strong>paid</strong> payment in your history, and use the refund form at the bottom of the details dialog.
+                      </p>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </>
           )}
         </>
       ) : (
@@ -1121,6 +1184,9 @@ export function PaymentsPage() {
                   </div>
                 )}
               </div>
+              <InlineRefundDetails
+                payment={selectedHistoryPayment}
+              />
             </div>
           )}
         </DialogContent>

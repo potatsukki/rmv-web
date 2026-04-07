@@ -13,8 +13,10 @@ const PROTECTED_ROUTE_RULES: RouteRule[] = [
   { pattern: /^\/profile\/?$/i, allowedRoles: null },
   { pattern: /^\/change-password\/?$/i, allowedRoles: null },
   { pattern: /^\/appointments\/create-for-customer\/?$/i, allowedRoles: [Role.APPOINTMENT_AGENT, Role.SALES_STAFF] },
-  { pattern: /^\/appointments\/[^/]+(?:\/pay-ocular-fee)?\/?$/i, allowedRoles: null },
-  { pattern: /^\/appointments(?:\/book)?\/?$/i, allowedRoles: null },
+  { pattern: /^\/appointments\/book\/?$/i, allowedRoles: [Role.CUSTOMER] },
+  { pattern: /^\/appointments\/[^/]+\/pay-ocular-fee\/?$/i, allowedRoles: [Role.CUSTOMER] },
+  { pattern: /^\/appointments\/[^/]+\/?$/i, allowedRoles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
+  { pattern: /^\/appointments\/?$/i, allowedRoles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
   { pattern: /^\/ocular-fee-queue\/?$/i, allowedRoles: [Role.CASHIER, Role.ADMIN] },
   {
     pattern: /^\/projects(?:\/[^/]+(?:\/(?:blueprint|payments|fabrication))?)?\/?$/i,

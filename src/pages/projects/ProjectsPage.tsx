@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { FolderOpen, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
@@ -20,6 +20,7 @@ import { PageError } from '@/components/shared/PageError';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, BlueprintStatus, Role } from '@/lib/constants';
+import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
 
 const STATUS_FILTERS = [
   { label: 'All Projects', value: '' },
@@ -81,6 +82,10 @@ export function ProjectsPage() {
   const { user } = useAuthStore();
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isStaff = !isCustomer;
+  const canSeeVisitReports = user?.roles?.some((r: string) =>
+    [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN].includes(r as Role),
+  );
+  const [activeTab, setActiveTab] = useState('projects');
 
   const params: Record<string, string> = {};
   if (statusFilter) params.status = statusFilter;
@@ -96,9 +101,47 @@ export function ProjectsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[var(--color-card-foreground)]">Projects</h1>
-        <p className="mt-1 text-sm text-[var(--text-metal-color)]">Track fabrication progress and project milestones.</p>
+        <h1 className="text-2xl font-bold tracking-tight text-[var(--color-card-foreground)]">
+          {activeTab === 'projects' ? 'Projects' : 'Visit Reports'}
+        </h1>
+        <p className="mt-1 text-sm text-[var(--text-metal-color)]">
+          {activeTab === 'projects'
+            ? 'Track fabrication progress and project milestones.'
+            : 'Review and manage site visit findings and recommendations.'}
+        </p>
       </div>
+
+      {/* Tab Bar */}
+      {canSeeVisitReports && (
+        <div className="flex items-center gap-1 overflow-x-auto rounded-xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-muted)]/40 p-1">
+          {[
+            { key: 'projects', label: 'Projects' },
+            { key: 'visit-reports', label: 'Visit Reports' },
+          ].map((tab) => (
+            <button
+              key={tab.key}
+              type="button"
+              onClick={() => setActiveTab(tab.key)}
+              className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all ${
+                activeTab === tab.key
+                  ? 'bg-[color:var(--color-card)] text-[var(--color-card-foreground)] shadow-sm'
+                  : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] hover:bg-[color:var(--color-card)]/50'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {/* ── TAB: Visit Reports ── */}
+      {activeTab === 'visit-reports' && canSeeVisitReports && (
+        <VisitReportsListPage isEmbedded />
+      )}
+
+      {/* ── TAB: Projects ── */}
+      {activeTab === 'projects' && (
+      <>
 
       {/* Controls */}
       <CollectionToolbar
@@ -322,6 +365,8 @@ export function ProjectsPage() {
             </p>
           </div>
         </>
+      )}
+      </>
       )}
     </div>
   );

@@ -89,7 +89,7 @@ const quickSearchItems: QuickSearchItem[] = [
     path: '/appointments/book',
     description: 'Create a new appointment',
     keywords: ['new booking', 'ocular', 'office visit'],
-    roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.ADMIN],
+    roles: [Role.CUSTOMER],
   },
   {
     title: 'Visit Reports',

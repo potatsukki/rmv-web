@@ -147,11 +147,11 @@ export function AccountSecurityPage() {
     mutationFn: (id: string) => api.delete(`/auth/sessions/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      toast.success('Session revoked');
+      toast.success('Session removed');
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { error?: { message?: string } } } };
-      toast.error(error.response?.data?.error?.message || 'Failed to revoke session');
+      toast.error(error.response?.data?.error?.message || 'Failed to remove session');
     },
   });
 
@@ -159,11 +159,11 @@ export function AccountSecurityPage() {
     mutationFn: () => api.delete('/auth/sessions'),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sessions'] });
-      toast.success('All other sessions revoked');
+      toast.success('All other sessions removed');
     },
     onError: (err: unknown) => {
       const error = err as { response?: { data?: { error?: { message?: string } } } };
-      toast.error(error.response?.data?.error?.message || 'Failed to revoke sessions');
+      toast.error(error.response?.data?.error?.message || 'Failed to remove sessions');
     },
   });
 
@@ -669,7 +669,7 @@ export function AccountSecurityPage() {
                 disabled={revokeAllMutation.isPending}
               >
                 {revokeAllMutation.isPending ? <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" /> : <Trash2 className="mr-1.5 h-3.5 w-3.5" />}
-                Revoke All Other Sessions
+                Remove All Other Sessions
               </Button>
             )}
           </div>

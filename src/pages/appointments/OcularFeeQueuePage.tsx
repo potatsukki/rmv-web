@@ -59,7 +59,7 @@ const statusBadge = (status?: string) => {
   }
 };
 
-export function OcularFeeQueuePage() {
+export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { data: appointments, isLoading, isError, refetch } = usePendingOcularFees();
   const verifyMutation = useVerifyOcularFee();
   const declineMutation = useDeclineOcularFee();
@@ -113,14 +113,22 @@ export function OcularFeeQueuePage() {
 
   return (
     <div className="space-y-6">
-      <div className="metal-panel rounded-[1.75rem] p-5">
-        <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
-          Ocular Fee Queue
-        </h1>
-        <p className="text-[#6e6e73] text-sm dark:text-slate-300">
-          Review and verify ocular fee payments from customers
-        </p>
-      </div>
+      {!isEmbedded && (
+        <div className="metal-panel rounded-[1.75rem] p-5">
+          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+            Ocular Fee Queue
+          </h1>
+          <p className="text-[#6e6e73] text-sm dark:text-slate-300">
+            Review and verify ocular fee payments from customers
+          </p>
+        </div>
+      )}
+      {isEmbedded && (
+        <div className="flex items-center gap-2 pt-2">
+          <QrCode className="h-5 w-5 text-[#6e6e73] dark:text-slate-300" />
+          <h2 className="text-lg font-semibold text-[var(--color-card-foreground)]">Ocular Fee Queue</h2>
+        </div>
+      )}
 
       {isLoading ? (
         <div className="space-y-3">

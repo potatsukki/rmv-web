@@ -58,12 +58,15 @@ type BookingForm = z.infer<typeof bookingSchema>;
 export function AgentBookAppointmentPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
+  const isAppointmentAgent = !!user?.roles?.includes(Role.APPOINTMENT_AGENT);
+  const isSalesStaff = !!user?.roles?.includes(Role.SALES_STAFF);
   const [searchParams] = useSearchParams();
   const ocularForCustomerId = searchParams.get('ocularFor');
   const recommendedDate = searchParams.get('recommendedDate');
   const recommendedSlot = searchParams.get('recommendedSlot');
-  const isOcularMode = !!ocularForCustomerId;
-  const canBookOcularAsStaff = !!user?.roles?.includes(Role.SALES_STAFF);
+  const canCreateOfficeForCustomer = isAppointmentAgent;
+  const canBookOcularAsStaff = isSalesStaff;
+  const isOcularMode = !!ocularForCustomerId && canBookOcularAsStaff;
 
   /* ── Step 1: Customer Search ── */
   const [searchTerm, setSearchTerm] = useState('');
@@ -91,7 +94,9 @@ export function AgentBookAppointmentPage() {
   } = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      type: isOcularMode && canBookOcularAsStaff ? 'ocular' : 'office',
+      type: canCreateOfficeForCustomer && !canBookOcularAsStaff
+        ? 'office'
+        : 'ocular',
       date: defaultDate,
       ...(recommendedSlot && { slotCode: recommendedSlot }),
     },
@@ -121,6 +126,12 @@ export function AgentBookAppointmentPage() {
     }
   }, [ocularForCustomerId]);
 
+  useEffect(() => {
+    if (!ocularForCustomerId || canBookOcularAsStaff) return;
+    toast.error('Only sales staff can open the ocular scheduling flow.');
+    navigate('/appointments/create-for-customer', { replace: true });
+  }, [canBookOcularAsStaff, navigate, ocularForCustomerId]);
+
   // Reset location state when switching away from ocular
   useEffect(() => {
     if (!isOcularBooking) {
@@ -134,6 +145,12 @@ export function AgentBookAppointmentPage() {
       setValue('type', AppointmentType.OFFICE);
     }
   }, [canBookOcularAsStaff, selectedType, setValue]);
+
+  useEffect(() => {
+    if (!canCreateOfficeForCustomer && selectedType === AppointmentType.OFFICE) {
+      setValue('type', AppointmentType.OCULAR);
+    }
+  }, [canCreateOfficeForCustomer, selectedType, setValue]);
 
   const onSubmit = async (data: BookingForm) => {
     if (!selectedCustomer) {
@@ -158,6 +175,11 @@ export function AgentBookAppointmentPage() {
           `Ocular scheduled for ${selectedCustomer.firstName} ${selectedCustomer.lastName}. Customer will provide their location.`,
         );
       } else {
+        if (!canCreateOfficeForCustomer) {
+          toast.error('Only appointment agents can create the first office consultation for a customer.');
+          return;
+        }
+
         await createMutation.mutateAsync({
           customerId: selectedCustomer._id,
           type: data.type,
@@ -378,26 +400,24 @@ export function AgentBookAppointmentPage() {
                       value: AppointmentType.OFFICE,
                       label: 'Office Visit',
                       desc: 'Customer visits the shop',
+                      show: canCreateOfficeForCustomer,
                     },
                     {
                       value: AppointmentType.OCULAR,
                       label: 'Ocular Visit',
                       desc: 'Staff visits customer site',
+                      show: canBookOcularAsStaff,
                     },
-                  ].map((opt) => (
+                  ].filter((opt) => opt.show).map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
-                      disabled={opt.value === AppointmentType.OCULAR && !canBookOcularAsStaff}
                       onClick={() => setValue('type', opt.value)}
                       className={cn(
                         'rounded-xl border-2 p-4 text-left transition-all',
                         selectedType === opt.value
                           ? 'border-[#86868b] bg-[#f5f5f7]/50 ring-2 ring-[#d2d2d7] dark:border-[#5b7699] dark:bg-[#162235] dark:ring-[#4f7097]/30'
                           : 'border-[#d2d2d7] hover:border-[#c8c8cd] dark:border-[#2f4563] dark:bg-white/[0.02] dark:hover:border-[#456182]',
-                        opt.value === AppointmentType.OCULAR && !canBookOcularAsStaff
-                          ? 'cursor-not-allowed opacity-60 hover:border-[#d2d2d7] dark:hover:border-[#2f4563]'
-                          : '',
                       )}
                     >
                       <p className="font-medium text-[#1d1d1f] dark:text-slate-100">{opt.label}</p>
@@ -405,9 +425,14 @@ export function AgentBookAppointmentPage() {
                     </button>
                   ))}
                 </div>
-                {!canBookOcularAsStaff && (
+                {!canCreateOfficeForCustomer && canBookOcularAsStaff && (
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Sales staff can only schedule ocular visits here. First consultations must be created by an appointment agent or the customer.
+                  </p>
+                )}
+                {canCreateOfficeForCustomer && !canBookOcularAsStaff && (
                   <p className="text-xs text-amber-700 dark:text-amber-300">
-                    Ocular scheduling is available only to the sales staff assigned after a completed consultation.
+                    Appointment agents can only create the first office consultation. Ocular scheduling is handled by sales staff after consultation.
                   </p>
                 )}
               </div>

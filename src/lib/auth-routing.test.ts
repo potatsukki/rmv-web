@@ -31,6 +31,12 @@ describe('auth routing guards', () => {
     expect(canAccessPath('/account/security', [Role.ENGINEER])).toBe(true);
   });
 
+  it('restricts customer self-booking pages to customers only', () => {
+    expect(canAccessPath('/appointments/book', [Role.CUSTOMER])).toBe(true);
+    expect(canAccessPath('/appointments/book', [Role.SALES_STAFF])).toBe(false);
+    expect(canAccessPath('/appointments/book', [Role.APPOINTMENT_AGENT])).toBe(false);
+  });
+
   it('keeps public or auth pages from being used as post-login redirects', () => {
     expect(resolvePostLoginPath('/login', [Role.ADMIN])).toEqual({
       path: '/dashboard',

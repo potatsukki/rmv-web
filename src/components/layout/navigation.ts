@@ -9,10 +9,8 @@ import {
   Bell,
   Home,
   Banknote,
-  ClipboardList,
   CalendarOff,
   CalendarPlus,
-  ReceiptText,
   LifeBuoy,
   type LucideIcon,
 } from 'lucide-react';
@@ -52,12 +50,7 @@ export const sidebarNavGroups: NavGroup[] = [
         icon: CalendarPlus,
         roles: [Role.APPOINTMENT_AGENT, Role.SALES_STAFF],
       },
-      {
-        label: 'Visit Reports',
-        path: '/visit-reports',
-        icon: ClipboardList,
-        roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
-      },
+
       {
         label: 'Projects',
         path: '/projects',
@@ -80,30 +73,6 @@ export const sidebarNavGroups: NavGroup[] = [
         path: '/cash',
         icon: Banknote,
         roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN],
-      },
-      {
-        label: 'Cashier Queue',
-        path: '/cashier-queue',
-        icon: CreditCard,
-        roles: [Role.CASHIER, Role.ADMIN],
-      },
-      {
-        label: 'Ocular Fee Queue',
-        path: '/ocular-fee-queue',
-        icon: CreditCard,
-        roles: [Role.CASHIER, Role.ADMIN],
-      },
-      {
-        label: 'Refund Requests',
-        path: '/refund-requests',
-        icon: ReceiptText,
-        roles: [Role.CASHIER, Role.ADMIN],
-      },
-      {
-        label: 'My Refunds',
-        path: '/my-refunds',
-        icon: ReceiptText,
-        roles: [Role.CUSTOMER],
       },
     ],
   },
@@ -131,12 +100,7 @@ export const mobileBottomTabItems: NavItem[] = [
     icon: Calendar,
     roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN],
   },
-  {
-    label: 'Reports',
-    path: '/visit-reports',
-    icon: ClipboardList,
-    roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
-  },
+
   {
     label: 'Projects',
     path: '/projects',
@@ -148,12 +112,6 @@ export const mobileBottomTabItems: NavItem[] = [
     path: '/payments',
     icon: CreditCard,
     roles: [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN],
-  },
-  {
-    label: 'Queue',
-    path: '/cashier-queue',
-    icon: ReceiptText,
-    roles: [Role.CASHIER, Role.ADMIN],
   },
   {
     label: 'Cash',
@@ -176,12 +134,7 @@ export const mobileBottomTabItems: NavItem[] = [
 ];
 
 export const mobileMenuItems: NavItem[] = [
-  {
-    label: 'Visit Reports',
-    path: '/visit-reports',
-    icon: ClipboardList,
-    roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
-  },
+
   {
     label: 'Cash Management',
     path: '/cash',

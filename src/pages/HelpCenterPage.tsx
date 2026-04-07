@@ -3,15 +3,22 @@ import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, usePa
 import {
   ArrowDown,
   ArrowUp,
+  BookOpen,
   ChevronDown,
   ChevronRight,
   ChevronUp,
+  CreditCard,
+  HelpCircle,
   LifeBuoy,
+  FolderOpen,
+  CalendarCheck,
   Pencil,
   Plus,
   Save,
   Search,
+  Settings,
   Trash2,
+  Wrench,
   XCircle,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -23,6 +30,7 @@ import { Input } from '@/components/ui/input';
 import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useConfigs, useUpdateConfig } from '@/hooks/useConfig';
+import { canAccessPath } from '@/lib/auth-routing';
 import { Role } from '@/lib/constants';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -106,35 +114,40 @@ const FALLBACK_HELP: HelpContent = {
   },
 };
 
+const ALL_ROLES = Object.values(Role) as Role[];
+const APPOINTMENT_HELP_ROLES = [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN];
+const VISIT_REPORT_HELP_ROLES = [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN];
+const PROJECT_HELP_ROLES = [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN];
+const BLUEPRINT_HELP_ROLES = [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN];
+const PAYMENT_HELP_ROLES = [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN];
+const CASH_COLLECTION_HELP_ROLES = [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN];
+const OPERATIONS_HELP_ROLES = [Role.ADMIN, Role.APPOINTMENT_AGENT, Role.CASHIER];
+const SLOT_CONTROL_ROLES = [Role.ADMIN, Role.APPOINTMENT_AGENT];
+const REPORTING_HELP_ROLES = [Role.CASHIER, Role.ADMIN];
+
 const KNOWLEDGE_BASE: HelpCategory[] = [
   {
     slug: 'getting-started',
     title: 'Getting Started',
     description: 'Core orientation for first-time users and daily navigation.',
+    roles: ALL_ROLES,
     articles: [
       {
         slug: 'account-setup',
         title: 'Account Setup and Profile Completion',
         summary: 'Complete identity, location, and signature for full access.',
+        roles: ALL_ROLES,
         body: [
           'Open Account Settings and complete your profile details, especially contact information and location.',
           {
             media: {
               type: 'image',
-              title: 'Profile Completion Snapshot',
-              url: 'https://images.unsplash.com/photo-1519389950473-47ba0277781c?auto=format&fit=crop&w=1200&q=80',
-              caption: 'Example profile dashboard view showing completion progress and pending requirements.',
+              title: 'Account Profile Page',
+              url: '/help-media/account-profile.png',
+              caption: 'Live screenshot of the Account Profile screen used for identity, location, and signature readiness.',
             },
           },
           'Verify your email and upload or draw your signature to remove most process blockers.',
-          {
-            media: {
-              type: 'embed',
-              title: 'Profile Setup Walkthrough Video',
-              url: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
-              caption: 'Quick walkthrough for completing profile fields and saving your signature.',
-            },
-          },
           'Some role actions are hidden until profile requirements are met.',
         ],
         checklist: [
@@ -152,11 +165,20 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
       {
         slug: 'system-navigation',
         title: 'System Navigation Map',
-        summary: 'Understand modules, side navigation groups, and quick search.',
+        summary: 'Understand sidebar groups, quick search, and the pages available to your role.',
+        roles: ALL_ROLES,
         body: [
-          'Use the sidebar groupings to switch quickly between project, financial, and admin workflows.',
-          'Use global search in the top bar to jump to pages, projects, appointments, and people.',
-          'Help articles are deep-linkable and can be shared inside internal communications.',
+          'Use the sidebar and mobile navigation to move between the modules your account is allowed to access.',
+          {
+            media: {
+              type: 'image',
+              title: 'Dashboard Navigation Snapshot',
+              url: '/help-media/dashboard-overview.png',
+              caption: 'Live screenshot showing sidebar groups, quick actions, and role-aware navigation context.',
+            },
+          },
+          'Use the top-bar quick search to jump to pages, projects, appointments, and other records that your role can open.',
+          'Help articles support deep links, so teams can point users directly to the right guidance page.',
         ],
         checklist: [
           'Pin your frequent workflow pages',
@@ -172,6 +194,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'security-and-session',
         title: 'Security, Sessions, and Access Recovery',
         summary: 'How login, verification, and account recovery behave across the platform.',
+        roles: ALL_ROLES,
         body: [
           'Authentication relies on access and refresh token flows, and protected pages require valid authenticated sessions.',
           'If your account has required first-login password changes or incomplete profile data, the app can redirect you to complete those actions before normal navigation.',
@@ -193,13 +216,24 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
     slug: 'appointments-visits',
     title: 'Appointments and Visits',
     description: 'Lifecycle guidance for bookings, ocular payments, and reports.',
+    roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
     articles: [
       {
         slug: 'appointment-lifecycle',
         title: 'Appointment Lifecycle',
         summary: 'From request to completion, including reschedules and no-shows.',
+        roles: APPOINTMENT_HELP_ROLES,
         body: [
-          'Customers or agents can create appointments with date, purpose, and project context.',
+          'Customers can book their own first office consultation, while appointment agents can create that consultation on behalf of a customer.',
+          {
+            media: {
+              type: 'image',
+              title: 'Appointments Workspace Snapshot',
+              url: '/help-media/appointments-overview.png',
+              caption: 'Live screenshot of the Appointments workspace for lifecycle and status handling.',
+            },
+          },
+          'Sales staff should only schedule ocular visits after consultation, not the customer’s first appointment.',
           'Status changes are visible in the appointment detail flow and reflected in notifications.',
           'Cashiers and admins can coordinate on ocular fee queues when payment proof is involved.',
         ],
@@ -211,15 +245,24 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         systemLinks: [
           { label: 'Appointments', path: '/appointments' },
           { label: 'Book Appointment', path: '/appointments/book' },
+          { label: 'Create Appointment', path: '/appointments/create-for-customer' },
         ],
       },
       {
         slug: 'visit-report-flow',
         title: 'Visit Report Workflow',
         summary: 'How sales and engineering teams capture site findings.',
-        roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN],
+        roles: VISIT_REPORT_HELP_ROLES,
         body: [
           'Use Visit Reports to consolidate site measurements, customer requirements, and constraints.',
+          {
+            media: {
+              type: 'image',
+              title: 'Visit Reports Workspace Snapshot',
+              url: '/help-media/visit-reports-overview.png',
+              caption: 'Live screenshot of the Visit Reports module used by sales and engineering teams.',
+            },
+          },
           'Keep reports concise but complete, because downstream blueprint and costing depend on accuracy.',
           'Use consistent language and include attachments where required by your team standards.',
         ],
@@ -234,8 +277,17 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'ocular-fee-rules',
         title: 'Ocular Fee and Distance Rules',
         summary: 'Distance-based ocular fee behavior and verification expectations.',
+        roles: APPOINTMENT_HELP_ROLES,
         body: [
           'Ocular pricing uses a base NCR fee and can increase based on measured distance for non-NCR locations.',
+          {
+            media: {
+              type: 'image',
+              title: 'Ocular Fee Queue Snapshot',
+              url: '/help-media/ocular-fee-queue.png',
+              caption: 'Live screenshot of the ocular fee verification queue and status handling workflow.',
+            },
+          },
           'For routes that require fee verification, payment must be confirmed before dependent scheduling actions continue.',
           'Customers should ensure pinned locations are accurate to avoid incorrect fee calculations and reschedule delays.',
         ],
@@ -253,6 +305,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'appointment-status-reference',
         title: 'Appointment Status Reference',
         summary: 'Understand REQUESTED to COMPLETED paths, including exceptions.',
+        roles: APPOINTMENT_HELP_ROLES,
         body: [
           'Appointments move through controlled states such as requested, confirmed, completed, cancelled, no-show, and reschedule requested.',
           'Each state affects what actions remain available to customer, agent, and assigned staff in the page UI.',
@@ -271,11 +324,13 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
     slug: 'projects-fabrication',
     title: 'Projects and Fabrication',
     description: 'Guides for project states, blueprint approvals, and production updates.',
+    roles: PROJECT_HELP_ROLES,
     articles: [
       {
         slug: 'project-statuses',
         title: 'Project Status and Milestones',
         summary: 'Interpret statuses from draft through completion.',
+        roles: PROJECT_HELP_ROLES,
         body: [
           'Project pages are the single source of truth for stage, payment, and fabrication progress.',
           'Use project tabs to switch context between blueprint decisions, payments, and production details.',
@@ -292,15 +347,15 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'fabrication-lifecycle',
         title: 'Fabrication Lifecycle Marker',
         summary: 'Track workshop progress through explicit lifecycle steps.',
-        roles: [Role.FABRICATION_STAFF, Role.ENGINEER, Role.SALES_STAFF, Role.ADMIN, Role.CUSTOMER],
+        roles: PROJECT_HELP_ROLES,
         body: [
           'Fabrication updates are represented as lifecycle steps with clear progression markers.',
           {
             media: {
-              type: 'embed',
-              title: 'Fabrication Progress Demo',
-              url: 'https://www.youtube.com/watch?v=ysz5S6PUM-U',
-              caption: 'Sample walkthrough of viewing fabrication stages, updates, and completion markers.',
+              type: 'image',
+              title: 'Projects Workspace Snapshot',
+              url: '/help-media/projects-overview.png',
+              caption: 'Live screenshot from the Projects workspace where fabrication and milestone progress are tracked.',
             },
           },
           'Quality check and post-check transitions should be communicated immediately to reduce ambiguity.',
@@ -317,6 +372,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'blueprint-revision-loop',
         title: 'Blueprint and Costing Revision Loop',
         summary: 'How blueprint approval and revisions govern project progression.',
+        roles: BLUEPRINT_HELP_ROLES,
         body: [
           'Blueprint and costing are reviewed as paired components and may go through multiple revision cycles before final approval.',
           'Projects should not advance to payment planning until both technical drawing and costing decisions are resolved.',
@@ -336,6 +392,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'fabrication-gates-and-payments',
         title: 'Fabrication Gates and Payment Dependencies',
         summary: 'Why some fabrication transitions require verified payment stages first.',
+        roles: PROJECT_HELP_ROLES,
         body: [
           'Fabrication movement is sequential and guarded; not all statuses can be advanced if stage-payment prerequisites are unmet.',
           'Quality check and later steps are especially sensitive to payment verification rules in mixed installment plans.',
@@ -357,38 +414,39 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
     slug: 'payments-refunds',
     title: 'Payments and Refunds',
     description: 'Rules for staged payments, cashier verification, and refund tracking.',
+    roles: PAYMENT_HELP_ROLES,
     articles: [
       {
         slug: 'customer-payments',
-        title: 'Customer Payment Options',
-        summary: 'How online proof and cash intent requests move through verification.',
-        roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN, Role.SALES_STAFF],
+        title: 'Payment Submission and Verification',
+        summary: 'How payment proof, cash intent, and stage verification move through the system.',
+        roles: PAYMENT_HELP_ROLES,
         keywords: ['payment proof', 'cash intent', 'invoice', 'stage payment', 'verification'],
         body: [
-          'Customers can upload payment proof or request cash payment intent per eligible stage.',
+          'Eligible payment stages support proof submission and cash intent requests depending on the user workflow.',
           {
             media: {
               type: 'image',
-              title: 'Payment Stage Example',
-              url: 'https://images.unsplash.com/photo-1556740738-b6a63e27c4df?auto=format&fit=crop&w=1200&q=80',
-              caption: 'Illustrative payment stage card showing amount due and available actions.',
+              title: 'Payments Workspace Snapshot',
+              url: '/help-media/payments-overview.png',
+              caption: 'Live screenshot of the Payments workspace where stage payments and statuses are reviewed.',
             },
           },
           'Cash intent requests move to pending verification queues so cashier review is auditable.',
           {
             media: {
-              type: 'embed',
-              title: 'Payment Submission Tutorial',
-              url: 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
-              caption: 'How to submit proof, request cash intent, and monitor verification status.',
+              type: 'image',
+              title: 'Cashier Queue Snapshot',
+              url: '/help-media/cashier-queue.png',
+              caption: 'Live screenshot of cashier verification workflow for proof and queue decisions.',
             },
           },
           'Payment stage progression updates project visibility and financial reporting.',
         ],
         checklist: [
-          'Confirm selected payment stage',
-          'Submit proof or cash intent request',
-          'Monitor verification status in payment timeline',
+          'Confirm the correct payment stage before acting',
+          'Submit proof or cash intent with complete details',
+          'Monitor verification status in the payment timeline',
         ],
         systemLinks: [{ label: 'Payments', path: '/payments' }],
       },
@@ -400,6 +458,14 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         keywords: ['cashier queue', 'proof review', 'decline payment', 'verify payment'],
         body: [
           'Use Cashier Queue for pending payment proofs and cash verification decisions.',
+          {
+            media: {
+              type: 'image',
+              title: 'Cashier Verification Queue Snapshot',
+              url: '/help-media/cashier-queue.png',
+              caption: 'Live screenshot of cashier verification where proof submissions are reviewed and actioned.',
+            },
+          },
           'Maintain strict decision discipline because approvals and rejections trigger customer notifications.',
           'Coordinate discrepancies with admin and document outcomes in the action context.',
         ],
@@ -415,40 +481,41 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
       },
       {
         slug: 'refunds',
-        title: 'Refund Requests and Customer Tracking',
-        summary: 'How refund requests are created, updated, and resolved.',
+        title: 'Refund Request Workflow',
+        summary: 'How refund requests are filed, reviewed, updated, and resolved.',
         roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN],
         keywords: ['refund', 'refund request', 'cancel refund', 'denied refund', 'approved refund'],
         body: [
-          'Customers file and monitor refund requests with account details and reason context.',
+          'Refund requests should include complete account details, reason context, and the correct refund method.',
           {
             media: {
-              type: 'embed',
-              title: 'Refund Tracking Walkthrough',
-              url: 'https://www.youtube.com/watch?v=aqz-KE-bpKQ',
-              caption: 'Example flow for submitting, editing, and tracking refund request status.',
+              type: 'image',
+              title: 'Refund Requests Queue Snapshot',
+              url: '/help-media/refund-requests-queue.png',
+              caption: 'Live screenshot of refund queue filtering and status review in the Refund Requests workspace.',
             },
           },
           'Cashiers and admins review queue items and progress statuses until closure.',
           'Use timeline details for transparent history and audit readiness.',
         ],
         checklist: [
-          'Ensure complete account details',
-          'Track current refund status',
-          'Document final disposition in queue workflow',
+          'Ensure complete account and refund details',
+          'Track the current refund status before following up',
+          'Document the final disposition in the queue workflow',
         ],
         systemLinks: [
-          { label: 'My Refunds', path: '/my-refunds' },
-          { label: 'Refund Requests', path: '/refund-requests' },
+          { label: 'Payments Workspace', path: '/payments' },
+          { label: 'Refunds Tab', path: '/payments' },
         ],
       },
       {
         slug: 'payment-stage-status-reference',
         title: 'Payment Stage Status Reference',
         summary: 'Interpret pending, proof submitted, verified, and declined outcomes.',
+        roles: PAYMENT_HELP_ROLES,
         keywords: ['proof submitted', 'verified payment', 'declined payment', 'payment status'],
         body: [
-          'Each payment stage follows strict status transitions that define what customers and cashiers can do next.',
+          'Each payment stage follows strict status transitions that define what the current role can do next.',
           'Declined proofs require corrected re-submission and should include clear decline reasons for faster recovery.',
           'Verified stages can activate downstream project/fabrication transitions depending on plan and gate configuration.',
         ],
@@ -466,6 +533,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'cash-collection-and-reconciliation',
         title: 'Cash Collection and Reconciliation',
         summary: 'Internal process for turnover, receiving, and discrepancy handling.',
+        roles: CASH_COLLECTION_HELP_ROLES,
         keywords: ['cash collection', 'cash reconciliation', 'cash discrepancy'],
         body: [
           'Cash collection workflow tracks turnover from field/sales handling into cashier receipt and reconciliation steps.',
@@ -483,9 +551,9 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
   },
   {
     slug: 'operations-admin',
-    title: 'Operations and Admin',
-    description: 'Control-plane guidance for settings, users, slots, and governance.',
-    roles: [Role.ADMIN, Role.APPOINTMENT_AGENT],
+    title: 'Operations and Reporting',
+    description: 'Role-restricted controls for schedules, reporting, and platform governance.',
+    roles: OPERATIONS_HELP_ROLES,
     articles: [
       {
         slug: 'system-settings',
@@ -494,6 +562,14 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: [Role.ADMIN],
         body: [
           'Settings centralize operational toggles and system behavior values.',
+          {
+            media: {
+              type: 'image',
+              title: 'System Settings Snapshot',
+              url: '/help-media/settings-overview.png',
+              caption: 'Live screenshot of admin settings used for platform-level controls and governance.',
+            },
+          },
           'Config-backed pages like Help can be maintained without redeploying frontend code.',
           'Use controlled updates and clear descriptions for each config key.',
         ],
@@ -508,9 +584,17 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'slot-management',
         title: 'Slot Management and Calendar Governance',
         summary: 'Handle availability, holidays, and blocked schedules.',
-        roles: [Role.ADMIN, Role.APPOINTMENT_AGENT],
+        roles: SLOT_CONTROL_ROLES,
         body: [
           'Slot Management controls open and blocked booking windows.',
+          {
+            media: {
+              type: 'image',
+              title: 'Slot Management Snapshot',
+              url: '/help-media/slot-management-overview.png',
+              caption: 'Live screenshot of slot controls for calendar governance, blocked windows, and availability rules.',
+            },
+          },
           'Use this carefully during holidays, high volume periods, and maintenance windows.',
           'Coordinate changes with agents and customer-facing announcements.',
         ],
@@ -528,6 +612,14 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: [Role.ADMIN],
         body: [
           'Manage Accounts is the authoritative panel for staff and customer account administration.',
+          {
+            media: {
+              type: 'image',
+              title: 'Manage Accounts Snapshot',
+              url: '/help-media/users-overview.png',
+              caption: 'Live screenshot of user and role governance controls in the Manage Accounts module.',
+            },
+          },
           'Assign roles carefully to avoid accidental exposure of restricted modules.',
           'Use principle-of-least-privilege for operational safety and audit quality.',
         ],
@@ -542,6 +634,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'maintenance-and-holiday-controls',
         title: 'Maintenance and Holiday Controls',
         summary: 'How operational blackout periods affect customer and staff workflows.',
+        roles: SLOT_CONTROL_ROLES,
         body: [
           'Maintenance and holiday configuration influence slot availability, request timing, and operational expectations.',
           'Changes should be announced before effectivity to minimize appointment friction and support escalations.',
@@ -561,9 +654,18 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'reports-and-audit-readiness',
         title: 'Reports and Audit Readiness',
         summary: 'Use reporting and audit traces to validate operations and exceptions.',
+        roles: REPORTING_HELP_ROLES,
         body: [
-          'Operational reporting should be aligned with status transitions and verified financial actions across modules.',
-          'For disputes, audit logs and timeline events are the first source to reconstruct decision history.',
+          'Operational reporting should align with verified payments, refunds, cash handling, and status transitions across the system.',
+          {
+            media: {
+              type: 'image',
+              title: 'Reports Workspace Snapshot',
+              url: '/help-media/reports-overview.png',
+              caption: 'Live screenshot of reports and analytics views used for reconciliation and audit readiness.',
+            },
+          },
+          'Cashiers should use reports together with queue history to validate daily reconciliation, while admins can combine reports with audit and timeline evidence for disputes.',
           'Use role-restricted report views responsibly and avoid exporting stale snapshots for official reconciliations.',
         ],
         checklist: [
@@ -579,11 +681,13 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
     slug: 'support-and-troubleshooting',
     title: 'Support and Troubleshooting',
     description: 'Issue triage playbooks for common blockers across customer and internal workflows.',
+    roles: ALL_ROLES,
     articles: [
       {
         slug: 'common-blockers',
         title: 'Common Blockers and Quick Fixes',
         summary: 'Fast triage for access, status, and workflow gate issues.',
+        roles: ALL_ROLES,
         keywords: ['blocked action', 'cannot proceed', 'forbidden', 'status blocked'],
         body: [
           'Most blockers are caused by unmet prerequisites, stale status assumptions, or role/ownership restrictions.',
@@ -604,6 +708,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         slug: 'escalation-playbook',
         title: 'Escalation Playbook',
         summary: 'How to escalate with enough context for fast resolution.',
+        roles: ALL_ROLES,
         keywords: ['support escalation', 'issue report', 'ticket context', 'troubleshoot'],
         body: [
           'Escalations should include route/page context, current status, expected action, and observed blocking behavior.',
@@ -695,6 +800,12 @@ function canRoleSee(targetRoles: Role[] | undefined, userRoles: Role[]) {
   return userRoles.some((role) => targetRoles.includes(role));
 }
 
+function getVisibleSystemLinks(systemLinks: SystemLink[] | undefined, userRoles: Role[]) {
+  if (!systemLinks || systemLinks.length === 0) return undefined;
+  const visibleLinks = systemLinks.filter((link) => canAccessPath(link.path, userRoles));
+  return visibleLinks.length > 0 ? visibleLinks : undefined;
+}
+
 function getVisibleKnowledgeBase(isCustomerView: boolean, userRoles: Role[]) {
   const allowed = isCustomerView ? CUSTOMER_CATEGORY_SLUGS : INTERNAL_CATEGORY_SLUGS;
   return KNOWLEDGE_BASE
@@ -702,7 +813,12 @@ function getVisibleKnowledgeBase(isCustomerView: boolean, userRoles: Role[]) {
     .filter((category) => canRoleSee(category.roles, userRoles))
     .map((category) => ({
       ...category,
-      articles: category.articles.filter((article) => canRoleSee(article.roles, userRoles)),
+      articles: category.articles
+        .filter((article) => canRoleSee(article.roles, userRoles))
+        .map((article) => ({
+          ...article,
+          systemLinks: getVisibleSystemLinks(article.systemLinks, userRoles),
+        })),
     }))
     .filter((category) => category.articles.length > 0);
 }
@@ -1031,10 +1147,10 @@ export function HelpCenterPage() {
   const [search, setSearch] = useState('');
 
   const viewRoleGroups = useMemo(
-    () => Object.values(Role)
+    () => userRoles
       .map((role) => ({ role, sections: roleSections?.[role] || [] }))
       .filter((group) => group.sections.length > 0),
-    [roleSections],
+    [roleSections, userRoles],
   );
 
   const searchResults = useMemo(() => {
@@ -1192,30 +1308,34 @@ export function HelpCenterPage() {
 
   return (
     <div className="space-y-5">
-      <Card className="rounded-2xl border-[color:var(--color-border)]/60">
-        <CardHeader className="space-y-3 sm:space-y-0 sm:flex sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0">
-            <CardTitle className="flex items-center gap-2 text-xl text-[var(--color-card-foreground)]">
-              <LifeBuoy className="h-5 w-5" />
-              {isCustomerView ? 'Customer Help Center' : 'Internal Help Center'}
-            </CardTitle>
-            <CardDescription className="mt-1 text-[var(--text-metal-color)]">
-              {isCustomerView
-                ? 'Guides for booking, payments, refunds, and tracking your projects.'
-                : 'Operational guides for staff workflows, queues, controls, and governance.'}
-            </CardDescription>
+      <Card className="metal-panel rounded-[1.6rem] border-[color:var(--color-border)]/60 overflow-hidden">
+        <CardHeader className="space-y-4 sm:space-y-0 sm:flex sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex items-start gap-3">
+            <div className="silver-sheen flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-[0_14px_28px_rgba(15,23,42,0.12)]">
+              <LifeBuoy className="h-6 w-6 text-[#33414d]" />
+            </div>
+            <div>
+              <CardTitle className="text-xl text-[var(--color-card-foreground)]">
+                {isCustomerView ? 'Customer Help Center' : 'Internal Help Center'}
+              </CardTitle>
+              <CardDescription className="mt-1 text-[var(--text-metal-color)]">
+                {isCustomerView
+                  ? 'Guides for booking, payments, refunds, and tracking your projects.'
+                  : 'Operational guides for staff workflows, queues, controls, and governance.'}
+              </CardDescription>
+            </div>
           </div>
-          <div className="w-full sm:w-auto sm:min-w-[280px]">
+          <div className="w-full sm:w-auto sm:min-w-[300px]">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-metal-muted-color)]" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="h-10 rounded-lg pl-9"
+                className="h-10 rounded-xl pl-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                 placeholder={
                   isCustomerView
-                    ? 'Search customer help topics (payments, refunds, projects...)'
-                    : 'Search internal workflows, queues, and controls'
+                    ? 'Search help topics (payments, refunds, projects...)'
+                    : 'Search workflows, queues, and controls'
                 }
               />
             </div>
@@ -1328,31 +1448,46 @@ export function HelpCenterPage() {
                       Use layered routes like /help/getting-started/account-setup or /help/payments-refunds/refunds.
                     </CardDescription>
                   </CardHeader>
-                  <CardContent className="space-y-3">
-                    {visibleKnowledgeBase.map((category) => (
-                      <div key={`map-${category.slug}`} className="rounded-xl border border-[color:var(--color-border)]/60 p-4">
-                        <div className="flex flex-wrap items-center justify-between gap-2">
-                          <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{category.title}</h3>
-                          <Badge
-                            variant="secondary"
-                            className="rounded-full border border-white/30 bg-[linear-gradient(180deg,#f7fafc_0%,#dbe3eb_100%)] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-[#334155]"
-                          >
-                            {category.articles.length} article{category.articles.length === 1 ? '' : 's'}
-                          </Badge>
+                  <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {visibleKnowledgeBase.map((category) => {
+                      const iconMap: Record<string, React.ElementType> = {
+                        'getting-started': BookOpen,
+                        'appointments-visits': CalendarCheck,
+                        'projects-fabrication': FolderOpen,
+                        'payments-refunds': CreditCard,
+                        'operations-admin': Settings,
+                        'support-and-troubleshooting': HelpCircle,
+                      };
+                      const IconComp = iconMap[category.slug] || Wrench;
+                      return (
+                      <Link
+                        key={`map-${category.slug}`}
+                        to={`/help/${category.slug}`}
+                        className="group block rounded-[1.2rem] border border-[color:var(--color-border)]/60 p-5 transition-all hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_34px_rgba(18,22,27,0.1)] hover:border-[color:var(--color-border)]"
+                      >
+                        <div className="flex items-start gap-3">
+                          <div className="silver-sheen flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-[0_10px_22px_rgba(15,23,42,0.1)] transition-transform group-hover:scale-[1.04]">
+                            <IconComp className="h-5 w-5 text-[#33414d]" />
+                          </div>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center justify-between gap-2">
+                              <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{category.title}</h3>
+                              <Badge
+                                variant="secondary"
+                                className="shrink-0 rounded-full border border-white/30 bg-[linear-gradient(180deg,#f7fafc_0%,#dbe3eb_100%)] px-2 py-0.5 text-[10px] font-semibold text-[#334155] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(30,41,59,0.9)_0%,rgba(15,23,42,0.95)_100%)] dark:text-slate-300"
+                              >
+                                {category.articles.length}
+                              </Badge>
+                            </div>
+                            <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-metal-color)]">{category.description}</p>
+                          </div>
                         </div>
-                        <p className="mt-1.5 text-sm text-[var(--text-metal-color)]">{category.description}</p>
-                        <div className="mt-3 flex flex-wrap gap-2">
-                          <Button size="sm" variant="outline" className="rounded-lg" asChild>
-                            <Link to={`/help/${category.slug}`}>Open Category</Link>
-                          </Button>
-                          {category.articles.slice(0, 2).map((article) => (
-                            <Button key={`${category.slug}-${article.slug}`} size="sm" variant="ghost" className="rounded-lg" asChild>
-                              <Link to={`/help/${category.slug}/${article.slug}`}>{article.title}</Link>
-                            </Button>
-                          ))}
+                        <div className="mt-3 flex items-center gap-1 text-xs font-medium text-[var(--text-metal-muted-color)] group-hover:text-[var(--color-card-foreground)] transition-colors">
+                          Browse articles <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                         </div>
-                      </div>
-                    ))}
+                      </Link>
+                      );
+                    })}
                   </CardContent>
                 </Card>
 

@@ -152,11 +152,7 @@ const PaymentsPage = lazy(() =>
   import('@/pages/payments/PaymentsPage').then((module) => ({ default: module.PaymentsPage })),
 );
 
-const CashierQueuePage = lazy(() =>
-  import('@/pages/payments/CashierQueuePage').then((module) => ({
-    default: module.CashierQueuePage,
-  })),
-);
+
 const CashCollectionsPage = lazy(() =>
   import('@/pages/cash/CashCollectionsPage').then((module) => ({
     default: module.CashCollectionsPage,
@@ -176,16 +172,7 @@ const SlotManagementPage = lazy(() =>
     default: module.SlotManagementPage,
   })),
 );
-const RefundQueuePage = lazy(() =>
-  import('@/pages/refunds/RefundQueuePage').then((module) => ({
-    default: module.RefundQueuePage,
-  })),
-);
-const MyRefundsPage = lazy(() =>
-  import('@/pages/refunds/MyRefundsPage').then((module) => ({
-    default: module.MyRefundsPage,
-  })),
-);
+
 const HelpCenterPage = lazy(() =>
   import('@/pages/HelpCenterPage').then((module) => ({
     default: module.HelpCenterPage,
@@ -205,6 +192,7 @@ const REPORT_ROLES = [Role.CASHIER, Role.ADMIN];
 const ADMIN_ROLES = [Role.ADMIN];
 const SLOT_MGMT_ROLES = [Role.ADMIN, Role.APPOINTMENT_AGENT];
 const AGENT_ROLES = [Role.APPOINTMENT_AGENT, Role.SALES_STAFF];
+const CUSTOMER_BOOKING_ROLES = [Role.CUSTOMER];
 
 export default function App() {
   const { fetchMe, setCsrfToken, setAccessToken } = useAuthStore();
@@ -297,8 +285,22 @@ export default function App() {
               <Route path="/profile" element={<Navigate to="/account/profile" replace />} />
               <Route path="/change-password" element={<ChangePasswordPage />} />
 
-              <Route path="/appointments" element={<AppointmentsPage />} />
-              <Route path="/appointments/book" element={<BookAppointmentPage />} />
+              <Route
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN]}
+                  />
+                }
+              >
+                <Route path="/appointments" element={<AppointmentsPage />} />
+              </Route>
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={CUSTOMER_BOOKING_ROLES} />
+                }
+              >
+                <Route path="/appointments/book" element={<BookAppointmentPage />} />
+              </Route>
               <Route
                 element={
                   <ProtectedRoute allowedRoles={AGENT_ROLES} />
@@ -306,8 +308,22 @@ export default function App() {
               >
                 <Route path="/appointments/create-for-customer" element={<AgentBookAppointmentPage />} />
               </Route>
-              <Route path="/appointments/:id/pay-ocular-fee" element={<PayOcularFeePage />} />
-              <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
+              <Route
+                element={
+                  <ProtectedRoute allowedRoles={CUSTOMER_BOOKING_ROLES} />
+                }
+              >
+                <Route path="/appointments/:id/pay-ocular-fee" element={<PayOcularFeePage />} />
+              </Route>
+              <Route
+                element={
+                  <ProtectedRoute
+                    allowedRoles={[Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN]}
+                  />
+                }
+              >
+                <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
+              </Route>
 
               <Route
                 element={
@@ -355,27 +371,6 @@ export default function App() {
               </Route>
 
 
-
-              <Route
-                element={
-                  <ProtectedRoute
-                    allowedRoles={[Role.CASHIER, Role.ADMIN]}
-                  />
-                }
-              >
-                <Route path="/cashier-queue" element={<CashierQueuePage />} />
-                <Route path="/refund-requests" element={<RefundQueuePage />} />
-              </Route>
-
-              <Route
-                element={
-                  <ProtectedRoute
-                    allowedRoles={[Role.CUSTOMER]}
-                  />
-                }
-              >
-                <Route path="/my-refunds" element={<MyRefundsPage />} />
-              </Route>
 
               <Route
                 element={
