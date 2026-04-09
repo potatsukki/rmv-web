@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Plus, Calendar, FileText, ChevronRight, MapPin } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -77,7 +77,8 @@ export function AppointmentsPage() {
   const { user } = useAuthStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('');
+  const [searchParams] = useSearchParams();
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
   const [search, setSearch] = useState('');
   const isDark = resolvedTheme === 'dark';
 
@@ -224,18 +225,18 @@ export function AppointmentsPage() {
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
-                        <p className="truncate text-sm font-medium text-[#171b21] dark:text-slate-100">
+                        <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
                           {appt.customerName || 'Appointment'}
                         </p>
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
-                        <StatusBadge status={statusKey} label={config.label} className="h-5 px-1.5 py-0 text-[9px]" />
+                        <StatusBadge status={statusKey} label={config.label} className="h-5 px-1.5 py-0 text-[10px]" />
                         <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500" />
                       </div>
                     </div>
 
                     {/* Row 2: Meta — type · date · time */}
-                    <div className="mt-2 ml-[18px] flex items-center gap-1.5 text-[11px] text-[#68727d] dark:text-slate-400">
+                    <div className="mt-2 ml-[18px] flex items-center gap-1.5 text-xs text-[#68727d] dark:text-slate-400">
                       <span className="capitalize">{appt.type}</span>
                       <span className="text-[#b8c0c9] dark:text-slate-500">·</span>
                       <span>
@@ -285,12 +286,12 @@ export function AppointmentsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Customer</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Type</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Date & Time</TableHead>
-                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Location</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
-                  <TableHead className="pr-5 text-right text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Open</TableHead>
+                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">Customer</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Type</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Date & Time</TableHead>
+                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Location</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="pr-5 text-right text-xs font-semibold uppercase tracking-wider text-[#68727d]">Open</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -305,11 +306,11 @@ export function AppointmentsPage() {
                       className="group cursor-pointer border-b border-[#e1e6ec] transition-colors hover:bg-white/45 dark:border-slate-700 dark:hover:bg-slate-800/50"
                     >
                       {/* Customer */}
-                      <TableCell className="pl-5 py-4">
+                      <TableCell className="pl-5 py-5">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
+                          <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${config.dot}`} />
                           <div className="min-w-0">
-                            <p className="truncate text-sm font-medium text-[#171b21] dark:text-slate-100 transition-colors group-hover:text-[#4f6679] dark:group-hover:text-sky-300">
+                            <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100 transition-colors group-hover:text-[#4f6679] dark:group-hover:text-sky-300">
                               {appt.customerName || 'Appointment'}
                             </p>
                             {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
@@ -323,16 +324,16 @@ export function AppointmentsPage() {
                       </TableCell>
 
                       {/* Type */}
-                      <TableCell className="py-4">
-                        <span className="inline-flex items-center text-xs font-medium capitalize text-[#616a74] dark:text-slate-400">
+                      <TableCell className="py-5">
+                        <span className="inline-flex items-center text-sm font-medium capitalize text-[#616a74] dark:text-slate-400">
                           {appt.type}
                         </span>
                       </TableCell>
 
                       {/* Date & Time */}
-                      <TableCell className="py-4">
-                        <div className="text-sm">
-                          <p className="text-[#1d1d1f] dark:text-slate-100 font-medium">
+                      <TableCell className="py-5">
+                        <div>
+                          <p className="text-sm text-[#1d1d1f] dark:text-slate-100 font-medium">
                             {appt.date ? format(new Date(appt.date), 'MMM d, yyyy') : '—'}
                           </p>
                           <p className="mt-0.5 text-xs text-[#68727d] dark:text-slate-400">
@@ -342,7 +343,7 @@ export function AppointmentsPage() {
                       </TableCell>
 
                       {/* Location — hidden below lg */}
-                      <TableCell className="py-4 hidden lg:table-cell">
+                      <TableCell className="py-5 hidden lg:table-cell">
                         {appt.addressStructured?.city || appt.address ? (
                           <div className="flex max-w-[200px] items-center gap-1.5 text-xs text-[#616a74] dark:text-slate-400">
                             <MapPin className="h-3 w-3 flex-shrink-0 text-[#8b95a0] dark:text-slate-500" />
@@ -354,12 +355,12 @@ export function AppointmentsPage() {
                       </TableCell>
 
                       {/* Status */}
-                      <TableCell className="py-4">
-                        <StatusBadge status={statusKey} label={config.label} className="text-[10px]" />
+                      <TableCell className="py-5">
+                        <StatusBadge status={statusKey} label={config.label} className="text-[11px]" />
                       </TableCell>
 
                       {/* Arrow */}
-                      <TableCell className="py-4 pr-5 text-right">
+                      <TableCell className="py-5 pr-5 text-right">
                         <span className="inline-flex items-center gap-1 text-xs font-semibold text-[#4d5660] dark:text-slate-400 group-hover:text-[#171b21] dark:group-hover:text-slate-200">
                           Open
                           <ChevronRight className="h-4 w-4 text-[#9ca6b1] dark:text-slate-500 transition-colors group-hover:text-[#68727d] dark:group-hover:text-slate-300" />

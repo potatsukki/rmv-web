@@ -5,6 +5,7 @@ import {
   FolderOpen,
   CreditCard,
   DollarSign,
+  Coins,
   TrendingUp,
   Hammer,
   ArrowRight,
@@ -254,7 +255,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     case Role.CASHIER:
       return [
         { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', detail: 'Submitted payment proofs that still need cashier review before they can be marked paid.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
+        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
         { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash transactions that still need collection, confirmation, or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         activeProjects,
       ];
@@ -266,7 +267,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       ];
     case Role.ADMIN:
       return [
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: DollarSign, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
+        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
         activeProjects,
         { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Proofs to verify', detail: 'Payment submissions waiting for cashier review or admin visibility.', path: '/cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', detail: 'All appointments scheduled for today across the operation.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
@@ -542,9 +543,9 @@ export function DashboardPage() {
             <Link key={action.label} to={action.path} className="group">
               <div className="metal-panel flex items-center gap-2 p-2.5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_32px_rgba(18,22,27,0.1)] sm:gap-4 sm:p-4">
                 <div
-                  className={`flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-lg sm:rounded-xl bg-gradient-to-br ${action.color} text-white shadow-sm flex-shrink-0`}
+                  className="silver-sheen flex h-9 w-9 sm:h-11 sm:w-11 items-center justify-center rounded-lg sm:rounded-xl shadow-[0_10px_22px_rgba(15,23,42,0.1)] flex-shrink-0"
                 >
-                  <action.icon className="h-4 w-4 sm:h-5 sm:w-5" />
+                  <action.icon className="h-4 w-4 sm:h-5 sm:w-5 text-[#33414d]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-xs font-semibold leading-tight text-[#171b21] dark:text-slate-100 group-hover:text-[#4d5660] dark:group-hover:text-slate-300 sm:text-sm">

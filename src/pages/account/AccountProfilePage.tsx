@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, Navigation, PenTool } from 'lucide-react';
+import { Check, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 
@@ -261,21 +261,13 @@ export function AccountProfilePage() {
             {/* ── Pinned Location Map ── */}
             <div className="rounded-xl border border-[color:var(--color-border)]">
               <Suspense fallback={<MapPanelFallback />}>
-                <LocationPicker value={pinnedLocation} onChange={handleLocationPick} />
+                <LocationPicker 
+                  value={pinnedLocation} 
+                  address={formattedAddress}
+                  onChange={handleLocationPick} 
+                />
               </Suspense>
             </div>
-            {pinnedLocation && (
-              <div className="flex items-center gap-2 rounded-lg border border-emerald-300/70 bg-emerald-50 px-3 py-1.5 text-xs text-emerald-700 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100">
-                <Navigation className="h-3.5 w-3.5" />
-                <span className="font-medium">Pinned Location</span>
-                <span className="text-emerald-600 dark:text-emerald-200/90">
-                  {pinnedLocation.lat.toFixed(5)}, {pinnedLocation.lng.toFixed(5)}
-                </span>
-              </div>
-            )}
-            {formattedAddress && (
-              <p className="px-1 text-xs text-[var(--text-metal-muted-color)]">{formattedAddress}</p>
-            )}
 
             {/* ── Structured Address Fields ── */}
             <div className="pt-3 space-y-4">

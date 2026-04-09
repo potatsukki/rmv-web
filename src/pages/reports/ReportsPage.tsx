@@ -11,20 +11,19 @@ import {
   Cell,
 } from 'recharts';
 import {
-  DollarSign,
   CreditCard,
   TrendingUp,
   AlertCircle,
   FolderOpen,
   CalendarCheck,
   XCircle,
-  UserX,
   Building2,
   MapPin,
   Users,
   Download,
   ShieldCheck,
   RefreshCw,
+  Coins,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -50,9 +49,8 @@ import {
   useAcknowledgeLifecycleMismatchHotspot,
   useLifecycleMismatchHotspots,
 } from '@/hooks/useReports';
-import { useConfigs } from '@/hooks/useConfig';
+import { useConfigs, useUpdateConfig } from '@/hooks/useConfig';
 import {
-  buildLifecycleRecommendedActions,
   buildLifecycleHealthSnapshot,
   buildLifecycleRangeParams,
   deriveLifecycleAlert,
@@ -242,6 +240,7 @@ export function ReportsPage() {
     const feature = configs?.find((cfg) => cfg.key === 'feature_lifecycle_mismatch_analytics');
     return typeof feature?.value === 'boolean' ? feature.value : true;
   })();
+  const updateConfig = useUpdateConfig();
   const {
     data: lifecycleHotspots,
     isLoading: lifecycleLoading,
@@ -278,20 +277,6 @@ export function ReportsPage() {
         criticalHotspotCount,
       }),
     [criticalHotspotCount, lifecycleAlert, lifecycleHotspots?.refreshRequiredTotal, lifecycleHotspots?.total],
-  );
-  const topHotspot = lifecycleHotspots?.items?.[0];
-  const lifecycleRecommendedActions = useMemo(
-    () =>
-      buildLifecycleRecommendedActions({
-        alertLevel: lifecycleAlert.level,
-        topModule: lifecycleTopModule,
-        topTransition: {
-          targetType: topHotspot?.targetType,
-          currentStatus: topHotspot?.currentStatus,
-          attemptedStatus: topHotspot?.attemptedStatus,
-        },
-      }),
-    [lifecycleAlert.level, lifecycleTopModule, topHotspot?.attemptedStatus, topHotspot?.currentStatus, topHotspot?.targetType],
   );
 
   const handleExportLifecycleCsv = () => {
@@ -390,7 +375,7 @@ export function ReportsPage() {
         </div>
       </div>
 
-      {isAdmin && lifecycleFeatureEnabled && (
+      {isAdmin && lifecycleFeatureEnabled && (lifecycleHotspots?.total ?? 0) > 0 && (
         <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-[1.35rem] border-[color:var(--color-border)]/60`}>
           <CardContent className="p-4 sm:p-5">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
@@ -434,28 +419,6 @@ export function ReportsPage() {
                 <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                   Last updated {formatLastUpdated(lifecycleUpdatedAt)}. Auto-refresh runs every 60 seconds while this tab is active.
                 </p>
-                <div className={`mt-3 rounded-xl border px-4 py-3 ${isDark ? 'border-slate-700/70 bg-slate-900/70' : 'border-[color:var(--color-border)]/65 bg-white/85'}`}>
-                  <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`}>
-                    Recommended Next Steps
-                  </p>
-                  <div className="mt-2 space-y-2">
-                    {lifecycleRecommendedActions.map((action, index) => (
-                      <div key={`${action.label}:${index}`} className="flex items-start gap-2">
-                        <span className={`mt-[2px] inline-flex h-4.5 w-4.5 shrink-0 items-center justify-center rounded-full text-[10px] font-semibold ${isDark ? 'bg-slate-700 text-slate-100' : 'bg-slate-200 text-slate-700'}`}>
-                          {index + 1}
-                        </span>
-                        <div className="min-w-0">
-                          <Link to={action.path} className={`text-xs font-semibold hover:underline ${isDark ? 'text-sky-200' : 'text-sky-700'}`}>
-                            {action.label}
-                          </Link>
-                          <p className={`text-[11px] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>
-                            {action.rationale}
-                          </p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
               </div>
 
               <div className={`w-full rounded-2xl border px-4 py-4 lg:w-[17rem] ${isDark ? 'border-slate-700/70 bg-slate-900/55' : 'border-[color:var(--color-border)]/65 bg-white/80'}`}>
@@ -516,7 +479,7 @@ export function ReportsPage() {
         <KpiCard
           label="Total Revenue"
           value={formatCurrencyFull(revenue?.totalRevenue ?? 0)}
-          icon={DollarSign}
+          icon={Coins}
           isLoading={anyKpiLoading}
           isDark={isDark}
         />
@@ -566,7 +529,7 @@ export function ReportsPage() {
               Appointment Funnel
             </CardTitle>
             <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-              Track appointment outcomes before they convert into project work.
+              Track appointment outcomes before they convert into project work. Click a stat to view those appointments.
             </p>
           </CardHeader>
           <CardContent>
@@ -575,42 +538,40 @@ export function ReportsPage() {
             ) : conversion ? (
               <div className="space-y-4">
                 {/* Stat row */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div className="grid grid-cols-3 sm:grid-cols-3 gap-3">
                   {[
                     {
                       label: 'Total',
                       value: conversion.totalAppointments,
                       icon: CalendarCheck,
                       badge: 'default' as const,
+                      filterPath: '/appointments',
                     },
                     {
                       label: 'Completed',
                       value: conversion.completed,
                       icon: CalendarCheck,
                       badge: 'success' as const,
+                      filterPath: '/appointments?status=completed',
                     },
                     {
                       label: 'Cancelled',
                       value: conversion.cancelled,
                       icon: XCircle,
                       badge: 'destructive' as const,
-                    },
-                    {
-                      label: 'No-Show',
-                      value: conversion.noShow,
-                      icon: UserX,
-                      badge: 'warning' as const,
+                      filterPath: '/appointments?status=cancelled',
                     },
                   ].map((s) => (
-                    <div
+                    <Link
                       key={s.label}
-                      className="metal-panel flex items-center gap-3 rounded-[1rem] border-[color:var(--color-border)]/50 p-3"
+                      to={s.filterPath}
+                      className="group/stat metal-panel flex items-center gap-3 rounded-[1rem] border-[color:var(--color-border)]/50 p-3 transition-all hover:-translate-y-0.5 hover:shadow-md dark:hover:shadow-lg dark:hover:shadow-black/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500"
                     >
                       <div className="silver-sheen flex h-9 w-9 shrink-0 items-center justify-center rounded-xl">
                         <s.icon className="h-4 w-4 text-[#49535d] dark:text-[#49535d]" />
                       </div>
                       <div className="min-w-0">
-                        <p className={`text-lg font-bold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
+                        <p className={`text-lg font-bold transition-colors ${isDark ? 'text-slate-50 group-hover/stat:text-cyan-400' : 'text-[var(--color-card-foreground)] group-hover/stat:text-cyan-600'}`}>
                           {s.value}
                         </p>
                         <div className="flex items-center gap-1.5">
@@ -626,7 +587,7 @@ export function ReportsPage() {
                           </Badge>
                         </div>
                       </div>
-                    </div>
+                    </Link>
                   ))}
                 </div>
 
@@ -690,7 +651,7 @@ export function ReportsPage() {
         <CardContent>
           {revLoading ? (
             <Skeleton className="h-64 w-full rounded-xl" />
-          ) : revenue && revenue.items.length > 0 ? (
+          ) : revenue && revenue.items.length > 0 && revenue.items.some((item: any) => item.total > 0) ? (
             <div className={`rounded-[1.35rem] border border-[color:var(--color-border)]/55 p-3 ${isDark ? 'bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.16),rgba(2,6,23,0.94)_62%)]' : 'bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.74),rgba(238,242,247,0.96)_68%)]'}`}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={revenue.items}>
@@ -865,7 +826,7 @@ export function ReportsPage() {
           <CardContent>
             {wlLoading ? (
               <Skeleton className="h-48 w-full rounded-xl" />
-            ) : workload && workload.length > 0 ? (
+            ) : workload && workload.length > 0 && workload.some((w: any) => Number(w.activeProjects) > 0 || Number(w.completedProjects) > 0) ? (
               <Table>
                 <TableHeader>
                   <TableRow className="hover:bg-transparent border-[color:var(--color-border)]">
@@ -915,7 +876,7 @@ export function ReportsPage() {
       )}
 
       {/* ── Lifecycle Mismatch Hotspots — admin only ── */}
-      {isAdmin && (
+      {isAdmin && lifecycleFeatureEnabled && (
         <Card id="lifecycle-hotspots" className="metal-panel-strong rounded-[1.6rem] border-[color:var(--color-border)]/60">
           <CardHeader>
             <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
@@ -960,6 +921,19 @@ export function ReportsPage() {
                 >
                   <Download className="mr-1.5 h-3.5 w-3.5" />
                   Export CSV
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => updateConfig.mutate({ key: 'feature_lifecycle_mismatch_analytics', value: false })}
+                  disabled={updateConfig.isPending}
+                  className={`rounded-xl h-8 px-3 text-[11px] uppercase tracking-[0.08em] ${
+                    isDark
+                      ? 'border-slate-600/80 bg-slate-900/75 text-slate-100 hover:bg-slate-800/90'
+                      : 'border-[color:var(--color-border)]/70 bg-white/90 text-[var(--color-card-foreground)] hover:bg-white'
+                  }`}
+                >
+                  Disable
                 </Button>
               </div>
             </div>
@@ -1160,15 +1134,23 @@ export function ReportsPage() {
 
       {isAdmin && !lifecycleFeatureEnabled && (
         <Card className="metal-panel rounded-[1.6rem] border-[color:var(--color-border)]/60">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold text-[var(--color-card-foreground)]">
-              Lifecycle Mismatch Hotspots
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-sm text-[var(--text-metal-color)]">
-              Lifecycle mismatch analytics is currently disabled via settings.
+          <CardContent className="flex flex-col items-center justify-center gap-3 py-10">
+            <ShieldCheck className={`h-8 w-8 ${isDark ? 'text-slate-500' : 'text-[#9ca6b1]'}`} />
+            <p className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+              Lifecycle mismatch analytics is currently disabled.
             </p>
+            <Button
+              size="sm"
+              className={`h-9 rounded-xl px-5 text-xs uppercase tracking-[0.08em] ${
+                isDark
+                  ? 'border-sky-400/45 bg-[linear-gradient(180deg,rgba(44,115,179,0.45)_0%,rgba(25,67,112,0.55)_100%)] text-sky-100 shadow-[inset_0_1px_0_rgba(186,230,253,0.22),0_12px_22px_rgba(2,8,23,0.32)] hover:bg-[linear-gradient(180deg,rgba(54,128,196,0.48)_0%,rgba(30,79,129,0.58)_100%)]'
+                  : 'border-white/55 bg-[linear-gradient(180deg,rgba(248,250,252,0.99)_0%,rgba(224,232,240,0.97)_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.94),0_12px_22px_rgba(0,0,0,0.18)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(232,238,244,1)_100%)]'
+              }`}
+              disabled={updateConfig.isPending}
+              onClick={() => updateConfig.mutate({ key: 'feature_lifecycle_mismatch_analytics', value: true })}
+            >
+              Enable Lifecycle Analytics
+            </Button>
           </CardContent>
         </Card>
       )}

@@ -330,10 +330,10 @@ export function UsersPage() {
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-sm font-medium text-[#171b21] dark:text-slate-100">
+                    <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
                       {u.firstName} {u.lastName}
                     </p>
-                    <p className="truncate text-[11px] text-[#68727d] dark:text-slate-400">{u.email}</p>
+                    <p className="truncate text-xs text-[#68727d] dark:text-slate-400">{u.email}</p>
                   </div>
                   {/* Actions */}
                   <DropdownMenu>
@@ -367,7 +367,7 @@ export function UsersPage() {
                     <Badge
                       key={r}
                       variant="outline"
-                      className={`text-[9px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${
+                      className={`text-[10px] font-bold uppercase tracking-wider px-1.5 py-0 h-5 ${
                         roleBadgeStyles[r] || 'border-[#c6ccd3] text-[#5b6470]'
                       }`}
                     >
@@ -377,7 +377,7 @@ export function UsersPage() {
                   <StatusBadge
                     status={u.isActive ? 'enabled' : 'disabled'}
                     label={u.isActive ? 'Active' : 'Disabled'}
-                    className="h-5 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider"
+                    className="h-5 px-1.5 py-0 text-[10px] font-bold uppercase tracking-wider"
                   />
                 </div>
               </div>
@@ -394,12 +394,12 @@ export function UsersPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">User</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Email</TableHead>
-                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Phone</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Role</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
-                  <TableHead className="w-10 pr-5 text-[11px] font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">Actions</span></TableHead>
+                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">User</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Email</TableHead>
+                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Phone</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Role</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="w-10 pr-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -411,10 +411,10 @@ export function UsersPage() {
                     }`}
                   >
                     {/* User */}
-                    <TableCell className="pl-5 py-4">
+                    <TableCell className="pl-5 py-5">
                       <div className="flex items-center gap-3 min-w-0">
                         <div
-                          className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${
+                          className={`h-10 w-10 rounded-full flex items-center justify-center text-sm font-bold flex-shrink-0 ${
                             !u.isActive
                               ? 'bg-slate-300 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                               : 'silver-sheen ring-1 ring-white/30 dark:ring-slate-500/40 text-[#11161c]'
@@ -422,30 +422,30 @@ export function UsersPage() {
                         >
                           {u.firstName[0]}{u.lastName[0]}
                         </div>
-                        <p className="truncate text-sm font-medium text-[#171b21] dark:text-slate-100">
+                        <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
                           {u.firstName} {u.lastName}
                         </p>
                       </div>
                     </TableCell>
 
                     {/* Email */}
-                    <TableCell className="py-4">
+                    <TableCell className="py-5">
                       <span className="text-sm text-[#616a74] dark:text-slate-400">{u.email}</span>
                     </TableCell>
 
                     {/* Phone — hidden below lg */}
-                    <TableCell className="py-4 hidden lg:table-cell">
+                    <TableCell className="py-5 hidden lg:table-cell">
                       <span className="text-sm text-[#616a74] dark:text-slate-400">{u.phone || '—'}</span>
                     </TableCell>
 
                     {/* Role */}
-                    <TableCell className="py-4">
+                    <TableCell className="py-5">
                       <div className="flex flex-wrap gap-1">
                         {u.roles.map((r) => (
                           <Badge
                             key={r}
                             variant="outline"
-                            className={`text-[10px] font-bold uppercase tracking-wider ${
+                            className={`text-[11px] font-bold uppercase tracking-wider ${
                               roleBadgeStyles[r] || 'border-[#c6ccd3] text-[#5b6470]'
                             }`}
                           >
@@ -456,16 +456,16 @@ export function UsersPage() {
                     </TableCell>
 
                     {/* Status */}
-                    <TableCell className="py-4">
+                    <TableCell className="py-5">
                       <StatusBadge
                         status={u.isActive ? 'enabled' : 'disabled'}
                         label={u.isActive ? 'Active' : 'Disabled'}
-                        className="text-[10px] font-bold uppercase tracking-wider"
+                        className="text-[11px] font-bold uppercase tracking-wider"
                       />
                     </TableCell>
 
                     {/* Actions */}
-                    <TableCell className="py-4 pr-5">
+                    <TableCell className="py-5 pr-5">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 rounded-lg p-0 text-[#9ca6b1] hover:text-[#68727d] group-hover:text-[#7a838d]">

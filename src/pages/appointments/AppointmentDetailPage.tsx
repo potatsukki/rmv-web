@@ -673,6 +673,7 @@ export function AppointmentDetailPage() {
             </p>
             <Suspense fallback={<MapPanelFallback message="Loading the site-pin picker so you can submit your visit location." />}>
               <LazyLocationPicker
+                address={customerAddress}
                 value={customerLocationPin}
                 onChange={(loc, addrHint) => {
                   setCustomerLocationPin(loc);

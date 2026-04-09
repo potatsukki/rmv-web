@@ -196,16 +196,16 @@ export function ProjectsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Project</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Status</TableHead>
+                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Project</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Status</TableHead>
                   {isStaff && (
-                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Customer</TableHead>
+                    <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Customer</TableHead>
                   )}
                   {isStaff && (
-                    <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)] xl:table-cell">Engineer</TableHead>
+                    <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)] xl:table-cell">Engineer</TableHead>
                   )}
-                  <TableHead className="hidden text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Created</TableHead>
-                  <TableHead className="w-10 pr-5 text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]"><span className="sr-only">View</span></TableHead>
+                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Created</TableHead>
+                  <TableHead className="w-10 pr-5 text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]"><span className="sr-only">View</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -228,11 +228,11 @@ export function ProjectsPage() {
                       onClick={() => navigate(`/projects/${project._id}`)}
                     >
                       {/* Project info */}
-                      <TableCell className="pl-5 py-4">
+                      <TableCell className="pl-5 py-5">
                         <div className="flex items-center gap-3">
-                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${cfg.bar}`} />
+                          <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${cfg.bar}`} />
                           <div className="min-w-0">
-                            <p className="max-w-[220px] truncate text-sm font-medium text-[var(--color-card-foreground)] transition-colors group-hover:text-[var(--text-metal-color)]">
+                            <p className="max-w-[260px] truncate text-[15px] font-medium text-[var(--color-card-foreground)] transition-colors group-hover:text-[var(--text-metal-color)]">
                               {String(project.serviceType || project.title || '')}
                             </p>
                           </div>
@@ -240,15 +240,15 @@ export function ProjectsPage() {
                       </TableCell>
 
                       {/* Status */}
-                      <TableCell className="py-4">
-                        <Badge variant="outline" className={`text-[10px] font-bold uppercase tracking-wider ${cfg.badge}`}>
+                      <TableCell className="py-5">
+                        <Badge variant="outline" className={`text-[11px] font-bold uppercase tracking-wider ${cfg.badge}`}>
                           {displayLabel}
                         </Badge>
                       </TableCell>
 
                       {/* Customer â€” lg+ staff only */}
                       {isStaff && (
-                        <TableCell className="py-4 hidden lg:table-cell">
+                        <TableCell className="py-5 hidden lg:table-cell">
                           {customer ? (
                             <div className="flex items-center gap-1.5 text-xs text-[var(--text-metal-color)]">
                               <User className="h-3 w-3 shrink-0 text-[var(--text-metal-muted-color)]" />
@@ -264,7 +264,7 @@ export function ProjectsPage() {
 
                       {/* Engineer â€” xl+ staff only */}
                       {isStaff && (
-                        <TableCell className="py-4 hidden xl:table-cell">
+                        <TableCell className="py-5 hidden xl:table-cell">
                           {engineers.length > 0 ? (
                             <div className="flex items-center gap-1.5 text-xs text-[var(--text-metal-color)]">
                               <Wrench className="h-3 w-3 shrink-0 text-[var(--text-metal-muted-color)]" />
@@ -279,7 +279,7 @@ export function ProjectsPage() {
                       )}
 
                       {/* Date */}
-                      <TableCell className="py-4 hidden lg:table-cell">
+                      <TableCell className="py-5 hidden lg:table-cell">
                         <div className="flex items-center gap-1.5 text-xs text-[var(--text-metal-color)]">
                           <Calendar className="h-3 w-3 shrink-0 text-[var(--text-metal-muted-color)]" />
                           {project.createdAt
@@ -289,7 +289,7 @@ export function ProjectsPage() {
                       </TableCell>
 
                       {/* Arrow */}
-                      <TableCell className="py-4 pr-5">
+                      <TableCell className="py-5 pr-5">
                         <Link
                           to={`/projects/${project._id}`}
                           onClick={(e) => e.stopPropagation()}
@@ -304,7 +304,7 @@ export function ProjectsPage() {
               </TableBody>
             </Table>
             <div className="border-t border-[color:var(--color-border)] px-6 py-2.5">
-              <p className="text-[11px] text-[var(--text-metal-color)]">
+              <p className="text-xs text-[var(--text-metal-color)]">
                 {projects.length} project{projects.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -328,11 +328,11 @@ export function ProjectsPage() {
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`h-2 w-2 rounded-full shrink-0 ${cfg.bar}`} />
-                      <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">
+                      <p className="truncate text-[15px] font-semibold text-[var(--color-card-foreground)]">
                         {String(project.title || '')}
                       </p>
                     </div>
-                    <Badge variant="outline" className={`text-[10px] font-bold uppercase tracking-wider shrink-0 ${cfg.badge}`}>
+                    <Badge variant="outline" className={`text-[11px] font-bold uppercase tracking-wider shrink-0 ${cfg.badge}`}>
                       {displayLabel}
                     </Badge>
                   </div>

@@ -874,7 +874,7 @@ export function AppLayout() {
                 )}
               </Link>
 
-              {user && (
+              {user && profileChecks.percent < 100 && (
                 <button
                   type="button"
                   onClick={() => setIsProfileModalOpen(true)}

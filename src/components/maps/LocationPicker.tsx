@@ -11,6 +11,7 @@ import { useThemeStore } from '@/stores/theme.store';
 
 interface LocationPickerProps {
   value: MapPoint | null;
+  address?: string;
   onChange: (location: MapPoint, formattedAddress?: string) => void;
 }
 
@@ -43,7 +44,7 @@ function RecenterMap({ location }: { location: MapPoint }) {
   return null;
 }
 
-export function LocationPicker({ value, onChange }: LocationPickerProps) {
+export function LocationPicker({ value, address, onChange }: LocationPickerProps) {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const isDark = resolvedTheme === 'dark';
   const markerPosition = useMemo(() => value ?? DEFAULT_PIN, [value]);
@@ -250,12 +251,6 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
       </p>
 
       {value && (
-        <p className="text-xs font-mono text-[var(--text-metal-muted-color)]">
-          Lat: {value.lat.toFixed(6)} | Lng: {value.lng.toFixed(6)}
-        </p>
-      )}
-
-      {value && (
         <div
           className={[
             'flex items-center gap-2 rounded-xl px-3 py-2 text-xs',
@@ -264,10 +259,10 @@ export function LocationPicker({ value, onChange }: LocationPickerProps) {
               : 'border border-emerald-300/70 bg-emerald-50 text-emerald-700',
           ].join(' ')}
         >
-          <LocateFixed className="h-3.5 w-3.5" />
-          <span className="font-semibold">Pinned Location</span>
-          <span className={isDark ? 'text-emerald-200/90' : 'text-emerald-600'}>
-            {value.lat.toFixed(5)}, {value.lng.toFixed(5)}
+          <LocateFixed className="h-3.5 w-3.5 flex-shrink-0" />
+          <span className="font-semibold whitespace-nowrap">Pinned Location</span>
+          <span className={`truncate ${isDark ? 'text-emerald-200/90' : 'text-emerald-600'}`}>
+            {address || 'Location selected on map'}
           </span>
         </div>
       )}

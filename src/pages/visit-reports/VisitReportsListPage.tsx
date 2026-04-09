@@ -259,7 +259,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                     <div className="flex items-center justify-between gap-2 min-w-0">
                       <div className="flex items-center gap-2.5 min-w-0 flex-1">
                         <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
-                        <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-sm truncate">
+                        <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-[15px] truncate">
                           {custName}
                         </p>
                       </div>
@@ -267,14 +267,14 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                         <StatusBadge
                           status={status}
                           label={config.label}
-                          className="h-5 px-1.5 py-0 text-[9px] font-bold uppercase tracking-wider"
+                          className="h-5 px-1.5 py-0 text-[10px] font-bold uppercase tracking-wider"
                         />
                         <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500" />
                       </div>
                     </div>
 
                     {/* Row 2: Meta — visit type · project count */}
-                    <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-[11px] text-[#86868b] dark:text-slate-400">
+                    <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-xs text-[#86868b] dark:text-slate-400">
                       <span className="capitalize">{group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}</span>
                       <span className="text-[#d2d2d7] dark:text-slate-500">·</span>
                       <span>{projectCount} project{projectCount !== 1 ? 's' : ''}</span>
@@ -307,12 +307,12 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
             <Table>
               <TableHeader>
                 <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] pl-5">Customer</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Visit Type</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Projects</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Services</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
-                  <TableHead className="text-[11px] font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] pl-5">Customer</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Visit Type</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Projects</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Services</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -330,25 +330,25 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                       className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group dark:border-slate-700 dark:hover:bg-slate-800/50"
                     >
                       {/* Customer */}
-                      <TableCell className="pl-5 py-4">
+                      <TableCell className="pl-5 py-5">
                         <div className="flex items-center gap-3 min-w-0">
-                          <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
-                          <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-sm truncate group-hover:text-[#0066cc] dark:group-hover:text-sky-300 transition-colors">
+                          <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${config.dot}`} />
+                          <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-[15px] truncate group-hover:text-[#0066cc] dark:group-hover:text-sky-300 transition-colors">
                             {custName}
                           </p>
                         </div>
                       </TableCell>
 
                       {/* Visit Type */}
-                      <TableCell className="py-4">
-                        <div className="flex items-center gap-1.5 text-xs font-medium text-[#6e6e73] dark:text-slate-400">
+                      <TableCell className="py-5">
+                        <div className="flex items-center gap-1.5 text-sm font-medium text-[#6e6e73] dark:text-slate-400">
                           <Layers className="h-3.5 w-3.5 text-[#86868b] dark:text-slate-500" />
                           <span>{group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}</span>
                         </div>
                       </TableCell>
 
                       {/* Projects */}
-                      <TableCell className="py-4">
+                      <TableCell className="py-5">
                         <span className="text-sm text-[#1d1d1f] dark:text-slate-100 font-medium">
                           {projectCount}
                         </span>
@@ -358,7 +358,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                       </TableCell>
 
                       {/* Services — hidden below lg */}
-                      <TableCell className="py-4 hidden lg:table-cell">
+                      <TableCell className="py-5 hidden lg:table-cell">
                         <div className="flex flex-wrap gap-1 max-w-[280px]">
                           {projectLabels.map((label, i) => (
                             <span
@@ -372,16 +372,16 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                       </TableCell>
 
                       {/* Status */}
-                      <TableCell className="py-4">
+                      <TableCell className="py-5">
                         <StatusBadge
                           status={status}
                           label={config.label}
-                          className="text-[10px] font-bold uppercase tracking-wider"
+                          className="text-[11px] font-bold uppercase tracking-wider"
                         />
                       </TableCell>
 
                       {/* Arrow */}
-                      <TableCell className="py-4 pr-5">
+                      <TableCell className="py-5 pr-5">
                         <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500 group-hover:text-[#86868b] dark:group-hover:text-slate-300 transition-colors" />
                       </TableCell>
                     </TableRow>

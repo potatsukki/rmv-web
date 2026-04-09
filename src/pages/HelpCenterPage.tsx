@@ -77,6 +77,9 @@ type HelpCategory = {
   articles: HelpArticle[];
 };
 
+type SearchMatch = { category: HelpCategory; article: HelpArticle; score: number };
+type QuickTopic = { label: string; query: string };
+
 const FALLBACK_HELP: HelpContent = {
   title: 'Help Center',
   subtitle: 'Guides for bookings, payments, and project tracking.',
@@ -870,13 +873,34 @@ function getArticleToc(article: HelpArticle) {
 }
 
 const SEARCH_SYNONYMS: Record<string, string[]> = {
+  account: ['account', 'accounts', 'profile', 'login', 'password', 'security', 'session', 'access', 'recovery'],
   refund: ['refund', 'refunds', 'cancel', 'denied', 'approved', 'reversal'],
   payment: ['payment', 'payments', 'invoice', 'proof', 'verify', 'verified', 'declined'],
   cashier: ['cashier', 'queue', 'verification', 'proof review'],
+  booking: ['booking', 'book', 'appointment', 'schedule', 'reschedule', 'visit'],
   appointment: ['appointment', 'appointments', 'booking', 'visit', 'reschedule', 'no-show'],
   project: ['project', 'projects', 'blueprint', 'fabrication', 'milestone'],
+  troubleshooting: ['troubleshooting', 'troubleshoot', 'issue', 'error', 'fix', 'support'],
   help: ['help', 'guide', 'faq', 'support', 'troubleshoot'],
 };
+
+const CUSTOMER_QUICK_TOPICS: QuickTopic[] = [
+  { label: 'Account', query: 'account' },
+  { label: 'Booking', query: 'booking' },
+  { label: 'Payments', query: 'payment' },
+  { label: 'Refunds', query: 'refund' },
+  { label: 'Projects', query: 'project' },
+  { label: 'Troubleshooting', query: 'troubleshooting' },
+];
+
+const INTERNAL_QUICK_TOPICS: QuickTopic[] = [
+  { label: 'Account', query: 'account' },
+  { label: 'Appointment Queue', query: 'appointment queue' },
+  { label: 'Payments', query: 'cashier payment verification' },
+  { label: 'Refunds', query: 'refund' },
+  { label: 'Projects', query: 'project blueprint fabrication' },
+  { label: 'Troubleshooting', query: 'troubleshooting' },
+];
 
 function expandSearchTerms(query: string) {
   const tokens = query
@@ -895,6 +919,70 @@ function expandSearchTerms(query: string) {
   }
 
   return Array.from(expanded);
+}
+
+function scoreMatch(haystack: string, terms: string[]) {
+  let score = 0;
+  for (const term of terms) {
+    if (!term) continue;
+    if (haystack.includes(term)) score += 1;
+    if (haystack.includes(` ${term} `)) score += 1;
+  }
+  return score;
+}
+
+function getSearchMatches(query: string, visibleKnowledgeBase: HelpCategory[]): SearchMatch[] {
+  const normalizedQuery = query.trim().toLowerCase();
+  if (!normalizedQuery) return [];
+  const searchTerms = expandSearchTerms(normalizedQuery);
+  const flattened: SearchMatch[] = [];
+  const seen = new Set<string>();
+
+  for (const category of visibleKnowledgeBase) {
+    const categoryHaystack = [category.title, category.description, category.slug].join(' ').toLowerCase();
+    const categoryScore = scoreMatch(categoryHaystack, searchTerms);
+
+    for (const article of category.articles) {
+      const haystack = [
+        category.title,
+        category.description,
+        category.slug,
+        article.title,
+        article.summary,
+        article.slug,
+        ...(article.keywords || []),
+        ...(article.systemLinks?.map((link) => `${link.label} ${link.path}`) || []),
+        ...article.body.map((block) => {
+          if (typeof block === 'string') return block;
+          return [block.media.title, block.media.caption || '', block.media.url].join(' ');
+        }),
+        ...(article.checklist || []),
+      ]
+        .join(' ')
+        .toLowerCase();
+
+      const articleScore = scoreMatch(haystack, searchTerms);
+      const totalScore = articleScore + categoryScore;
+      if (totalScore <= 0) continue;
+
+      const key = `${category.slug}:${article.slug}`;
+      if (seen.has(key)) continue;
+      seen.add(key);
+      flattened.push({ category, article, score: totalScore });
+    }
+  }
+
+  return flattened.sort((a, b) => b.score - a.score);
+}
+
+function getSectionIcon(heading: string) {
+  const normalized = heading.toLowerCase();
+  if (normalized.includes('payment') || normalized.includes('refund')) return CreditCard;
+  if (normalized.includes('book') || normalized.includes('appointment') || normalized.includes('visit')) return CalendarCheck;
+  if (normalized.includes('project') || normalized.includes('fabrication')) return FolderOpen;
+  if (normalized.includes('support') || normalized.includes('troubleshoot') || normalized.includes('help')) return HelpCircle;
+  if (normalized.includes('next') || normalized.includes('step')) return ChevronRight;
+  return BookOpen;
 }
 
 function resolveSafeExternalUrl(raw: string): string | null {
@@ -1145,6 +1233,11 @@ export function HelpCenterPage() {
   const [roleSections, setRoleSections] = useState<HelpContent['roleSections']>(parsed.roleSections || {});
   const [collapsedRoleGroups, setCollapsedRoleGroups] = useState<Partial<Record<Role, boolean>>>({});
   const [search, setSearch] = useState('');
+  const location = useLocation();
+
+  useEffect(() => {
+    setSearch('');
+  }, [location.pathname]);
 
   const viewRoleGroups = useMemo(
     () => userRoles
@@ -1153,49 +1246,12 @@ export function HelpCenterPage() {
     [roleSections, userRoles],
   );
 
-  const searchResults = useMemo(() => {
-    const query = search.trim().toLowerCase();
-    if (!query) return [] as Array<{ category: HelpCategory; article: HelpArticle }>;
+  const quickTopics = useMemo(
+    () => (isCustomerView ? CUSTOMER_QUICK_TOPICS : INTERNAL_QUICK_TOPICS),
+    [isCustomerView],
+  );
 
-    const searchTerms = expandSearchTerms(query);
-
-    const flattened: Array<{ category: HelpCategory; article: HelpArticle }> = [];
-    const seen = new Set<string>();
-
-    const includesAnyTerm = (haystack: string) => searchTerms.some((term) => haystack.includes(term));
-
-    for (const category of visibleKnowledgeBase) {
-      const categoryHaystack = [category.title, category.description, category.slug].join(' ').toLowerCase();
-      const categoryMatched = includesAnyTerm(categoryHaystack);
-
-      for (const article of category.articles) {
-        const haystack = [
-          category.title,
-          category.description,
-          category.slug,
-          article.title,
-          article.summary,
-          article.slug,
-          ...(article.keywords || []),
-          ...(article.systemLinks?.map((link) => `${link.label} ${link.path}`) || []),
-          ...article.body.map((block) => {
-            if (typeof block === 'string') return block;
-            return [block.media.title, block.media.caption || '', block.media.url].join(' ');
-          }),
-          ...(article.checklist || []),
-        ]
-          .join(' ')
-          .toLowerCase();
-        if (categoryMatched || includesAnyTerm(haystack)) {
-          const key = `${category.slug}:${article.slug}`;
-          if (seen.has(key)) continue;
-          seen.add(key);
-          flattened.push({ category, article });
-        }
-      }
-    }
-    return flattened;
-  }, [search, visibleKnowledgeBase]);
+  const searchResults = useMemo(() => getSearchMatches(search, visibleKnowledgeBase), [search, visibleKnowledgeBase]);
 
   const startEdit = () => {
     setTitle(parsed.title);
@@ -1306,38 +1362,73 @@ export function HelpCenterPage() {
     }
   };
 
+  const handleQuickTopicClick = (topic: QuickTopic) => {
+    setSearch(topic.query);
+    const matches = getSearchMatches(topic.query, visibleKnowledgeBase);
+    const topMatch = matches[0];
+    if (topMatch) {
+      navigate(`/help/${topMatch.category.slug}/${topMatch.article.slug}`);
+      return;
+    }
+
+    const expandedTerms = expandSearchTerms(topic.query);
+    const categoryMatch = visibleKnowledgeBase.find((category) => {
+      const haystack = [category.title, category.description, category.slug].join(' ').toLowerCase();
+      return expandedTerms.some((term) => haystack.includes(term));
+    });
+    if (categoryMatch) {
+      navigate(`/help/${categoryMatch.slug}`);
+      return;
+    }
+
+    navigate('/help');
+  };
+
   return (
-    <div className="space-y-5">
+    <div className="space-y-4">
       <Card className="metal-panel rounded-[1.6rem] border-[color:var(--color-border)]/60 overflow-hidden">
-        <CardHeader className="space-y-4 sm:space-y-0 sm:flex sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex items-start gap-3">
-            <div className="silver-sheen flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl shadow-[0_14px_28px_rgba(15,23,42,0.12)]">
+        <CardHeader className="space-y-4">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mx-auto mb-3 silver-sheen flex h-12 w-12 items-center justify-center rounded-2xl shadow-[0_14px_28px_rgba(15,23,42,0.12)]">
               <LifeBuoy className="h-6 w-6 text-[#33414d]" />
             </div>
-            <div>
-              <CardTitle className="text-xl text-[var(--color-card-foreground)]">
-                {isCustomerView ? 'Customer Help Center' : 'Internal Help Center'}
-              </CardTitle>
-              <CardDescription className="mt-1 text-[var(--text-metal-color)]">
-                {isCustomerView
-                  ? 'Guides for booking, payments, refunds, and tracking your projects.'
-                  : 'Operational guides for staff workflows, queues, controls, and governance.'}
-              </CardDescription>
-            </div>
+            <CardTitle className="text-2xl text-[var(--color-card-foreground)]">
+              {isCustomerView ? 'How can we help you?' : 'How can your team get help today?'}
+            </CardTitle>
+            <CardDescription className="mt-1 text-[var(--text-metal-color)]">
+              {isCustomerView
+                ? 'Find answers about bookings, payments, refunds, account setup, and project tracking.'
+                : 'Find internal guidance for queues, approvals, controls, operations, and troubleshooting.'}
+            </CardDescription>
           </div>
-          <div className="w-full sm:w-auto sm:min-w-[300px]">
+
+          <div className="mx-auto w-full max-w-3xl space-y-3">
             <div className="relative">
               <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[var(--text-metal-muted-color)]" />
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="h-10 rounded-xl pl-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                className="h-11 rounded-xl pl-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
                 placeholder={
                   isCustomerView
-                    ? 'Search help topics (payments, refunds, projects...)'
-                    : 'Search workflows, queues, and controls'
+                    ? 'Search topics like account, booking, payments, refunds...'
+                    : 'Search workflows, queues, approvals, troubleshooting...'
                 }
               />
+            </div>
+            <div className="flex flex-wrap justify-center gap-2">
+              {quickTopics.map((topic) => (
+                <Button
+                  key={`quick-topic-${topic.label}`}
+                  type="button"
+                  size="sm"
+                  variant="outline"
+                  className="rounded-full border-[color:var(--color-border)]/70 bg-white/70 text-xs text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] dark:bg-transparent"
+                  onClick={() => handleQuickTopicClick(topic)}
+                >
+                  {topic.label}
+                </Button>
+              ))}
             </div>
           </div>
         </CardHeader>
@@ -1632,14 +1723,24 @@ export function HelpCenterPage() {
                         </div>
                       ) : (
                         <div className="space-y-4">
-                          {sections.map((section, idx) => (
-                            <div key={`${section.heading}-${idx}`} className="rounded-xl border border-[color:var(--color-border)]/60 p-4">
-                              <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{section.heading}</h3>
-                              {section.body && (
-                                <p className="mt-1.5 whitespace-pre-line text-sm text-[var(--text-metal-color)]">{section.body}</p>
-                              )}
-                            </div>
-                          ))}
+                          {sections.map((section, idx) => {
+                            const IconComp = getSectionIcon(section.heading);
+                            return (
+                              <div key={`${section.heading}-${idx}`} className="rounded-xl border border-[color:var(--color-border)]/60 p-4">
+                                <div className="flex items-start gap-3">
+                                  <div className="silver-sheen flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_10px_22px_rgba(15,23,42,0.1)]">
+                                    <IconComp className="h-4.5 w-4.5 text-[#33414d]" />
+                                  </div>
+                                  <div className="min-w-0 flex-1">
+                                    <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{section.heading}</h3>
+                                    {section.body && (
+                                      <p className="mt-1.5 whitespace-pre-line text-sm text-[var(--text-metal-color)]">{section.body}</p>
+                                    )}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
 
                           {viewRoleGroups.length > 0 && (
                             <div className="space-y-3 rounded-xl border border-[color:var(--color-border)]/60 p-4">
@@ -1692,14 +1793,24 @@ export function HelpCenterPage() {
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                      {sections.map((section, idx) => (
-                        <div key={`customer-note-${section.heading}-${idx}`} className="rounded-xl border border-[color:var(--color-border)]/60 p-4">
-                          <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{section.heading}</h3>
-                          {section.body && (
-                            <p className="mt-1.5 whitespace-pre-line text-sm text-[var(--text-metal-color)]">{section.body}</p>
-                          )}
-                        </div>
-                      ))}
+                      {sections.map((section, idx) => {
+                        const IconComp = getSectionIcon(section.heading);
+                        return (
+                          <div key={`customer-note-${section.heading}-${idx}`} className="rounded-xl border border-[color:var(--color-border)]/60 p-4">
+                            <div className="flex items-start gap-3">
+                              <div className="silver-sheen flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_10px_22px_rgba(15,23,42,0.1)]">
+                                <IconComp className="h-4.5 w-4.5 text-[#33414d]" />
+                              </div>
+                              <div className="min-w-0 flex-1">
+                                <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{section.heading}</h3>
+                                {section.body && (
+                                  <p className="mt-1.5 whitespace-pre-line text-sm text-[var(--text-metal-color)]">{section.body}</p>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
                     </CardContent>
                   </Card>
                 )}
