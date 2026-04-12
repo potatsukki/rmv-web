@@ -124,12 +124,6 @@ const PayOcularFeePage = lazy(() =>
     default: module.PayOcularFeePage,
   })),
 );
-const OcularFeeQueuePage = lazy(() =>
-  import('@/pages/appointments/OcularFeeQueuePage').then((module) => ({
-    default: module.OcularFeeQueuePage,
-  })),
-);
-
 const ProjectsPage = lazy(() =>
   import('@/pages/projects/ProjectsPage').then((module) => ({ default: module.ProjectsPage })),
 );
