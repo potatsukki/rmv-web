@@ -1,153 +1,123 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft, FileText } from 'lucide-react';
+import { PublicNavbar } from '@/components/shared/PublicNavbar';
+import { FileText } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const SMOOTH_240: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export function TermsOfServicePage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f1419] to-[#1a202a] text-white/90">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1419]/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-4">
-          <Link
-            to="/"
-            className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
+    <div className="landing-atelier min-h-screen bg-[#0a0a0b] text-white/90 selection:bg-[#FFD700]/30 selection:text-white">
+      <PublicNavbar />
+
+      <main className="relative pt-32 pb-40 lg:pt-48">
+        <div className="blueprint-grid absolute inset-0 pointer-events-none opacity-20" />
+        
+        <div className="mx-auto max-w-4xl px-6 lg:px-8 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: SMOOTH_240 }}
+            className="mb-20 text-center"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
-        </div>
-      </header>
+            <p className="label-font mb-6 text-[10px] font-black uppercase tracking-[0.5em] text-[#FFD700] gold-glow">
+              Status: Binding
+            </p>
+            <h1 className="headline-font mb-4 text-5xl font-bold tracking-tight text-white lg:text-6xl">
+              Terms of <span className="text-shimmer italic font-light">Service</span>
+            </h1>
+            <p className="label-font text-[10px] uppercase tracking-widest text-[#919097]">
+              Effective Date: March 4, 2026
+            </p>
+          </motion.div>
 
-      {/* Content */}
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c9a96f]/20 border border-[#c9a96f]/40">
-            <FileText className="h-5 w-5 text-white" />
+          <div className="space-y-12">
+            {[
+              {
+                id: '01',
+                title: 'Provision of Service',
+                content: (
+                  <p className="text-sm leading-relaxed text-[#919097]">
+                    The Service is a digital platform for the management of high-precision stainless steel fabrication. 
+                    Users are granted access to project tracking, blueprint oversight, and payment orchestration 
+                    contingent upon strict adherence to these terms.
+                  </p>
+                )
+              },
+              {
+                id: '02',
+                title: 'User Responsibilities',
+                content: (
+                  <ul className="space-y-4">
+                    {[
+                      { label: 'Integrity', text: 'Users must provide structurally accurate data all stages.' },
+                      { label: 'Security', text: 'Responsibility for account credentials lies solely with the user.' },
+                      { label: 'Compliance', text: 'Adherence to all technical and safety standards is mandatory.' }
+                    ].map((item) => (
+                      <li key={item.label} className="border border-white/5 bg-white/[0.02] p-4 flex gap-6 items-center">
+                        <span className="label-font text-[9px] font-bold text-[#FFD700] uppercase tracking-widest">{item.label}</span>
+                        <span className="text-xs text-[#919097]">{item.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )
+              },
+              {
+                id: '03',
+                title: 'Payments & Obligations',
+                content: (
+                  <p className="text-sm leading-relaxed text-[#919097]">
+                    Project stages are unlocked via milestone-based payments. Delays in scheduled payments 
+                    may result in the suspension of fabrication workflows. All online transactions are 
+                    facilitated through certified third-party processors.
+                  </p>
+                )
+              },
+              {
+                id: '04',
+                title: 'Intellectual Governance',
+                content: (
+                  <div className="border-l border-[#FFD700]/30 pl-6 py-2">
+                    <p className="text-sm leading-relaxed text-[#919097]">
+                      Interfaces and generated technical documents are proprietor to RMV. Customer-uploaded 
+                      designs are utilized solely for the purpose of engineering execution and physical fabrication.
+                    </p>
+                  </div>
+                )
+              }
+            ].map((section) => (
+              <motion.section 
+                key={section.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: SMOOTH_240 }}
+                className="group relative"
+              >
+                <div className="flex items-start gap-8">
+                  <span className="label-font text-[10px] font-bold text-[#FFD700]/40 mt-1">{section.id}</span>
+                  <div className="flex-1 space-y-6">
+                    <h2 className="label-font text-xs font-black uppercase tracking-[0.3em] text-white group-hover:text-[#FFD700] transition-colors">
+                      {section.title}
+                    </h2>
+                    {section.content}
+                  </div>
+                </div>
+              </motion.section>
+            ))}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Terms of Service</h1>
-        </div>
 
-        <div className="max-w-none space-y-6 text-white/75">
-          <p className="text-sm text-white/50">Last updated: March 4, 2026</p>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">1. Acceptance of Terms</h2>
-            <p className="text-sm leading-relaxed">
-              By accessing and using the RMV Stainless Steel Fabrication project management system
-              (&quot;the Service&quot;), you agree to be bound by these Terms of Service. If you do not agree
-              to these terms, please do not use the Service.
+          <motion.footer 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            className="mt-32 pt-12 border-t border-white/5 text-center"
+          >
+            <FileText className="h-6 w-6 text-[#FFD700]/40 mx-auto mb-6" />
+            <p className="label-font text-[10px] uppercase tracking-[0.4em] text-[#919097]">
+              Structural Integrity in Every Transaction
             </p>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">2. Description of Service</h2>
-            <p className="text-sm leading-relaxed">
-              The Service is an online project management platform designed for stainless steel fabrication
-              projects. It provides tools for:
-            </p>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>Project creation, tracking, and management.</li>
-              <li>Blueprint submission, review, and revision workflows.</li>
-              <li>Appointment scheduling for on-site visits.</li>
-              <li>Payment plan management and online payments.</li>
-              <li>Visit reports and fabrication progress tracking.</li>
-              <li>Document generation (contracts, receipts).</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">3. User Accounts</h2>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>You must provide accurate and complete information during registration.</li>
-              <li>You are responsible for maintaining the confidentiality of your account credentials.</li>
-              <li>You must not share your account with others or allow unauthorized access.</li>
-              <li>You must enable two-factor authentication (2FA) when required by system administrators.</li>
-              <li>We reserve the right to suspend or terminate accounts that violate these terms.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">4. Payments & Refunds</h2>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>Payment plans are generated based on your approved project specifications.</li>
-              <li>Stage-based payments must follow the payment schedule established in your contract.</li>
-              <li>Online payments are processed securely through PayMongo. Payment proofs are subject to admin verification.</li>
-              <li>Cash payments must be made in person and are verified by the assigned cashier.</li>
-              <li>Refund policies are handled on a case-by-case basis. Contact administration for disputes.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">5. Blueprint & Project Workflows</h2>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>Blueprints submitted for review may be approved, revised, or rejected by administrators.</li>
-              <li>Once a blueprint is accepted, the associated payment plan is generated and the project moves forward.</li>
-              <li>Project status transitions follow a defined state machine. Unauthorized attempts to alter status will be denied.</li>
-              <li>All changes to project data are audited and logged for accountability.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">6. Intellectual Property</h2>
-            <p className="text-sm leading-relaxed">
-              All content, designs, and materials provided through the Service — including system interfaces,
-              logos, and generated documents — are the property of RMV Stainless Steel Fabrication.
-              Blueprint designs uploaded by customers remain the property of the customer but grant us a
-              license to use them for project fulfillment purposes.
-            </p>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">7. Limitation of Liability</h2>
-            <p className="text-sm leading-relaxed">
-              The Service is provided &quot;as is&quot; without warranties of any kind, either express or implied.
-              RMV Stainless Steel Fabrication shall not be liable for any indirect, incidental, or
-              consequential damages arising from your use of the Service. Our total liability shall not
-              exceed the amount paid by you for the specific project in question.
-            </p>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">8. Prohibited Conduct</h2>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>Attempting to bypass authentication, authorization, or security mechanisms.</li>
-              <li>Uploading malicious files, scripts, or content.</li>
-              <li>Interfering with the operation or availability of the Service.</li>
-              <li>Using the Service for any fraudulent or unlawful purpose.</li>
-              <li>Scraping, crawling, or automated extraction of data from the Service.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">9. Governing Law</h2>
-            <p className="text-sm leading-relaxed">
-              These Terms shall be governed by and construed in accordance with the laws of the Republic of
-              the Philippines. Any disputes arising from these terms shall be subject to the exclusive
-              jurisdiction of the courts of the Philippines.
-            </p>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">10. Changes to Terms</h2>
-            <p className="text-sm leading-relaxed">
-              We reserve the right to modify these Terms at any time. Changes will be effective upon posting
-              to this page with an updated date. Continued use of the Service after changes constitutes
-              acceptance of the new terms.
-            </p>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">11. Contact</h2>
-            <p className="text-sm leading-relaxed">
-              For questions about these Terms of Service, contact us at:
-            </p>
-            <p className="text-sm font-medium">
-              RMV Stainless Steel Fabrication<br />
-              Email: rmvstainless@gmail.com
-            </p>
-          </section>
+          </motion.footer>
         </div>
       </main>
     </div>
   );
 }
-

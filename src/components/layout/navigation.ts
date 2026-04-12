@@ -143,7 +143,7 @@ export const mobileMenuItems: NavItem[] = [
   },
   {
     label: 'Cashier Queue',
-    path: '/cashier-queue',
+    path: '/payments?tab=cashier-queue',
     icon: CreditCard,
     roles: [Role.CASHIER, Role.ADMIN],
   },

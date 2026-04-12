@@ -1,133 +1,136 @@
-import { Link } from 'react-router-dom';
-import { ArrowLeft, Shield } from 'lucide-react';
+import { PublicNavbar } from '@/components/shared/PublicNavbar';
+import { Shield } from 'lucide-react';
+import { motion } from 'framer-motion';
+
+const SMOOTH_240: [number, number, number, number] = [0.22, 1, 0.36, 1];
 
 export function PrivacyPolicyPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-[#0f1419] to-[#1a202a] text-white/90">
-      {/* Header */}
-      <header className="sticky top-0 z-10 border-b border-white/10 bg-[#0f1419]/80 backdrop-blur-md">
-        <div className="mx-auto flex max-w-3xl items-center gap-3 px-6 py-4">
-          <Link
-            to="/"
-            className="flex items-center gap-1.5 text-sm text-white/60 hover:text-white transition-colors"
+    <div className="landing-atelier min-h-screen bg-[#0a0a0b] text-white/90 selection:bg-[#FFD700]/30 selection:text-white">
+      <PublicNavbar />
+
+      <main className="relative pt-32 pb-40 lg:pt-48">
+        <div className="blueprint-grid absolute inset-0 pointer-events-none opacity-20" />
+        
+        <div className="mx-auto max-w-4xl px-6 lg:px-8 relative z-10">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 1, ease: SMOOTH_240 }}
+            className="mb-20 text-center"
           >
-            <ArrowLeft className="h-4 w-4" />
-            Back
-          </Link>
-        </div>
-      </header>
+            <p className="label-font mb-6 text-[10px] font-black uppercase tracking-[0.5em] text-[#FFD700] gold-glow">
+              Status: Validated
+            </p>
+            <h1 className="headline-font mb-4 text-5xl font-bold tracking-tight text-white lg:text-6xl">
+              Privacy <span className="text-shimmer italic font-light">Policy</span>
+            </h1>
+            <p className="label-font text-[10px] uppercase tracking-widest text-[#919097]">
+              Effective Date: March 4, 2026
+            </p>
+          </motion.div>
 
-      {/* Content */}
-      <main className="mx-auto max-w-3xl px-6 py-12">
-        <div className="flex items-center gap-3 mb-8">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-[#c9a96f]/20 border border-[#c9a96f]/40">
-            <Shield className="h-5 w-5 text-white" />
+          <div className="space-y-12">
+            {[
+              {
+                id: '01',
+                title: 'Information We Collect',
+                content: (
+                  <div className="space-y-4">
+                    <p className="text-sm leading-relaxed text-[#919097]">
+                      RMV Stainless Steel Fabrication collects critical data required for the engineering and management of your projects:
+                    </p>
+                    <ul className="grid gap-4 sm:grid-cols-2">
+                      {[
+                        { label: 'Account', detail: 'Name, email, phone provided during signup.' },
+                        { label: 'Auth', detail: 'Google account metadata via OAuth.' },
+                        { label: 'Projects', detail: 'CAD drawings, blueprints, and materials.' },
+                        { label: 'Payments', detail: 'Proof of transactions via PayMongo.' },
+                      ].map((item) => (
+                        <li key={item.label} className="border border-white/5 bg-white/[0.02] p-4">
+                          <span className="block label-font text-[9px] font-bold uppercase tracking-widest text-[#FFD700] mb-1">{item.label}</span>
+                          <span className="text-xs text-[#919097]">{item.detail}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )
+              },
+              {
+                id: '02',
+                title: 'Data Utilization',
+                content: (
+                  <ul className="space-y-3">
+                    {[
+                      'Workflow orchestration and project status tracking.',
+                      'Automated billing and payment schedule verification.',
+                      'Digital signature and contract generation.',
+                      'Technical support and system security auditing.'
+                    ].map((text) => (
+                      <li key={text} className="flex gap-4 text-sm text-[#919097]">
+                        <span className="text-[#FFD700] font-bold">/</span>
+                        {text}
+                      </li>
+                    ))}
+                  </ul>
+                )
+              },
+              {
+                id: '03',
+                title: 'Security Architecture',
+                content: (
+                  <div className="border-l border-[#FFD700]/30 pl-6 py-2">
+                    <p className="text-sm leading-relaxed text-[#919097]">
+                      Our systems implement enterprise-grade security including HTTPS encryption for all data in transit, 
+                      stateless JWT authentication with httpOnly persistence, and role-based access controls for internal data security.
+                    </p>
+                  </div>
+                )
+              },
+              {
+                id: '04',
+                title: 'Google User Data Policy',
+                content: (
+                  <p className="text-sm leading-relaxed text-[#919097]">
+                    RMV complies with Google API Services User Data Policy. We access only basic profile metadata (name, email) 
+                    solely for identity verification. We do not transfer or sell Google user data to third parties.
+                  </p>
+                )
+              }
+            ].map((section) => (
+              <motion.section 
+                key={section.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8, ease: SMOOTH_240 }}
+                className="group relative"
+              >
+                <div className="flex items-start gap-8">
+                  <span className="label-font text-[10px] font-bold text-[#FFD700]/40 mt-1">{section.id}</span>
+                  <div className="flex-1 space-y-6">
+                    <h2 className="label-font text-xs font-black uppercase tracking-[0.3em] text-white group-hover:text-[#FFD700] transition-colors">
+                      {section.title}
+                    </h2>
+                    {section.content}
+                  </div>
+                </div>
+              </motion.section>
+            ))}
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-white">Privacy Policy</h1>
-        </div>
 
-        <div className="max-w-none space-y-6 text-white/75">
-          <p className="text-sm text-white/50">Last updated: March 4, 2026</p>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">1. Information We Collect</h2>
-            <p className="text-sm leading-relaxed">
-              RMV Stainless Steel Fabrication (&quot;we&quot;, &quot;our&quot;, or &quot;the Company&quot;) collects the following
-              information when you use our project management system:
+          <motion.footer 
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            className="mt-32 pt-12 border-t border-white/5 text-center"
+          >
+            <Shield className="h-6 w-6 text-[#FFD700]/40 mx-auto mb-6" />
+            <p className="label-font text-[10px] uppercase tracking-[0.4em] text-[#919097]">
+              Certified RMV Legal Framework
             </p>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li><strong>Account information:</strong> Name, email address, phone number, and address provided during registration.</li>
-              <li><strong>Authentication data:</strong> Google account information when using Google Sign-In.</li>
-              <li><strong>Project data:</strong> Project details, blueprints, measurements, photos, and documents you upload.</li>
-              <li><strong>Payment information:</strong> Payment proofs and transaction records. We do not store credit card numbers directly.</li>
-              <li><strong>Device information:</strong> Browser type, IP address, and device identifiers for security and session management.</li>
-              <li><strong>Usage data:</strong> Login history, audit logs, and interaction patterns to improve our services.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">2. How We Use Your Information</h2>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>Manage your fabrication projects, appointments, and payment schedules.</li>
-              <li>Send notifications about project status, payment reminders, and important updates via email and in-app alerts.</li>
-              <li>Generate contracts, receipts, and other project documents.</li>
-              <li>Ensure system security through login tracking and audit logging.</li>
-              <li>Improve our services and user experience.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">3. Data Storage & Security</h2>
-            <p className="text-sm leading-relaxed">
-              Your data is stored securely using encrypted databases and cloud storage services. We implement
-              industry-standard security measures including:
-            </p>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>HTTPS encryption for all data in transit.</li>
-              <li>Secure httpOnly cookies for authentication tokens.</li>
-              <li>Role-based access control (RBAC) to limit data access to authorized users.</li>
-              <li>Rate limiting and CSRF protection to prevent unauthorized access.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">4. Third-Party Services</h2>
-            <p className="text-sm leading-relaxed">We use the following third-party services:</p>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li><strong>Google Firebase:</strong> Authentication (Google Sign-In).</li>
-              <li><strong>PayMongo:</strong> Online payment processing.</li>
-              <li><strong>Cloudflare R2:</strong> Secure file storage for blueprints and documents.</li>
-              <li><strong>SendGrid / Nodemailer:</strong> Email delivery for notifications and reminders.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">5. Google API Services User Data Policy</h2>
-            <p className="text-sm leading-relaxed">
-              RMV Stainless Steel Fabrication complies with the Google API Services User Data Policy, including the Limited Use requirements. If you sign in using your Google account:
-            </p>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li><strong>Data Accessed:</strong> Our application accesses only your basic Google account profile information (specifically, your name, email address, and profile picture URL) provided during the Google Sign-In or OAuth authentication flow.</li>
-              <li><strong>Data Usage:</strong> We use your Google account information solely to verify your identity, create and manage your user account, and communicate with you about your projects and appointments within our system.</li>
-              <li><strong>Data Sharing:</strong> We do not share, transfer, or sell your Google user data to any third parties for any purpose, including marketing, advertising, or analytics. Your data is strictly used for authentication and providing our core fabrication project management services.</li>
-              <li><strong>Data Storage & Protection:</strong> Your Google data (name and email) is securely stored in our encrypted database. We use HTTPS for all data transfers and employ strict role-based access control and rate-limiting to ensure your data is protected against unauthorized access.</li>
-              <li><strong>Data Retention & Deletion:</strong> Your data is retained as long as your account remains active. You can request the complete deletion of your account and all associated Google user data at any time by contacting us at rmvstainless@gmail.com or through your account settings. Upon request, your data will be permanently deleted from our servers within 30 days.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">6. Your Rights</h2>
-            <p className="text-sm leading-relaxed">Under the Philippine Data Privacy Act of 2012 (RA 10173), you have the right to:</p>
-            <ul className="list-disc pl-5 text-sm space-y-1.5">
-              <li>Access your personal data stored in our system.</li>
-              <li>Request correction of inaccurate information.</li>
-              <li>Request deletion of your account and associated data.</li>
-              <li>Object to processing of your data for purposes beyond service delivery.</li>
-            </ul>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">7. Data Retention</h2>
-            <p className="text-sm leading-relaxed">
-              We retain your data for as long as your account is active or as needed to provide services.
-              Project records and payment history may be retained for up to 5 years for legal and accounting
-              purposes, in compliance with Philippine regulations.
-            </p>
-          </section>
-
-          <section className="rounded-2xl border border-white/15 bg-white/[0.04] p-6 space-y-4 shadow-[0_10px_30px_rgba(0,0,0,0.25)] backdrop-blur-sm">
-            <h2 className="text-lg font-semibold text-white">8. Contact Us</h2>
-            <p className="text-sm leading-relaxed">
-              If you have questions about this privacy policy or wish to exercise your data rights, contact us at:
-            </p>
-            <p className="text-sm font-medium">
-              RMV Stainless Steel Fabrication<br />
-              Email: rmvstainless@gmail.com
-            </p>
-          </section>
+          </motion.footer>
         </div>
       </main>
     </div>
   );
 }
-

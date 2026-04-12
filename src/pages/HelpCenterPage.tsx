@@ -301,7 +301,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         ],
         systemLinks: [
           { label: 'Appointments', path: '/appointments' },
-          { label: 'Ocular Fee Queue', path: '/ocular-fee-queue' },
+          { label: 'Ocular Fee Queue', path: '/payments?tab=ocular-fees' },
         ],
       },
       {
@@ -478,7 +478,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
           'Record discrepancy details when needed',
         ],
         systemLinks: [
-          { label: 'Cashier Queue', path: '/cashier-queue' },
+          { label: 'Cashier Queue', path: '/payments?tab=cashier-queue' },
           { label: 'Cash Flow', path: '/cash' },
         ],
       },
@@ -529,7 +529,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         ],
         systemLinks: [
           { label: 'Payments', path: '/payments' },
-          { label: 'Cashier Queue', path: '/cashier-queue' },
+          { label: 'Cashier Queue', path: '/payments?tab=cashier-queue' },
         ],
       },
       {

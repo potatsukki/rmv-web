@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/auth.store';
@@ -16,17 +16,34 @@ import { Button } from '@/components/ui/button';
 import { BrandLogo } from '@/components/shared/BrandLogo';
 import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
 
-function isNavItemActive(pathname: string, itemPath: string): boolean {
-  if (itemPath === '/dashboard') return pathname === '/dashboard';
+function isNavItemActive(pathname: string, search: string, itemPath: string): boolean {
+  // Separate path and query from itemPath
+  const [baseItemPath, itemSearch] = itemPath.split('?');
+  
+  if (baseItemPath === '/dashboard') return pathname === '/dashboard';
 
-  if (itemPath === '/appointments') {
+  if (baseItemPath === '/appointments') {
     return (
       pathname === '/appointments' ||
       (pathname.startsWith('/appointments/') && pathname !== '/appointments/create-for-customer')
     );
   }
 
-  return pathname === itemPath || pathname.startsWith(`${itemPath}/`);
+  // If the navigation item specifically has a query param (like ?tab=)
+  if (itemSearch) {
+    return pathname === baseItemPath && search.includes(itemSearch);
+  }
+
+  // Default path matching
+  const isActive = pathname === baseItemPath || pathname.startsWith(`${baseItemPath}/`);
+  
+  // Special case: if we are on /payments?tab=..., we don't want the base /payments to be active
+  // if another item matches more specifically.
+  if (itemPath === '/payments' && search.includes('tab=')) {
+    return false;
+  }
+
+  return isActive;
 }
 
 export function Sidebar() {
@@ -35,6 +52,7 @@ export function Sidebar() {
   const { data: dashboardSummary } = useDashboardSummary();
   const location = useLocation();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const queryClient = useQueryClient();
 
   // Track "last seen" counts so badges only show for NEW items since last visit
@@ -47,8 +65,10 @@ export function Sidebar() {
 
   const onAppointments = location.pathname === '/appointments' || location.pathname.startsWith('/appointments/');
   const onPayments = location.pathname === '/payments' || location.pathname.startsWith('/payments/');
-  const onCashierQueue = location.pathname === '/cashier-queue' || location.pathname.startsWith('/cashier-queue/');
-  const isHelpActive = isNavItemActive(location.pathname, '/help');
+  const onCashierQueue = location.pathname === '/cashier-queue' || 
+    location.pathname.startsWith('/cashier-queue/') || 
+    (location.pathname === '/payments' && searchParams.get('tab') === 'cashier-queue');
+  const isHelpActive = isNavItemActive(location.pathname, location.search, '/help');
 
   useEffect(() => {
     const pending = dashboardSummary?.pendingAppointments ?? 0;
@@ -123,7 +143,7 @@ export function Sidebar() {
                 </h3>
                 <div className="space-y-0.5">
                   {visibleItems.map((item) => {
-                    const isActive = isNavItemActive(location.pathname, item.path);
+                    const isActive = isNavItemActive(location.pathname, location.search, item.path);
 
                     return (
                       <Link

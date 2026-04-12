@@ -283,6 +283,8 @@ export default function App() {
 
               {/* Legacy redirects */}
               <Route path="/profile" element={<Navigate to="/account/profile" replace />} />
+              <Route path="/cashier-queue" element={<Navigate to="/payments?tab=cashier-queue" replace />} />
+              <Route path="/ocular-fee-queue" element={<Navigate to="/payments?tab=ocular-fees" replace />} />
               <Route path="/change-password" element={<ChangePasswordPage />} />
 
               <Route
@@ -325,15 +327,7 @@ export default function App() {
                 <Route path="/appointments/:id" element={<AppointmentDetailPage />} />
               </Route>
 
-              <Route
-                element={
-                  <ProtectedRoute
-                    allowedRoles={[Role.CASHIER, Role.ADMIN]}
-                  />
-                }
-              >
-                <Route path="/ocular-fee-queue" element={<OcularFeeQueuePage />} />
-              </Route>
+
 
               <Route
                 element={

@@ -113,7 +113,19 @@ export function PaymentsPage() {
     if (stateProjectId) {
       setSelectedProjectId(stateProjectId);
     }
-  }, [projects, selectedProjectId, location.state]);
+  }, [selectedProjectId, location.state]);
+
+  // Handle ?tab= query param for deep linking
+  useEffect(() => {
+    const tab = searchParams.get('tab');
+    if (tab && ['payments', 'cashier-queue', 'ocular-fees', 'refunds'].includes(tab)) {
+      setActiveTab(tab);
+      // If we switched to a tab, clear project selection to show the tab content
+      if (tab !== 'payments') {
+        setSelectedProjectId('');
+      }
+    }
+  }, [searchParams]);
 
   // Detect ?paid=1 redirect from PayMongo checkout
   useEffect(() => {
@@ -648,7 +660,7 @@ export function PaymentsPage() {
                   </div>
                   {isCashier && (
                     <Button size="sm" asChild className="shrink-0 text-xs">
-                      <Link to="/cashier-queue">
+                      <Link to="/payments?tab=cashier-queue">
                         <CheckCircle className="mr-1 h-3.5 w-3.5" /> Go to Cashier Queue
                       </Link>
                     </Button>
@@ -834,7 +846,7 @@ export function PaymentsPage() {
                               asChild
                               className={`${verifyQueueButtonClass} text-xs h-8`}
                             >
-                              <Link to="/cashier-queue">
+                              <Link to="/payments?tab=cashier-queue">
                                 <CheckCircle className="mr-1 h-3.5 w-3.5" /> Verify in Cashier Queue
                               </Link>
                             </Button>
@@ -925,7 +937,7 @@ export function PaymentsPage() {
                               asChild
                               className={`${verifyQueueButtonClass} text-xs h-7 px-2`}
                             >
-                              <Link to="/cashier-queue">
+                              <Link to="/payments?tab=cashier-queue">
                                 <CheckCircle className="mr-1 h-3 w-3" /> Verify
                               </Link>
                             </Button>
