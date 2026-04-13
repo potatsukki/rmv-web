@@ -132,11 +132,6 @@ const ProjectDetailPage = lazy(() =>
     default: module.ProjectDetailPage,
   })),
 );
-const VisitReportsListPage = lazy(() =>
-  import('@/pages/visit-reports/VisitReportsListPage').then((module) => ({
-    default: module.VisitReportsListPage,
-  })),
-);
 const VisitReportPage = lazy(() =>
   import('@/pages/visit-reports/VisitReportPage').then((module) => ({
     default: module.VisitReportPage,
@@ -344,7 +339,7 @@ export default function App() {
                   />
                 }
               >
-                <Route path="/visit-reports" element={<VisitReportsListPage />} />
+                <Route path="/visit-reports" element={<Navigate to="/projects?tab=visit-reports" replace />} />
                 <Route path="/visit-reports/:id" element={<VisitReportPage />} />
               </Route>
 

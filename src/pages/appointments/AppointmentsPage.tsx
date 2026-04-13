@@ -24,7 +24,8 @@ import { Role, AppointmentStatus } from '@/lib/constants';
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Requested', value: 'requested,reschedule_requested' },
+  { label: 'Requested', value: AppointmentStatus.REQUESTED },
+  { label: 'Reschedule', value: AppointmentStatus.RESCHEDULE_REQUESTED },
   { label: 'Confirmed', value: AppointmentStatus.CONFIRMED },
   { label: 'Completed', value: AppointmentStatus.COMPLETED },
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },

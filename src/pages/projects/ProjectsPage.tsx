@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { FolderOpen, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -85,7 +85,12 @@ export function ProjectsPage() {
   const canSeeVisitReports = user?.roles?.some((r: string) =>
     [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN].includes(r as Role),
   );
-  const [activeTab, setActiveTab] = useState('projects');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'projects';
+  
+  const setActiveTab = (tab: string) => {
+    setSearchParams({ tab }, { replace: true });
+  };
 
   const params: Record<string, string> = {};
   if (statusFilter) params.status = statusFilter;

@@ -233,6 +233,22 @@ export function useCreateOcularFeeCheckout() {
   });
 }
 
+export function useRequestOcularCashPayment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/request-cash`,
+        {},
+      );
+      return data.data;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
 export function useVerifyOcularFeeCheckout() {
   const qc = useQueryClient();
   return useMutation({

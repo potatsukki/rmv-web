@@ -262,12 +262,12 @@ export function AppointmentDetailPage() {
     value: string;
   }) => (
     <div className="flex items-start gap-3">
-      <div className="mt-0.5 rounded-lg bg-[#f0f0f5] dark:bg-slate-800 p-2">
+      <div className="mt-0.5 rounded-lg bg-[#f0f0f5] dark:bg-slate-800/80 p-2 border border-black/5 dark:border-white/5">
         <Icon className="h-4 w-4 text-[#6e6e73] dark:text-slate-400" />
       </div>
       <div>
         <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">{label}</p>
-        <p className="text-sm text-[#6e6e73] dark:text-slate-300">{value}</p>
+        <p className="text-sm text-[#6e6e73] dark:text-slate-200">{value}</p>
       </div>
     </div>
   );
@@ -599,17 +599,18 @@ export function AppointmentDetailPage() {
                     )}
                   </>
                 ) : appt.ocularFeeStatus === 'pending' && isCustomer ? (
-                  <div className="rounded-xl border border-[#c8c8cd] bg-[#f0f0f5] p-4 space-y-3">
+                  <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[linear-gradient(135deg,rgba(18,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] p-4 space-y-3 shadow-md shadow-black/5">
                     <div className="flex items-center justify-between">
                       <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Ocular Fee Required</p>
                       <p className="text-lg font-bold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
                     </div>
-                    <p className="text-xs text-[#6e6e73] dark:text-slate-400">Pay before your appointment can be confirmed.</p>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">Pay before your appointment can be confirmed.</p>
                     <Button
                       asChild
-                      className="w-full bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl h-10"
+                      variant="prominent"
+                      className="w-full h-11 rounded-xl shadow-lg transition-all active:scale-[0.98]"
                     >
-                      <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
+                      <Link to={`/appointments/${appt._id}/pay-ocular-fee`} className="text-inherit no-underline">
                         <CreditCard className="mr-2 h-4 w-4" />
                         Pay {formatCurrency(appt.ocularFee)}
                       </Link>
@@ -658,15 +659,15 @@ export function AppointmentDetailPage() {
 
       {/* Customer: Submit Location for Ocular Visit */}
       {isCustomer && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && !appt.customerLocation && !appt.ocularFeePaid && (
-        <Card className="rounded-xl border-blue-200 bg-blue-50/50 shadow-sm dark:border-[#29476b] dark:bg-[linear-gradient(180deg,rgba(14,25,38,0.96)_0%,rgba(8,16,27,0.98)_100%)] lg:col-span-2">
+        <Card className="rounded-xl border-blue-200 bg-blue-50/50 shadow-sm dark:border-blue-500/30 dark:bg-blue-900/10 lg:col-span-2">
           <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-blue-900 dark:text-[#d7e8ff]">
-              <MapPin className="h-5 w-5 text-blue-600 dark:text-[#72aeea]" />
+            <CardTitle className="flex items-center gap-2 text-lg text-blue-900 dark:text-blue-100">
+              <MapPin className="h-5 w-5 text-blue-600 dark:text-blue-400" />
               Provide Your Location
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <p className="text-sm text-blue-800 dark:text-[#a9c9ee]">
+            <p className="text-sm text-blue-800 dark:text-blue-200/90">
               An ocular visit has been scheduled for{' '}
               <strong>{format(new Date(appt.date), 'MMMM d, yyyy')}</strong>.
               Please pin your site location on the map so we can calculate the visit fee and finalize your appointment.
@@ -771,30 +772,32 @@ export function AppointmentDetailPage() {
               </div>
             )}
             {feePreview && !feeLoading && (
-              <div className={`space-y-2 rounded-lg border p-4 ${feePreview.fee.isWithinNCR ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-500/30 dark:bg-emerald-500/10' : 'border-amber-200 bg-amber-50 dark:border-amber-500/30 dark:bg-amber-500/10'}`}>
+              <div className={`space-y-2 rounded-lg border p-4 ${feePreview.fee.isWithinNCR 
+                ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800/40 dark:bg-emerald-950/20' 
+                : 'border-amber-200 bg-amber-50 dark:border-amber-800/40 dark:bg-amber-950/20'}`}>
                 <div className="flex items-center justify-between">
                   <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Ocular Visit Fee</p>
                   {feePreview.fee.isWithinNCR ? (
-                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:bg-emerald-400/15 dark:text-emerald-200">
+                    <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 dark:bg-emerald-400/10 px-2.5 py-0.5 text-xs font-medium text-emerald-700 dark:text-emerald-300">
                       <CheckCircle2 className="h-3 w-3" /> FREE
                     </span>
                   ) : (
-                    <span className="text-lg font-bold text-amber-800 dark:text-amber-200">
+                    <span className="text-lg font-bold text-amber-800 dark:text-amber-300">
                       {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(feePreview.fee.total)}
                     </span>
                   )}
                 </div>
-                <div className="space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-300">
+                <div className="space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-200">
                   <p>Distance: {feePreview.route.distanceKm.toFixed(1)} km · ~{feePreview.route.durationMinutes} min drive</p>
                   {feePreview.fee.isWithinNCR ? (
-                    <p className="text-emerald-700 dark:text-emerald-200">Within Metro Manila — no ocular visit fee</p>
+                    <p className="text-emerald-700 dark:text-emerald-300 font-medium">Within Metro Manila — no ocular visit fee</p>
                   ) : (
                     <>
                       <p>Base fee: ₱{feePreview.fee.baseFee} (first {feePreview.fee.baseCoveredKm} km)</p>
                       {feePreview.fee.additionalDistanceKm > 0 && (
                         <p>Additional: ₱{feePreview.fee.perKmRate}/km × {feePreview.fee.additionalDistanceKm.toFixed(1)} km = ₱{feePreview.fee.additionalFee}</p>
                       )}
-                      <p className="mt-1 font-medium text-amber-700 dark:text-amber-200">Payment required before your appointment can be confirmed.</p>
+                      <p className="mt-1 font-semibold text-amber-700 dark:text-amber-300">Payment required before your appointment can be confirmed.</p>
                     </>
                   )}
                 </div>
@@ -894,29 +897,30 @@ export function AppointmentDetailPage() {
 
       {/* Customer: Location submitted but ocular fee not paid (outside NCR) */}
       {isCustomer && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && !appt.ocularFeeBreakdown?.isWithinNCR && !appt.ocularFeePaid && appt.ocularFeeStatus === 'pending' && (
-        <Card className="rounded-xl border-amber-200 bg-amber-50/50 shadow-sm lg:col-span-2">
+        <Card className="rounded-xl border-amber-200 bg-amber-50/50 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 lg:col-span-2">
           <CardContent className="py-5 space-y-3">
             <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-amber-100 p-2">
-                <CreditCard className="h-5 w-5 text-amber-600" />
+              <div className="rounded-lg bg-amber-100 dark:bg-amber-400/20 p-2">
+                <CreditCard className="h-5 w-5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="flex-1">
-                <p className="text-sm font-semibold text-amber-900">Ocular Fee Payment Required</p>
-                <p className="text-xs text-amber-700 mt-0.5">
+                <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">Ocular Fee Payment Required</p>
+                <p className="text-xs text-amber-700 dark:text-amber-300/90 mt-0.5 font-medium">
                   Your location is outside Metro Manila. Please pay the ocular visit fee to proceed.
                 </p>
               </div>
               {appt.ocularFee != null && (
-                <p className="text-lg font-bold text-amber-800">
+                <p className="text-lg font-bold text-amber-800 dark:text-amber-300">
                   {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(appt.ocularFee)}
                 </p>
               )}
             </div>
             <Button
               asChild
-              className="bg-amber-600 hover:bg-amber-700 text-white rounded-xl w-full sm:w-auto h-10"
+              variant="prominent"
+              className="w-full sm:w-auto h-10 rounded-xl"
             >
-              <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
+              <Link to={`/appointments/${appt._id}/pay-ocular-fee`} className="text-inherit">
                 <CreditCard className="mr-2 h-4 w-4" />
                 Pay Ocular Fee
               </Link>
@@ -1328,9 +1332,9 @@ export function AppointmentDetailPage() {
           ![AppointmentStatus.ON_THE_WAY, AppointmentStatus.COMPLETED].includes(appt.status as AppointmentStatus) &&
           !myRefundRequests?.some(r => r.appointmentId === appt._id && r.status === 'pending') && (
           <Button
-            variant="outline"
+            variant="prominent"
             onClick={() => setCustomerRefundOpen(true)}
-            className="border-amber-300 text-amber-700 hover:bg-amber-50 rounded-xl"
+            className="rounded-xl h-10 px-6 shadow-sm"
           >
             <RotateCcw className="mr-2 h-4 w-4" />
             Request Refund
@@ -1370,7 +1374,8 @@ export function AppointmentDetailPage() {
         {canCompleteAppointment && appt.ocularFeeStatus === 'cash_pending' && (
           <Button
             onClick={() => navigate('/cash')}
-            className="bg-[#1d1d1f] hover:bg-[#2d2d2f] text-white rounded-xl"
+            variant="prominent"
+            className="rounded-xl h-10 px-6"
           >
             <Banknote className="mr-2 h-4 w-4" />
             Record Cash Payment
@@ -1399,9 +1404,9 @@ export function AppointmentDetailPage() {
           </div>
           <DialogFooter className="gap-2">
             <Button
-              variant="outline"
+              variant="secondary"
               onClick={() => { setCancelOpen(false); setCancelReason(''); }}
-              className="rounded-xl border-[#d4d7dd] bg-[#f7f8fa] text-[#1f2937] hover:bg-[#eef1f5] hover:text-[#111827] dark:border-white/12 dark:bg-[#182230] dark:text-slate-100 dark:hover:bg-[#202c3d] dark:hover:text-white"
+              className="rounded-xl h-10 px-6 dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700"
             >
               Keep Appointment
             </Button>

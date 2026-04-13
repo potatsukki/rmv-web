@@ -247,6 +247,19 @@ export function VisitReportPage() {
   const isConsultationDraftProject =
     report?.visitType === 'consultation' && linkedProject?.status === 'draft';
 
+  // Calculation of payment dependency
+  const appointment = report?.appointmentId;
+  const isPopulatedAppt = appointment && typeof appointment === 'object' && 'ocularFeePaid' in (appointment as any);
+  
+  const isOcularCashFeePending =
+    report?.visitType === 'ocular' &&
+    isPopulatedAppt &&
+    (appointment as any).ocularFeePaymentChoice === 'cash' &&
+    !(appointment as any).ocularFeeBreakdown?.isWithinNCR &&
+    !(appointment as any).ocularFeePaid;
+
+  const isSubmissionBlocked = isOcularCashFeePending;
+
   // Pre-fill form when data arrives
   if (report && !formLoaded) {
     setVisitType(report.visitType || '');
@@ -519,7 +532,7 @@ export function VisitReportPage() {
       const apptId = report ? rawId(report.appointmentId) : null;
       toast((t) => (
         <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-gray-900">
+          <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
             The appointment must be marked as complete first before submitting reports.
           </p>
           {apptId && (
@@ -604,7 +617,7 @@ export function VisitReportPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/visit-reports')}
+          onClick={() => navigate('/projects?tab=visit-reports')}
           className="rounded-xl text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100"
           aria-label="Go back"
         >
@@ -662,6 +675,34 @@ export function VisitReportPage() {
           <p className="mt-1 text-sm text-blue-700 dark:text-blue-200">
             This consultation created a draft project, but engineering cannot start until the ocular visit is finalized and its report is submitted.
           </p>
+        </div>
+      )}
+
+      {/* Warning Banner: Unpaid Ocular Cash Fee */}
+      {isOcularCashFeePending && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
+          <div className="flex gap-3">
+            <AlertTriangle className="h-5 w-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-200">
+                Ocular Fee Verification Required
+              </p>
+              <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
+                This is an off-site ocular visit with a cash payment choice. You must record the cash collection and have it verified by the cashier before you can submit this report.
+              </p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-3.5 h-8 rounded-lg border-amber-200 bg-white text-xs font-medium text-amber-800 hover:bg-amber-100 hover:text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/20"
+                onClick={() => {
+                  const apptId = report ? rawId(report.appointmentId) : null;
+                  if (apptId) navigate(`/appointments/${apptId}`);
+                }}
+              >
+                Go to Appointment to record payment
+              </Button>
+            </div>
+          </div>
         </div>
       )}
 
@@ -1320,7 +1361,7 @@ export function VisitReportPage() {
             </Button>
             <Button
               onClick={() => setSubmitOpen(true)}
-              disabled={submitMutation.isPending || initialDesignUploading}
+              disabled={submitMutation.isPending || initialDesignUploading || isSubmissionBlocked}
               className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-700 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
             >
               <Send className="mr-2 h-4 w-4" />

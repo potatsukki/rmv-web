@@ -137,6 +137,15 @@ export function CashCollectionsPage() {
 
   if (pendingError) return <PageError onRetry={pendingRefetch} />;
 
+  const dialogContentClassName =
+    'max-w-md rounded-2xl border border-[#d6d9df] bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(246,248,251,1)_100%)] text-[#111827] shadow-[0_28px_70px_rgba(15,23,42,0.18)] dark:border-white/12 dark:bg-[linear-gradient(180deg,rgba(9,14,22,1)_0%,rgba(6,10,17,1)_100%)] dark:text-slate-100 dark:shadow-[0_30px_80px_rgba(0,0,0,0.52)]';
+
+  const inputClassName =
+    'h-11 rounded-xl border-[#d2d2d7] bg-[#fdfdfe] text-[#1d1d1f] shadow-sm transition-all focus:border-[#c8c8cd] focus:ring-4 focus:ring-[#e8e8ed]/50 focus:ring-offset-0 dark:border-[#2f4563] dark:bg-[#0f172a] dark:text-slate-100 dark:hover:border-[#3d587d] dark:focus:border-[#4f7097] dark:focus:ring-[#4f7097]/20';
+
+  const textareaClassName =
+    'rounded-xl border-[#d2d2d7] bg-[#fdfdfe] text-[#1d1d1f] shadow-sm transition-all focus:border-[#c8c8cd] focus:ring-4 focus:ring-[#e8e8ed]/50 focus:ring-offset-0 dark:border-[#2f4563] dark:bg-[#0f172a] dark:text-slate-100 dark:hover:border-[#3d587d] dark:focus:border-[#4f7097] dark:focus:ring-[#4f7097]/20';
+
   return (
     <div className="space-y-8">
       {/* Page Header */}
@@ -449,11 +458,14 @@ export function CashCollectionsPage() {
           if (!open) setReceiveDialog({ open: false, id: '', amount: '' });
         }}
       >
-        <DialogContent className="rounded-2xl max-w-md dark:border-slate-700 dark:bg-slate-950">
+        <DialogContent className={dialogContentClassName}>
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Receive Cash</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
+              Verify and record the actual amount of cash received from the sales staff.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 py-2">
             <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Amount Received</Label>
             <Input
               type="number"
@@ -461,20 +473,20 @@ export function CashCollectionsPage() {
               value={receiveDialog.amount}
               onChange={(e) => setReceiveDialog({ ...receiveDialog, amount: e.target.value })}
               placeholder="Enter actual amount received"
-              className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl"
+              className={inputClassName}
             />
           </div>
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              className="border-[#d2d2d7] rounded-xl"
+              className="border-[#d2d2d7] rounded-xl dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 h-10 px-6"
               onClick={() => setReceiveDialog({ open: false, id: '', amount: '' })}
             >
               Cancel
             </Button>
             <Button
               variant="prominent"
-              className="rounded-xl"
+              className="rounded-xl h-10 px-6"
               onClick={handleReceive}
               disabled={receiveMutation.isPending}
             >
@@ -492,30 +504,33 @@ export function CashCollectionsPage() {
           if (!open) setResolution('');
         }}
       >
-        <DialogContent className="rounded-2xl max-w-md dark:border-slate-700 dark:bg-slate-950">
+        <DialogContent className={dialogContentClassName}>
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Resolve Discrepancy</DialogTitle>
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
+              Explain how this difference in cash collection was handled or corrected.
+            </DialogDescription>
           </DialogHeader>
-          <div className="space-y-1.5">
+          <div className="space-y-1.5 py-2">
             <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Resolution Notes</Label>
-            <Input
+            <Textarea
               value={resolution}
               onChange={(e) => setResolution(e.target.value)}
               placeholder="How was this discrepancy resolved?"
-              className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl"
+              className={`${textareaClassName} min-h-[100px]`}
             />
           </div>
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              className="border-[#d2d2d7] rounded-xl"
+              className="border-[#d2d2d7] rounded-xl dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 h-10 px-6"
               onClick={() => setResolveDialog({ open: false, id: '' })}
             >
               Cancel
             </Button>
             <Button
               variant="prominent"
-              className="rounded-xl"
+              className="rounded-xl h-10 px-6"
               onClick={handleResolve}
               disabled={resolveMutation.isPending}
             >
@@ -536,19 +551,21 @@ export function CashCollectionsPage() {
           }
         }}
       >
-        <DialogContent className="rounded-2xl max-w-md dark:border-slate-700 dark:bg-slate-950">
+        <DialogContent className={dialogContentClassName}>
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Record Cash Payment</DialogTitle>
-            <DialogDescription className="text-[#6e6e73] dark:text-slate-300">
-              Record cash collected from {recordDialog.customerName} for ocular fee.
+            <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
+              Record cash collected from <span className="text-[#1d1d1f] dark:text-slate-200 font-semibold">{recordDialog.customerName}</span> for ocular fee.
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-2">
-            <div className="space-y-1.5">
+          <div className="space-y-5 py-2">
+            <div className="space-y-2">
               <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Expected Amount</Label>
-              <p className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(recordDialog.expectedAmount)}</p>
+              <div className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-50">
+                {formatCurrency(recordDialog.expectedAmount)}
+              </div>
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Amount Collected</Label>
               <Input
                 type="number"
@@ -556,23 +573,23 @@ export function CashCollectionsPage() {
                 value={recordAmount}
                 onChange={(e) => setRecordAmount(e.target.value)}
                 placeholder="Enter amount collected"
-                className="h-11 bg-[#f5f5f7]/50 border-[#d2d2d7] focus:border-[#6e6e73] focus:ring-[#6e6e73]/20 rounded-xl"
+                className={inputClassName}
               />
             </div>
-            <div className="space-y-1.5">
+            <div className="space-y-2">
               <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Notes (optional)</Label>
               <Textarea
                 value={recordNotes}
                 onChange={(e) => setRecordNotes(e.target.value)}
                 placeholder="Any additional notes..."
-                className="min-h-[80px] bg-[#f5f5f7]/50 border-[#d2d2d7] rounded-xl"
+                className={`${textareaClassName} min-h-[90px]`}
               />
             </div>
           </div>
           <DialogFooter className="gap-2">
             <Button
               variant="outline"
-              className="rounded-xl border-[#d2d2d7]"
+              className="border-[#d2d2d7] rounded-xl dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 h-10 px-6"
               onClick={() => {
                 setRecordDialog({ open: false, appointmentId: '', expectedAmount: 0, customerName: '' });
                 setRecordAmount('');
@@ -583,7 +600,7 @@ export function CashCollectionsPage() {
             </Button>
             <Button
               variant="prominent"
-              className="rounded-xl"
+              className="rounded-xl h-10 px-6"
               onClick={handleRecord}
               disabled={recordMutation.isPending}
             >

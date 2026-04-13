@@ -9,6 +9,8 @@ import {
   XCircle,
   Loader2,
   RefreshCw,
+  Banknote,
+  Clock,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -17,7 +19,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { PageError } from '@/components/shared/PageError';
-import { useAppointment, useCreateOcularFeeCheckout, useVerifyOcularFeeCheckout, useSimulateOcularPayment } from '@/hooks/useAppointments'; // ⚠️ useSimulateOcularPayment is TESTING ONLY
+import { useAppointment, useCreateOcularFeeCheckout, useVerifyOcularFeeCheckout, useSimulateOcularPayment, useRequestOcularCashPayment } from '@/hooks/useAppointments'; // ⚠️ useSimulateOcularPayment is TESTING ONLY
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
@@ -32,6 +34,7 @@ export function PayOcularFeePage() {
   // ⚠️ TESTING ONLY: simulate payment hook. Remove for production.
   const simulateMutation = useSimulateOcularPayment();
   // ⚠️ END TESTING ONLY
+  const cashMutation = useRequestOcularCashPayment();
 
   const paymentStatus = searchParams.get('status');
   const feeStatus = appt?.ocularFeeStatus;
@@ -111,6 +114,16 @@ export function PayOcularFeePage() {
   };
   // ⚠️ END TESTING ONLY
 
+  const handleRequestCash = async () => {
+    try {
+      await cashMutation.mutateAsync(id!);
+      toast.success('Cash payment requested! You will pay the sales staff during the visit.');
+      refetch();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to request cash payment.'));
+    }
+  };
+
   if (isError) return <PageError onRetry={refetch} />;
 
   if (isLoading) {
@@ -137,28 +150,28 @@ export function PayOcularFeePage() {
           <ArrowLeft className="h-5 w-5" />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f]">
+          <h1 className="text-2xl font-bold tracking-tight text-[var(--color-card-foreground)]">
             Pay Ocular Fee
           </h1>
-          <p className="text-sm text-[#6e6e73]">
+          <p className="text-sm text-slate-500 dark:text-slate-400">
             Appointment on {format(new Date(appt.date), 'MMMM d, yyyy')}
           </p>
         </div>
       </div>
 
       {/* Fee Summary */}
-      <Card className="rounded-xl border-[#c8c8cd]/50">
+      <Card className="rounded-xl border-[#c8c8cd]/50 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)]">
         <CardHeader className="pb-3">
-          <CardTitle className="text-base text-[#3a3a3e]">Fee Details</CardTitle>
+          <CardTitle className="text-base text-[var(--color-card-foreground)]">Fee Details</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 text-sm">
+        <CardContent className="space-y-2 text-sm text-[var(--color-card-foreground)]">
           <div className="flex justify-between">
-            <span className="text-[#6e6e73]">Type</span>
+            <span className="text-slate-500 dark:text-slate-400">Type</span>
             <span className="font-medium capitalize">{appt.type} visit</span>
           </div>
           {appt.formattedAddress && (
             <div className="flex justify-between">
-              <span className="text-[#6e6e73]">Location</span>
+              <span className="text-slate-500 dark:text-slate-400">Location</span>
               <span className="font-medium text-right max-w-[60%]">
                 {appt.formattedAddress}
               </span>
@@ -166,13 +179,13 @@ export function PayOcularFeePage() {
           )}
           {appt.distanceKm != null && (
             <div className="flex justify-between">
-              <span className="text-[#6e6e73]">Distance</span>
+              <span className="text-slate-500 dark:text-slate-400">Distance</span>
               <span className="font-medium">{appt.distanceKm.toFixed(1)} km</span>
             </div>
           )}
-          <div className="flex justify-between border-t pt-2">
-            <span className="font-semibold text-[#1d1d1f]">Total Ocular Fee</span>
-            <span className="font-bold text-lg text-[#1d1d1f]">
+          <div className="flex justify-between border-t border-slate-200 dark:border-white/10 pt-2">
+            <span className="font-semibold text-[var(--color-card-foreground)]">Total Ocular Fee</span>
+            <span className="font-bold text-lg text-[var(--color-card-foreground)]">
               {formatCurrency(feeAmount)}
             </span>
           </div>
@@ -181,16 +194,17 @@ export function PayOcularFeePage() {
 
       {/* ── Verified ── */}
       {feeStatus === 'verified' && (
-        <Card className="rounded-xl border-emerald-200 bg-emerald-50">
+        <Card className="rounded-xl border-emerald-200 bg-emerald-50 dark:border-emerald-800/50 dark:bg-emerald-950/20">
           <CardContent className="flex items-center gap-3 p-5">
-            <CheckCircle2 className="h-8 w-8 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="h-8 w-8 text-emerald-600 dark:text-emerald-400 shrink-0" />
             <div>
-              <p className="font-semibold text-emerald-800">Payment Confirmed</p>
-              <p className="text-sm text-emerald-700">
+              <p className="font-semibold text-emerald-800 dark:text-emerald-300">Payment Confirmed</p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">
                 Your payment has been received. A sales staff will be assigned for your visit shortly.
               </p>
               <Button
-                className="mt-3 bg-emerald-600 hover:bg-emerald-700 rounded-lg"
+                variant="prominent"
+                className="mt-3 rounded-lg px-6 h-10"
                 size="sm"
                 onClick={() => navigate(`/appointments/${id}`)}
               >
@@ -203,18 +217,19 @@ export function PayOcularFeePage() {
 
       {/* ── Returned from PayMongo but not yet verified (polling/verifying) ── */}
       {paymentStatus === 'success' && feeStatus !== 'verified' && (
-        <Card className="rounded-xl border-blue-200 bg-blue-50">
+        <Card className="rounded-xl border-blue-200 bg-blue-50 dark:border-blue-800/50 dark:bg-blue-950/20">
           <CardContent className="flex items-center gap-3 p-5">
             {verifyTimedOut ? (
               <>
-                <RefreshCw className="h-8 w-8 text-amber-600 shrink-0" />
+                <RefreshCw className="h-8 w-8 text-amber-600 dark:text-amber-400 shrink-0" />
                 <div className="flex-1">
-                  <p className="font-semibold text-amber-800">Verification Taking Longer Than Expected</p>
-                  <p className="text-sm text-amber-700">
+                  <p className="font-semibold text-amber-800 dark:text-amber-300">Verification Taking Longer Than Expected</p>
+                  <p className="text-sm text-amber-700 dark:text-amber-400">
                     Your payment may still be processing. Click below to check again.
                   </p>
                   <Button
-                    className="mt-3 bg-blue-600 hover:bg-blue-700 rounded-lg"
+                    variant="prominent"
+                    className="mt-3 rounded-lg px-6 h-10"
                     size="sm"
                     onClick={handleManualVerify}
                     disabled={verifyMutation.isPending}
@@ -235,10 +250,10 @@ export function PayOcularFeePage() {
               </>
             ) : (
               <>
-                <Loader2 className="h-8 w-8 text-blue-600 shrink-0 animate-spin" />
+                <Loader2 className="h-8 w-8 text-blue-600 dark:text-blue-400 shrink-0 animate-spin" />
                 <div>
-                  <p className="font-semibold text-blue-800">Verifying Payment</p>
-                  <p className="text-sm text-blue-700">
+                  <p className="font-semibold text-blue-800 dark:text-blue-300">Verifying Payment</p>
+                  <p className="text-sm text-blue-700 dark:text-blue-400">
                     Please wait while we confirm your payment. Don&apos;t close this page.
                   </p>
                 </div>
@@ -250,12 +265,12 @@ export function PayOcularFeePage() {
 
       {/* ── Payment cancelled by user ── */}
       {paymentStatus === 'cancelled' && feeStatus === 'pending' && (
-        <Card className="rounded-xl border-amber-200 bg-amber-50">
+        <Card className="rounded-xl border-amber-200 bg-amber-50 dark:border-amber-800/50 dark:bg-amber-950/20">
           <CardContent className="flex items-center gap-3 p-5">
-            <XCircle className="h-8 w-8 text-amber-600 shrink-0" />
+            <XCircle className="h-8 w-8 text-amber-600 dark:text-amber-400 shrink-0" />
             <div>
-              <p className="font-semibold text-amber-800">Payment Cancelled</p>
-              <p className="text-sm text-amber-700">
+              <p className="font-semibold text-amber-800 dark:text-amber-300">Payment Cancelled</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400">
                 Your payment was not completed. You can try again below.
               </p>
             </div>
@@ -263,63 +278,125 @@ export function PayOcularFeePage() {
         </Card>
       )}
 
-      {/* ── Pending: show pay button ── */}
-      {feeStatus === 'pending' && paymentStatus !== 'success' && (
-        <Card className="rounded-xl border-[#c8c8cd]/50">
-          <CardHeader className="pb-3">
-            <CardTitle className="flex items-center gap-2 text-base text-[#3a3a3e]">
-              <QrCode className="h-5 w-5 text-[#6e6e73]" />
-              Pay via QR Code
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <p className="text-sm text-[#6e6e73]">
-              Scan the QR code with your banking app to complete your payment.
-            </p>
-
-            <Button
-              className="w-full h-12 bg-[#1d1d1f] hover:bg-[#2d2d2f] rounded-lg text-white text-base font-semibold"
-              onClick={handlePayNow}
-              disabled={checkoutMutation.isPending}
-            >
-              {checkoutMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Preparing payment…
-                </>
-              ) : (
-                <>
-                  <CreditCard className="mr-2 h-5 w-5" />
-                  Pay {formatCurrency(feeAmount)} Now
-                </>
-              )}
-            </Button>
-
-            {/* ⚠️ TESTING ONLY: Simulate payment button. Remove for production. */}
-            <Button
-              variant="outline"
-              className="w-full h-12 border-dashed border-2 border-emerald-300 text-emerald-700 hover:bg-emerald-50 rounded-lg text-base font-semibold"
-              onClick={handleSimulatePay}
-              disabled={simulateMutation.isPending}
-            >
-              {simulateMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  Simulating…
-                </>
-              ) : (
-                <>
-                  <CheckCircle2 className="mr-2 h-5 w-5" />
-                  Simulate Payment (Test)
-                </>
-              )}
-            </Button>
-            <p className="text-xs text-center text-[#86868b]">
-              ⚠ Test button — marks as paid without real payment
-            </p>
-            {/* ⚠️ END TESTING ONLY */}
+      {/* ── Cash Payment Requested ── */}
+      {feeStatus === 'cash_pending' && (
+        <Card className="rounded-xl border-blue-200 bg-blue-50 dark:border-blue-800/50 dark:bg-blue-950/20">
+          <CardContent className="flex items-center gap-3 p-5">
+            <Clock className="h-8 w-8 text-blue-600 dark:text-blue-400 shrink-0" />
+            <div>
+              <p className="font-semibold text-blue-800 dark:text-blue-300">Cash Payment Requested</p>
+              <p className="text-sm text-blue-700 dark:text-blue-400">
+                You chose to pay via cash. The assigned sales staff will collect {formatCurrency(feeAmount)} during your ocular visit.
+              </p>
+              <Button
+                variant="prominent"
+                className="mt-3 rounded-lg px-6 h-10"
+                size="sm"
+                onClick={() => navigate(`/appointments/${id}`)}
+              >
+                View Appointment
+              </Button>
+            </div>
           </CardContent>
         </Card>
+      )}
+
+      {/* ── Pending: show pay buttons ── */}
+      {(feeStatus === 'pending' || feeStatus === 'declined') && paymentStatus !== 'success' && (
+        <>
+          {/* Online Payment Option */}
+          <Card className="rounded-xl border-[#c8c8cd]/50 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-[var(--color-card-foreground)]">
+                <QrCode className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+                Pay Online
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Pay instantly via QR code, e-wallet, or bank transfer through our secure payment gateway.
+              </p>
+
+              <Button
+                variant="prominent"
+                className="w-full h-12 rounded-xl text-base"
+                onClick={handlePayNow}
+                disabled={checkoutMutation.isPending}
+              >
+                {checkoutMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Preparing payment…
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="mr-2 h-5 w-5" />
+                    Pay {formatCurrency(feeAmount)} Now
+                  </>
+                )}
+              </Button>
+
+              {/* ⚠️ TESTING ONLY: Simulate payment button. Remove for production. */}
+              <Button
+                variant="outline"
+                className="w-full h-12 rounded-xl border-[#d2d2d7] text-slate-800 dark:border-emerald-500/50 dark:text-emerald-400 dark:hover:bg-emerald-500/10 font-medium"
+                onClick={handleSimulatePay}
+                disabled={simulateMutation.isPending}
+              >
+                {simulateMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Simulating…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-5 w-5" />
+                    Simulate Payment (Test)
+                  </>
+                )}
+              </Button>
+              <p className="text-xs text-center text-slate-500 dark:text-slate-400">
+                ⚠ Test button — marks as paid without real payment
+              </p>
+              {/* ⚠️ END TESTING ONLY */}
+            </CardContent>
+          </Card>
+
+          {/* Cash Payment Option */}
+          <Card className="rounded-xl border-[#c8c8cd]/50 dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)]">
+            <CardHeader className="pb-3">
+              <CardTitle className="flex items-center gap-2 text-base text-[var(--color-card-foreground)]">
+                <Banknote className="h-5 w-5 text-slate-500 dark:text-slate-400" />
+                Pay via Cash
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-sm text-slate-500 dark:text-slate-400">
+                Pay the ocular fee in cash directly to the assigned sales staff during your visit.
+                The amount will be collected and verified by our cashier.
+              </p>
+
+              <Button
+                variant="outline"
+                className="w-full h-12 rounded-xl border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-500/50 dark:text-amber-400 dark:hover:bg-amber-500/10 font-medium"
+                onClick={handleRequestCash}
+                disabled={cashMutation.isPending}
+              >
+                {cashMutation.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                    Requesting…
+                  </>
+                ) : (
+                  <>
+                    <Banknote className="mr-2 h-5 w-5" />
+                    Request Cash Payment
+                  </>
+                )}
+              </Button>
+            </CardContent>
+          </Card>
+        </>
       )}
     </div>
   );
