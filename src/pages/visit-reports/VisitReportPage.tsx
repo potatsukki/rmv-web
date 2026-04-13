@@ -1361,7 +1361,7 @@ export function VisitReportPage() {
             </Button>
             <Button
               onClick={() => setSubmitOpen(true)}
-              disabled={submitMutation.isPending || initialDesignUploading || isSubmissionBlocked}
+              disabled={submitMutation.isPending || initialDesignUploading || !!isSubmissionBlocked}
               className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-700 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
             >
               <Send className="mr-2 h-4 w-4" />
