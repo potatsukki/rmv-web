@@ -290,7 +290,7 @@ export function CashierQueuePage() {
             onConfirm={handleVerify}
             confirmDisabled={!verifySignatureKey || verifyMutation.isPending}
             confirmClassName={isDark
-              ? 'min-w-[8.5rem] border border-emerald-400/45 bg-[linear-gradient(180deg,rgba(34,197,94,0.94)_0%,rgba(21,128,61,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_14px_28px_rgba(6,78,59,0.3)] hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.98)_0%,rgba(22,163,74,0.98)_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none'
+              ? 'min-w-[8.5rem] border border-emerald-400/45 bg-[linear-gradient(180deg,rgba(34,197,94,0.94)_0%,rgba(21,128,61,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_14px_28px_rgba(6,78,59,0.3)] hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.98)_0%,rgba(22,163,74,0.98)_100%)] disabled:opacity-50 dark:disabled:shadow-none'
               : 'min-w-[8.5rem] border border-emerald-400 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)]'}
           >
             {verifyPayment && (
@@ -329,11 +329,11 @@ export function CashierQueuePage() {
                     Cashier Signature
                   </p>
                   {savedSignature?.signatureKey && (
-                    <div className="flex flex-wrap gap-2">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                       <Button
                         type="button"
                         size="sm"
-                        variant={!useNewVerifySignature ? 'default' : 'outline'}
+                        variant={!useNewVerifySignature ? 'prominent' : 'outline'}
                         className="rounded-lg"
                         onClick={() => {
                           setUseNewVerifySignature(false);
@@ -345,7 +345,7 @@ export function CashierQueuePage() {
                       <Button
                         type="button"
                         size="sm"
-                        variant={useNewVerifySignature ? 'default' : 'outline'}
+                        variant={useNewVerifySignature ? 'prominent' : 'outline'}
                         className="rounded-lg"
                         onClick={() => {
                           setUseNewVerifySignature(true);

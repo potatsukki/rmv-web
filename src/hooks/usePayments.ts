@@ -14,6 +14,7 @@ export interface PaymentHistoryItem {
   method?: string;
   referenceNumber?: string;
   receiptNumber?: string;
+  receiptKey?: string;
   description: string;
   date: string;
   declineReason?: string;

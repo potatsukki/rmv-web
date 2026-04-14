@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle } from 'lucide-react';
-import { Link, useLocation, useSearchParams } from 'react-router-dom';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, ScrollText, PenTool, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, MoreHorizontal, ShieldCheck } from 'lucide-react';
+import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
@@ -15,6 +15,10 @@ import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { BlockedActionPrompt } from '@/components/shared/BlockedActionPrompt';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { SignaturePad } from '@/components/shared/SignaturePad';
+import { useSignature } from '@/hooks/useUsers';
+import { useThemeStore } from '@/stores/theme.store';
 import { useProjects } from '@/hooks/useProjects';
 import {
   usePaymentPlan,
@@ -24,11 +28,19 @@ import {
   useSimulateStagePayment,
   useRecordCashPayment,
   useMyPaymentHistory,
+  useVerifyPayment,
   type PaymentHistoryItem,
 } from '@/hooks/usePayments';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, PaymentStageStatus } from '@/lib/constants';
 import { Label } from '@/components/ui/label';
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -37,7 +49,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useUnpaidOcularFees } from '@/hooks/useAppointments';
-import { useThemeStore } from '@/stores/theme.store';
+
 import { InlineRefundDetails } from './InlineRefundDetails';
 import { RefundQueueList } from './components/RefundQueueList';
 import { CashierQueuePage } from './CashierQueuePage';
@@ -56,8 +68,7 @@ const historyStatusConfig: Record<string, { label: string; className: string }> 
 
 export function PaymentsPage() {
   const { user } = useAuthStore();
-  const { resolvedTheme } = useThemeStore();
-  const isDark = resolvedTheme === 'dark';
+
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
@@ -91,6 +102,40 @@ export function PaymentsPage() {
     [unpaidOcularFees],
   );
 
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
+  const { data: savedSignature } = useSignature();
+  const verifyMutation = useVerifyPayment();
+
+  const [verifyId, setVerifyId] = useState('');
+  const [verifySignatureKey, setVerifySignatureKey] = useState('');
+  const [useNewVerifySignature, setUseNewVerifySignature] = useState(false);
+
+  useEffect(() => {
+    if (!verifyId) return;
+    if (savedSignature?.signatureKey && !useNewVerifySignature && !verifySignatureKey) {
+      setVerifySignatureKey(savedSignature.signatureKey);
+    }
+  }, [savedSignature?.signatureKey, useNewVerifySignature, verifyId, verifySignatureKey]);
+
+  const handleVerify = async () => {
+    if (!verifySignatureKey) {
+      toast.error('Cashier signature is required before verification');
+      return;
+    }
+    try {
+      setBlockedAction(null);
+      await verifyMutation.mutateAsync({ id: verifyId, signatureKey: verifySignatureKey });
+      toast.success('Payment verified! The customer has been notified and the project will advance to the next stage.', { duration: 5000 });
+      setVerifyId('');
+      setVerifySignatureKey('');
+      setUseNewVerifySignature(false);
+    } catch (err) {
+      setBlockedAction(resolveBlockedAction(err, '/help/payments-refunds/payment-stage-status-reference#overview'));
+      toast.error(extractErrorMessage(err, 'Verification failed'));
+    }
+  };
+
   // Unified cross-project payment history (customer only)
   const { data: allHistory, isLoading: historyLoading } = useMyPaymentHistory();
   const [historySearch, setHistorySearch] = useState('');
@@ -107,13 +152,16 @@ export function PaymentsPage() {
   }, [allHistory, historySearch]);
 
   // Auto-select project only from navigation state (e.g. "Go to Payments" button)
+  const navigate = useNavigate();
   useEffect(() => {
     if (selectedProjectId) return;
     const stateProjectId = (location.state as { projectId?: string })?.projectId;
     if (stateProjectId) {
       setSelectedProjectId(stateProjectId);
+      // Consume the state so it doesn't re-trigger when clearing the project selection
+      navigate(location.pathname + location.search, { replace: true, state: {} });
     }
-  }, [selectedProjectId, location.state]);
+  }, [selectedProjectId, location.state, navigate, location.pathname, location.search]);
 
   // Handle ?tab= query param for deep linking
   useEffect(() => {
@@ -659,10 +707,16 @@ export function PaymentsPage() {
                     </p>
                   </div>
                   {isCashier && (
-                    <Button size="sm" asChild className="shrink-0 text-xs">
-                      <Link to="/payments?tab=cashier-queue">
-                        <CheckCircle className="mr-1 h-3.5 w-3.5" /> Go to Cashier Queue
-                      </Link>
+                    <Button 
+                      size="sm" 
+                      variant="ghost"
+                      onClick={() => {
+                        setSelectedProjectId('');
+                        navigate('/payments?tab=cashier-queue');
+                      }}
+                      className="shrink-0 text-xs bg-[#1d1d1f] hover:bg-[#2c2c2e] hover:text-white text-white dark:bg-white dark:hover:bg-slate-200 dark:text-black dark:hover:text-black shadow-sm font-semibold h-8 !bg-none"
+                    >
+                      <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Go to Cashier Queue
                     </Button>
                   )}
                 </CardContent>
@@ -678,11 +732,12 @@ export function PaymentsPage() {
             </CardHeader>
 
             {/* Desktop table header */}
-            <div className="hidden sm:grid sm:grid-cols-[2fr_minmax(100px,1fr)_100px_minmax(140px,auto)] gap-3 px-6 pb-2 text-xs font-medium text-[var(--text-metal-muted-color)] uppercase tracking-wider border-b border-[color:var(--color-border)]">
+            <div className="hidden sm:grid sm:grid-cols-[2fr_minmax(100px,1fr)_130px_160px] gap-3 px-6 pb-2 text-xs font-medium text-[var(--text-metal-muted-color)] uppercase tracking-wider border-b border-[color:var(--color-border)]">
               <span>Stage</span>
               <span className="text-right">Amount</span>
               <span className="text-center">Status</span>
               <span className="text-right">Actions</span>
+              
             </div>
 
             <CardContent className="p-0">
@@ -733,16 +788,7 @@ export function PaymentsPage() {
 
                   // Remaining balance for partial payments
                   const hasPartialPayment = !isVerified && (stage.amountPaid ?? 0) > 0 && (stage.remainingBalance ?? 0) > 0;
-                  const earlyQrButtonClass = isDark
-                    ? 'rounded-lg border border-emerald-400/35 bg-[linear-gradient(180deg,rgba(35,84,63,0.94)_0%,rgba(18,49,38,0.96)_100%)] text-emerald-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_12px_24px_rgba(0,0,0,0.24)] hover:bg-[linear-gradient(180deg,rgba(44,104,77,0.98)_0%,rgba(22,60,46,0.98)_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none'
-                    : 'rounded-lg border border-[#93ad9d] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-[#4e6c5a] hover:brightness-[0.99]';
-                  const cashierCashButtonClass = isDark
-                    ? 'rounded-lg border border-slate-600 bg-[linear-gradient(180deg,rgba(32,41,55,0.96)_0%,rgba(17,24,39,0.98)_100%)] text-slate-100 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_10px_22px_rgba(0,0,0,0.22)] hover:bg-[linear-gradient(180deg,rgba(43,55,72,0.98)_0%,rgba(24,32,46,0.98)_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none'
-                    : 'rounded-lg border-[#93ad9d] text-[#4e6c5a] hover:bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]';
-                  const verifyQueueButtonClass = isDark
-                    ? 'rounded-lg border border-emerald-400/45 bg-[linear-gradient(180deg,rgba(34,197,94,0.92)_0%,rgba(21,128,61,0.96)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_12px_26px_rgba(6,78,59,0.28)] hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.98)_0%,rgba(22,163,74,0.98)_100%)]'
-                    : 'rounded-lg border border-emerald-400 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)]';
-
+                  
                   return (
                     <div
                       key={String(stage.stageId)}
@@ -787,38 +833,42 @@ export function PaymentsPage() {
                           </div>
                         )}
                         {showPayButtons && (
-                          <div className="flex flex-wrap gap-2 pt-1">
-                            <Button
-                              size="sm"
-                              className={isEarlyPay
-                                  ? `${earlyQrButtonClass} text-xs h-8`
-                                  : 'rounded-lg text-xs h-8'}
-                              onClick={() => handleQrCheckout(String(stage.stageId))}
-                              disabled={stageCheckout.isPending}
-                            >
-                              <QrCode className="mr-1 h-3.5 w-3.5" />
-                              {isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="outline"
-                              className="rounded-lg border-[#93ad9d] text-xs h-8 text-[#4e6c5a] hover:bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]"
-                              onClick={() => handleRequestCash(String(stage.stageId))}
-                              disabled={requestStageCash.isPending}
-                            >
-                              <Banknote className="mr-1 h-3.5 w-3.5" />
-                              Pay in Cash
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="metal-pill rounded-lg text-xs h-8 text-[#171b21] dark:text-slate-200 hover:text-[#4d5660] dark:hover:text-white"
-                              onClick={() => handleSimulate(String(stage.stageId))}
-                              disabled={simulatePayment.isPending}
-                              title="Simulate payment (testing)"
-                            >
-                              <Zap className="mr-1 h-3.5 w-3.5" /> Simulate
-                            </Button>
+                          <div className="pt-1">
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="outline" size="sm" className="w-full justify-between items-center rounded-lg h-9 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-800">
+                                  <span>Actions</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-[calc(100vw-3rem)] sm:w-48 dark:bg-slate-900 dark:border-slate-800">
+                                <DropdownMenuItem 
+                                  onClick={() => handleQrCheckout(String(stage.stageId))}
+                                  disabled={stageCheckout.isPending}
+                                  className="cursor-pointer py-3 sm:py-2"
+                                >
+                                  <QrCode className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                  <span>{isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleRequestCash(String(stage.stageId))}
+                                  disabled={requestStageCash.isPending}
+                                  className="cursor-pointer py-3 sm:py-2"
+                                >
+                                  <Banknote className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  <span>Pay in Cash</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleSimulate(String(stage.stageId))}
+                                  disabled={simulatePayment.isPending}
+                                  className="cursor-pointer py-3 sm:py-2 text-amber-600 dark:text-amber-400"
+                                >
+                                  <Zap className="mr-2 h-4 w-4" />
+                                  <span>Simulate Payment</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           </div>
                         )}
                         {isCashier && canPay && (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED) && (
@@ -826,7 +876,7 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               variant="outline"
-                              className={`${cashierCashButtonClass} text-xs h-8`}
+                              className="w-full justify-start rounded-lg h-9"
                               onClick={() =>
                                 setCashDialog({
                                   open: true,
@@ -835,7 +885,7 @@ export function PaymentsPage() {
                                 })
                               }
                             >
-                              <Banknote className="mr-1 h-3.5 w-3.5" /> Record Cash
+                              <Banknote className="mr-2 h-4 w-4" /> Record Cash
                             </Button>
                           </div>
                         )}
@@ -844,10 +894,10 @@ export function PaymentsPage() {
                             <Button
                               size="sm"
                               asChild
-                              className={`${verifyQueueButtonClass} text-xs h-8`}
+                              className="w-full justify-start rounded-lg h-9"
                             >
                               <Link to="/payments?tab=cashier-queue">
-                                <CheckCircle className="mr-1 h-3.5 w-3.5" /> Verify in Cashier Queue
+                                <CheckCircle className="mr-2 h-4 w-4" /> Verify in Cashier Queue
                               </Link>
                             </Button>
                           </div>
@@ -855,7 +905,7 @@ export function PaymentsPage() {
                       </div>
 
                       {/* ─── Desktop layout (table row) ─── */}
-                      <div className="hidden sm:grid sm:grid-cols-[2fr_minmax(100px,1fr)_100px_minmax(140px,auto)] gap-3 items-center">
+                      <div className="hidden sm:grid sm:grid-cols-[2fr_minmax(100px,1fr)_130px_160px] gap-3 items-center">
                         <div className="min-w-0">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-semibold text-[var(--color-card-foreground)] truncate">{String(stage.label)}</p>
@@ -880,46 +930,50 @@ export function PaymentsPage() {
                         <div className="flex justify-center">
                           <StatusBadge status={String(stage.status)} />
                         </div>
-                        <div className="flex items-center gap-1.5 justify-end flex-wrap">
+                        <div className="flex justify-end gap-2">
                           {showPayButtons && (
-                            <>
-                              <Button
-                                size="sm"
-                                className={isEarlyPay
-                                  ? `${earlyQrButtonClass} text-xs h-7 px-2`
-                                  : 'rounded-lg text-xs h-7 px-2'}
-                                onClick={() => handleQrCheckout(String(stage.stageId))}
-                                disabled={stageCheckout.isPending}
-                              >
-                                <QrCode className="mr-1 h-3 w-3" />
-                                {isEarlyPay ? 'Early QR' : 'Pay QR'}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="rounded-lg border-[#93ad9d] text-[#4e6c5a] hover:bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] text-xs h-7 px-2"
-                                onClick={() => handleRequestCash(String(stage.stageId))}
-                                disabled={requestStageCash.isPending}
-                              >
-                                <Banknote className="mr-1 h-3 w-3" /> Cash
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="metal-pill rounded-lg text-xs h-7 px-2 text-[#171b21] dark:text-slate-200 hover:text-[#4d5660] dark:hover:text-white"
-                                onClick={() => handleSimulate(String(stage.stageId))}
-                                disabled={simulatePayment.isPending}
-                                title="Simulate payment (testing)"
-                              >
-                                <Zap className="h-3 w-3" />
-                              </Button>
-                            </>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 metal-pill">
+                                  <span className="sr-only">Open menu</span>
+                                  <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end" className="w-48 dark:bg-slate-900 dark:border-slate-800">
+                                <DropdownMenuItem 
+                                  onClick={() => handleQrCheckout(String(stage.stageId))}
+                                  disabled={stageCheckout.isPending}
+                                  className="cursor-pointer"
+                                >
+                                  <QrCode className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+                                  <span>{isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem 
+                                  onClick={() => handleRequestCash(String(stage.stageId))}
+                                  disabled={requestStageCash.isPending}
+                                  className="cursor-pointer"
+                                >
+                                  <Banknote className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
+                                  <span>Pay in Cash</span>
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem 
+                                  onClick={() => handleSimulate(String(stage.stageId))}
+                                  disabled={simulatePayment.isPending}
+                                  className="cursor-pointer text-amber-600 dark:text-amber-400"
+                                >
+                                  <Zap className="mr-2 h-4 w-4" />
+                                  <span>Simulate Payment</span>
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
                           )}
+
                           {isCashier && canPay && (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED) && (
                             <Button
                               size="sm"
-                              variant="outline"
-                              className={`${cashierCashButtonClass} text-xs h-7 px-2`}
+                              variant="ghost"
+                              className="h-8 rounded-lg text-xs bg-white text-black hover:text-black hover:bg-slate-50 border-slate-200 dark:bg-white dark:text-black dark:hover:text-black dark:hover:bg-slate-100 shadow-sm font-semibold !bg-none"
                               onClick={() =>
                                 setCashDialog({
                                   open: true,
@@ -928,19 +982,37 @@ export function PaymentsPage() {
                                 })
                               }
                             >
-                              <Banknote className="mr-1 h-3 w-3" /> Cash
+                              <Banknote className="mr-1.5 h-3.5 w-3.5" /> Record Cash
                             </Button>
                           )}
+
                           {isCashier && isProofSubmitted && (
                             <Button
                               size="sm"
-                              asChild
-                              className={`${verifyQueueButtonClass} text-xs h-7 px-2`}
+                              variant="ghost"
+                              onClick={() => {
+                                const payment = payments?.find(p => String(p.stageId) === String(stage.stageId) && ['proof_submitted'].includes(String(p.status)));
+                                if (payment) {
+                                  setVerifyId(String(payment._id));
+                                  if (savedSignature?.signatureKey) {
+                                    setVerifySignatureKey(savedSignature.signatureKey);
+                                    setUseNewVerifySignature(false);
+                                  } else {
+                                    setVerifySignatureKey('');
+                                    setUseNewVerifySignature(true);
+                                  }
+                                } else {
+                                  toast.error('No pending payment found for this stage.');
+                                }
+                              }}
+                              className="h-8 rounded-lg text-xs bg-[linear-gradient(180deg,#15803d_0%,#166534_100%)] hover:bg-[linear-gradient(180deg,#16a34a_0%,#15803d_100%)] text-white hover:text-white dark:bg-[linear-gradient(180deg,#4ade80_0%,#22c55e_100%)] dark:hover:bg-[linear-gradient(180deg,#86efac_0%,#4ade80_100%)] dark:text-emerald-950 dark:hover:text-emerald-900 border border-emerald-700 dark:border-emerald-400 shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_4px_12px_rgba(21,128,61,0.2)] font-semibold px-3 transition-all"
                             >
-                              <Link to="/payments?tab=cashier-queue">
-                                <CheckCircle className="mr-1 h-3 w-3" /> Verify
-                              </Link>
+                              <CheckCircle className="mr-1.5 h-3.5 w-3.5" /> Verify Payment
                             </Button>
+                          )}
+
+                          {!showPayButtons && !isCashier && (
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Locked</span>
                           )}
                         </div>
                       </div>
@@ -959,17 +1031,37 @@ export function PaymentsPage() {
               </CardHeader>
 
               {/* Desktop header */}
-              <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_auto] gap-3 px-6 pb-2 text-xs font-medium text-[var(--text-metal-muted-color)] uppercase tracking-wider border-b border-[color:var(--color-border)]">
+              <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px] gap-3 px-6 pb-2 text-xs font-medium text-[var(--text-metal-muted-color)] uppercase tracking-wider border-b border-[color:var(--color-border)]">
                 <span>Details</span>
                 <span className="text-right">Amount</span>
                 <span className="text-center">Status</span>
-                <span className="text-right">Actions</span>
               </div>
 
               <CardContent className="p-0">
                 <div className="divide-y divide-[color:var(--color-border)]">
                   {payments.map((p) => (
-                    <div key={String(p._id)} className="px-4 py-3 transition-colors hover:bg-[color:var(--color-muted)]/70 sm:px-6">
+                    <button
+                      key={String(p._id)}
+                      type="button"
+                      onClick={() => {
+                        // We need to map the project-payment to a PaymentHistoryItem format
+                        const historyItem: PaymentHistoryItem = {
+                          _id: String(p._id),
+                          type: 'project_payment',
+                          amount: Number(p.amountPaid),
+                          status: p.status as any,
+                          date: p.createdAt ? String(p.createdAt) : new Date().toISOString(),
+                          description: `${String(p.method || '').replace('_', ' ')} for ${selectedProject?.title || 'Project'}`,
+                          method: p.method,
+                          receiptNumber: p.receiptNumber,
+                          receiptKey: p.receiptKey,
+                          referenceNumber: p.referenceNumber,
+                          declineReason: p.declineReason,
+                        };
+                        setSelectedHistoryPayment(historyItem);
+                      }}
+                      className="group w-full px-4 py-3 text-left transition-colors hover:bg-[color:var(--color-muted)]/70 sm:px-6"
+                    >
                       {/* Mobile */}
                       <div className="sm:hidden">
                         <div className="flex items-start justify-between gap-2">
@@ -985,23 +1077,6 @@ export function PaymentsPage() {
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
                             <StatusBadge status={String(p.status)} />
-                            {p.status === 'verified' && p.receiptKey && (
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                className="h-7 px-2"
-                                onClick={async () => {
-                                  try {
-                                    const { data } = await api.get(`/payments/${p._id}/receipt-url`);
-                                    window.open(data.data.url, '_blank');
-                                  } catch (err) {
-                                    toast.error(extractErrorMessage(err, 'Failed to get receipt'));
-                                  }
-                                }}
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                              </Button>
-                            )}
                           </div>
                         </div>
                         <p className="text-xs text-[var(--text-metal-muted-color)] mt-1">
@@ -1012,9 +1087,9 @@ export function PaymentsPage() {
                         )}
                       </div>
                       {/* Desktop */}
-                      <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px_auto] gap-3 items-center">
+                      <div className="hidden sm:grid sm:grid-cols-[1fr_100px_100px] gap-3 items-center">
                         <div className="min-w-0">
-                          <p className="text-sm text-[var(--color-card-foreground)] capitalize truncate">
+                          <p className="text-sm text-[var(--color-card-foreground)] capitalize truncate group-hover:text-[var(--text-metal-color)] dark:group-hover:text-slate-200">
                             {String(p.method || '').replace('_', ' ')}
                             {p.receiptNumber && ` · ${String(p.receiptNumber)}`}
                           </p>
@@ -1030,27 +1105,8 @@ export function PaymentsPage() {
                         <div className="flex justify-center">
                           <StatusBadge status={String(p.status)} />
                         </div>
-                        <div className="flex justify-end">
-                          {p.status === 'verified' && p.receiptKey && (
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-[#1d1d1f] dark:text-slate-200 hover:text-[#3a3a3e] h-7 px-2 text-xs"
-                              onClick={async () => {
-                                try {
-                                  const { data } = await api.get(`/payments/${p._id}/receipt-url`);
-                                  window.open(data.data.url, '_blank');
-                                } catch (err) {
-                                  toast.error(extractErrorMessage(err, 'Failed to get receipt'));
-                                }
-                              }}
-                            >
-                              <Download className="mr-1 h-3 w-3" /> Receipt
-                            </Button>
-                          )}
-                        </div>
                       </div>
-                    </div>
+                    </button>
                   ))}
                 </div>
               </CardContent>
@@ -1143,6 +1199,29 @@ export function PaymentsPage() {
                 </span>
               </div>
 
+              {selectedHistoryPayment.status === 'verified' && selectedHistoryPayment.receiptKey && (
+                <div className="flex justify-center px-6">
+                  <Button
+                    variant="outline"
+                    className={
+                      isDark
+                        ? "w-full rounded-xl border-emerald-500/50 text-emerald-400 hover:bg-emerald-500/20 hover:text-emerald-300"
+                        : "w-full rounded-xl border-[#93ad9d] text-[#4e6c5a] hover:bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)] hover:text-[#2f4737]"
+                    }
+                    onClick={async () => {
+                      try {
+                        const { data } = await api.get(`/payments/${selectedHistoryPayment._id}/receipt-url`);
+                        window.open(data.data.url, '_blank');
+                      } catch (err) {
+                        toast.error(extractErrorMessage(err, 'Failed to get receipt'));
+                      }
+                    }}
+                  >
+                    <Download className="mr-2 h-4 w-4" /> Download Official Receipt
+                  </Button>
+                </div>
+              )}
+
               {/* Details */}
               <div className="space-y-4 px-1">
                 <div className="flex items-start gap-3">
@@ -1191,7 +1270,7 @@ export function PaymentsPage() {
                     <AlertCircle className="mt-0.5 h-4 w-4 text-[#87544f]" />
                     <div>
                       <p className="text-xs font-semibold text-[#87544f]">Decline Reason</p>
-                      <p className="mt-0.5 text-sm font-medium text-[#9a625c]">{selectedHistoryPayment.declineReason}</p>
+                      <p className="mt-0.5 text-xs text-[#9a625c]">{selectedHistoryPayment.declineReason}</p>
                     </div>
                   </div>
                 )}
@@ -1203,6 +1282,102 @@ export function PaymentsPage() {
           )}
         </DialogContent>
       </Dialog>
+
+      {/* Verify Confirm Dialog */}
+      {(() => {
+        const verifyPayment = payments?.find((p) => String(p._id) === verifyId);
+        return (
+          <ConfirmDialog
+            open={!!verifyId}
+            onOpenChange={(open) => {
+              if (!open) {
+                setVerifyId('');
+                setVerifySignatureKey('');
+                setUseNewVerifySignature(false);
+              }
+            }}
+            title="Verify Payment"
+            description="Review the details below, then confirm to mark this payment as verified. A receipt will be generated."
+            confirmLabel="Verify Payment"
+            isLoading={verifyMutation.isPending}
+            onConfirm={handleVerify}
+            confirmDisabled={!verifySignatureKey || verifyMutation.isPending}
+            confirmClassName={isDark
+              ? 'min-w-[8.5rem] border border-emerald-400/45 bg-[linear-gradient(180deg,rgba(34,197,94,0.94)_0%,rgba(21,128,61,0.98)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_14px_28px_rgba(6,78,59,0.3)] hover:bg-[linear-gradient(180deg,rgba(52,211,153,0.98)_0%,rgba(22,163,74,0.98)_100%)] disabled:opacity-50 dark:disabled:shadow-none'
+              : 'min-w-[8.5rem] border border-emerald-400 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)]'}
+          >
+            {verifyPayment && (
+              <div className={`space-y-3 rounded-xl border p-4 text-sm ${isDark ? 'border-slate-700 bg-slate-900/70 text-slate-200' : 'border-[#e8e8ed] bg-[#f5f5f7]/50'}`}>
+                <div className="flex justify-between">
+                  <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Amount</span>
+                  <span className={`font-bold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{formatCurrency(Number(verifyPayment.amountPaid))}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Method</span>
+                  <span className={`capitalize ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{String(verifyPayment.method || '').replace('_', ' ')}</span>
+                </div>
+                {verifyPayment.referenceNumber && (
+                  <div className="flex justify-between">
+                    <span className={isDark ? 'text-slate-400' : 'text-[#86868b]'}>Reference</span>
+                    <span className={`font-mono text-xs ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{String(verifyPayment.referenceNumber)}</span>
+                  </div>
+                )}
+                {String(verifyPayment.method) === 'qrph' && (
+                  <div className={`mt-1 flex items-center gap-1.5 rounded-lg border px-2.5 py-1.5 text-xs ${isDark ? 'border-emerald-400/30 bg-emerald-500/12 text-emerald-200' : 'border-emerald-100 bg-emerald-50 text-emerald-700'}`}>
+                    <ShieldCheck className="h-3.5 w-3.5" />
+                    This payment was confirmed by PayMongo
+                  </div>
+                )}
+
+                <div className="space-y-2 rounded-lg border border-dashed border-[#d2d2d7] p-3 dark:border-slate-600">
+                  <p className={`text-xs font-semibold uppercase tracking-wide ${isDark ? 'text-slate-300' : 'text-[#616a74]'}`}>
+                    Cashier Signature
+                  </p>
+                  {savedSignature?.signatureKey && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={!useNewVerifySignature ? 'prominent' : 'outline'}
+                        className="rounded-lg"
+                        onClick={() => {
+                          setUseNewVerifySignature(false);
+                          setVerifySignatureKey(savedSignature.signatureKey!);
+                        }}
+                      >
+                        Use saved signature
+                      </Button>
+                      <Button
+                        type="button"
+                        size="sm"
+                        variant={useNewVerifySignature ? 'prominent' : 'outline'}
+                        className="rounded-lg"
+                        onClick={() => {
+                          setUseNewVerifySignature(true);
+                          setVerifySignatureKey('');
+                        }}
+                      >
+                        Draw new signature
+                      </Button>
+                    </div>
+                  )}
+
+                  {(!savedSignature?.signatureKey || useNewVerifySignature) && (
+                    <SignaturePad
+                      onSave={(key) => setVerifySignatureKey(key)}
+                      existingKey={!useNewVerifySignature ? savedSignature?.signatureKey : null}
+                    />
+                  )}
+
+                  {verifySignatureKey && (
+                    <p className="text-xs text-emerald-600 dark:text-emerald-300">Signature ready for verification.</p>
+                  )}
+                </div>
+              </div>
+            )}
+          </ConfirmDialog>
+        );
+      })()}
     </div>
   );
 }

@@ -77,7 +77,7 @@ export function ConfirmDialog({
           </div>
         </DialogHeader>
         {children ? (
-          <div className="px-7">
+          <div className="px-7 max-h-[65vh] overflow-y-auto py-1">
             <div className="metal-panel rounded-[1.45rem] border border-[color:var(--metal-panel-border)] px-4 py-4">
               {children}
             </div>

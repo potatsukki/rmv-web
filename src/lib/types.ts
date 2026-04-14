@@ -279,6 +279,44 @@ export interface Blueprint {
   createdAt: string;
 }
 
+export interface BlueprintDraftFile {
+  key: string;
+  name: string;
+  type: string;
+  size: number;
+  uploadedAt: string;
+}
+
+export interface BlueprintDraft {
+  _id: string;
+  projectId: string;
+  mode: 'initial' | 'revision';
+  sourceBlueprintId?: string;
+  files?: {
+    blueprint?: BlueprintDraftFile | null;
+    design?: BlueprintDraftFile | null;
+    costing?: BlueprintDraftFile | null;
+  };
+  quotation?: {
+    lineItems?: {
+      label: string;
+      quantity: number;
+      materials: string;
+      labor: string;
+    }[];
+    fees?: string;
+    validityDays?: string;
+    breakdown?: string;
+    estimatedDuration?: string;
+    engineerNotes?: string;
+    paymentMilestones?: { label: string; description: string }[];
+  };
+  createdBy?: Pick<User, '_id' | 'firstName' | 'lastName' | 'phone'>;
+  lastEditedBy?: Pick<User, '_id' | 'firstName' | 'lastName' | 'phone'>;
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Payment ──
 export interface PaymentStage {
   stageId: string;

@@ -259,14 +259,14 @@ export function SignaturePad({
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 flex-wrap">
+      <div className="flex gap-2 flex-wrap sm:flex-nowrap">
         <Button
           type="button"
           variant="outline"
           size="sm"
           onClick={clearCanvas}
           disabled={busy || !hasDrawn}
-          className="border-gray-200 rounded-lg"
+          className="rounded-lg w-full sm:w-auto"
         >
           <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
           Clear
@@ -275,9 +275,10 @@ export function SignaturePad({
         <Button
           type="button"
           size="sm"
+          variant="prominent"
           onClick={handleSave}
           disabled={busy || !hasDrawn}
-          className="bg-gray-900 hover:bg-gray-800 text-white rounded-lg"
+          className="rounded-lg w-full sm:w-auto"
         >
           {busy && isUploading ? (
             <Eraser className="mr-1.5 h-3.5 w-3.5 animate-pulse" />

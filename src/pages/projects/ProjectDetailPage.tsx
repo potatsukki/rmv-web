@@ -1106,7 +1106,11 @@ export function ProjectDetailPage() {
           aria-labelledby="project-tab-details"
         >
           {/* Project Info */}
-          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
+          <Card className={cn(
+            isDark ? 'metal-panel-strong' : 'metal-panel',
+            'rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60',
+            isCustomer && 'lg:col-span-2'
+          )}>
             <CardHeader className="px-4 sm:px-6">
               <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Project Info</CardTitle>
             </CardHeader>
@@ -1188,7 +1192,7 @@ export function ProjectDetailPage() {
                       className="min-h-[96px] rounded-xl border-amber-200 dark:border-amber-900/60 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                     <Button
-                      className="w-full bg-amber-900 text-white hover:bg-amber-950 sm:w-auto"
+                      className="w-full bg-amber-900 text-white hover:bg-amber-950 dark:bg-none dark:bg-amber-100 dark:text-amber-950 dark:hover:bg-amber-50 sm:w-auto"
                       onClick={handleBackfillInitialDesign}
                       disabled={backfillInitialDesign.isPending || initialDesignUploading}
                     >
@@ -1361,7 +1365,7 @@ export function ProjectDetailPage() {
                       className="min-h-[96px] rounded-xl border-[#d2d2d7] dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     />
                     <Button
-                      className="w-full bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] sm:w-auto"
+                      className="w-full bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:bg-none dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white sm:w-auto"
                       onClick={handleResubmitInitialDesign}
                       disabled={resubmitInitialDesign.isPending || initialDesignUploading}
                     >
@@ -1410,66 +1414,68 @@ export function ProjectDetailPage() {
 
           {/* Team (internal staff only — customers see simplified view) */}
           {isStaff ? (
-          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
+          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
             <CardHeader className="px-4 sm:px-6">
               <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Team</CardTitle>
             </CardHeader>
-            <CardContent className="space-y-4 px-4 sm:px-6">
-              {/* Engineers */}
-              <div>
-                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Engineers</p>
-                {project.engineerIds.length > 0 ? (
-                  <div className="mt-1 space-y-2">
-                    {project.engineerIds.map((eng: any) => (
-                      <div key={String(eng._id || eng)} className="flex items-center gap-2">
-                        <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
-                          {eng.firstName ? `${eng.firstName} ${eng.lastName}` : String(eng)}
+            <CardContent className="space-y-6 px-4 sm:px-6">
+              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {/* Engineers */}
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Engineers</p>
+                  {project.engineerIds.length > 0 ? (
+                    <div className="mt-1 space-y-2">
+                      {project.engineerIds.map((eng: any) => (
+                        <div key={String(eng._id || eng)} className="flex items-center gap-2">
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                            {eng.firstName ? `${eng.firstName} ${eng.lastName}` : String(eng)}
+                          </p>
+                          {eng.phone && (
+                            <a
+                              href={`tel:${eng.phone}`}
+                              className={`inline-flex items-center gap-1 text-xs ${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)]'}`}
+                            >
+                              <Phone className="h-3 w-3" />
+                              {eng.phone}
+                            </a>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="mt-2">
+                      <p className={`text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Fabrication Lead */}
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Lead</p>
+                  {hasFabLead ? (
+                    <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                      {(project.fabricationLeadId as any).firstName} {(project.fabricationLeadId as any).lastName}
+                    </p>
+                  ) : (
+                    <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
+                  )}
+                </div>
+
+                {/* Fabrication Assistants */}
+                <div>
+                  <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Assistants</p>
+                  {project.fabricationAssistantIds.length > 0 ? (
+                    <div className="mt-1 space-y-1">
+                      {project.fabricationAssistantIds.map((a: any) => (
+                        <p key={String(a._id || a)} className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                          {a.firstName ? `${a.firstName} ${a.lastName}` : String(a)}
                         </p>
-                        {eng.phone && (
-                          <a
-                            href={`tel:${eng.phone}`}
-                            className={`inline-flex items-center gap-1 text-xs ${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)]'}`}
-                          >
-                            <Phone className="h-3 w-3" />
-                            {eng.phone}
-                          </a>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="mt-2">
-                    <p className={`text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
-                  </div>
-                )}
-              </div>
-
-              {/* Fabrication Lead */}
-              <div>
-                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Lead</p>
-                {hasFabLead ? (
-                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
-                    {(project.fabricationLeadId as any).firstName} {(project.fabricationLeadId as any).lastName}
-                  </p>
-                ) : (
-                  <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
-                )}
-              </div>
-
-              {/* Fabrication Assistants */}
-              <div>
-                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Assistants</p>
-                {project.fabricationAssistantIds.length > 0 ? (
-                  <div className="mt-1 space-y-1">
-                    {project.fabricationAssistantIds.map((a: any) => (
-                      <p key={String(a._id || a)} className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
-                        {a.firstName ? `${a.firstName} ${a.lastName}` : String(a)}
-                      </p>
-                    ))}
-                  </div>
-                ) : (
-                  <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
-                )}
+                      ))}
+                    </div>
+                  ) : (
+                    <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
+                  )}
+                </div>
               </div>
 
               {/* Assign Fabrication Team (inline form for engineers) */}
@@ -1538,15 +1544,15 @@ export function ProjectDetailPage() {
                   </div>
 
                   <div className="flex gap-2">
-                    <Button
-                      size="sm"
-                      className="bg-violet-600 hover:bg-violet-700 text-white"
-                      onClick={handleAssignFabrication}
-                      disabled={assignFabrication.isPending || !fabLeadId}
-                    >
-                      {assignFabrication.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                      Assign Team
-                    </Button>
+                      <Button
+                        size="sm"
+                        className="bg-violet-600 text-white hover:bg-violet-700 dark:bg-none dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.92),0_18px_34px_rgba(0,0,0,0.34)]"
+                        onClick={handleAssignFabrication}
+                        disabled={assignFabrication.isPending || !fabLeadId}
+                      >
+                        {assignFabrication.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                        Assign Team
+                      </Button>
                     {showFabForm && (
                       <Button
                         size="sm"
@@ -1576,7 +1582,7 @@ export function ProjectDetailPage() {
           </Card>
           ) : (
             /* Customer sees a simple info card instead of team details */
-            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
+            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
               <CardHeader className="px-4 sm:px-6">
                 <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Project Team</CardTitle>
               </CardHeader>
@@ -1803,7 +1809,7 @@ export function ProjectDetailPage() {
           )}
 
           {/* Contract Card */}
-          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
+          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
             <CardHeader className="px-4 sm:px-6">
               <CardTitle className={`flex items-center gap-2 text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
                 <ScrollText className="h-5 w-5" />

@@ -4,7 +4,7 @@ import { format } from 'date-fns';
 import {
   FileText, CheckCircle, AlertCircle, Eye, Info,
   Clock, MessageSquare, Download, Upload, Loader2, Image, X,
-  Plus, Trash2, Calendar, ArrowRight, CreditCard,
+  Plus, Trash2, Calendar, ArrowRight, CreditCard, ChevronDown, ChevronUp,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -31,8 +31,9 @@ import {
   useLatestBlueprint,
   useApproveComponent,
   useRequestBlueprintRevision,
-  useUploadBlueprint,
-  useUploadRevision,
+  useBlueprintDraft,
+  useUpsertBlueprintDraft,
+  useFinalizeBlueprintDraft,
 } from '@/hooks/useBlueprints';
 import { useConfigs } from '@/hooks/useConfig';
 import { uploadFileToR2 } from '@/hooks/useUploads';
@@ -48,43 +49,7 @@ interface BlueprintTabProps {
   onNavigateToDetails?: () => void;
 }
 
-interface BlueprintDraftLineItem {
-  label: string;
-  quantity: number;
-  materials: string;
-  labor: string;
-}
-
-interface BlueprintDraftMilestone {
-  label: string;
-  description: string;
-}
-
-interface BlueprintDraftState {
-  blueprintFileMeta: { name: string; type: string } | null;
-  designFileMeta: { name: string; type: string } | null;
-  costingFileMeta: { name: string; type: string } | null;
-  quotLineItems: BlueprintDraftLineItem[];
-  quotFees: string;
-  quotValidityDays: string;
-  quotBreakdown: string;
-  quotDuration: string;
-  quotNotes: string;
-  quotMilestones: BlueprintDraftMilestone[];
-}
-
-interface BlueprintDraftCacheEntry {
-  blueprintFile: File | null;
-  designFile: File | null;
-  costingFile: File | null;
-}
-
-const buildBlueprintDraftKey = (projectId: string) => `rmv:blueprint-draft:${projectId}`;
-const blueprintDraftFileCache = new Map<string, BlueprintDraftCacheEntry>();
-
-function getFileMeta(file: File | null) {
-  return file ? { name: file.name, type: file.type } : null;
-}
+type DraftFileMeta = { name: string; type: string; size: number; key: string; uploadedAt: string };
 
 function requestSignedUploadUrl(body: {
   folder: string;
@@ -105,25 +70,25 @@ function requestSignedUploadUrl(body: {
 
 // ── File Picker with Preview ──
 function FilePickerWithPreview({
-  file,
-  onFileChange,
+  fileMeta,
+  isUploading,
+  onFileSelect,
+  onRemove,
   accept,
   label,
 }: {
-  file: File | null;
-  onFileChange: (f: File | null) => void;
+  fileMeta: DraftFileMeta | null;
+  isUploading?: boolean;
+  onFileSelect: (f: File | null) => void;
+  onRemove: () => void;
   accept: string;
   label: string;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
-  const isImage = file?.type.startsWith('image/');
-  const previewUrl = useMemo(
-    () => (file && isImage ? URL.createObjectURL(file) : null),
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [file],
-  );
+  const isImage = fileMeta?.type.startsWith('image/');
+  const { url } = useAuthenticatedUrl(fileMeta?.key || null);
 
   const formatSize = (bytes: number) => {
     if (bytes < 1024) return `${bytes} B`;
@@ -132,9 +97,13 @@ function FilePickerWithPreview({
   };
 
   const handlePreview = () => {
-    if (!file) return;
-    const url = URL.createObjectURL(file);
-    window.open(url, '_blank');
+    if (fileMeta?.key) {
+      if (fileMeta.key.startsWith('http')) {
+        window.open(fileMeta.key, '_blank');
+      } else {
+        openAuthenticatedFile(fileMeta.key);
+      }
+    }
   };
 
   return (
@@ -144,21 +113,29 @@ function FilePickerWithPreview({
         ref={inputRef}
         type="file"
         accept={accept}
-        onChange={(e) => onFileChange(e.target.files?.[0] || null)}
+        onChange={(e) => {
+          onFileSelect(e.target.files?.[0] || null);
+          if (inputRef.current) inputRef.current.value = '';
+        }}
         className="hidden"
       />
-      {file ? (
+      {isUploading ? (
+        <div className={`w-full rounded-xl border-2 border-dashed p-6 text-center flex flex-col items-center justify-center ${isDark ? 'border-slate-700 bg-slate-950/45' : 'border-[#c8c8cd] bg-[#f5f5f7]/30'}`}>
+          <Loader2 className={`h-6 w-6 animate-spin ${isDark ? 'text-sky-400' : 'text-[#0066cc]'}`} />
+          <p className={`mt-2 text-xs font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Uploading...</p>
+        </div>
+      ) : fileMeta ? (
         <div className={`relative group overflow-hidden rounded-xl border ${isDark ? 'border-slate-700/80 bg-slate-950/55 shadow-[0_18px_38px_rgba(2,6,23,0.34)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/30'}`}>
           <button
             type="button"
             onClick={handlePreview}
             className={`w-full text-left transition-colors ${isDark ? 'hover:bg-slate-900/70' : 'hover:bg-[#f0f0f5]/50'}`}
           >
-            {isImage && previewUrl ? (
+            {isImage && url ? (
               <div className={`aspect-[3/2] flex items-center justify-center p-2 ${isDark ? 'bg-slate-950/80' : 'bg-[#f5f5f7]'}`}>
                 <img
-                  src={previewUrl}
-                  alt={file.name}
+                  src={url}
+                  alt={fileMeta.name}
                   className="max-h-full max-w-full object-contain rounded-lg"
                 />
               </div>
@@ -166,15 +143,15 @@ function FilePickerWithPreview({
               <div className={`aspect-[3/2] flex flex-col items-center justify-center gap-2 ${isDark ? 'bg-slate-950/80' : 'bg-[#f5f5f7]'}`}>
                 <FileText className={`h-10 w-10 ${isDark ? 'text-slate-300' : 'text-[#86868b]'}`} />
                 <span className={`text-[10px] uppercase tracking-wider font-medium ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>
-                  {file.name.split('.').pop()}
+                  {fileMeta.name.split('.').pop() || 'FILE'}
                 </span>
               </div>
             )}
             <div className={`p-3 ${isDark ? 'border-t border-slate-800/80' : 'border-t border-[#c8c8cd]/30'}`}>
-              <p className={`truncate text-xs font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>{file.name}</p>
+              <p className={`truncate text-xs font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>{fileMeta.name}</p>
               <div className="flex items-center gap-2 mt-0.5">
-                <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>{formatSize(file.size)}</p>
-                <span className={`text-[10px] ${isDark ? 'text-sky-300' : 'text-[#0066cc]'}`}>Click to preview</span>
+                <p className={`text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>{formatSize(fileMeta.size)}</p>
+                <span className={`text-[10px] ${isDark ? 'text-sky-300' : 'text-[#0066cc]'}`}>Click to view</span>
               </div>
             </div>
           </button>
@@ -191,8 +168,7 @@ function FilePickerWithPreview({
               type="button"
               onClick={(e) => {
                 e.stopPropagation();
-                onFileChange(null);
-                if (inputRef.current) inputRef.current.value = '';
+                onRemove();
               }}
               className="h-7 w-7 rounded-full bg-red-500/80 text-white flex items-center justify-center hover:bg-red-600 transition-colors"
               title="Remove file"
@@ -276,13 +252,15 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId);
 
   // Engineer-specific mutations
-  const uploadBlueprint = useUploadBlueprint();
-  const uploadRevision = useUploadRevision();
+  const upsertDraftMutation = useUpsertBlueprintDraft();
+  const finalizeDraftMutation = useFinalizeBlueprintDraft();
+  const { data: dbDraft } = useBlueprintDraft(projectId, { enabled: isEngineer });
   // Customer-specific mutations
   const approveMutation = useApproveComponent();
   const revisionMutation = useRequestBlueprintRevision();
   const selectPaymentPlanMutation = useSelectProjectPaymentPlan();
   const [approvingComponent, setApprovingComponent] = useState<'blueprint' | 'costing' | null>(null);
+  const [showInstallmentSchedule, setShowInstallmentSchedule] = useState(false);
 
   const { data: configs } = useConfigs();
   const surchargePercent = (() => {
@@ -320,9 +298,10 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const [blockedAction, setBlockedAction] = useState<BlockedActionInfo | null>(null);
 
   // ── Engineer upload state ──
-  const [blueprintFile, setBlueprintFile] = useState<File | null>(null);
-  const [designFile, setDesignFile] = useState<File | null>(null);
-  const [costingFile, setCostingFile] = useState<File | null>(null);
+  const [blueprintFileMeta, setBlueprintFileMeta] = useState<DraftFileMeta | null>(null);
+  const [designFileMeta, setDesignFileMeta] = useState<DraftFileMeta | null>(null);
+  const [costingFileMeta, setCostingFileMeta] = useState<DraftFileMeta | null>(null);
+  const [uploadingFile, setUploadingFile] = useState<'blueprint'|'design'|'costing'|null>(null);
   const [uploading, setUploading] = useState(false);
   const [quotLineItems, setQuotLineItems] = useState<{ label: string; quantity: number; materials: string; labor: string }[]>([]);
   const [quotFees, setQuotFees] = useState('');
@@ -332,7 +311,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const [quotNotes, setQuotNotes] = useState('');
   const [quotMilestones, setQuotMilestones] = useState<{ label: string; description: string }[]>([]);
   const [quotInitialized, setQuotInitialized] = useState(false);
-  const blueprintDraftKey = useMemo(() => buildBlueprintDraftKey(projectId), [projectId]);
+  const [isSavingDraft, setIsSavingDraft] = useState(false);
 
   // ── Derive visit report line items ──
   const visitReport: VisitReport | null = useMemo(() => {
@@ -356,111 +335,154 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     return Array.isArray(c?.value) ? (c.value as string[]) : ['Due upon contract signing', 'Due when fabrication is complete', 'Due after installation & acceptance'];
   })();
 
+  // Hydrate from DB Draft
   useEffect(() => {
-    const cachedFiles = blueprintDraftFileCache.get(projectId);
-    if (cachedFiles) {
-      setBlueprintFile(cachedFiles.blueprintFile);
-      setDesignFile(cachedFiles.designFile);
-      setCostingFile(cachedFiles.costingFile);
-    }
-
     if (quotInitialized) return;
 
-    const storedDraftRaw = sessionStorage.getItem(blueprintDraftKey);
-    if (storedDraftRaw) {
-      try {
-        const storedDraft = JSON.parse(storedDraftRaw) as BlueprintDraftState;
-        setQuotLineItems(storedDraft.quotLineItems || []);
-        setQuotFees(storedDraft.quotFees || '');
-        setQuotValidityDays(storedDraft.quotValidityDays || '30');
-        setQuotBreakdown(storedDraft.quotBreakdown || '');
-        setQuotDuration(storedDraft.quotDuration || '');
-        setQuotNotes(storedDraft.quotNotes || '');
-        setQuotMilestones(storedDraft.quotMilestones || []);
-        setQuotInitialized(true);
-        return;
-      } catch {
-        sessionStorage.removeItem(blueprintDraftKey);
+    if (dbDraft) {
+      if (dbDraft.files?.blueprint) setBlueprintFileMeta(dbDraft.files.blueprint as DraftFileMeta);
+      if (dbDraft.files?.design) setDesignFileMeta(dbDraft.files.design as DraftFileMeta);
+      if (dbDraft.files?.costing) setCostingFileMeta(dbDraft.files.costing as DraftFileMeta);
+
+      if (dbDraft.quotation) {
+        setQuotLineItems(dbDraft.quotation.lineItems || []);
+        setQuotFees(dbDraft.quotation.fees || '');
+        setQuotValidityDays(dbDraft.quotation.validityDays || '30');
+        setQuotBreakdown(dbDraft.quotation.breakdown || '');
+        setQuotDuration(dbDraft.quotation.estimatedDuration || '');
+        setQuotNotes(dbDraft.quotation.engineerNotes || '');
+        setQuotMilestones(dbDraft.quotation.paymentMilestones || []);
       }
-    }
+      setQuotInitialized(true);
+      return;
+    } else if (dbDraft === null) {
+      // null means successfully fetched but no draft exists
+      if (vrLineItems && vrLineItems.length > 0) {
+        setQuotLineItems(vrLineItems.map((li) => ({
+          label: li.label,
+          quantity: li.quantity || 1,
+          materials: '',
+          labor: '',
+        })));
+      }
 
-    if (vrLineItems && vrLineItems.length > 0) {
-      setQuotLineItems(vrLineItems.map((li) => ({
-        label: li.label,
-        quantity: li.quantity || 1,
-        materials: '',
-        labor: '',
-      })));
-    }
+      if (cfgSplit.length > 0) {
+        setQuotMilestones(cfgSplit.map((_, idx) => ({
+          label: cfgLabels[idx] || `Stage ${idx + 1}`,
+          description: cfgDescriptions[idx] || '',
+        })));
+      }
 
-    if (cfgSplit.length > 0) {
-      setQuotMilestones(cfgSplit.map((_, idx) => ({
-        label: cfgLabels[idx] || `Stage ${idx + 1}`,
-        description: cfgDescriptions[idx] || '',
-      })));
+      setQuotInitialized(true);
     }
+  }, [dbDraft, cfgDescriptions, cfgLabels, cfgSplit, quotInitialized, vrLineItems]);
 
-    setQuotInitialized(true);
-  }, [blueprintDraftKey, cfgDescriptions, cfgLabels, cfgSplit, quotInitialized, vrLineItems]);
+  // DB Autosave Form Hook
+  const currentQuotation = useMemo(() => ({
+    lineItems: quotLineItems,
+    fees: quotFees,
+    validityDays: quotValidityDays,
+    breakdown: quotBreakdown,
+    estimatedDuration: quotDuration,
+    engineerNotes: quotNotes,
+    paymentMilestones: quotMilestones,
+  }), [quotLineItems, quotFees, quotValidityDays, quotBreakdown, quotDuration, quotNotes, quotMilestones]);
+
+  const lastSavedQuotation = useRef(currentQuotation);
 
   useEffect(() => {
-    blueprintDraftFileCache.set(projectId, {
-      blueprintFile,
-      designFile,
-      costingFile,
-    });
-
     if (!quotInitialized) return;
+    const isDifferent = JSON.stringify(currentQuotation) !== JSON.stringify(lastSavedQuotation.current);
+    if (!isDifferent) return;
 
-    const draft: BlueprintDraftState = {
-      blueprintFileMeta: getFileMeta(blueprintFile),
-      designFileMeta: getFileMeta(designFile),
-      costingFileMeta: getFileMeta(costingFile),
-      quotLineItems,
-      quotFees,
-      quotValidityDays,
-      quotBreakdown,
-      quotDuration,
-      quotNotes,
-      quotMilestones,
+    const timer = setTimeout(() => {
+      setIsSavingDraft(true);
+      upsertDraftMutation.mutate({
+        projectId,
+        mode: blueprint ? 'revision' : 'initial',
+        sourceBlueprintId: blueprint?._id,
+        files: {
+          blueprint: blueprintFileMeta,
+          design: designFileMeta,
+          costing: costingFileMeta,
+        },
+        quotation: currentQuotation,
+      }, {
+        onSuccess: () => {
+           lastSavedQuotation.current = currentQuotation;
+           setIsSavingDraft(false);
+        },
+        onError: () => {
+           setIsSavingDraft(false);
+        }
+      });
+    }, 1500);
+
+    return () => clearTimeout(timer);
+  }, [currentQuotation, quotInitialized, blueprint, projectId, blueprintFileMeta, designFileMeta, costingFileMeta, upsertDraftMutation]);
+
+  const handleDraftFileUpload = async (file: File, type: 'blueprint'|'design'|'costing') => {
+    setUploadingFile(type);
+    try {
+      const { uploadUrl, fileKey } = await requestSignedUploadUrl({
+        folder: 'blueprints',
+        fileName: file.name,
+        contentType: file.type,
+      });
+      await uploadFileToR2(uploadUrl, file);
+      
+      const newMeta: DraftFileMeta = {
+        key: fileKey,
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        uploadedAt: new Date().toISOString(),
+      };
+
+      if (type === 'blueprint') setBlueprintFileMeta(newMeta);
+      if (type === 'design') setDesignFileMeta(newMeta);
+      if (type === 'costing') setCostingFileMeta(newMeta);
+
+      const updatedFiles = {
+        blueprint: type === 'blueprint' ? newMeta : blueprintFileMeta,
+        design: type === 'design' ? newMeta : designFileMeta,
+        costing: type === 'costing' ? newMeta : costingFileMeta,
+      };
+
+      await upsertDraftMutation.mutateAsync({
+        projectId,
+        mode: blueprint ? 'revision' : 'initial',
+        sourceBlueprintId: blueprint?._id,
+        files: updatedFiles,
+        quotation: currentQuotation,
+      });
+
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to upload file to draft'));
+    } finally {
+      setUploadingFile(null);
+    }
+  };
+
+  const handleDraftFileRemove = (type: 'blueprint'|'design'|'costing') => {
+    if (type === 'blueprint') setBlueprintFileMeta(null);
+    if (type === 'design') setDesignFileMeta(null);
+    if (type === 'costing') setCostingFileMeta(null);
+    
+    const updatedFiles = {
+      blueprint: type === 'blueprint' ? null : blueprintFileMeta,
+      design: type === 'design' ? null : designFileMeta,
+      costing: type === 'costing' ? null : costingFileMeta,
     };
 
-    const hasDraft = Boolean(
-      draft.blueprintFileMeta
-      || draft.designFileMeta
-      || draft.costingFileMeta
-      || draft.quotLineItems.length
-      || draft.quotFees
-      || draft.quotBreakdown
-      || draft.quotDuration
-      || draft.quotNotes
-      || draft.quotMilestones.length,
-    );
-
-    if (!hasDraft) {
-      sessionStorage.removeItem(blueprintDraftKey);
-      if (!blueprintFile && !designFile && !costingFile) {
-        blueprintDraftFileCache.delete(projectId);
-      }
-      return;
-    }
-
-    sessionStorage.setItem(blueprintDraftKey, JSON.stringify(draft));
-  }, [
-    blueprintDraftKey,
-    blueprintFile,
-    costingFile,
-    designFile,
-    projectId,
-    quotBreakdown,
-    quotDuration,
-    quotFees,
-    quotInitialized,
-    quotLineItems,
-    quotMilestones,
-    quotNotes,
-    quotValidityDays,
-  ]);
+    upsertDraftMutation.mutate({
+      projectId,
+      mode: blueprint ? 'revision' : 'initial',
+      sourceBlueprintId: blueprint?._id,
+      files: updatedFiles,
+      quotation: currentQuotation,
+    });
+  };
 
   // Computed totals
   const quotItemTotals = quotLineItems.map(li => {
@@ -627,10 +649,28 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       {/* ── Installment Payment Milestones ── */}
       {quotMilestones.length > 0 && (
         <div className={`space-y-3 border-t pt-3 ${isDark ? 'border-slate-800/80' : 'border-[#c8c8cd]/50'}`}>
-          <div>
-            <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Installment Payment Schedule</p>
-            <p className={`mt-0.5 text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Describe when each payment stage is due. Only applies if the customer chooses installment.</p>
-          </div>
+          <button
+            type="button"
+            onClick={() => setShowInstallmentSchedule(!showInstallmentSchedule)}
+            className="flex w-full items-center justify-between group py-1.5"
+          >
+            <div className="text-left">
+              <p className={`text-base font-semibold transition-colors ${isDark ? 'text-slate-100 group-hover:text-sky-400' : 'text-[#3a3a3e] group-hover:text-[#0066cc]'}`}>
+                Installment Payment Schedule
+              </p>
+              <p className={`mt-1 text-xs leading-relaxed ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>
+                Describe when each payment stage is due. Only applies if the customer chooses installment.
+              </p>
+            </div>
+            {showInstallmentSchedule ? (
+              <ChevronUp className="h-5 w-5 text-[#86868b] transition-transform" />
+            ) : (
+              <ChevronDown className="h-5 w-5 text-[#86868b] transition-transform" />
+            )}
+          </button>
+
+          {showInstallmentSchedule && (
+            <div className="space-y-3 pt-1 animate-in fade-in duration-200">
           {quotMilestones.map((ms, idx) => (
             <div key={idx} className={`space-y-2 rounded-lg border p-3 ${isDark ? 'border-slate-800 bg-slate-950/55' : 'border-[#d2d2d7]/60 bg-[#f5f5f7]/30'}`}>
               <div className="flex items-center gap-2">
@@ -654,7 +694,9 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
         </div>
       )}
     </div>
-  );
+  )}
+</div>
+);
 
   // ── Helpers ──
   const handleViewFile = (key: string) => {
@@ -748,82 +790,27 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const uploadInProgressRef = useRef(false);
   const handleBlueprintUpload = async () => {
     if (uploadInProgressRef.current) return;
-    if (!blueprintFile || !designFile || !costingFile) {
+    if (!blueprintFileMeta || !designFileMeta || !costingFileMeta) {
       toast.error('Please select blueprint, design, and costing files');
       return;
     }
     uploadInProgressRef.current = true;
     setUploading(true);
     try {
-      const [bpUrl, designUrl, costUrl] = await Promise.all([
-        requestSignedUploadUrl({
-          folder: 'blueprints',
-          fileName: blueprintFile.name,
-          contentType: blueprintFile.type,
-        }),
-        requestSignedUploadUrl({
-          folder: 'blueprints',
-          fileName: designFile.name,
-          contentType: designFile.type,
-        }),
-        requestSignedUploadUrl({
-          folder: 'blueprints',
-          fileName: costingFile.name,
-          contentType: costingFile.type,
-        }),
-      ]);
-      await Promise.all([
-        uploadFileToR2(bpUrl.uploadUrl, blueprintFile),
-        uploadFileToR2(designUrl.uploadUrl, designFile),
-        uploadFileToR2(costUrl.uploadUrl, costingFile),
-      ]);
-
-      // Build itemized quotation
-      const lineItems = quotLineItems
-        .filter(li => li.label.trim())
-        .map(li => {
-          const m = Number(li.materials) || 0;
-          const l = Number(li.labor) || 0;
-          return { label: li.label, quantity: li.quantity, materials: m, labor: l, amount: (m + l) * li.quantity };
-        });
-      const validMilestones = quotMilestones.filter(ms => ms.label.trim() && ms.description.trim());
-      const quotation = quotGrandTotal > 0
-        ? {
-            materials: quotTotalMaterials,
-            labor: quotTotalLabor,
-            fees: quotFeesNum,
-            total: quotGrandTotal,
-            lineItems: lineItems.length > 0 ? lineItems : undefined,
-            validityDays: Number(quotValidityDays) || 30,
-            breakdown: quotBreakdown || undefined,
-            estimatedDuration: quotDuration || undefined,
-            engineerNotes: quotNotes || undefined,
-            paymentMilestones: validMilestones.length > 0 ? validMilestones : undefined,
-          }
-        : undefined;
-
-      if (blueprint) {
-        await uploadRevision.mutateAsync({
-          id: blueprint._id,
-          blueprintKey: bpUrl.fileKey,
-          designKey: designUrl.fileKey,
-          costingKey: costUrl.fileKey,
-          quotation,
-        });
-        toast.success('Revision uploaded! The customer will be notified to review the updated version.', { duration: 5000 });
-      } else {
-        await uploadBlueprint.mutateAsync({
-          projectId,
-          blueprintKey: bpUrl.fileKey,
-          designKey: designUrl.fileKey,
-          costingKey: costUrl.fileKey,
-          quotation,
-        });
-        toast.success('Blueprint uploaded! The customer will be notified to review it.', { duration: 5000 });
+      // Wait for any pending draft autosaves to settle
+      if (isSavingDraft) {
+        toast.loading('Saving final draft changes...', { id: 'draftSave' });
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        toast.dismiss('draftSave');
       }
-      setBlueprintFile(null);
-      setDesignFile(null);
-      setCostingFile(null);
+
+      await finalizeDraftMutation.mutateAsync(projectId);
+
+      toast.success(blueprint ? 'Revision uploaded successfully!' : 'Blueprint uploaded successfully!', { duration: 5000 });
+      
+      setBlueprintFileMeta(null);
+      setDesignFileMeta(null);
+      setCostingFileMeta(null);
       setQuotLineItems([]);
       setQuotFees('');
       setQuotValidityDays('30');
@@ -832,12 +819,12 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       setQuotNotes('');
       setQuotMilestones([]);
       setQuotInitialized(false);
-      sessionStorage.removeItem(blueprintDraftKey);
-      blueprintDraftFileCache.delete(projectId);
+      lastSavedQuotation.current = currentQuotation;
       refetchBlueprint();
       refetchProject();
+      refetch();
     } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to upload blueprint'));
+      toast.error(extractErrorMessage(err, 'Failed to finalise blueprint upload.'));
     } finally {
       uploadInProgressRef.current = false;
       setUploading(false);
@@ -949,20 +936,26 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                   <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Upload Revision</p>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <FilePickerWithPreview
-                      file={blueprintFile}
-                      onFileChange={setBlueprintFile}
+                      fileMeta={blueprintFileMeta}
+                      isUploading={uploadingFile === 'blueprint'}
+                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'blueprint')}
+                      onRemove={() => handleDraftFileRemove('blueprint')}
                       accept=".pdf,.png,.jpg,.jpeg,.dwg"
                       label="Blueprint File *"
                     />
                     <FilePickerWithPreview
-                      file={designFile}
-                      onFileChange={setDesignFile}
+                      fileMeta={designFileMeta}
+                      isUploading={uploadingFile === 'design'}
+                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
+                      onRemove={() => handleDraftFileRemove('design')}
                       accept=".pdf,.png,.jpg,.jpeg"
                       label="Design File *"
                     />
                     <FilePickerWithPreview
-                      file={costingFile}
-                      onFileChange={setCostingFile}
+                      fileMeta={costingFileMeta}
+                      isUploading={uploadingFile === 'costing'}
+                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'costing')}
+                      onRemove={() => handleDraftFileRemove('costing')}
                       accept=".pdf,.xlsx,.xls,.csv"
                       label="Costing File *"
                     />
@@ -970,15 +963,24 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
                   {quotationFormJSX}
 
-                  <button
-                    type="button"
-                    className={uploadActionButtonClass}
-                    onClick={handleBlueprintUpload}
-                    disabled={uploading || !blueprintFile || !designFile || !costingFile}
-                  >
-                    {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                    Upload Revision
-                  </button>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      {isSavingDraft ? (
+                        <span className="flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> Saving draft...</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><CheckCircle className="h-3 w-3" /> Draft up to date</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={uploadActionButtonClass}
+                      onClick={handleBlueprintUpload}
+                      disabled={uploading || !blueprintFileMeta || !designFileMeta || !costingFileMeta || isSavingDraft || !!uploadingFile}
+                    >
+                      {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
+                      Upload Revision
+                    </button>
+                  </div>
                 </div>
               )}
             </div>
@@ -990,20 +992,26 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                   <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Upload Blueprint, Design & Costing</p>
                   <div className="grid gap-3 sm:grid-cols-3">
                     <FilePickerWithPreview
-                      file={blueprintFile}
-                      onFileChange={setBlueprintFile}
+                      fileMeta={blueprintFileMeta}
+                      isUploading={uploadingFile === 'blueprint'}
+                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'blueprint')}
+                      onRemove={() => handleDraftFileRemove('blueprint')}
                       accept=".pdf,.png,.jpg,.jpeg,.dwg"
                       label="Blueprint File *"
                     />
                     <FilePickerWithPreview
-                      file={designFile}
-                      onFileChange={setDesignFile}
+                      fileMeta={designFileMeta}
+                      isUploading={uploadingFile === 'design'}
+                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
+                      onRemove={() => handleDraftFileRemove('design')}
                       accept=".pdf,.png,.jpg,.jpeg"
                       label="Design File *"
                     />
                     <FilePickerWithPreview
-                      file={costingFile}
-                      onFileChange={setCostingFile}
+                      fileMeta={costingFileMeta}
+                      isUploading={uploadingFile === 'costing'}
+                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'costing')}
+                      onRemove={() => handleDraftFileRemove('costing')}
                       accept=".pdf,.xlsx,.xls,.csv"
                       label="Costing File *"
                     />
@@ -1011,15 +1019,24 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
                   {quotationFormJSX}
 
-                  <button
-                    type="button"
-                    className={uploadActionButtonClass}
-                    onClick={handleBlueprintUpload}
-                    disabled={uploading || !blueprintFile || !designFile || !costingFile}
-                  >
-                    {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                    Upload Blueprint
-                  </button>
+                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
+                    <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
+                      {isSavingDraft ? (
+                        <span className="flex items-center gap-1.5"><Loader2 className="h-3 w-3 animate-spin" /> Saving draft...</span>
+                      ) : (
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><CheckCircle className="h-3 w-3" /> Draft up to date</span>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      className={uploadActionButtonClass}
+                      onClick={handleBlueprintUpload}
+                      disabled={uploading || !blueprintFileMeta || !designFileMeta || !costingFileMeta || isSavingDraft || !!uploadingFile}
+                    >
+                      {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
+                      Upload Blueprint
+                    </button>
+                  </div>
                 </div>
               ) : (
                 <p className="text-sm text-[#6e6e73] py-4">No blueprint uploaded yet.</p>
@@ -1416,7 +1433,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                         <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">Your contract is signed. Head to Payments to view or pay.</p>
                       </div>
                       <Button
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0 dark:bg-none dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
                         onClick={() => navigate('/payments')}
                       >
                         <ArrowRight className="mr-2 h-4 w-4" />
@@ -1431,7 +1448,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                         <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">Your contract has been generated. Please read and sign it before proceeding to payments.</p>
                       </div>
                       <Button
-                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0"
+                        className="bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl px-6 w-full sm:w-auto flex-shrink-0 dark:bg-none dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
                         onClick={() => onNavigateToDetails ? onNavigateToDetails() : navigate(`/projects/${projectId}`)}
                       >
                         <FileText className="mr-2 h-4 w-4" />

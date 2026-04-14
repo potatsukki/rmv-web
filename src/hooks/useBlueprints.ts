@@ -1,12 +1,18 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, Blueprint } from '@/lib/types';
+import type {
+  ApiResponse,
+  Blueprint,
+  BlueprintDraft,
+  BlueprintDraftFile,
+} from '@/lib/types';
 
 const KEYS = {
   all: ['blueprints'] as const,
   byProject: (projectId: string) => [...KEYS.all, 'project', projectId] as const,
   latest: (projectId: string) => [...KEYS.all, 'latest', projectId] as const,
   detail: (id: string) => [...KEYS.all, id] as const,
+  draft: (projectId: string) => [...KEYS.all, 'draft', projectId] as const,
 };
 
 export function useBlueprintsByProject(projectId: string) {
@@ -46,6 +52,19 @@ export function useBlueprint(id: string) {
   });
 }
 
+export function useBlueprintDraft(projectId: string, options?: { enabled?: boolean }) {
+  return useQuery({
+    queryKey: KEYS.draft(projectId),
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<BlueprintDraft | null>>(
+        `/blueprints/project/${projectId}/draft`,
+      );
+      return data.data;
+    },
+    enabled: !!projectId && (options?.enabled ?? true),
+  });
+}
+
 export function useUploadBlueprint() {
   const qc = useQueryClient();
   return useMutation({
@@ -78,6 +97,67 @@ export function useUploadBlueprint() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useUpsertBlueprintDraft() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      ...body
+    }: {
+      projectId: string;
+      mode: 'initial' | 'revision';
+      sourceBlueprintId?: string;
+      files?: {
+        blueprint?: BlueprintDraftFile | null;
+        design?: BlueprintDraftFile | null;
+        costing?: BlueprintDraftFile | null;
+      };
+      quotation?: BlueprintDraft['quotation'];
+    }) => {
+      const { data } = await api.put<ApiResponse<BlueprintDraft>>(
+        `/blueprints/project/${projectId}/draft`,
+        body,
+      );
+      return data.data;
+    },
+    onSuccess: (draft) => {
+      qc.setQueryData(KEYS.draft(draft.projectId), draft);
+    },
+  });
+}
+
+export function useFinalizeBlueprintDraft() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      const { data } = await api.post<ApiResponse<Blueprint>>(
+        `/blueprints/project/${projectId}/draft/finalize`,
+      );
+      return data.data;
+    },
+    onSuccess: (blueprint) => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.setQueryData(KEYS.draft(blueprint.projectId), null);
+    },
+  });
+}
+
+export function useDeleteBlueprintDraft() {
+  const qc = useQueryClient();
+
+  return useMutation({
+    mutationFn: async (projectId: string) => {
+      await api.delete(`/blueprints/project/${projectId}/draft`);
+      return projectId;
+    },
+    onSuccess: (projectId) => {
+      qc.setQueryData(KEYS.draft(projectId), null);
     },
   });
 }
