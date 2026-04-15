@@ -55,6 +55,7 @@ export function useUpdateUser() {
       lastName?: string;
       phone?: string;
       roles?: string[];
+      password?: string;
       expiresAt?: string | null;
     }) => {
       const { data } = await api.patch<ApiResponse<User>>(`/users/admin/users/${id}`, body);

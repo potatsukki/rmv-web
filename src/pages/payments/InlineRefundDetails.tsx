@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { extractErrorMessage } from '@/lib/utils';
+import { cn, extractErrorMessage } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role } from '@/lib/constants';
 
@@ -137,22 +137,42 @@ export function InlineRefundDetails({ payment }: InlineRefundDetailsProps) {
           <Label className="text-xs text-gray-500">Refund Method</Label>
           <div className="flex gap-2 mt-1">
             <Button
+              type="button"
               variant={refundMethod === 'gcash' ? 'default' : 'outline'}
               size="sm"
-              className="flex-1 text-xs"
-              onClick={() => setRefundMethod('gcash')}
+              aria-pressed={refundMethod === 'gcash'}
+              className={cn(
+                'flex-1 text-xs',
+                refundMethod === 'gcash'
+                  ? 'ring-1 ring-cyan-300/45 dark:ring-cyan-300/55'
+                  : 'opacity-85 hover:opacity-100',
+              )}
+              onClick={() => {
+                setRefundMethod('gcash');
+                setBankName('');
+              }}
             >
               GCash
             </Button>
             <Button
+              type="button"
               variant={refundMethod === 'bank_transfer' ? 'default' : 'outline'}
               size="sm"
-              className="flex-1 text-xs"
+              aria-pressed={refundMethod === 'bank_transfer'}
+              className={cn(
+                'flex-1 text-xs',
+                refundMethod === 'bank_transfer'
+                  ? 'ring-1 ring-cyan-300/45 dark:ring-cyan-300/55'
+                  : 'opacity-85 hover:opacity-100',
+              )}
               onClick={() => setRefundMethod('bank_transfer')}
             >
               Bank Transfer
             </Button>
           </div>
+          <p className="mt-1 text-[11px] text-[#86868b] dark:text-slate-400">
+            Selected: {refundMethod === 'gcash' ? 'GCash' : 'Bank Transfer'}
+          </p>
         </div>
 
         <div>

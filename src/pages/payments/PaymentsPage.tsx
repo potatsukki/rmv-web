@@ -1177,7 +1177,7 @@ export function PaymentsPage() {
         open={!!selectedHistoryPayment}
         onOpenChange={(open) => !open && setSelectedHistoryPayment(null)}
       >
-        <DialogContent className="metal-panel-strong sm:max-w-md rounded-2xl">
+        <DialogContent className="metal-panel-strong sm:max-w-md rounded-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Payment Details</DialogTitle>
           </DialogHeader>

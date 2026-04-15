@@ -186,6 +186,7 @@ export function UsersPage() {
           lastName: data.lastName,
           phone: data.phone || undefined,
           roles: [data.role],
+          password: data.password?.trim() ? data.password.trim() : undefined,
           expiresAt: data.employmentType === 'contract' && data.expiresAt
             ? new Date(data.expiresAt).toISOString()
             : data.employmentType === 'permanent' ? null : undefined,

@@ -244,7 +244,7 @@ export function RegisterPage() {
     }
   };
 
-  const inputClasses = 'label-font h-11 rounded-none border-white/10 bg-white/[0.03] text-sm tracking-widest text-white placeholder:text-[#5a5a60] focus-visible:border-[#FFD700]/30 focus-visible:ring-0 transition-all focus:bg-white/[0.05]';
+  const inputClasses = 'label-font h-11 rounded-none border-white/10 bg-white/[0.03] px-3 text-sm tracking-[0.08em] text-white placeholder:text-[11px] placeholder:tracking-[0.04em] placeholder:text-white/45 focus-visible:border-[#FFD700]/30 focus-visible:ring-0 transition-all focus:bg-white/[0.05]';
 
   return (
     <div className="landing-atelier dark relative flex min-h-screen overflow-hidden bg-black text-white/90">
@@ -295,7 +295,7 @@ export function RegisterPage() {
                 <Input
                   id="firstName"
                   placeholder="Enter your first name"
-                  className={inputClasses}
+                  className={`${inputClasses} placeholder:text-[10px] placeholder:tracking-[0.01em]`}
                   disabled={isLocked}
                   {...register('firstName')}
                 />
@@ -310,7 +310,7 @@ export function RegisterPage() {
                 <Input
                   id="lastName"
                   placeholder="Enter your last name"
-                  className={inputClasses}
+                  className={`${inputClasses} placeholder:text-[10px] placeholder:tracking-[0.01em]`}
                   disabled={isLocked}
                   {...register('lastName')}
                 />
