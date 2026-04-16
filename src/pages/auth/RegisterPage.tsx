@@ -36,8 +36,8 @@ function setAttemptData(count: number, lockedUntil: number | null) {
 
 const registerSchema = z
   .object({
-    firstName: z.string().min(1, 'First name is required').max(50),
-    lastName: z.string().min(1, 'Last name is required').max(50),
+    firstName: z.string().min(1, 'First name is required').max(50).regex(/^[a-zA-Z\s'-]+$/, "Special characters are not allowed"),
+    lastName: z.string().min(1, 'Last name is required').max(50).regex(/^[a-zA-Z\s'-]+$/, "Special characters are not allowed"),
     email: z.string().email('Invalid email address'),
     phone: z.string().regex(/^(09|\+639)\d{9}$/, 'Must be a valid PH mobile (09XXXXXXXXX)'),
     password: z
@@ -244,7 +244,7 @@ export function RegisterPage() {
     }
   };
 
-  const inputClasses = 'label-font h-11 rounded-none border-white/10 bg-white/[0.03] px-3 text-sm tracking-[0.08em] text-white placeholder:text-[11px] placeholder:tracking-[0.04em] placeholder:text-white/45 focus-visible:border-[#FFD700]/30 focus-visible:ring-0 transition-all focus:bg-white/[0.05]';
+  const inputClasses = 'label-font h-11 rounded-none border-white/10 bg-white/[0.03] px-3 text-sm tracking-[0.08em] text-white placeholder:text-[11px] placeholder:tracking-[0.04em] placeholder:text-white/65 focus-visible:border-[#FFD700]/30 focus-visible:ring-0 transition-all focus:bg-white/[0.05]';
 
   return (
     <div className="landing-atelier dark relative flex min-h-screen overflow-hidden bg-black text-white/90">
@@ -295,7 +295,7 @@ export function RegisterPage() {
                 <Input
                   id="firstName"
                   placeholder="Enter your first name"
-                  className={`${inputClasses} placeholder:text-[10px] placeholder:tracking-[0.01em]`}
+                  className={`${inputClasses} placeholder:text-[9.5px] placeholder:tracking-[0.01em]`}
                   disabled={isLocked}
                   {...register('firstName')}
                 />
@@ -310,7 +310,7 @@ export function RegisterPage() {
                 <Input
                   id="lastName"
                   placeholder="Enter your last name"
-                  className={`${inputClasses} placeholder:text-[10px] placeholder:tracking-[0.01em]`}
+                  className={`${inputClasses} placeholder:text-[9.5px] placeholder:tracking-[0.01em]`}
                   disabled={isLocked}
                   {...register('lastName')}
                 />

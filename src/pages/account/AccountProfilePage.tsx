@@ -50,9 +50,11 @@ const NCR_CITIES = [
   'Quezon City', 'San Juan', 'Taguig', 'Valenzuela',
 ];
 
+const nameRegex = /^[a-zA-Z\s'-]+$/;
+
 const profileSchema = z.object({
-  firstName: z.string().min(1, 'First name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  firstName: z.string().min(1, 'First name is required').regex(nameRegex, "Special characters or numbers are not allowed"),
+  lastName: z.string().min(1, 'Last name is required').regex(nameRegex, "Special characters or numbers are not allowed"),
   phone: z.string().refine(
     (v) => !v || /^\+639\d{9}$/.test(v),
     { message: 'Enter a valid 10-digit mobile number (9XXXXXXXXX)' }

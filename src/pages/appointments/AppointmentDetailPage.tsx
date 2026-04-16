@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, RotateCcw, Mail, Banknote, Info } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, extractLocalDateValue } from '@/lib/utils';
@@ -30,7 +30,6 @@ import {
   useCompleteAppointment,
   useCancelAppointment,
   useMarkNoShow,
-  useUpdateVisitStatus,
   useUpdateVisitStatus,
   useAgentFinalizeOcular,
   useCustomerSubmitLocation,
@@ -96,11 +95,13 @@ export function AppointmentDetailPage() {
   const canSeeVisitReports = isSalesStaff || isAdmin || user?.roles.includes(Role.ENGINEER) || isAgent;
   const { data: visitReports } = useVisitReportsByAppointment(canSeeVisitReports ? id! : '');
 
-
+  // Sales staff assignment state (for agents/admins)
+  const [salesStaffList, setSalesStaffList] = useState<{ _id: string; firstName: string; lastName: string }[]>([]);
+  const [selectedSalesStaff, setSelectedSalesStaff] = useState<string>('');
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
-  const [salesStaffList, setSalesStaffList] = useState<{ _id: string; firstName: string; lastName: string }[]>([]);
+
 
 
   const canConfirmAppointment = !!(isAgent || isAdmin);
@@ -543,13 +544,7 @@ export function AppointmentDetailPage() {
           <CardContent className="space-y-4">
             {appt.ocularFee != null && appt.ocularFee > 0 && (
               <div>
-                  <>
-                    <div className="flex items-center justify-between">
-                      <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Ocular Fee</p>
-                    </div>
-                  </>
-                ) : appt.ocularFeePaid ? (
-
+                {appt.ocularFeePaid ? (
                   <>
                     <div className="flex items-center justify-between">
                       <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Ocular Fee</p>
@@ -560,7 +555,6 @@ export function AppointmentDetailPage() {
                     <p className="text-lg font-semibold text-[#1d1d1f] dark:text-slate-100 mt-1">
                       {formatCurrency(appt.ocularFee)}
                     </p>
-
                   </>
                 ) : appt.ocularFeeStatus === 'pending' && isCustomer ? (
                   <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[linear-gradient(135deg,rgba(18,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] p-4 space-y-3 shadow-md shadow-black/5">
