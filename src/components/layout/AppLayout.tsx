@@ -28,9 +28,7 @@ import { canAccessPath } from '@/lib/auth-routing';
 import { getVisibleNavigationPaths } from './navigation';
 import toast from 'react-hot-toast';
 import type { Project, Appointment, User } from '@/lib/types';
-import { useSignature } from '@/hooks/useUsers';
-import { useAvailabilityDialogStore } from '@/stores/availability-dialog.store';
-import { InternalAvailabilityDialog } from './InternalAvailabilityDialog';
+import { useCloseOwnAvailability, useSignature, useUpdateOwnAvailability } from '@/hooks/useUsers';
 import {
   Dialog,
   DialogContent,
@@ -248,7 +246,8 @@ export function AppLayout() {
   const { data: notificationsData } = useNotifications({ limit: '50' });
   const queryClient = useQueryClient();
   const { data: signatureData } = useSignature();
-  const openAvailabilityDialog = useAvailabilityDialogStore((state) => state.openDialog);
+  const timeInMutation = useUpdateOwnAvailability();
+  const timeOutMutation = useCloseOwnAvailability();
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
   const isInternalAvailabilityUser = Boolean(
@@ -261,6 +260,19 @@ export function AppLayout() {
       Role.FABRICATION_STAFF,
     ].includes(role)),
   );
+  const isTimedIn = Boolean(user?.activeShift);
+  const timeClockPending = timeInMutation.isPending || timeOutMutation.isPending;
+
+  const handleTimeClock = async () => {
+    if (timeClockPending) return;
+    if (isTimedIn) {
+      await timeOutMutation.mutateAsync();
+      toast.success('Timed out');
+      return;
+    }
+    await timeInMutation.mutateAsync({ availabilityNote: 'Timed in' });
+    toast.success('Timed in');
+  };
 
   const profileChecks = useMemo(() => {
     if (!user) return { completed: 0, total: 3, percent: 0 };
@@ -448,16 +460,6 @@ export function AppLayout() {
       setNotifications(notificationsData.items);
     }
   }, [notificationsData, setNotifications]);
-
-  useEffect(() => {
-    if (!isInternalAvailabilityUser) return;
-    if (!user?.availabilitySetupRequired) return;
-    openAvailabilityDialog();
-  }, [
-    isInternalAvailabilityUser,
-    openAvailabilityDialog,
-    user?.availabilitySetupRequired,
-  ]);
 
   const segments = location.pathname.split('/').filter(Boolean);
   const pageKey = segments[0] || 'dashboard';
@@ -894,6 +896,22 @@ export function AppLayout() {
                 )}
               </Link>
 
+              {isInternalAvailabilityUser && (
+                <button
+                  type="button"
+                  onClick={handleTimeClock}
+                  disabled={timeClockPending}
+                  className="metal-pill hidden items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-60 lg:flex"
+                >
+                  {timeClockPending ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Clock className="h-3.5 w-3.5" />
+                  )}
+                  <span className="font-medium">{isTimedIn ? 'Time Out' : 'Time In'}</span>
+                </button>
+              )}
+
               {user && profileChecks.percent < 100 && (
                 <button
                   type="button"
@@ -906,21 +924,6 @@ export function AppLayout() {
                   </span>
                   <span className="rounded-full bg-white/65 px-1.5 py-0.5 text-[10px] font-semibold text-foreground dark:bg-slate-800/85 dark:text-slate-100">
                     {profileChecks.completed}/{profileChecks.total}
-                  </span>
-                </button>
-              )}
-
-              {isInternalAvailabilityUser && user && (
-                <button
-                  type="button"
-                  onClick={() => openAvailabilityDialog()}
-                  className="metal-pill hidden items-center gap-2 rounded-xl px-2.5 py-1.5 text-xs text-muted-foreground transition-colors hover:text-foreground lg:flex"
-                >
-                  <Clock className="h-3.5 w-3.5" />
-                  <span className="font-medium">
-                    {user.availabilitySetupRequired
-                      ? 'Set availability'
-                      : (user.availabilityStatus || 'availability').replace(/_/g, ' ')}
                   </span>
                 </button>
               )}
@@ -1023,13 +1026,6 @@ export function AppLayout() {
           </DialogContent>
         </Dialog>
 
-        <InternalAvailabilityDialog
-          user={user}
-          enforceSetupPrompt={Boolean(
-            isInternalAvailabilityUser
-            && user?.availabilitySetupRequired
-          )}
-        />
       </main>
     </div>
   );

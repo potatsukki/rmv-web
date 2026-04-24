@@ -46,6 +46,7 @@ import type { Blueprint, VisitReport } from '@/lib/types';
 
 interface BlueprintTabProps {
   projectId: string;
+  projectItemId?: string;
   onNavigateToDetails?: () => void;
 }
 
@@ -238,7 +239,7 @@ function FilePreviewThumb({ fileKey, label }: { fileKey: string | undefined | nu
   );
 }
 
-export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabProps) {
+export function BlueprintTab({ projectId, projectItemId, onNavigateToDetails }: BlueprintTabProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { resolvedTheme } = useThemeStore();
@@ -248,13 +249,13 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
 
   const { data: project, refetch: refetchProject } = useProject(projectId);
-  const { data: blueprint, refetch: refetchBlueprint } = useLatestBlueprint(projectId);
-  const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId);
+  const { data: blueprint, refetch: refetchBlueprint } = useLatestBlueprint(projectId, projectItemId);
+  const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId, projectItemId);
 
   // Engineer-specific mutations
   const upsertDraftMutation = useUpsertBlueprintDraft();
   const finalizeDraftMutation = useFinalizeBlueprintDraft();
-  const { data: dbDraft } = useBlueprintDraft(projectId, { enabled: isEngineer });
+  const { data: dbDraft } = useBlueprintDraft(projectId, { enabled: isEngineer }, projectItemId);
   // Customer-specific mutations
   const approveMutation = useApproveComponent();
   const revisionMutation = useRequestBlueprintRevision();
@@ -313,11 +314,28 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
   const [quotInitialized, setQuotInitialized] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
 
+  useEffect(() => {
+    setBlueprintFileMeta(null);
+    setDesignFileMeta(null);
+    setCostingFileMeta(null);
+    setQuotLineItems([]);
+    setQuotFees('');
+    setQuotValidityDays('30');
+    setQuotBreakdown('');
+    setQuotDuration('');
+    setQuotNotes('');
+    setQuotMilestones([]);
+    setQuotInitialized(false);
+  }, [projectItemId]);
+
   // ── Derive visit report line items ──
   const visitReport: VisitReport | null = useMemo(() => {
+    const activeItem = project?.items?.find((item) => item._id === projectItemId);
+    const itemReport = activeItem?.ocularVisitReportId || activeItem?.consultationVisitReportId;
+    if (itemReport && typeof itemReport !== 'string') return itemReport as VisitReport;
     if (!project?.visitReportId || typeof project.visitReportId === 'string') return null;
     return project.visitReportId as VisitReport;
-  }, [project]);
+  }, [project, projectItemId]);
 
   const vrLineItems = visitReport?.lineItems;
 
@@ -399,6 +417,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
       setIsSavingDraft(true);
       upsertDraftMutation.mutate({
         projectId,
+        projectItemId,
         mode: blueprint ? 'revision' : 'initial',
         sourceBlueprintId: blueprint?._id,
         files: {
@@ -419,7 +438,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [currentQuotation, quotInitialized, blueprint, projectId, blueprintFileMeta, designFileMeta, costingFileMeta, upsertDraftMutation]);
+  }, [currentQuotation, quotInitialized, blueprint, projectId, projectItemId, blueprintFileMeta, designFileMeta, costingFileMeta, upsertDraftMutation]);
 
   const handleDraftFileUpload = async (file: File, type: 'blueprint'|'design'|'costing') => {
     setUploadingFile(type);
@@ -451,6 +470,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
       await upsertDraftMutation.mutateAsync({
         projectId,
+        projectItemId,
         mode: blueprint ? 'revision' : 'initial',
         sourceBlueprintId: blueprint?._id,
         files: updatedFiles,
@@ -477,6 +497,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
     upsertDraftMutation.mutate({
       projectId,
+      projectItemId,
       mode: blueprint ? 'revision' : 'initial',
       sourceBlueprintId: blueprint?._id,
       files: updatedFiles,
@@ -757,9 +778,9 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
 
   const handleChoosePaymentPlan = () => {
     if (!acceptDialog.blueprint) return;
-    setBlockedAction(null);
-    selectPaymentPlanMutation.mutate(
-      { id: projectId, paymentType },
+      setBlockedAction(null);
+      selectPaymentPlanMutation.mutate(
+        { id: projectId, paymentType, projectItemId },
       {
         onSuccess: () => {
           toast.success('Payment plan created. Your contract is now ready for signing.', { duration: 6000 });
@@ -804,7 +825,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
         toast.dismiss('draftSave');
       }
 
-      await finalizeDraftMutation.mutateAsync(projectId);
+      await finalizeDraftMutation.mutateAsync({ projectId, projectItemId });
 
       toast.success(blueprint ? 'Revision uploaded successfully!' : 'Blueprint uploaded successfully!', { duration: 5000 });
       
@@ -1287,7 +1308,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                     }`}>
                       {bp.costingApproved ? <CheckCircle className="h-4 w-4" /> : '2'}
                     </div>
-                    <span className={`text-xs font-medium truncate ${bp.costingApproved ? 'text-emerald-700 dark:text-emerald-300' : bp.blueprintApproved ? 'text-[#1d1d1f] dark:text-slate-100' : 'text-[#86868b] dark:text-slate-400'}`}>Costing</span>
+                    <span className={`text-xs font-medium truncate ${bp.costingApproved ? 'text-emerald-700 dark:text-emerald-300' : bp.blueprintApproved ? 'text-[#1d1d1f] dark:text-slate-100' : 'text-[#86868b] dark:text-slate-400'}`}>Billing</span>
                   </div>
                   <ArrowRight className="mx-1 h-3.5 w-3.5 flex-shrink-0 text-[#c8c8cd] dark:text-slate-500" />
                   {/* Step 3 */}
@@ -1306,7 +1327,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
             </div>
           )}
 
-          {/* Design + Costing cards (customer sees these) + Blueprint (staff only) */}
+          {/* Design + billing cards for customers; full costing remains staff-only. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Design Card — shown to everyone */}
             <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
@@ -1352,12 +1373,12 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
               </CardContent>
             </Card>
 
-            {/* Costing Card */}
+            {/* Costing/Billing Card */}
             <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
               <CardHeader className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} flex flex-row items-center justify-between border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6 dark:border-slate-700`}>
                 <div className="flex items-center gap-2">
                   <Info className={`h-5 w-5 ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
-                  <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Costing Sheet</h3>
+                  <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>{canReviewBlueprint ? 'Billing Summary' : 'Costing Sheet'}</h3>
                 </div>
                 {bp.costingApproved ? (
                   <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 shadow-none hover:bg-emerald-100/80 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
@@ -1370,11 +1391,25 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                 )}
               </CardHeader>
               <CardContent className="pt-6 space-y-4 px-4 sm:px-6">
-                <FilePreviewThumb fileKey={bp.costingKey} label="Costing Sheet" />
+                {canReviewBlueprint ? (
+                  <div className={`rounded-xl border border-[color:var(--color-border)]/50 p-4 ${isDark ? 'bg-slate-900/45 dark:border-slate-700' : 'bg-[color:var(--color-muted)]/55'}`}>
+                    <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Total Billing</p>
+                    <p className={`mt-1 text-2xl font-bold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
+                      {formatCurrency(bp.quotation?.total || 0)}
+                    </p>
+                    {bp.quotation?.estimatedDuration && (
+                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>Estimated duration: {bp.quotation.estimatedDuration}</p>
+                    )}
+                  </div>
+                ) : (
+                  <FilePreviewThumb fileKey={bp.costingKey} label="Costing Sheet" />
+                )}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <Button variant="prominent" className="flex-1 rounded-xl" onClick={() => handleViewFile(bp.costingKey)}>
+                  {!canReviewBlueprint && (
+                    <Button variant="prominent" className="flex-1 rounded-xl" onClick={() => handleViewFile(bp.costingKey)}>
                       <Eye className="mr-2 h-4 w-4" /> View Sheet
-                  </Button>
+                    </Button>
+                  )}
                   {canReviewBlueprint && !bp.costingApproved && (
                     <Button
                       className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl"
@@ -1384,7 +1419,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
                       {approvingComponent === 'costing' && approveMutation.isPending ? (
                         <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Approving...</>
                       ) : (
-                        <><CheckCircle className="mr-2 h-4 w-4" /> Approve</>
+                        <><CheckCircle className="mr-2 h-4 w-4" /> Approve Billing</>
                       )}
                     </Button>
                   )}
@@ -1677,12 +1712,12 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
           <DialogContent className="sm:max-w-[420px] rounded-2xl dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
             <DialogTitle className="text-gray-900 dark:text-slate-100">
-              Approve {approveConfirmDialog.component === 'blueprint' ? 'Design' : 'Costing Sheet'}?
+              Approve {approveConfirmDialog.component === 'blueprint' ? 'Design' : canReviewBlueprint ? 'Billing Summary' : 'Costing Sheet'}?
             </DialogTitle>
             <DialogDescription className="pt-1 text-gray-500 dark:text-slate-400">
               Please make sure you have carefully reviewed the{' '}
               <span className="font-medium text-gray-700 dark:text-slate-200">
-                {approveConfirmDialog.component === 'blueprint' ? 'design' : 'costing sheet'}
+                {approveConfirmDialog.component === 'blueprint' ? 'design' : canReviewBlueprint ? 'billing summary' : 'costing sheet'}
               </span>{' '}
               before approving.
             </DialogDescription>
@@ -1694,7 +1729,7 @@ export function BlueprintTab({ projectId, onNavigateToDetails }: BlueprintTabPro
               </svg>
             </span>
             <p className="text-sm text-amber-800 dark:text-amber-200">
-              Once you approve <span className="font-semibold">both</span> the design and costing sheet, you will{' '}
+              Once you approve <span className="font-semibold">both</span> the design and {canReviewBlueprint ? 'billing summary' : 'costing sheet'}, you will{' '}
               <span className="font-semibold">no longer be able to request a revision</span>. This action is final.
             </p>
           </div>

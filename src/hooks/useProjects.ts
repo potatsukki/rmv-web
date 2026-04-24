@@ -183,14 +183,16 @@ export function useReviewInitialDesign() {
       id,
       decision,
       notes,
+      projectItemId,
     }: {
       id: string;
       decision: 'approved' | 'declined';
       notes?: string;
+      projectItemId?: string;
     }) => {
       const { data } = await api.post<ApiResponse<Project>>(
         `/projects/${id}/review-initial-design`,
-        { decision, notes },
+        { decision, notes, projectItemId },
       );
       return data.data;
     },
@@ -209,14 +211,16 @@ export function useResubmitInitialDesign() {
       id,
       initialDesignKeys,
       initialDesignNotes,
+      projectItemId,
     }: {
       id: string;
       initialDesignKeys?: string[];
       initialDesignNotes?: string;
+      projectItemId?: string;
     }) => {
       const { data } = await api.post<ApiResponse<Project>>(
         `/projects/${id}/resubmit-initial-design`,
-        { initialDesignKeys, initialDesignNotes },
+        { initialDesignKeys, initialDesignNotes, projectItemId },
       );
       return data.data;
     },
@@ -262,13 +266,15 @@ export function useSelectProjectPaymentPlan() {
     mutationFn: async ({
       id,
       paymentType,
+      projectItemId,
     }: {
       id: string;
       paymentType: 'full' | 'installment';
+      projectItemId?: string;
     }) => {
       const { data } = await api.post<ApiResponse<{ paymentPlan: unknown; contractKey: string; project: Project }>>(
         `/projects/${id}/select-payment-plan`,
-        { paymentType },
+        { paymentType, projectItemId },
       );
       return data.data;
     },

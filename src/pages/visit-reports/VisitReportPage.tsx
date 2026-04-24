@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { format, addDays, getDay, startOfDay } from 'date-fns';
 import {
   ArrowLeft,
@@ -20,12 +20,12 @@ import {
   Wrench,
   Home,
   Briefcase,
-  ExternalLink,
   Info,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, extractLocalDateValue, serializeDateOnlyAsUtcNoon, cn } from '@/lib/utils';
+import { api } from '@/lib/api';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 
@@ -45,7 +45,6 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
-import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { SiteConditionsPanel } from '@/components/shared/SiteConditionsPanel';
 import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
@@ -57,6 +56,7 @@ import {
   useSubmitVisitReport,
   useReturnVisitReport,
   useReopenVisitReportForRepair,
+  useVisitReportsByAppointment,
 } from '@/hooks/useVisitReports';
 import { useProjectByVisitReport } from '@/hooks/useProjects';
 import { useHolidays, useBlockedSlots } from '@/hooks/useConfig';
@@ -98,6 +98,15 @@ function rawId(field: unknown): string {
 
 function isNonEmptyString(value?: string | null) {
   return Boolean(value?.trim());
+}
+
+function resolveVisitType(
+  reportVisitType?: string,
+  appointmentType?: string,
+) {
+  if (appointmentType === 'ocular') return 'ocular';
+  if (appointmentType === 'office') return 'consultation';
+  return reportVisitType || '';
 }
 
 function getIncompleteOcularFields(report: {
@@ -161,8 +170,6 @@ function getIncompleteOcularFields(report: {
   if (!isNonEmptyString(report.siteConditions?.environment)) missing.push('site environment');
   if (!isNonEmptyString(report.siteConditions?.floorType)) missing.push('floor type');
   if (!isNonEmptyString(report.siteConditions?.wallMaterial)) missing.push('wall material');
-  if (report.siteConditions?.hasElectrical === undefined) missing.push('electrical nearby status');
-  if (report.siteConditions?.hasPlumbing === undefined) missing.push('plumbing nearby status');
   if (!isNonEmptyString(report.siteConditions?.accessNotes)) missing.push('access notes');
   if (!isNonEmptyString(report.siteConditions?.obstaclesOrConstraints)) missing.push('obstacles or constraints');
 
@@ -171,7 +178,6 @@ function getIncompleteOcularFields(report: {
   if (!isNonEmptyString(report.preferredDesign)) missing.push('preferred design');
   if ((report.photoKeys?.length || 0) === 0) missing.push('site photos');
   if ((report.initialDesignKeys?.length || 0) === 0) missing.push('initial design files');
-  if (!isNonEmptyString(report.initialDesignNotes)) missing.push('initial design notes');
 
   return [...new Set(missing)];
 }
@@ -180,11 +186,49 @@ function formatIncompleteOcularMessage(missingFields: string[]) {
   return `You have not yet provided information on: ${missingFields.join(', ')}.`;
 }
 
+function getServiceTypeLabel(serviceType?: string, customLabel?: string) {
+  if (serviceType === ServiceType.CUSTOM) return customLabel || 'Custom';
+  return serviceType ? SERVICE_TYPE_LABELS[serviceType] || serviceType : 'Custom';
+}
+
+function getAppointmentServiceLabels(appointment: unknown) {
+  if (!appointment || typeof appointment !== 'object') return [];
+
+  const value = appointment as {
+    serviceTypes?: string[];
+    serviceType?: string;
+    serviceTypeCustom?: string;
+  };
+  const serviceTypes = value.serviceTypes?.length
+    ? value.serviceTypes
+    : value.serviceType
+      ? [value.serviceType]
+      : [];
+
+  return serviceTypes.map((serviceType) => getServiceTypeLabel(serviceType, value.serviceTypeCustom));
+}
+
+function getLocalVisitParts(value?: string | Date | null) {
+  if (!value) return null;
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return null;
+
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  const isoLocal = local.toISOString().slice(0, 16);
+  return {
+    dateTime: isoLocal,
+    date: isoLocal.slice(0, 10),
+    slot: `${String(local.getHours()).padStart(2, '0')}:00`,
+  };
+}
+
 export function VisitReportPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuthStore();
   const { data: report, isLoading, isError, refetch } = useVisitReport(id!);
+  const appointmentId = report ? rawId(report.appointmentId) : '';
+  const { data: siblingReports } = useVisitReportsByAppointment(appointmentId);
 
   const updateMutation = useUpdateVisitReport();
   const submitMutation = useSubmitVisitReport();
@@ -266,14 +310,19 @@ export function VisitReportPage() {
   const visitDateYear = actualVisitDate ? actualVisitDate.slice(0, 4) : String(new Date().getFullYear());
   const { data: holidays } = useHolidays(visitDateYear);
   const { data: blockedSlots } = useBlockedSlots(actualVisitDate || undefined);
+  const appointmentType =
+    report?.appointmentId && typeof report.appointmentId === 'object' && 'type' in (report.appointmentId as Record<string, unknown>)
+      ? String((report.appointmentId as Record<string, unknown>).type)
+      : undefined;
+  const effectiveVisitType = resolveVisitType(report?.visitType, appointmentType);
 
   // Build set of blocked slot codes for the selected date+type
   const blockedSlotCodes = useMemo(() => {
     if (!blockedSlots) return new Set<string>();
     // Block slots of the appointment type matching the visit type ('ocular' or 'office')
-    const relevantType = report?.visitType === 'ocular' ? 'ocular' : 'office';
+    const relevantType = effectiveVisitType === 'ocular' ? 'ocular' : 'office';
     return new Set(blockedSlots.filter(s => s.type === relevantType).map(s => s.slotCode));
-  }, [blockedSlots, report?.visitType]);
+  }, [blockedSlots, effectiveVisitType]);
 
   // Build a set of holiday dates for fast lookup (YYYY-MM-DD)
   const holidayDates = useMemo(() => {
@@ -281,10 +330,11 @@ export function VisitReportPage() {
     return new Set(holidays.map(h => h.date.slice(0, 10)));
   }, [holidays]);
 
-  /** Disable weekends, holidays, and past dates (except today) on the visit date calendar */
+  /** Disable weekends, holidays, and previous dates on the visit date calendar. */
   const isVisitDateDisabled = (day: Date): boolean => {
     const dow = getDay(day);
     if (dow === 0 || dow === 6) return true; // weekends
+    if (startOfDay(day) < startOfDay(new Date())) return true;
     const dateStr = format(day, 'yyyy-MM-dd');
     if (holidayDates.has(dateStr)) return true; // holidays
     return false;
@@ -296,35 +346,46 @@ export function VisitReportPage() {
     user?.roles.includes(Role.ENGINEER) || user?.roles.includes(Role.ADMIN);
   const linkedProjectId = linkedProject?._id || (report?.linkedProjectId ? rawId(report.linkedProjectId) : '');
   const isConsultationDraftProject =
-    report?.visitType === 'consultation' && linkedProject?.status === 'draft';
+    effectiveVisitType === 'consultation' && linkedProject?.status === 'draft';
 
   // Calculation of payment dependency
   const appointment = report?.appointmentId;
   const isPopulatedAppt = appointment && typeof appointment === 'object' && 'ocularFeePaid' in (appointment as any);
   
   const isOcularCashFeePending =
-    report?.visitType === 'ocular' &&
+    effectiveVisitType === 'ocular' &&
     isPopulatedAppt &&
     (appointment as any).ocularFeePaymentChoice === 'cash' &&
     !(appointment as any).ocularFeeBreakdown?.isWithinNCR &&
     !(appointment as any).ocularFeePaid;
 
   const isSubmissionBlocked = isOcularCashFeePending;
+  const siblingScheduleSource = effectiveVisitType === 'consultation'
+    ? siblingReports?.find((sibling) => Boolean(sibling.actualVisitDateTime))
+    : undefined;
+  const sharedActualVisitDateTime = report?.actualVisitDateTime || siblingScheduleSource?.actualVisitDateTime;
+  const siblingOcularScheduleSource = effectiveVisitType === 'consultation'
+    ? siblingReports?.find((sibling) => Boolean(sibling.recommendedOcularDate || sibling.recommendedOcularSlot))
+    : undefined;
+  const sharedRecommendedOcularDate = report?.recommendedOcularDate || siblingOcularScheduleSource?.recommendedOcularDate;
+  const sharedRecommendedOcularSlot = report?.recommendedOcularSlot || siblingOcularScheduleSource?.recommendedOcularSlot;
+  const isRecommendedOcularScheduleLocked = Boolean(
+    effectiveVisitType === 'consultation'
+    && siblingOcularScheduleSource
+    && rawId(siblingOcularScheduleSource._id) !== id
+    && sharedRecommendedOcularDate
+    && sharedRecommendedOcularSlot,
+  );
 
   // Pre-fill form when data arrives
   if (report && !formLoaded) {
-    setVisitType(report.visitType || '');
+    setVisitType(effectiveVisitType);
     // Convert UTC ISO string to local date + time for split pickers
-    if (report.actualVisitDateTime) {
-      const d = new Date(report.actualVisitDateTime);
-      const local = new Date(d.getTime() - d.getTimezoneOffset() * 60000);
-      const isoLocal = local.toISOString().slice(0, 16);
-      setActualVisitDateTime(isoLocal);
-      setActualVisitDate(isoLocal.slice(0, 10));
-      // Snap to nearest slot hour
-      const hours = local.getHours();
-      const slotHour = String(hours).padStart(2, '0') + ':00';
-      setActualVisitTime(slotHour);
+    const sharedVisitParts = getLocalVisitParts(sharedActualVisitDateTime);
+    if (sharedVisitParts) {
+      setActualVisitDateTime(sharedVisitParts.dateTime);
+      setActualVisitDate(sharedVisitParts.date);
+      setActualVisitTime(sharedVisitParts.slot);
     } else {
       setActualVisitDateTime('');
       setActualVisitDate('');
@@ -342,10 +403,8 @@ export function VisitReportPage() {
     setDiscussionNotes(report.discussionNotes || '');
     setInitialDesignKeys(report.initialDesignKeys || []);
     setInitialDesignNotes(report.initialDesignNotes || '');
-    if (report.recommendedOcularDate) {
-      setRecommendedOcularDate(extractLocalDateValue(report.recommendedOcularDate));
-    }
-    setRecommendedOcularSlot(report.recommendedOcularSlot || '');
+    setRecommendedOcularDate(sharedRecommendedOcularDate ? extractLocalDateValue(sharedRecommendedOcularDate) : '');
+    setRecommendedOcularSlot(sharedRecommendedOcularSlot || '');
 
     // New measurement system
     setMeasurementUnit(report.measurementUnit || MeasurementUnit.CM);
@@ -403,7 +462,7 @@ export function VisitReportPage() {
   );
   const reportHasMeasurements = reportHasMeasuredLineItems || reportHasLegacyMeasurements;
   const canReopenForRepair = Boolean(
-    report.visitType === 'ocular' &&
+    effectiveVisitType === 'ocular' &&
     !canEdit &&
     !reportHasMeasurements &&
     (isSalesStaff || isAdmin) &&
@@ -420,9 +479,21 @@ export function VisitReportPage() {
   );
 
   const serviceLabel =
-    serviceType === ServiceType.CUSTOM
-      ? serviceTypeCustom || 'Custom'
-      : SERVICE_TYPE_LABELS[serviceType] || serviceType;
+    getServiceTypeLabel(serviceType, serviceTypeCustom);
+  const headerServiceLabels = getAppointmentServiceLabels(report.appointmentId);
+  const siblingServiceLabels = (siblingReports || [])
+    .map((sibling) => getServiceTypeLabel(sibling.serviceType, sibling.serviceTypeCustom));
+  const appointmentServiceLabel = [...new Set(
+    (headerServiceLabels.length ? headerServiceLabels : siblingServiceLabels)
+      .filter(Boolean),
+  )].join(', ') || serviceLabel;
+  const appointmentItemNames = appointmentServiceLabel
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
+  const appointmentItemsText = appointmentItemNames.length > 1
+    ? `both items (${appointmentItemNames.join(' and ')})`
+    : `the item (${appointmentItemNames[0] || serviceLabel})`;
 
   const saveDraft = async ({
     showSuccessToast = false,
@@ -487,6 +558,28 @@ export function VisitReportPage() {
           initialDesignNotes: initialDesignNotes || undefined,
         }),
       });
+
+      if (visitType === 'consultation' && siblingReports?.length) {
+        const siblingUpdates = siblingReports.filter((sibling) => (
+          String(sibling._id) !== id &&
+          [VisitReportStatus.DRAFT, VisitReportStatus.RETURNED].includes(sibling.status as VisitReportStatus)
+        ));
+        for (const sibling of siblingUpdates) {
+          try {
+            await updateMutation.mutateAsync({
+              id: String(sibling._id),
+              visitType: 'consultation',
+              actualVisitDateTime: normalizedActualVisitDateTime,
+              recommendedOcularDate: serializeDateOnlyAsUtcNoon(recommendedOcularDate),
+              recommendedOcularSlot: recommendedOcularSlot || undefined,
+            });
+          } catch (err) {
+            const message = extractErrorMessage(err, 'Failed to save report');
+            if (!message.toLowerCase().includes('draft or returned')) throw err;
+          }
+        }
+      }
+
       if (showSuccessToast) toast.success('Report saved');
       return savedReport;
     } catch (err) {
@@ -506,7 +599,8 @@ export function VisitReportPage() {
   };
 
   const handleSubmit = async () => {
-    const isOcular = report?.visitType === 'ocular';
+    const isOcular = effectiveVisitType === 'ocular';
+    const isConsultation = effectiveVisitType === 'consultation';
 
     if (isOcular) {
       const missingFields = getIncompleteOcularFields({
@@ -535,6 +629,11 @@ export function VisitReportPage() {
         setSubmitOpen(false);
         return;
       }
+    }
+
+    if (isConsultation && (!recommendedOcularDate || !recommendedOcularSlot)) {
+      toast.error('Select an ocular visit date and time slot before scheduling.');
+      return;
     }
 
     try {
@@ -566,12 +665,33 @@ export function VisitReportPage() {
         }
       }
 
-      await submitMutation.mutateAsync(id!);
+      if (isConsultation) {
+        let latestAppointmentReports = siblingReports || [];
+        if (appointmentId) {
+          const { data } = await api.get(`/visit-reports/appointment/${appointmentId}`);
+          latestAppointmentReports = (data?.data || []) as VisitReport[];
+        }
+
+        const submitTargets = [
+          saved,
+          ...latestAppointmentReports,
+        ].filter((item, index, all) => (
+          item.visitType === 'consultation' &&
+          [VisitReportStatus.DRAFT, VisitReportStatus.RETURNED].includes(item.status as VisitReportStatus) &&
+          all.findIndex((candidate) => String(candidate._id) === String(item._id)) === index
+        ));
+
+        for (const target of submitTargets) {
+          await submitMutation.mutateAsync(String(target._id));
+        }
+      } else {
+        await submitMutation.mutateAsync(id!);
+      }
       await refetch();
       toast.success(
         isOcular
           ? 'Report submitted! The existing project has been updated with your on-site data. An engineer will review it next.'
-          : 'Report submitted! A draft project has been created. Next: the appointment agent should finalize the ocular visit before engineering begins.',
+          : 'Ocular visit scheduled. The consultation appointment has been completed and the customer can now submit the site location.',
         { duration: 5000 },
       );
       setSubmitOpen(false);
@@ -679,12 +799,14 @@ export function VisitReportPage() {
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-100 truncate">
-              {canEdit ? 'Edit Visit Report' : 'Visit Report Details'}
+              {effectiveVisitType === 'ocular'
+                ? (canEdit ? 'Creating Project' : 'Project Details')
+                : (canEdit ? 'Edit Visit Report' : 'Visit Report Details')}
             </h1>
             <p className="text-sm text-gray-500 dark:text-slate-300 mt-0.5 flex items-center gap-2">
-              <span className="truncate">{serviceLabel}</span>
+              <span className="truncate">{appointmentServiceLabel}</span>
               <span className="hidden sm:inline">&middot;</span>
-              <span className="shrink-0">{report.visitType === 'ocular' ? 'Ocular Visit' : 'Consultation'}</span>
+              <span className="shrink-0">{effectiveVisitType === 'ocular' ? 'Ocular Visit' : 'Consultation'}</span>
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -708,13 +830,14 @@ export function VisitReportPage() {
       </div>
 
       {/* ── Project Navigator (multi-project strip) ── */}
-      <ProjectNavigator
-        appointmentId={rawId(report.appointmentId)}
-        activeReportId={String(report._id)}
-        canAdd={!!isSalesStaff && (isDraft || isReturned) && report.visitType !== 'ocular'}
-        canEdit={!!isSalesStaff && (isDraft || isReturned) && report.visitType !== 'ocular'}
-        onBeforeNavigate={handleBeforeProjectSwitch}
-      />
+        <ProjectNavigator
+          appointmentId={appointmentId}
+          activeReportId={String(report._id)}
+          defaultVisitType={effectiveVisitType}
+          canAdd={!!isSalesStaff && (isDraft || isReturned) && effectiveVisitType !== 'ocular'}
+          canEdit={!!(isSalesStaff || isAdmin) && effectiveVisitType !== 'ocular'}
+          onBeforeNavigate={handleBeforeProjectSwitch}
+        />
 
       {/* ── Return reason banner ── */}
       {report.returnReason && isReturned && (
@@ -726,7 +849,7 @@ export function VisitReportPage() {
         </div>
       )}
 
-      {report.visitType === 'ocular' && !reportHasMeasurements && !canEdit && (
+      {effectiveVisitType === 'ocular' && !reportHasMeasurements && !canEdit && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
           <div className="flex items-start gap-3">
             <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
@@ -780,56 +903,29 @@ export function VisitReportPage() {
       {/* ── READ-ONLY VIEWS (for non-editors) ── */}
       {!canEdit && (
         <div className="space-y-6">
-          <div className="grid gap-6 lg:grid-cols-2">
-            {/* Report Info */}
-            <Card className={editCardClassName}>
-              <CardHeader>
-                <CardTitle className="text-lg text-gray-900 dark:text-slate-100">Report Info</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <InfoRow icon={Layers} label="Service Type" value={serviceLabel} />
+          <Card className={editCardClassName}>
+            <CardHeader>
+              <CardTitle className="text-lg text-gray-900 dark:text-slate-100">Report Info</CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <InfoRow icon={Layers} label="Service Type" value={serviceLabel} />
+              <InfoRow
+                icon={CalendarIcon}
+                label="Created"
+                value={format(new Date(report.createdAt), 'MMM d, yyyy h:mm a')}
+              />
+              {report.actualVisitDateTime && (
                 <InfoRow
                   icon={CalendarIcon}
-                  label="Created"
-                  value={format(new Date(report.createdAt), 'MMM d, yyyy h:mm a')}
+                  label="Visit Date"
+                  value={format(new Date(report.actualVisitDateTime), 'MMM d, yyyy h:mm a')}
                 />
-                {report.actualVisitDateTime && (
-                  <InfoRow
-                    icon={CalendarIcon}
-                    label="Visit Date"
-                    value={format(new Date(report.actualVisitDateTime), 'MMM d, yyyy h:mm a')}
-                  />
-                )}
-              </CardContent>
-            </Card>
-
-            {/* Details */}
-            <Card className={editCardClassName}>
-              <CardHeader>
-                <CardTitle className="text-lg text-gray-900 dark:text-slate-100">Details</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {report.materials && (
-                  <InfoRow icon={Package} label="Materials" value={report.materials} />
-                )}
-                {report.finishes && (
-                  <InfoRow icon={Paintbrush} label="Finishes" value={report.finishes} />
-                )}
-                {report.preferredDesign && (
-                  <InfoRow icon={Paintbrush} label="Preferred Design" value={report.preferredDesign} />
-                )}
-                {report.customerRequirements && (
-                  <InfoRow icon={StickyNote} label="Customer Requirements" value={report.customerRequirements} />
-                )}
-                {report.notes && (
-                  <InfoRow icon={StickyNote} label="Notes" value={report.notes} />
-                )}
-              </CardContent>
-            </Card>
-          </div>
+              )}
+            </CardContent>
+          </Card>
 
           {/* Consultation Summary (read-only) */}
-          {report.visitType === 'consultation' && (
+          {effectiveVisitType === 'consultation' && (
             <Card className="rounded-xl border-blue-100 dark:border-blue-900/60 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
@@ -876,7 +972,7 @@ export function VisitReportPage() {
           )}
 
           {/* Line Items (read-only) — ocular only */}
-          {report.visitType === 'ocular' && report.lineItems && report.lineItems.length > 0 && (
+          {effectiveVisitType === 'ocular' && report.lineItems && report.lineItems.length > 0 && (
             <Card className={editSectionClassName}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
@@ -913,7 +1009,7 @@ export function VisitReportPage() {
           )}
 
           {/* Legacy measurements (read-only) — ocular only */}
-          {report.visitType === 'ocular' && isLegacyReport && report.measurements && (
+          {effectiveVisitType === 'ocular' && isLegacyReport && report.measurements && (
             <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
@@ -944,7 +1040,7 @@ export function VisitReportPage() {
           )}
 
           {/* Site Conditions (read-only) — ocular only */}
-          {report.visitType === 'ocular' && report.siteConditions && (
+          {effectiveVisitType === 'ocular' && report.siteConditions && (
             <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
@@ -974,7 +1070,7 @@ export function VisitReportPage() {
             </Card>
           )}
 
-          {report.visitType === 'ocular' && (report.initialDesignKeys?.length || report.initialDesignNotes) && (
+          {effectiveVisitType === 'ocular' && (report.initialDesignKeys?.length || report.initialDesignNotes) && (
             <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
@@ -1000,7 +1096,7 @@ export function VisitReportPage() {
           )}
 
           {/* Photos (read-only summary) — ocular only */}
-          {report.visitType === 'ocular' && (
+          {effectiveVisitType === 'ocular' && (
           <PhotoUploadGrid
             photoKeys={report.photoKeys || []}
             videoKeys={report.videoKeys || []}
@@ -1019,25 +1115,15 @@ export function VisitReportPage() {
       {/* ── EDITABLE FORM (Sales Staff on DRAFT/RETURNED) ── */}
       {canEdit && (
         <div className="space-y-6">
-          {/* Section 1: Service Type + Visit Details */}
-          <div className="grid gap-6 lg:grid-cols-2">
+          {/* Section 1: Visit Details */}
+          <div className="space-y-6">
             <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="text-lg text-gray-900 dark:text-slate-100">
-                  Service & Visit
+                  Visit Details
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <ServiceTypePicker
-                  value={serviceType ? [serviceType] : []}
-                  customValue={serviceTypeCustom}
-                  onChange={(types, custom) => {
-                    setServiceType(types[0] || ServiceType.CUSTOM);
-                    setServiceTypeCustom(custom || '');
-                  }}
-                  disabled={report?.visitType === 'ocular'}
-                />
-
                 {/* ── Actual Visit Date (Calendar Popover) ── */}
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
@@ -1058,7 +1144,7 @@ export function VisitReportPage() {
                           : 'Pick a date'}
                       </button>
                     </PopoverTrigger>
-                    <PopoverContent className="w-auto p-0" align="start">
+                    <PopoverContent className="w-auto p-0" align="center" sideOffset={8}>
                       <CalendarUI
                         mode="single"
                         selected={actualVisitDate ? new Date(`${actualVisitDate}T00:00:00`) : undefined}
@@ -1069,15 +1155,10 @@ export function VisitReportPage() {
                           }
                         }}
                         disabled={isVisitDateDisabled}
-                        className="rounded-xl border border-[#c8c8cd]/50 dark:border-white/10 dark:bg-white/[0.02]"
+                        className="rounded-xl border border-[#c8c8cd]/50 bg-white shadow-xl shadow-black/10 dark:border-white/10 dark:bg-[#111923] dark:shadow-black/40"
                       />
                     </PopoverContent>
                   </Popover>
-                  {actualVisitDate && (
-                    <p className="text-center text-xs text-[#6e6e73] dark:text-slate-400">
-                      Selected: <span className="font-medium text-[#1d1d1f] dark:text-slate-100">{format(new Date(`${actualVisitDate}T00:00:00`), 'MMMM d, yyyy')}</span>
-                    </p>
-                  )}
                 </div>
 
                 {/* ── Actual Visit Time (Slot-Style Buttons) ── */}
@@ -1114,7 +1195,7 @@ export function VisitReportPage() {
                     })}
                   </div>
                   {!actualVisitDate && (
-                    <div className="flex items-start gap-2 rounded-xl border border-[#d2d2d7]/50 bg-[#f0f0f5]/70 p-2.5 dark:border-white/10 dark:bg-white/[0.04]">
+                    <div className="mt-3 flex items-start gap-2 rounded-xl border border-[#d2d2d7]/50 bg-[#f0f0f5]/70 p-2.5 dark:border-white/10 dark:bg-white/[0.04]">
                       <Info className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#6e6e73] dark:text-slate-300" />
                       <p className="text-xs text-[#6e6e73] dark:text-slate-400">Select a date first to see available time slots</p>
                     </div>
@@ -1183,123 +1264,9 @@ export function VisitReportPage() {
                   />
                 </div>
 
-                <div className="border-t border-gray-100 pt-4 dark:border-white/10">
-                  <p className="mb-3 text-[13px] font-semibold text-gray-800 dark:text-slate-200">
-                    Recommended Ocular Schedule
-                  </p>
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
-                        Date
-                      </Label>
-                      <Popover open={ocularDateOpen} onOpenChange={setOcularDateOpen}>
-                        <PopoverTrigger asChild>
-                          <button
-                            type="button"
-                            className={cn(
-                              'flex h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:hover:bg-white/[0.08] dark:focus:ring-[#d6b36a]/20',
-                              !recommendedOcularDate && 'text-gray-400 dark:text-slate-500',
-                            )}
-                          >
-                            <CalendarIcon className="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500" />
-                            {recommendedOcularDate
-                              ? format(new Date(`${recommendedOcularDate}T00:00:00`), 'MMMM d, yyyy')
-                              : 'Pick a date'}
-                          </button>
-                        </PopoverTrigger>
-                        <PopoverContent className="w-auto p-0" align="start">
-                          <CalendarUI
-                            mode="single"
-                            selected={recommendedOcularDate ? new Date(`${recommendedOcularDate}T00:00:00`) : undefined}
-                            onSelect={(day) => {
-                              if (day) {
-                                setRecommendedOcularDate(format(day, 'yyyy-MM-dd'));
-                                setOcularDateOpen(false);
-                              }
-                            }}
-                            disabled={(day) => {
-                              const dow = getDay(day);
-                              if (dow === 0 || dow === 6) return true;
-                              if (startOfDay(day) < startOfDay(addDays(new Date(), 3))) return true;
-                              const dateStr = format(day, 'yyyy-MM-dd');
-                              if (holidayDates.has(dateStr)) return true;
-                              return false;
-                            }}
-                            fromMonth={addDays(new Date(), 3)}
-                            className="rounded-xl"
-                          />
-                        </PopoverContent>
-                      </Popover>
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
-                        Time Slot
-                      </Label>
-                      <Select value={recommendedOcularSlot} onValueChange={setRecommendedOcularSlot}>
-                        <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:focus:ring-[#d6b36a]/20">
-                          <SelectValue placeholder="Select a slot" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {SLOT_CODES.map((slot) => {
-                            const hour = parseInt(slot.split(':')[0] ?? '0');
-                            const ampm = hour >= 12 ? 'PM' : 'AM';
-                            const displayHour = hour > 12 ? hour - 12 : hour === 0 ? 12 : hour;
-                            return (
-                              <SelectItem key={slot} value={slot}>
-                                {displayHour}:00 {ampm}
-                              </SelectItem>
-                            );
-                          })}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  </div>
-                </div>
               </CardContent>
             </Card>
           )}
-
-          {/* Sample Projects (Newly Added based on Reqs) */}
-          {report?.sampleProjects && report.sampleProjects.length > 0 && (
-            <Card className={editSectionClassName}>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
-                  <Briefcase className="h-5 w-5 text-gray-500 dark:text-slate-300" />
-                  Sample Projects for this Customer
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <div className="grid gap-4 sm:grid-cols-2">
-                  {report.sampleProjects.map((p) => (
-                    <div
-                      key={p.projectId}
-                      className="group flex items-center justify-between p-3 rounded-xl border border-gray-100 bg-gray-50/30 hover:bg-gray-50 transition-colors dark:border-white/10 dark:bg-white/[0.02] dark:hover:bg-white/[0.05]"
-                    >
-                      <div className="min-w-0">
-                        <p className="text-sm font-semibold text-gray-900 truncate dark:text-slate-100">
-                          {p.title}
-                        </p>
-                        <p className="text-[12px] text-gray-500 dark:text-slate-400 capitalize">
-                          {p.serviceType || 'Standard'} • {p.status?.replace(/_/g, ' ') || 'Draft'}
-                        </p>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 rounded-full hover:bg-white dark:hover:bg-slate-800"
-                        asChild
-                      >
-                        <Link to={p.path} target="_blank">
-                          <ExternalLink className="h-4 w-4 text-gray-400 group-hover:text-gray-900 dark:group-hover:text-slate-100" />
-                        </Link>
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
 
           {/* Sections 2-4: Only for ocular visits */}
           {visitType === 'ocular' && (<>
@@ -1497,7 +1464,7 @@ export function VisitReportPage() {
             <Button
               onClick={handleSave}
               disabled={updateMutation.isPending || initialDesignUploading}
-              className="rounded-xl [background-image:none] bg-gray-900 text-white hover:bg-gray-800 dark:border dark:border-white/12 dark:[background-image:none] dark:bg-[#223246] dark:text-slate-100 dark:hover:bg-[#2a3c52]"
+              className="rounded-xl [background-image:none] bg-[#223246] text-white hover:bg-[#31577a] dark:border dark:border-white/12 dark:[background-image:none] dark:bg-[#223246] dark:text-slate-100 dark:hover:bg-[#365f86]"
             >
               <Save className="mr-2 h-4 w-4" />
               Save Draft
@@ -1505,33 +1472,15 @@ export function VisitReportPage() {
             <Button
               onClick={() => setSubmitOpen(true)}
               disabled={submitMutation.isPending || initialDesignUploading || !!isSubmissionBlocked}
-              className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-700 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
+              className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
             >
-              <Send className="mr-2 h-4 w-4" />
-              Submit Visit Report
+              {effectiveVisitType === 'consultation'
+                ? <CalendarIcon className="mr-2 h-4 w-4" />
+                : <Send className="mr-2 h-4 w-4" />}
+              {effectiveVisitType === 'consultation' ? 'Schedule Ocular Visit' : 'Create Project'}
             </Button>
           </>
         )}
-
-        {visitType === 'consultation' && !linkedProjectId && (
-          <Button
-            onClick={() => setSubmitOpen(true)}
-            disabled={submitMutation.isPending}
-            className="rounded-xl [background-image:none] bg-blue-600 text-white hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-600"
-          >
-            <FolderOpen className="mr-2 h-4 w-4" />
-            Add Specification
-          </Button>
-        )}
-
-        <Button
-          onClick={() => window.open('https://rmvstainless.com/brochure', '_blank')}
-          variant="outline"
-          className="rounded-xl border-[#c8c8cd] text-[#1d1d1f] hover:bg-[#f0f0f5] dark:border-slate-600 dark:text-slate-100 dark:hover:bg-slate-800"
-        >
-          <ExternalLink className="mr-2 h-4 w-4" />
-          Brochure
-        </Button>
 
         {canReturn && (
           <Button
@@ -1587,17 +1536,92 @@ export function VisitReportPage() {
       <ConfirmDialog
         open={submitOpen}
         onOpenChange={setSubmitOpen}
-        title="Submit Visit Report"
+        title={effectiveVisitType === 'consultation' ? 'Schedule Ocular Visit' : 'Create Project'}
         description={
-          report?.visitType === 'ocular'
+          effectiveVisitType === 'ocular'
             ? 'This will update the existing project with the on-site measurements and details collected during the ocular visit. The initial design package will also be submitted to engineering for approval, and the appointment will be marked as completed. Are you sure?'
-            : 'This will create a draft project from the consultation and hand the workflow to ocular scheduling. Engineering starts only after the ocular visit is completed. Are you sure?'
+            : `Choose the ocular visit schedule. This will create the draft project, create the ocular appointment request, and mark this consultation as completed for ${appointmentItemsText}.`
         }
-        confirmLabel="Submit"
-        confirmClassName="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-700 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
-        isLoading={submitMutation.isPending}
+        confirmLabel={effectiveVisitType === 'consultation' ? 'Schedule' : 'Create Project'}
+        confirmClassName="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
+        isLoading={submitMutation.isPending || updateMutation.isPending}
+        confirmDisabled={effectiveVisitType === 'consultation' && (!recommendedOcularDate || !recommendedOcularSlot)}
         onConfirm={handleSubmit}
-      />
+      >
+        {effectiveVisitType === 'consultation' && (
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
+                Date
+              </Label>
+              <Popover open={ocularDateOpen && !isRecommendedOcularScheduleLocked} onOpenChange={(open) => {
+                if (!isRecommendedOcularScheduleLocked) setOcularDateOpen(open);
+              }}>
+                <PopoverTrigger asChild>
+                  <button
+                    type="button"
+                    disabled={isRecommendedOcularScheduleLocked}
+                    className={cn(
+                      'flex h-11 w-full items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 text-left text-sm text-gray-900 transition-colors hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-300 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:hover:bg-white/[0.08] dark:focus:ring-[#d6b36a]/20',
+                      !recommendedOcularDate && 'text-gray-400 dark:text-slate-500',
+                      isRecommendedOcularScheduleLocked && 'cursor-not-allowed opacity-70',
+                    )}
+                  >
+                    <CalendarIcon className="h-4 w-4 shrink-0 text-gray-400 dark:text-slate-500" />
+                    {recommendedOcularDate
+                      ? format(new Date(`${recommendedOcularDate}T00:00:00`), 'MMMM d, yyyy')
+                      : 'Pick a date'}
+                  </button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <CalendarUI
+                    mode="single"
+                    selected={recommendedOcularDate ? new Date(`${recommendedOcularDate}T00:00:00`) : undefined}
+                    onSelect={(day) => {
+                      if (day) {
+                        setRecommendedOcularDate(format(day, 'yyyy-MM-dd'));
+                        setOcularDateOpen(false);
+                      }
+                    }}
+                    disabled={(day) => {
+                      const dow = getDay(day);
+                      if (dow === 0 || dow === 6) return true;
+                      if (startOfDay(day) < startOfDay(addDays(new Date(), 3))) return true;
+                      const dateStr = format(day, 'yyyy-MM-dd');
+                      if (holidayDates.has(dateStr)) return true;
+                      return false;
+                    }}
+                    fromMonth={addDays(new Date(), 3)}
+                    className="rounded-xl"
+                  />
+                </PopoverContent>
+              </Popover>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
+                Time Slot
+              </Label>
+              <Select value={recommendedOcularSlot} onValueChange={setRecommendedOcularSlot} disabled={isRecommendedOcularScheduleLocked}>
+                <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:focus:ring-[#d6b36a]/20">
+                  <SelectValue placeholder="Select a slot" />
+                </SelectTrigger>
+                <SelectContent>
+                  {SLOT_CODES.map((slot) => (
+                    <SelectItem key={slot} value={slot}>
+                      {formatSlotTime(slot)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            {isRecommendedOcularScheduleLocked && (
+              <p className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+                Date and time were already set for this appointment's other item and cannot be changed here.
+              </p>
+            )}
+          </div>
+        )}
+      </ConfirmDialog>
 
       {/* ── Return Dialog ── */}
       <ConfirmDialog

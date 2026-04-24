@@ -1,6 +1,7 @@
-import { useState, useMemo } from 'react';
+import { Fragment, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -65,6 +66,12 @@ function serviceLabel(report: VisitReport): string {
   );
 }
 
+function updatedLabel(value: string): string {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return 'Updated recently';
+  return `Updated ${format(date, 'MMM d, h:mm a')} (${formatDistanceToNow(date, { addSuffix: true })})`;
+}
+
 /** Group structure for one appointment's worth of reports. */
 interface AppointmentGroup {
   appointmentId: string;
@@ -73,6 +80,12 @@ interface AppointmentGroup {
   visitType: string;
   status: string;
   latestUpdate: string;
+}
+
+interface ReportSection {
+  key: string;
+  label: string;
+  groups: AppointmentGroup[];
 }
 
 /* ── Constants ── */
@@ -146,8 +159,18 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
         status: groupStatus(reps),
         latestUpdate: first.updatedAt,
       };
-    });
+    }).sort((a, b) => new Date(b.latestUpdate).getTime() - new Date(a.latestUpdate).getTime());
   }, [reports]);
+
+  const sections: ReportSection[] = useMemo(() => {
+    const actionable = groups.filter((group) => group.status !== VisitReportStatus.COMPLETED);
+    const history = groups.filter((group) => group.status === VisitReportStatus.COMPLETED);
+
+    return [
+      { key: 'upcoming', label: 'Upcoming and Actionable', groups: actionable },
+      { key: 'recent', label: 'Recent and History', groups: history },
+    ].filter((section) => section.groups.length > 0);
+  }, [groups]);
 
   const isEngineer = user?.roles.includes(Role.ENGINEER);
   const pageTitle = isEngineer ? 'Visit Report Queue' : 'Visit Reports';
@@ -241,7 +264,14 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
         <>
           {/* ── Mobile list (< md) ── */}
           <div className="md:hidden space-y-2">
-            {groups.map((group) => {
+            {sections.map((section) => (
+              <div key={section.key} className="space-y-2">
+                <div className="px-1 pt-1">
+                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#8da4b8] dark:text-slate-400">
+                    {section.label}
+                  </p>
+                </div>
+            {section.groups.map((group) => {
               const { reports: reps, status, customerName: custName } = group;
               const firstReport = reps[0]!;
               const projectCount = reps.length;
@@ -277,8 +307,11 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                     <div className="flex items-center gap-1.5 mt-2 ml-[18px] text-xs text-[#86868b] dark:text-slate-400">
                       <span className="capitalize">{group.visitType === 'ocular' ? 'Ocular' : 'Consultation'}</span>
                       <span className="text-[#d2d2d7] dark:text-slate-500">·</span>
-                      <span>{projectCount} project{projectCount !== 1 ? 's' : ''}</span>
+                      <span>{projectCount} item{projectCount !== 1 ? 's' : ''}</span>
                     </div>
+                    <p className="mt-1 ml-[18px] text-[10px] font-medium italic text-[#8b95a0] dark:text-slate-500">
+                      {updatedLabel(group.latestUpdate)}
+                    </p>
 
                     {/* Row 3: Service type chips */}
                     <div className="flex flex-wrap gap-1 mt-2 ml-[18px]">
@@ -295,8 +328,10 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                 </Link>
               );
             })}
-            <div className="px-1 pt-1">
-              <p className="text-[11px] text-[#86868b] dark:text-slate-400">
+              </div>
+            ))}
+            <div className="rounded-xl border border-[#dde3ea] bg-white/55 px-4 py-3 dark:border-slate-700 dark:bg-[#101824]/70">
+              <p className="text-[11px] font-medium text-[#6e6e73] dark:text-slate-400">
                 {groups.length} report group{groups.length !== 1 ? 's' : ''}
               </p>
             </div>
@@ -309,14 +344,23 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                 <TableRow className="border-b border-[#e8e8ed] hover:bg-transparent">
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] pl-5">Customer</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Visit Type</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Projects</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Items</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Services</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {groups.map((group) => {
+                {sections.map((section) => (
+                  <Fragment key={section.key}>
+                    <TableRow key={`${section.key}-heading`} className="border-b border-[#e8e8ed] bg-[#f8fafc]/60 hover:bg-[#f8fafc]/60 dark:border-slate-700 dark:bg-slate-900/40 dark:hover:bg-slate-900/40">
+                      <TableCell colSpan={6} className="px-5 py-3">
+                        <span className="text-xs font-bold uppercase tracking-wider text-[#8da4b8] dark:text-slate-400">
+                          {section.label}
+                        </span>
+                      </TableCell>
+                    </TableRow>
+                {section.groups.map((group) => {
                   const { reports: reps, status, customerName: custName } = group;
                   const firstReport = reps[0]!;
                   const projectCount = reps.length;
@@ -333,9 +377,14 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                       <TableCell className="pl-5 py-5">
                         <div className="flex items-center gap-3 min-w-0">
                           <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${config.dot}`} />
-                          <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-[15px] truncate group-hover:text-[#0066cc] dark:group-hover:text-sky-300 transition-colors">
-                            {custName}
-                          </p>
+                          <div className="min-w-0">
+                            <p className="font-medium text-[#1d1d1f] dark:text-slate-100 text-[15px] truncate group-hover:text-[#0066cc] dark:group-hover:text-sky-300 transition-colors">
+                              {custName}
+                            </p>
+                            <p className="mt-1 text-[10px] font-medium italic text-[#8b95a0] dark:text-slate-500">
+                              {updatedLabel(group.latestUpdate)}
+                            </p>
+                          </div>
                         </div>
                       </TableCell>
 
@@ -353,7 +402,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                           {projectCount}
                         </span>
                         <span className="text-xs text-[#86868b] dark:text-slate-400 ml-1">
-                          project{projectCount !== 1 ? 's' : ''}
+                          item{projectCount !== 1 ? 's' : ''}
                         </span>
                       </TableCell>
 
@@ -387,10 +436,12 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                     </TableRow>
                   );
                 })}
+                  </Fragment>
+                ))}
               </TableBody>
             </Table>
-            <div className="border-t border-[#dde3ea] bg-white/20 px-5 py-3">
-              <p className="text-xs text-[#86868b]">
+            <div className="border-t border-[#dde3ea] bg-[#f8fafc]/65 px-5 py-3 dark:border-slate-700 dark:bg-[#101824]/80">
+              <p className="text-xs font-medium text-[#6e6e73] dark:text-slate-400">
                 {groups.length} report group{groups.length !== 1 ? 's' : ''}
               </p>
             </div>

@@ -60,6 +60,8 @@ export function useUpdateUser() {
       expiresAt?: string | null;
       availabilityStatus?: StaffAvailabilityStatus;
       availabilityNote?: string | null;
+      shiftStartAt?: string | null;
+      shiftEndAt?: string | null;
     }) => {
       const { data } = await api.patch<ApiResponse<User>>(`/users/admin/users/${id}`, body);
       return data.data;
@@ -165,7 +167,7 @@ export function useUpdateProfile() {
 }
 
 interface UpdateOwnAvailabilityPayload {
-  availabilityStatus: StaffAvailabilityStatus;
+  availabilityStatus?: StaffAvailabilityStatus;
   availabilityNote?: string | null;
   shiftStartAt?: string | null;
   shiftEndAt?: string | null;

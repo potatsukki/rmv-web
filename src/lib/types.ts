@@ -29,14 +29,14 @@ export interface User {
   activeShift?: {
     sessionId: string;
     shiftStartAt: string;
-    shiftEndAt: string;
+    shiftEndAt?: string;
     isCurrent: boolean;
     reminderSentAt?: string;
   };
   expiredShift?: {
     sessionId: string;
     shiftStartAt: string;
-    shiftEndAt: string;
+    shiftEndAt?: string;
     isCurrent: boolean;
     reminderSentAt?: string;
   };
@@ -236,6 +236,7 @@ export interface Project {
   projectNumber?: string;
   title: string;
   serviceType?: string;
+  serviceTypes?: string[];
   description?: string;
   siteAddress?: string;
   siteAddressStructured?: {
@@ -275,6 +276,7 @@ export interface Project {
   fabricationLeadId?: string | { _id: string; firstName: string; lastName: string };
   fabricationAssistantIds: (string | { _id: string; firstName: string; lastName: string })[];
   visitReportId?: string | VisitReport;
+  items?: ProjectItem[];
   mediaKeys: string[];
   contractKey?: string;
   contractGeneratedAt?: string;
@@ -296,10 +298,48 @@ export interface Project {
   updatedAt: string;
 }
 
+export interface ProjectItem {
+  _id: string;
+  projectId: string;
+  appointmentId: string;
+  consultationVisitReportId?: string | VisitReport;
+  ocularVisitReportId?: string | VisitReport;
+  serviceType: string;
+  serviceTypeCustom?: string;
+  title: string;
+  status: string;
+  measurements?: {
+    length?: number;
+    width?: number;
+    height?: number;
+    area?: number;
+    thickness?: number;
+    unit?: string;
+    raw?: string;
+  };
+  measurementUnit?: string;
+  lineItems?: LineItem[];
+  materials?: string;
+  finishes?: string;
+  preferredDesign?: string;
+  customerRequirements?: string;
+  notes?: string;
+  initialDesignKeys?: string[];
+  initialDesignNotes?: string;
+  designReviewStatus?: 'pending' | 'approved' | 'declined' | 'not_required';
+  designReviewedBy?: string | User;
+  designReviewedAt?: string;
+  designReviewNotes?: string;
+  mediaKeys?: string[];
+  createdAt: string;
+  updatedAt: string;
+}
+
 // ── Blueprint ──
 export interface Blueprint {
   _id: string;
   projectId: string;
+  projectItemId?: string;
   version: number;
   blueprintKey: string;
   designKey?: string;
@@ -347,6 +387,7 @@ export interface BlueprintDraftFile {
 export interface BlueprintDraft {
   _id: string;
   projectId: string;
+  projectItemId?: string;
   mode: 'initial' | 'revision';
   sourceBlueprintId?: string;
   files?: {
@@ -395,6 +436,7 @@ export interface PaymentStage {
 export interface PaymentPlan {
   _id: string;
   projectId: string;
+  projectItemId?: string;
   totalAmount: number;
   stages: PaymentStage[];
   isImmutable: boolean;
@@ -404,6 +446,7 @@ export interface PaymentPlan {
 export interface Payment {
   _id: string;
   projectId: string;
+  projectItemId?: string;
   stageId: string;
   method: string;
   amountPaid: number;
@@ -423,6 +466,7 @@ export interface Payment {
 export interface FabricationUpdate {
   _id: string;
   projectId: string;
+  projectItemId?: string;
   status: string;
   notes: string;
   photoKeys: string[];
@@ -533,6 +577,7 @@ export interface SiteConditions {
 export interface VisitReport {
   _id: string;
   appointmentId: string;
+  projectItemId?: string;
   customerId: string;
   customerName?: string;
   salesStaffId: string;

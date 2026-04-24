@@ -4,6 +4,7 @@ export type ThemePreference = 'light' | 'dark' | 'system';
 export type ResolvedTheme = 'light' | 'dark';
 
 const THEME_STORAGE_KEY = 'rmv_theme_preference';
+const BOOTSTRAP_THEME_KEY = 'rmv_theme_resolved';
 const GUEST_THEME_SCOPE = 'guest';
 const SYSTEM_THEME_QUERY = '(prefers-color-scheme: dark)';
 
@@ -54,13 +55,17 @@ export function applyThemePreference(theme: ThemePreference, scope: string = GUE
 
   if (typeof window !== 'undefined') {
     window.localStorage.setItem(getThemeStorageKey(scope), theme);
+    window.localStorage.setItem(BOOTSTRAP_THEME_KEY, resolvedTheme);
   }
 }
 
 export function bootstrapThemePreference() {
-  const stored = getStoredThemePreference(GUEST_THEME_SCOPE);
+  const storedResolvedTheme = getStoredBootstrapTheme();
+  const stored = storedResolvedTheme
+    ? (storedResolvedTheme as ThemePreference)
+    : getStoredThemePreference(GUEST_THEME_SCOPE);
   attachSystemThemeListener();
-  applyThemePreference(stored ?? 'light', GUEST_THEME_SCOPE);
+  applyThemePreference(stored ?? (getResolvedSystemTheme() === 'dark' ? 'dark' : 'light'), GUEST_THEME_SCOPE);
 }
 
 let systemThemeListenerAttached = false;
@@ -78,6 +83,13 @@ function attachSystemThemeListener() {
 
   mediaQuery.addEventListener('change', handleChange);
   systemThemeListenerAttached = true;
+}
+
+function getStoredBootstrapTheme(): ResolvedTheme | null {
+  if (typeof window === 'undefined') return null;
+
+  const stored = window.localStorage.getItem(BOOTSTRAP_THEME_KEY);
+  return stored === 'light' || stored === 'dark' ? stored : null;
 }
 
 interface ThemeStore {

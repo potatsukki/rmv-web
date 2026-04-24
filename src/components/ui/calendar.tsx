@@ -23,11 +23,11 @@ function Calendar({
         month: "flex flex-col gap-y-4",
         caption:
           "flex justify-center pt-1 relative items-center h-7",
-        caption_label: "text-sm font-medium text-gray-900",
+        caption_label: "text-sm font-semibold text-gray-900 dark:text-slate-100",
         nav: "flex items-center gap-x-1",
         nav_button: cn(
           buttonVariants({ variant: "outline" }),
-          "h-7 w-7 bg-transparent p-0 opacity-50 hover:opacity-100 border-gray-200"
+          "h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 border-gray-200 text-gray-700 hover:text-gray-950 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white"
         ),
         nav_button_previous: "absolute left-1",
         nav_button_next: "absolute right-1",

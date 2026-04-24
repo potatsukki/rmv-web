@@ -378,6 +378,7 @@ export default function App() {
 
               <Route element={<ProtectedRoute allowedRoles={ADMIN_ROLES} />}>
                 <Route path="/users" element={<UsersPage />} />
+                <Route path="/employees" element={<UsersPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin/reviews" element={<ReviewsPage />} />
               </Route>

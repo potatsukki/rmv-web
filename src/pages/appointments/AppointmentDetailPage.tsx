@@ -3,7 +3,7 @@ import { format } from 'date-fns';
 import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, AlertCircle } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage, extractLocalDateValue, cn } from '@/lib/utils';
+import { extractErrorMessage, cn } from '@/lib/utils';
 import { reverseGeocodeLocation, fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -21,9 +21,7 @@ import { PageError } from '@/components/shared/PageError';
 import {
   useAppointment,
   useConfirmAppointment,
-  useCompleteAppointment,
   useCancelAppointment,
-  useMarkNoShow,
   useUpdateVisitStatus,
   useAgentFinalizeOcular,
   useCustomerSubmitLocation,
@@ -58,9 +56,7 @@ export function AppointmentDetailPage() {
   const savedProfileFormattedAddress = user?.addressData?.formattedAddress || '';
 
   const confirmMutation = useConfirmAppointment();
-  const completeMutation = useCompleteAppointment();
   const cancelMutation = useCancelAppointment();
-  const noShowMutation = useMarkNoShow();
   const visitStatusMutation = useUpdateVisitStatus();
 
   const finalizeMutation = useAgentFinalizeOcular();
@@ -95,7 +91,7 @@ export function AppointmentDetailPage() {
     firstName: string; 
     lastName: string;
     availabilityStatus?: StaffAvailabilityStatus;
-    activeShift?: { shiftStartAt: string; shiftEndAt: string } | null;
+    activeShift?: { shiftStartAt: string; shiftEndAt?: string } | null;
     assignmentEligible?: boolean;
     assignmentBlockedReason?: string;
   }[]>([]);
@@ -171,7 +167,7 @@ export function AppointmentDetailPage() {
         firstName: string; 
         lastName: string;
         availabilityStatus?: StaffAvailabilityStatus;
-        activeShift?: { shiftStartAt: string; shiftEndAt: string } | null;
+        activeShift?: { shiftStartAt: string; shiftEndAt?: string } | null;
         assignmentEligible?: boolean;
         assignmentBlockedReason?: string;
       }[]>>(`/users/sales-staff?${params.toString()}`)
@@ -211,20 +207,6 @@ export function AppointmentDetailPage() {
     }
   };
 
-  const handleComplete = async () => {
-    try {
-      await completeMutation.mutateAsync(id!);
-      toast.success(
-        appt.type === 'ocular'
-          ? 'Appointment completed! Sales staff can now submit the ocular report to update the project for engineering review.'
-          : 'Appointment completed! Sales staff can now submit the consultation report to create the draft project and hand off to ocular scheduling.',
-        { duration: 5000 },
-      );
-    } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to complete'));
-    }
-  };
-
   const handleCancel = async () => {
     if (!cancelReason.trim()) {
       toast.error('Please provide a reason for cancellation');
@@ -240,15 +222,6 @@ export function AppointmentDetailPage() {
     }
   };
 
-  const handleNoShow = async () => {
-    try {
-      await noShowMutation.mutateAsync(id!);
-      toast.success('Marked as no-show');
-    } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to mark as no-show'));
-    }
-  };
-
   const formatSlotTime = (slot: string) => {
     const parts = slot.split(':').map(Number);
     const h = parts[0] ?? 0;
@@ -260,6 +233,27 @@ export function AppointmentDetailPage() {
 
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
+
+  const formatServiceTypeList = (
+    serviceTypes?: string[],
+    fallbackServiceType?: string,
+    serviceTypeCustom?: string,
+  ) => {
+    const normalized = (serviceTypes && serviceTypes.length > 0
+      ? serviceTypes
+      : fallbackServiceType
+        ? [fallbackServiceType]
+        : []
+    )
+      .map((serviceType) => (
+        serviceType === 'custom'
+          ? (serviceTypeCustom || 'Custom')
+          : (SERVICE_TYPE_LABELS[serviceType] || serviceType)
+      ))
+      .filter(Boolean);
+
+    return normalized.length > 0 ? normalized.join(', ') : '';
+  };
 
   const InfoRow = ({
     icon: Icon,
@@ -498,15 +492,11 @@ export function AppointmentDetailPage() {
               value={`${appt.type.charAt(0).toUpperCase() + appt.type.slice(1)} Visit`}
             />
 
-            {appt.serviceType && (
+            {formatServiceTypeList(appt.serviceTypes, appt.serviceType, appt.serviceTypeCustom) && (
               <InfoRow
                 icon={FileText}
                 label="Service Type"
-                value={
-                  appt.serviceType === 'custom'
-                    ? (appt.serviceTypeCustom || 'Custom')
-                    : (SERVICE_TYPE_LABELS[appt.serviceType] || appt.serviceType)
-                }
+                value={formatServiceTypeList(appt.serviceTypes, appt.serviceType, appt.serviceTypeCustom)}
               />
             )}
 
@@ -920,10 +910,20 @@ export function AppointmentDetailPage() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            {appt.customerSiteDetails.serviceType && (
+            {formatServiceTypeList(
+              appt.customerSiteDetails.serviceTypes,
+              appt.customerSiteDetails.serviceType,
+              appt.customerSiteDetails.serviceTypeCustom,
+            ) && (
               <div>
                 <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Service Type</p>
-                <p className="text-sm text-[#6e6e73] dark:text-slate-300">{SERVICE_TYPE_LABELS[appt.customerSiteDetails.serviceType] || appt.customerSiteDetails.serviceType}</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300">
+                  {formatServiceTypeList(
+                    appt.customerSiteDetails.serviceTypes,
+                    appt.customerSiteDetails.serviceType,
+                    appt.customerSiteDetails.serviceTypeCustom,
+                  )}
+                </p>
               </div>
             )}
 
@@ -1105,7 +1105,9 @@ export function AppointmentDetailPage() {
                             </span>
                             {s.activeShift && (
                               <span className="text-[11px] text-[#8e8e93] dark:text-slate-400">
-                                {format(new Date(s.activeShift.shiftStartAt), 'h:mm a')} - {format(new Date(s.activeShift.shiftEndAt), 'h:mm a')}
+                                {s.activeShift.shiftEndAt
+                                  ? `${format(new Date(s.activeShift.shiftStartAt), 'h:mm a')} - ${format(new Date(s.activeShift.shiftEndAt), 'h:mm a')}`
+                                  : `Timed in ${format(new Date(s.activeShift.shiftStartAt), 'h:mm a')}`}
                               </span>
                             )}
                           </div>
@@ -1227,23 +1229,6 @@ export function AppointmentDetailPage() {
                 {visitStatusMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'On The Way'}
               </Button>
             )}
-            {/* Office: CONFIRMED → Complete */}
-            {appt.type === 'office' && (
-              <Button
-                onClick={handleComplete}
-                disabled={completeMutation.isPending}
-                className="rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
-              >
-                {completeMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</> : 'Mark Complete'}
-              </Button>
-            )}
-            <Button
-              onClick={handleNoShow}
-              disabled={noShowMutation.isPending}
-              className="rounded-xl border border-[#cb8b86] [background-image:none] bg-[#fff5f4] text-[#8a4a47] shadow-none hover:bg-[#fdeceb] hover:text-[#7a403c] dark:border-[#7d4342] dark:[background-image:none] dark:bg-[#3a1f21] dark:text-[#ffd7d2] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:hover:bg-[#482628] dark:hover:text-[#ffe7e3]"
-            >
-              {noShowMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Mark No-Show'}
-            </Button>
           </>
         )}
 
@@ -1273,20 +1258,6 @@ export function AppointmentDetailPage() {
                 </Link>
               </Button>
             )}
-            <Button
-              onClick={handleComplete}
-              disabled={completeMutation.isPending}
-              className="rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667]"
-            >
-              {completeMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</> : 'Mark Complete'}
-            </Button>
-            <Button
-              onClick={handleNoShow}
-              disabled={noShowMutation.isPending}
-              className="rounded-xl border border-[#cb8b86] [background-image:none] bg-[#fff5f4] text-[#8a4a47] shadow-none hover:bg-[#fdeceb] hover:text-[#7a403c] dark:border-[#7d4342] dark:[background-image:none] dark:bg-[#3a1f21] dark:text-[#ffd7d2] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] dark:hover:bg-[#482628] dark:hover:text-[#ffe7e3]"
-            >
-              {noShowMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Mark No-Show'}
-            </Button>
           </>
         )}
 
@@ -1318,31 +1289,6 @@ export function AppointmentDetailPage() {
             )}
           </>
         )}
-
-        {/* Sales Staff: Schedule Ocular Visit (for completed office appointments) */}
-        {isSalesStaff && appt.status === AppointmentStatus.COMPLETED && appt.type === 'office' && (() => {
-          const consultationReport = visitReports?.find(r => r.visitType === 'consultation');
-          const recDate = extractLocalDateValue(consultationReport?.recommendedOcularDate);
-          const recSlot = consultationReport?.recommendedOcularSlot ?? '';
-          const params = new URLSearchParams({
-            ocularFor: appt.customerId,
-            appointmentId: appt._id,
-            ...(recDate && { recommendedDate: recDate }),
-            ...(recSlot && { recommendedSlot: recSlot }),
-          });
-          return (
-            <Button
-              asChild
-              variant="prominent"
-              className="rounded-xl"
-            >
-              <Link to={`/appointments/create-for-customer?${params.toString()}`}>
-                <MapPin className="mr-2 h-4 w-4" />
-                Schedule Ocular Visit
-              </Link>
-            </Button>
-          );
-        })()}
 
         {isAdmin &&
           [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(

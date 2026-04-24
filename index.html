@@ -35,6 +35,31 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
+    <script>
+      (function () {
+        try {
+          var root = document.documentElement;
+          var storedResolved = localStorage.getItem('rmv_theme_resolved');
+          var storedGuest = localStorage.getItem('rmv_theme_preference:guest');
+          var preference = storedResolved || storedGuest;
+          var resolved = preference === 'dark' || preference === 'light'
+            ? preference
+            : preference === 'system'
+              ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+              : null;
+
+          if (resolved) {
+            root.dataset.theme = resolved;
+            root.style.colorScheme = resolved;
+            if (resolved === 'dark') {
+              document.body.style.backgroundColor = '#090e13';
+            }
+          }
+        } catch (error) {
+          // Ignore storage or matchMedia failures and let React bootstrap theme normally.
+        }
+      })();
+    </script>
   </head>
   <body>
     <noscript>
@@ -42,17 +67,6 @@
       <a href="/terms">Terms of Service</a>
     </noscript>
     <div id="root"></div>
-    <script>
-      // Prevent white flash on dark auth pages before React mounts
-      (function(){
-        var p=location.pathname;
-        var auth=['/login','/register','/verify-otp','/verify-2fa','/forgot-password','/reset-password','/complete-profile'];
-        if(auth.indexOf(p)!==-1){
-          document.getElementById('root').style.backgroundColor='#05070a';
-          document.getElementById('root').style.minHeight='100vh';
-        }
-      })();
-    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

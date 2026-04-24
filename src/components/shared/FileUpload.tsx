@@ -53,7 +53,22 @@ function displayName(key: string): string {
   const raw = key.split('/').pop() || key;
   // UUID prefix pattern: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx-
   const m = raw.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}-(.+)$/i);
-  return m?.[1] ?? raw;
+  const stripped = m?.[1] ?? raw;
+  return stripped.replace(/(\.[a-z0-9]{2,5})(\1)+$/i, '$1');
+}
+
+function compactDisplayName(name: string, maxLength = 32): string {
+  if (name.length <= maxLength) return name;
+  const extIndex = name.lastIndexOf('.');
+  const extension = extIndex > 0 && extIndex > name.length - 10 ? name.slice(extIndex) : '';
+  const sliceLength = Math.max(12, maxLength - extension.length - 1);
+  const start = name.slice(0, Math.min(10, Math.ceil(sliceLength / 2)));
+  const end = name.slice(name.length - Math.min(8, Math.floor(sliceLength / 2)));
+  return `${start}…${end}${extension}`;
+}
+
+function formatFileLabel(fileName: string): string {
+  return compactDisplayName(displayName(fileName));
 }
 
 export function FileUpload({
@@ -271,8 +286,13 @@ export function FileUpload({
                   <FileIcon className="h-4 w-4 text-muted-foreground" />
                 </div>
               )}
-              <div className="flex-1 min-w-0 overflow-hidden">
-                <span className="block truncate text-xs text-foreground">{file.fileName}</span>
+                <div className="min-w-0 flex-1 max-w-[calc(100%-4.5rem)] overflow-hidden">
+                  <span 
+                    className="block truncate text-xs font-medium text-foreground" 
+                    title={file.fileName}
+                  >
+                  {formatFileLabel(file.fileName)}
+                  </span>
                 {url && (
                   <a
                     href={url}
@@ -408,10 +428,12 @@ export function FileUpload({
                   </div>
                 )}
 
-                {/* File name + open link */}
-                <div className="flex-1 min-w-0 overflow-hidden">
-                  <span className="block truncate text-xs text-foreground">
-                    {file.fileName}
+                <div className="min-w-0 flex-1 max-w-[calc(100%-4.5rem)] overflow-hidden">
+                  <span 
+                    className="block truncate text-xs font-medium text-foreground" 
+                    title={file.fileName}
+                  >
+                    {formatFileLabel(file.fileName)}
                   </span>
                   {!file.isUploading && url && (
                     <a

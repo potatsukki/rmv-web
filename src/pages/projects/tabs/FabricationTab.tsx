@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { Hammer, Plus, Clock, User, Paperclip, Lock, CreditCard, Pencil, Trash2, PackageCheck, CalendarCheck, Info } from 'lucide-react';
@@ -30,14 +30,16 @@ import {
   useDeleteFabricationUpdate,
   useFabricationStatus,
 } from '@/hooks/useFabrication';
-import { useConfirmInstallation } from '@/hooks/useProjects';
+import { useConfirmInstallation, useProject } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { connectSocket } from '@/lib/socket';
 import { FabricationStatus, Role } from '@/lib/constants';
+import type { ProjectItem } from '@/lib/types';
 
 interface FabricationTabProps {
   projectId: string;
+  projectItemId?: string;
   projectStatus: string;
   installationConfirmedAt?: string;
   canViewUpdates: boolean;
@@ -56,8 +58,94 @@ const FABRICATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
   { key: FabricationStatus.DONE, label: 'Done' },
 ];
 
+const formatFabricationStatus = (value?: string) =>
+  (value || FabricationStatus.QUEUED).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+function itemTitle(item: ProjectItem) {
+  return item.title || item.serviceTypeCustom || item.serviceType.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+}
+
+function statusFromProjectItem(item: ProjectItem) {
+  if (item.status === 'completed') return FabricationStatus.DONE;
+  if (item.status === 'fabrication') return FabricationStatus.MATERIAL_PREP;
+  return FabricationStatus.QUEUED;
+}
+
+function FabricationItemStatusCard({
+  projectId,
+  item,
+  index,
+  selected,
+  canViewUpdates,
+  onSelect,
+}: {
+  projectId: string;
+  item: ProjectItem;
+  index: number;
+  selected: boolean;
+  canViewUpdates: boolean;
+  onSelect: (itemId: string) => void;
+}) {
+  const { resolvedTheme } = useThemeStore();
+  const isDark = resolvedTheme === 'dark';
+  const { data, isLoading } = useFabricationStatus(projectId, canViewUpdates, item._id);
+  const currentStatus = data?.currentStatus || statusFromProjectItem(item);
+  const stepIndex = FABRICATION_STEP_MARKERS.findIndex((step) => step.key === currentStatus);
+  const progress = stepIndex >= 0 ? Math.round(((stepIndex + 1) / FABRICATION_STEP_MARKERS.length) * 100) : 0;
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(item._id)}
+      className={`w-full rounded-xl border p-4 text-left transition-all ${
+        selected
+          ? isDark
+            ? 'border-sky-400/50 bg-sky-500/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_34px_rgba(2,132,199,0.14)]'
+            : 'border-sky-300 bg-sky-50 shadow-sm'
+          : isDark
+            ? 'border-slate-800 bg-slate-950/55 hover:border-slate-600 hover:bg-slate-900/70'
+            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50'
+      }`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className={`truncate text-sm font-semibold ${isDark ? 'text-slate-50' : 'text-slate-950'}`}>
+            {itemTitle(item)}
+          </p>
+          <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+            Item {index + 1}
+          </p>
+        </div>
+        <span className={`shrink-0 rounded-full px-2 py-1 text-[11px] font-semibold ${
+          selected
+            ? isDark ? 'bg-sky-400/15 text-sky-100' : 'bg-sky-100 text-sky-800'
+            : isDark ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-700'
+        }`}>
+          {isLoading ? 'Loading' : formatFabricationStatus(currentStatus)}
+        </span>
+      </div>
+
+      <div className={`mt-4 h-2 overflow-hidden rounded-full ${isDark ? 'bg-slate-900' : 'bg-slate-100'}`}>
+        <div
+          className={`h-full rounded-full ${currentStatus === FabricationStatus.DONE ? 'bg-emerald-400' : 'bg-sky-400'}`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
+      <div className="mt-3 flex items-center justify-between gap-3">
+        <p className={`truncate text-xs ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+          {data?.latestUpdate?.notes || 'No workshop update yet'}
+        </p>
+        <span className={`text-xs font-medium ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>
+          {progress}%
+        </span>
+      </div>
+    </button>
+  );
+}
+
 export function FabricationTab({
   projectId,
+  projectItemId,
   projectStatus,
   installationConfirmedAt,
   canViewUpdates,
@@ -72,6 +160,7 @@ export function FabricationTab({
   const [notes, setNotes] = useState('');
   const [status, setStatus] = useState<string>(FabricationStatus.MATERIAL_PREP);
   const [photoKeys, setPhotoKeys] = useState<string[]>([]);
+  const [selectedItemId, setSelectedItemId] = useState(projectItemId || '');
 
   // Edit / delete state
   const [editingUpdate, setEditingUpdate] = useState<{
@@ -86,13 +175,28 @@ export function FabricationTab({
   const [editUploading, setEditUploading] = useState(false);
   const [blockedAction, setBlockedAction] = useState<BlockedActionInfo | null>(null);
 
+  const { data: project } = useProject(projectId);
+  const projectItems = useMemo(() => project?.items || [], [project?.items]);
+  const selectedFabricationItemId = useMemo(() => {
+    if (!projectItems.length) return projectItemId;
+    if (selectedItemId && projectItems.some((item) => item._id === selectedItemId)) return selectedItemId;
+    if (projectItemId && projectItems.some((item) => item._id === projectItemId)) return projectItemId;
+    return projectItems[0]?._id;
+  }, [projectItems, projectItemId, selectedItemId]);
+  const selectedItem = projectItems.find((item) => item._id === selectedFabricationItemId);
+  const selectedItemLabel = selectedItem ? itemTitle(selectedItem) : 'Project';
+
+  useEffect(() => {
+    if (projectItemId) setSelectedItemId(projectItemId);
+  }, [projectItemId]);
+
   const {
     data: updates,
     isLoading,
     isError,
     refetch,
-  } = useFabricationUpdates(projectId, canViewUpdates);
-  const { data: fabricationStatus } = useFabricationStatus(projectId, canViewUpdates);
+  } = useFabricationUpdates(projectId, canViewUpdates, selectedFabricationItemId);
+  const { data: fabricationStatus } = useFabricationStatus(projectId, canViewUpdates, selectedFabricationItemId);
 
   // ── Live updates via WebSocket ──
   useEffect(() => {
@@ -204,6 +308,7 @@ export function FabricationTab({
       setBlockedAction(null);
       await addUpdateMutation.mutateAsync({
         projectId,
+        projectItemId: selectedFabricationItemId,
         status,
         notes,
         photoKeys: photoKeys.length > 0 ? photoKeys : undefined,
@@ -274,6 +379,41 @@ export function FabricationTab({
           actionLabel={blockedAction.actionLabel}
           actionPath={blockedAction.actionPath}
         />
+      )}
+
+      {projectItems.length > 1 && (
+        <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-xl border-[color:var(--color-border)]/60 dark:border-slate-700`}>
+          <CardHeader className="pb-3">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <CardTitle className={`text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
+                  Fabrication Overview
+                </CardTitle>
+                <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>
+                  {projectItems.length} item workstreams under this project
+                </p>
+              </div>
+              <span className={`w-fit rounded-full border px-3 py-1 text-xs font-semibold ${isDark ? 'border-slate-700 bg-slate-900 text-slate-200' : 'border-slate-200 bg-slate-50 text-slate-700'}`}>
+                Viewing {selectedItemLabel}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+              {projectItems.map((item, index) => (
+                <FabricationItemStatusCard
+                  key={item._id}
+                  projectId={projectId}
+                  item={item}
+                  index={index}
+                  selected={item._id === selectedFabricationItemId}
+                  canViewUpdates={canViewUpdates}
+                  onSelect={setSelectedItemId}
+                />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {/* Customer Fabrication Guide Banner */}
@@ -446,7 +586,16 @@ export function FabricationTab({
       {/* Main Updates Card */}
       <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-xl border-[color:var(--color-border)]/60 dark:border-slate-700`}>
         <CardHeader className="flex flex-row items-center justify-between">
-          <CardTitle className={`text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Fabrication Updates</CardTitle>
+          <div>
+            <CardTitle className={`text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
+              {selectedItemLabel} Updates
+            </CardTitle>
+            {projectItems.length > 1 && (
+              <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>
+                Direct workshop notes, photos, and status changes for this item.
+              </p>
+            )}
+          </div>
           {canAddUpdate && !(allowedStatuses.includes(FabricationStatus.DONE) && !installationConfirmed && allowedStatuses.length === 1) && (
             <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
               <DialogTrigger asChild>

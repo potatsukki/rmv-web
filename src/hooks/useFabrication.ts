@@ -4,8 +4,8 @@ import type { ApiResponse, FabricationUpdate } from '@/lib/types';
 
 const KEYS = {
   all: ['fabrication'] as const,
-  byProject: (projectId: string) => [...KEYS.all, 'project', projectId] as const,
-  status: (projectId: string) => [...KEYS.all, 'status', projectId] as const,
+  byProject: (projectId: string, projectItemId?: string) => [...KEYS.all, 'project', projectId, projectItemId || 'legacy'] as const,
+  status: (projectId: string, projectItemId?: string) => [...KEYS.all, 'status', projectId, projectItemId || 'legacy'] as const,
   detail: (id: string) => [...KEYS.all, id] as const,
 };
 
@@ -18,6 +18,7 @@ interface UserRef {
 interface FabricationApiUpdate {
   _id: string;
   projectId: string;
+  projectItemId?: string;
   status: string;
   notes: string;
   photoKeys: string[];
@@ -36,6 +37,7 @@ function normalizeUpdate(update: FabricationApiUpdate): FabricationUpdate {
   return {
     _id: update._id,
     projectId: update.projectId,
+    projectItemId: update.projectItemId,
     status: update.status,
     notes: update.notes,
     photoKeys: update.photoKeys || [],
@@ -45,12 +47,13 @@ function normalizeUpdate(update: FabricationApiUpdate): FabricationUpdate {
   };
 }
 
-export function useFabricationUpdates(projectId: string, enabled = true) {
+export function useFabricationUpdates(projectId: string, enabled = true, projectItemId?: string) {
   return useQuery({
-    queryKey: KEYS.byProject(projectId),
+    queryKey: KEYS.byProject(projectId, projectItemId),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<FabricationApiUpdate[]>>(
         `/fabrication/project/${projectId}`,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
       return (data.data || []).map(normalizeUpdate);
     },
@@ -76,12 +79,13 @@ interface FabricationStatusResponse {
   };
 }
 
-export function useFabricationStatus(projectId: string, enabled = true) {
+export function useFabricationStatus(projectId: string, enabled = true, projectItemId?: string) {
   return useQuery({
-    queryKey: KEYS.status(projectId),
+    queryKey: KEYS.status(projectId, projectItemId),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<FabricationStatusResponse>>(
         `/fabrication/project/${projectId}/status`,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
 
       return {
@@ -113,6 +117,7 @@ export function useCreateFabricationUpdate() {
   return useMutation({
     mutationFn: async (body: {
       projectId: string;
+      projectItemId?: string;
       status: string;
       notes: string;
       photoKeys?: string[];
@@ -134,7 +139,7 @@ export function useUpdateFabricationUpdate(projectId: string) {
       return normalizeUpdate(data.data);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.byProject(projectId) });
+      qc.invalidateQueries({ queryKey: [...KEYS.all, 'project', projectId] });
     },
   });
 }
@@ -146,8 +151,8 @@ export function useDeleteFabricationUpdate(projectId: string) {
       await api.delete(`/fabrication/${id}`);
     },
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: KEYS.byProject(projectId) });
-      qc.invalidateQueries({ queryKey: KEYS.status(projectId) });
+      qc.invalidateQueries({ queryKey: [...KEYS.all, 'project', projectId] });
+      qc.invalidateQueries({ queryKey: [...KEYS.all, 'status', projectId] });
     },
   });
 }

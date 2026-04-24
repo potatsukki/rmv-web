@@ -4,7 +4,7 @@ import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Scr
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { extractErrorMessage, cn } from '@/lib/utils';
 import { resolveBlockedAction, type BlockedActionInfo } from '@/lib/blocked-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,14 +69,15 @@ export function PaymentsPage() {
   const { user } = useAuthStore();
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
+  const [selectedProjectItemId, setSelectedProjectItemId] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('payments');
 
 
   const { data: projects } = useProjects();
-  const { data: plan, isLoading: planLoading } = usePaymentPlan(selectedProjectId);
-  const { data: payments } = usePaymentsByProject(selectedProjectId);
+  const { data: plan, isLoading: planLoading } = usePaymentPlan(selectedProjectId, selectedProjectItemId);
+  const { data: payments } = usePaymentsByProject(selectedProjectId, selectedProjectItemId);
   const stageCheckout = useStageCheckout();
   const requestStageCash = useRequestStageCashPayment();
   const simulatePayment = useSimulateStagePayment();
@@ -162,6 +163,24 @@ export function PaymentsPage() {
       navigate(location.pathname + location.search, { replace: true, state: {} });
     }
   }, [selectedProjectId, location.state, navigate, location.pathname, location.search]);
+  
+  const selectedProject = projects?.items?.find(
+    (p) => String(p._id) === selectedProjectId,
+  );
+  const contractSigned = !!selectedProject?.contractSignedAt;
+
+  // Auto-select first item when a project is selected
+  useEffect(() => {
+    const items = selectedProject?.items;
+    if (selectedProjectId && items && items.length > 0) {
+      if (!selectedProjectItemId || !items.find(i => String(i._id) === selectedProjectItemId)) {
+        setSelectedProjectItemId(String(items[0]?._id || ''));
+      }
+    } else if (selectedProjectId) {
+      // Keep it empty for project-level plans
+      setSelectedProjectItemId('');
+    }
+  }, [selectedProjectId, selectedProject, selectedProjectItemId]);
 
   // Handle ?tab= query param for deep linking
   useEffect(() => {
@@ -213,10 +232,7 @@ export function PaymentsPage() {
     return [...new Set(projects.items.map((p) => String(p.status)))];
   }, [projects]);
 
-  const selectedProject = projects?.items?.find(
-    (p) => String(p._id) === selectedProjectId,
-  );
-  const contractSigned = !!selectedProject?.contractSignedAt;
+
 
   const handleQrCheckout = async (stageId: string) => {
     try {
@@ -607,7 +623,10 @@ export function PaymentsPage() {
               variant="ghost"
               size="sm"
               className="metal-pill h-8 px-2 text-[#616a74] dark:text-slate-300 hover:text-[#171b21] dark:hover:text-white rounded-lg shrink-0"
-              onClick={() => setSelectedProjectId('')}
+              onClick={() => {
+                setSelectedProjectId('');
+                setSelectedProjectItemId('');
+              }}
             >
               <ArrowLeft className="h-4 w-4" />
             </Button>
@@ -623,6 +642,31 @@ export function PaymentsPage() {
             </div>
             {selectedProject && <StatusBadge status={String(selectedProject.status)} />}
           </div>
+
+          {/* Item Selector (if multi-item) */}
+          {selectedProject?.items && selectedProject.items.length > 1 && (
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
+              {selectedProject.items.map((item) => (
+                <button
+                  key={String(item._id)}
+                  onClick={() => setSelectedProjectItemId(String(item._id))}
+                  className={cn(
+                    "whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
+                    selectedProjectItemId === String(item._id)
+                      ? "bg-[#171b21] text-white border-[#171b21] dark:bg-white dark:text-[#171b21] dark:border-white shadow-sm"
+                      : "bg-white text-[#616a74] border-[#e9ecef] hover:bg-[#f8f9fa] dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-800"
+                  )}
+                >
+                  <span className="flex items-center gap-1.5">
+                    {item.title}
+                    {item.status === 'payment_pending' && (
+                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                    )}
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {/* Detail content */}
           {planLoading ? (

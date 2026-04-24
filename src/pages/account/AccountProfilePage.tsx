@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarClock, Check, PenTool } from 'lucide-react';
+import { Check, Clock, Loader2, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 
@@ -17,10 +17,16 @@ import {
 } from '@/components/ui/card';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { useAuthStore } from '@/stores/auth.store';
-import { useUpdateProfile, useSignature, useSaveSignature, useDeleteSignature } from '@/hooks/useUsers';
+import {
+  useCloseOwnAvailability,
+  useUpdateOwnAvailability,
+  useUpdateProfile,
+  useSignature,
+  useSaveSignature,
+  useDeleteSignature,
+} from '@/hooks/useUsers';
 import { Role } from '@/lib/constants';
 import type { MapPoint } from '@/lib/maps';
-import { useAvailabilityDialogStore } from '@/stores/availability-dialog.store';
 
 const LocationPicker = lazy(() =>
   import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
@@ -66,15 +72,16 @@ const profileSchema = z.object({
   province: z.string().max(100).optional().or(z.literal('')),
   zip: z.string().max(10).optional().or(z.literal('')),
   country: z.string().max(50).optional().or(z.literal('')),
-  addressType: z.enum(['personal', 'business']),
+  addressType: z.literal('business'),
 });
 
 type ProfileFormData = z.infer<typeof profileSchema>;
 
 export function AccountProfilePage() {
   const { user } = useAuthStore();
-  const openAvailabilityDialog = useAvailabilityDialogStore((state) => state.openDialog);
   const updateProfile = useUpdateProfile();
+  const timeInMutation = useUpdateOwnAvailability();
+  const timeOutMutation = useCloseOwnAvailability();
   const { data: signatureData } = useSignature();
   const saveSignature = useSaveSignature();
   const deleteSignature = useDeleteSignature();
@@ -105,7 +112,7 @@ export function AccountProfilePage() {
       province: ad?.province || '',
       zip: ad?.zip || '',
       country: ad?.country || 'Philippines',
-      addressType: ad?.addressType || 'personal',
+      addressType: 'business',
     },
   });
 
@@ -181,10 +188,27 @@ export function AccountProfilePage() {
     ? user.availabilityStatus.replace(/_/g, ' ')
     : 'Setup required';
   const availabilityShiftLabel = user?.activeShift
-    ? `${new Date(user.activeShift.shiftStartAt).toLocaleString()} to ${new Date(user.activeShift.shiftEndAt).toLocaleString()}`
+    ? user.activeShift.shiftEndAt
+      ? `${new Date(user.activeShift.shiftStartAt).toLocaleString()} to ${new Date(user.activeShift.shiftEndAt).toLocaleString()}`
+      : `Timed in at ${new Date(user.activeShift.shiftStartAt).toLocaleString()}`
     : user?.expiredShift
-      ? `Previous shift ended ${new Date(user.expiredShift.shiftEndAt).toLocaleString()}`
+      ? user.expiredShift.shiftEndAt
+        ? `Previous shift ended ${new Date(user.expiredShift.shiftEndAt).toLocaleString()}`
+        : 'Previous time-in session closed'
       : 'No active shift window saved yet.';
+  const isTimedIn = Boolean(user?.activeShift);
+  const timeClockPending = timeInMutation.isPending || timeOutMutation.isPending;
+
+  const handleTimeClock = async () => {
+    if (timeClockPending) return;
+    if (isTimedIn) {
+      await timeOutMutation.mutateAsync();
+      toast.success('Timed out');
+      return;
+    }
+    await timeInMutation.mutateAsync({ availabilityNote: 'Timed in' });
+    toast.success('Timed in');
+  };
 
   return (
     <div className="space-y-6">
@@ -214,12 +238,22 @@ export function AccountProfilePage() {
           <div>
             <CardTitle className="text-lg font-semibold">Availability Session</CardTitle>
             <CardDescription className="text-[var(--text-metal-muted-color)]">
-              Manage the status and shift window used by the internal staffing workflow.
+              Time in and time out for attendance. Admins manage availability and shift schedules.
             </CardDescription>
           </div>
-          <Button type="button" variant="outline" className="rounded-xl" onClick={() => openAvailabilityDialog()}>
-            <CalendarClock className="mr-2 h-4 w-4" />
-            Manage Availability
+          <Button
+            type="button"
+            variant={isTimedIn ? 'outline' : 'default'}
+            className="rounded-xl"
+            disabled={timeClockPending}
+            onClick={handleTimeClock}
+          >
+            {timeClockPending ? (
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Clock className="mr-2 h-4 w-4" />
+            )}
+            {isTimedIn ? 'Time Out' : 'Time In'}
           </Button>
         </CardHeader>
         <CardContent className="grid gap-3 sm:grid-cols-2">
@@ -227,9 +261,7 @@ export function AccountProfilePage() {
             <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">Current status</p>
             <p className="mt-1 text-sm font-semibold capitalize text-[var(--color-card-foreground)]">{availabilityLabel}</p>
             <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">
-              {user?.availabilitySetupRequired
-                ? 'You still need to set or refresh your availability before the system can rely on it.'
-                : 'Your current availability summary is active.'}
+              Availability is managed by an admin.
             </p>
           </div>
           <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
@@ -329,32 +361,15 @@ export function AccountProfilePage() {
               </Suspense>
             </div>
 
-            {/* ── Address Type Selection ── */}
+            <input type="hidden" value="business" {...register('addressType')} />
+
+            {/* ── Address Type Summary ── */}
             <div className="pt-2 space-y-1.5">
               <Label className="text-[var(--color-card-foreground)] text-[13px] font-medium">
                 Address Category
               </Label>
-              <div className="flex gap-4 p-3 rounded-xl border border-[color:var(--color-border)]/50 bg-[color:var(--color-card)]/40">
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="radio"
-                    value="personal"
-                    {...register('addressType')}
-                    checked={watch('addressType') === 'personal'}
-                    className="w-4 h-4 accent-[var(--color-primary)] cursor-pointer"
-                  />
-                  <span className="text-sm font-medium text-[var(--color-card-foreground)] group-hover:text-[var(--color-primary)] transition-colors">Personal / House</span>
-                </label>
-                <label className="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="radio"
-                    value="business"
-                    {...register('addressType')}
-                    checked={watch('addressType') === 'business'}
-                    className="w-4 h-4 accent-[var(--color-primary)] cursor-pointer"
-                  />
-                  <span className="text-sm font-medium text-[var(--color-card-foreground)] group-hover:text-[var(--color-primary)] transition-colors">Business / Site</span>
-                </label>
+              <div className="rounded-xl border border-[color:var(--color-border)]/50 bg-[color:var(--color-card)]/40 p-3">
+                <span className="text-sm font-medium text-[var(--color-card-foreground)]">Business / Site</span>
               </div>
             </div>
 
@@ -362,7 +377,7 @@ export function AccountProfilePage() {
             <div className="pt-3 space-y-4">
               <div className="space-y-1.5">
                 <Label htmlFor="street" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
-                  Street Address <span className="text-[var(--text-metal-muted-color)] text-[11px]">(House No., Street Name, Subdivision)</span>
+                  Site Street Address
                 </Label>
                 <Input
                   id="street"

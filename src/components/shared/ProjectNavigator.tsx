@@ -93,7 +93,7 @@ function getLabel(report: VisitReport): string {
   return (
     report.serviceTypeCustom ||
     SERVICE_TYPE_LABELS[report.serviceType] ||
-    'Untitled Project'
+    'Untitled Item'
   );
 }
 
@@ -179,6 +179,7 @@ function InlineRename({
 interface ProjectNavigatorProps {
   appointmentId: string;
   activeReportId: string;
+  defaultVisitType?: string;
   canAdd?: boolean;
   canEdit?: boolean;
   onBeforeNavigate?: (nextReportId: string) => Promise<boolean>;
@@ -187,6 +188,7 @@ interface ProjectNavigatorProps {
 export function ProjectNavigator({
   appointmentId,
   activeReportId,
+  defaultVisitType,
   canAdd = false,
   canEdit = false,
   onBeforeNavigate,
@@ -210,27 +212,15 @@ export function ProjectNavigator({
     try {
       const newReport = await createMutation.mutateAsync({
         appointmentId,
+        visitType: defaultVisitType,
         serviceType: ServiceType.CUSTOM,
       });
-      toast.success('New project added — give it a name!');
+      toast.success('New item added — give it a name!');
       navigate(`/visit-reports/${newReport._id}`);
       // Auto-open rename for the new card after navigation
       setTimeout(() => setRenamingId(String(newReport._id)), 300);
-    } catch {
-      toast((t) => (
-        <div className="flex flex-col gap-1.5">
-          <p className="text-sm font-medium text-gray-900">
-            The appointment must be marked as complete first before adding projects.
-          </p>
-          <button
-            type="button"
-            onClick={() => { toast.dismiss(t.id); navigate(`/appointments/${appointmentId}`); }}
-            className="text-sm font-semibold text-blue-600 hover:text-blue-700 text-left"
-          >
-            Go to Appointment →
-          </button>
-        </div>
-      ), { duration: 6000, icon: '⚠️' });
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to add item'));
     } finally {
       setAdding(false);
     }
@@ -247,7 +237,7 @@ export function ProjectNavigator({
 
     try {
       await deleteMutation.mutateAsync(targetId);
-      toast.success('Project removed');
+      toast.success('Item removed');
       setDeleteTarget(null);
 
       if (String(activeReportId) === targetId) {
@@ -258,7 +248,7 @@ export function ProjectNavigator({
         }
       }
     } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to remove project'));
+      toast.error(extractErrorMessage(err, 'Failed to remove item'));
     }
   };
 
@@ -276,7 +266,7 @@ export function ProjectNavigator({
       {/* Header row */}
       <div className="flex items-center justify-between mb-3">
         <p className="text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-slate-500">
-          Projects ({reports.length})
+          Items ({reports.length})
         </p>
         {canAdd && (
           <button
@@ -294,7 +284,7 @@ export function ProjectNavigator({
             ) : (
               <Plus className="h-3.5 w-3.5" />
             )}
-            Add Project
+            Add Item
           </button>
         )}
       </div>
@@ -332,7 +322,7 @@ export function ProjectNavigator({
                 'group relative flex items-center gap-3 rounded-xl border text-left transition-all duration-200 snap-start shrink-0',
                 'min-w-[180px] max-w-[280px] sm:min-w-[200px] sm:max-w-[300px]',
                 'px-4 py-3 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#6e6e73]/30',
-                isActive && canEdit ? 'pb-10' : '',
+                canEdit ? 'pb-10' : '',
                 isActive
                   ? 'border-[#1d1d1f]/30 bg-gradient-to-br from-[#f0f0f5] to-white shadow-md ring-1 ring-[#c8c8cd]/60 dark:border-[#456182] dark:bg-[linear-gradient(135deg,rgba(28,42,64,1)_0%,rgba(18,28,43,1)_100%)] dark:ring-[#5b7699]/30'
                   : 'border-gray-200 bg-white hover:border-gray-300 hover:shadow-sm active:scale-[0.98] dark:border-white/[0.08] dark:bg-white/[0.03] dark:hover:border-[#39577a] dark:hover:bg-white/[0.05]',
@@ -387,7 +377,7 @@ export function ProjectNavigator({
               )}
 
               {/* Action buttons — bottom-right, only on active + editable */}
-              {isActive && canEdit && !isRenaming && (
+              {canEdit && !isRenaming && (
                 <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1">
                   <button
                     type="button"
@@ -396,7 +386,7 @@ export function ProjectNavigator({
                       setRenamingId(id);
                     }}
                     className="flex h-7 w-7 items-center justify-center rounded-lg bg-[#f0f0f5] text-[#1d1d1f] transition-colors hover:bg-[#e4e4e9] hover:text-[#1d1d1f] dark:bg-[#182437] dark:text-slate-200 dark:hover:bg-[#213148] dark:hover:text-white"
-                    aria-label="Rename project"
+                    aria-label="Rename item"
                   >
                     <Pencil className="h-3.5 w-3.5" />
                   </button>
@@ -408,7 +398,7 @@ export function ProjectNavigator({
                         setDeleteTarget(report);
                       }}
                       className="flex h-7 w-7 items-center justify-center rounded-lg bg-red-100 text-red-600 transition-colors hover:bg-red-200 hover:text-red-700 dark:bg-[#341c1d] dark:text-[#f4d0cb] dark:hover:bg-[#482628] dark:hover:text-[#ffe1dc]"
-                      aria-label="Delete project"
+                      aria-label="Delete item"
                     >
                       <Trash2 className="h-3.5 w-3.5" />
                     </button>
@@ -439,8 +429,8 @@ export function ProjectNavigator({
         onOpenChange={(open) => {
           if (!open) setDeleteTarget(null);
         }}
-        title="Delete Project"
-        description="This removes this project report from the appointment. This action cannot be undone."
+        title="Delete Item"
+        description="This removes this item from the appointment. This action cannot be undone."
         confirmLabel="Delete"
         variant="destructive"
         isLoading={deleteMutation.isPending}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -96,6 +97,8 @@ const userSchema = z.object({
   role: z.nativeEnum(Role),
   availabilityStatus: z.nativeEnum(StaffAvailabilityStatus).optional(),
   availabilityNote: z.string().max(240).optional().or(z.literal('')),
+  shiftStartAt: z.string().optional(),
+  shiftEndAt: z.string().optional(),
   password: z.string().optional(),
   employmentType: z.enum(['permanent', 'contract']),
   expiresAt: z.string().optional(),
@@ -113,7 +116,32 @@ const roleBadgeStyles: Record<string, string> = {
   [Role.ADMIN]: 'border-[#cb8b86] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)] text-[#87544f] dark:border-red-700/50 dark:bg-red-900/40 dark:text-red-200',
 };
 
+const INTERNAL_AVAILABILITY_ROLES = [
+  Role.APPOINTMENT_AGENT,
+  Role.SALES_STAFF,
+  Role.ENGINEER,
+  Role.CASHIER,
+  Role.ADMIN,
+  Role.FABRICATION_STAFF,
+] as Role[];
+
+function toLocalDateTimeInput(value?: string | Date | null) {
+  if (!value) return '';
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '';
+  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
+}
+
+function localDateTimeToIso(value?: string) {
+  if (!value) return undefined;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+}
+
 export function UsersPage() {
+  const location = useLocation();
+  const isEmployeeMonitoringPage = location.pathname === '/employees';
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -142,6 +170,10 @@ export function UsersPage() {
       phone: '',
       role: Role.APPOINTMENT_AGENT,
       password: '',
+      availabilityStatus: undefined,
+      availabilityNote: '',
+      shiftStartAt: '',
+      shiftEndAt: '',
       employmentType: 'permanent' as const,
       expiresAt: '',
     },
@@ -157,6 +189,10 @@ export function UsersPage() {
       phone: '',
       role: Role.APPOINTMENT_AGENT,
       password: '',
+      availabilityStatus: undefined,
+      availabilityNote: '',
+      shiftStartAt: '',
+      shiftEndAt: '',
       employmentType: 'permanent',
       expiresAt: '',
     });
@@ -173,6 +209,10 @@ export function UsersPage() {
       phone: user.phone || '',
       role: (user.roles[0] as Role) || Role.CUSTOMER,
       password: '',
+      availabilityStatus: user.availabilityStatus as StaffAvailabilityStatus | undefined,
+      availabilityNote: user.availabilityNote || '',
+      shiftStartAt: toLocalDateTimeInput(user.activeShift?.shiftStartAt || user.expiredShift?.shiftStartAt),
+      shiftEndAt: toLocalDateTimeInput(user.activeShift?.shiftEndAt || user.expiredShift?.shiftEndAt),
       employmentType: (user as any).expiresAt ? 'contract' : 'permanent',
       expiresAt: (user as any).expiresAt ? new Date((user as any).expiresAt).toISOString().split('T')[0] : '',
     });
@@ -182,6 +222,7 @@ export function UsersPage() {
   const onSubmit = async (data: UserFormData) => {
     try {
       if (editingUser) {
+        const managesAvailability = INTERNAL_AVAILABILITY_ROLES.includes(data.role) && Boolean(data.availabilityStatus);
         await updateUser.mutateAsync({
           id: editingUser._id,
           firstName: data.firstName,
@@ -189,6 +230,10 @@ export function UsersPage() {
           phone: data.phone || undefined,
           roles: [data.role],
           password: data.password?.trim() ? data.password.trim() : undefined,
+          availabilityStatus: managesAvailability ? data.availabilityStatus : undefined,
+          availabilityNote: managesAvailability ? data.availabilityNote || null : undefined,
+          shiftStartAt: managesAvailability ? localDateTimeToIso(data.shiftStartAt) : undefined,
+          shiftEndAt: managesAvailability ? localDateTimeToIso(data.shiftEndAt) : undefined,
           expiresAt: data.employmentType === 'contract' && data.expiresAt
             ? new Date(data.expiresAt).toISOString()
             : data.employmentType === 'permanent' ? null : undefined,
@@ -248,14 +293,7 @@ export function UsersPage() {
       .replace(/\b\w/g, (l) => l.toUpperCase());
 
   const isInternalAvailabilityUser = (user: User) =>
-    user.roles.some((role) => [
-      Role.APPOINTMENT_AGENT,
-      Role.SALES_STAFF,
-      Role.ENGINEER,
-      Role.CASHIER,
-      Role.ADMIN,
-      Role.FABRICATION_STAFF,
-    ].includes(role as Role));
+    user.roles.some((role) => INTERNAL_AVAILABILITY_ROLES.includes(role as Role));
 
   const availabilitySummaryLabel = (user: User) => {
     if (!isInternalAvailabilityUser(user)) return 'Not applicable';
@@ -267,15 +305,24 @@ export function UsersPage() {
 
   const availabilityShiftLabel = (user: User) => {
     if (user.activeShift) {
-      return `${new Date(user.activeShift.shiftStartAt).toLocaleString()} to ${new Date(user.activeShift.shiftEndAt).toLocaleString()}`;
+      return user.activeShift.shiftEndAt
+        ? `${new Date(user.activeShift.shiftStartAt).toLocaleString()} to ${new Date(user.activeShift.shiftEndAt).toLocaleString()}`
+        : `Timed in at ${new Date(user.activeShift.shiftStartAt).toLocaleString()}`;
     }
     if (user.expiredShift) {
-      return `Ended ${new Date(user.expiredShift.shiftEndAt).toLocaleString()}`;
+      return user.expiredShift.shiftEndAt
+        ? `Ended ${new Date(user.expiredShift.shiftEndAt).toLocaleString()}`
+        : 'Previous time-in session closed';
     }
     return user.availabilityNote || 'No shift details';
   };
 
-  const userList = extractItems<User>(users);
+  const userList = extractItems<User>(users).filter((u) => (
+    isEmployeeMonitoringPage ? isInternalAvailabilityUser(u) : true
+  ));
+  const selectedRole = form.watch('role');
+  const canEditAvailability = Boolean(editingUser && INTERNAL_AVAILABILITY_ROLES.includes(selectedRole));
+  const selectedAvailability = form.watch('availabilityStatus');
 
   if (error) return <PageError message="Failed to load users" onRetry={refetch} />;
 
@@ -286,9 +333,13 @@ export function UsersPage() {
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-[#171b21] dark:text-slate-100">User Management</h1>
+          <h1 className="text-2xl font-bold tracking-tight text-[#171b21] dark:text-slate-100">
+            {isEmployeeMonitoringPage ? 'Employee Monitoring' : 'User Management'}
+          </h1>
           <p className="mt-1 text-sm text-[#616a74] dark:text-slate-400">
-            Manage system access and employee roles.
+            {isEmployeeMonitoringPage
+              ? 'Monitor employees and update admin-controlled availability.'
+              : 'Manage system access and employee roles.'}
           </p>
         </div>
         <Button
@@ -304,11 +355,11 @@ export function UsersPage() {
       {/* Toolbar */}
       <CollectionToolbar
         title="Find the right account fast"
-        description="Search account records and narrow by role before making access changes."
+        description={isEmployeeMonitoringPage ? 'Search staff records and narrow by role before updating availability.' : 'Search account records and narrow by role before making access changes.'}
         searchPlaceholder="Search users"
         searchValue={search}
         onSearchChange={setSearch}
-        filters={[{ value: 'all', label: 'All' }, ...ROLES]}
+        filters={[{ value: 'all', label: 'All' }, ...ROLES.filter((role) => !isEmployeeMonitoringPage || role.value !== Role.CUSTOMER)]}
         activeFilter={roleFilter}
         onFilterChange={setRoleFilter}
       />
@@ -680,6 +731,57 @@ export function UsersPage() {
                 </SelectContent>
               </Select>
             </div>
+
+            {canEditAvailability && (
+              <div className="space-y-3 rounded-xl border border-gray-200 bg-gray-50/70 p-3 dark:border-slate-700 dark:bg-slate-900/50">
+                <div>
+                  <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Employee Availability</p>
+                  <p className="mt-0.5 text-xs text-gray-500 dark:text-slate-400">Only admins can change this status.</p>
+                </div>
+                <div className="space-y-1.5">
+                  <Label className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
+                    Availability Status
+                  </Label>
+                  <Select
+                    value={form.watch('availabilityStatus') || ''}
+                    onValueChange={(v) => form.setValue('availabilityStatus', v as StaffAvailabilityStatus)}
+                  >
+                    <SelectTrigger className="h-11 rounded-xl border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm dark:text-slate-100">
+                      <SelectValue placeholder="Select status" />
+                    </SelectTrigger>
+                    <SelectContent className="rounded-xl bg-white dark:bg-slate-900 shadow-lg border border-[#e8e8ed] dark:border-slate-700 dark:text-slate-100">
+                      <SelectItem value={StaffAvailabilityStatus.AVAILABLE}>Available</SelectItem>
+                      <SelectItem value={StaffAvailabilityStatus.UNAVAILABLE}>Unavailable</SelectItem>
+                      <SelectItem value={StaffAvailabilityStatus.ON_LEAVE}>On Leave</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {selectedAvailability === StaffAvailabilityStatus.AVAILABLE && (
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    <div className="space-y-1.5">
+                      <Label htmlFor="shiftStartAt" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
+                        Shift Start
+                      </Label>
+                      <Input id="shiftStartAt" type="datetime-local" {...form.register('shiftStartAt')} className={inputClasses} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label htmlFor="shiftEndAt" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
+                        Shift End
+                      </Label>
+                      <Input id="shiftEndAt" type="datetime-local" {...form.register('shiftEndAt')} className={inputClasses} />
+                    </div>
+                  </div>
+                )}
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="availabilityNote" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
+                    Note
+                  </Label>
+                  <Input id="availabilityNote" {...form.register('availabilityNote')} className={inputClasses} placeholder="Optional availability note" />
+                </div>
+              </div>
+            )}
 
             {/* Employment Type Toggle */}
             <div className="space-y-1.5">

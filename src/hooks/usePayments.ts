@@ -23,20 +23,21 @@ export interface PaymentHistoryItem {
 const KEYS = {
   all: ['payments'] as const,
   plans: ['payment-plans'] as const,
-  planByProject: (projectId: string) => [...KEYS.plans, projectId] as const,
-  byProject: (projectId: string) => [...KEYS.all, 'project', projectId] as const,
+  planByProject: (projectId: string, projectItemId?: string) => [...KEYS.plans, projectId, projectItemId || 'legacy'] as const,
+  byProject: (projectId: string, projectItemId?: string) => [...KEYS.all, 'project', projectId, projectItemId || 'legacy'] as const,
   pending: ['payments', 'pending'] as const,
   overdue: ['payments', 'overdue'] as const,
   detail: (id: string) => [...KEYS.all, id] as const,
   myHistory: ['payments', 'my-history'] as const,
 };
 
-export function usePaymentPlan(projectId: string) {
+export function usePaymentPlan(projectId: string, projectItemId?: string) {
   return useQuery({
-    queryKey: KEYS.planByProject(projectId),
+    queryKey: KEYS.planByProject(projectId, projectItemId),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<PaymentPlan>>(
         `/payments/plan/${projectId}`,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
       return data.data;
     },
@@ -45,12 +46,13 @@ export function usePaymentPlan(projectId: string) {
   });
 }
 
-export function usePaymentsByProject(projectId: string) {
+export function usePaymentsByProject(projectId: string, projectItemId?: string) {
   return useQuery({
-    queryKey: KEYS.byProject(projectId),
+    queryKey: KEYS.byProject(projectId, projectItemId),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<Payment[]>>(
         `/payments/project/${projectId}`,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
       return extractItems<Payment>(data.data);
     },
@@ -86,6 +88,7 @@ export function useCreatePaymentPlan() {
   return useMutation({
     mutationFn: async (body: {
       projectId: string;
+      projectItemId?: string;
       stages: { label: string; percentage: number }[];
     }) => {
       const { data } = await api.post<ApiResponse<PaymentPlan>>('/payments/plans', body);

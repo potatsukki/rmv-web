@@ -9,18 +9,19 @@ import type {
 
 const KEYS = {
   all: ['blueprints'] as const,
-  byProject: (projectId: string) => [...KEYS.all, 'project', projectId] as const,
-  latest: (projectId: string) => [...KEYS.all, 'latest', projectId] as const,
+  byProject: (projectId: string, projectItemId?: string) => [...KEYS.all, 'project', projectId, projectItemId || 'legacy'] as const,
+  latest: (projectId: string, projectItemId?: string) => [...KEYS.all, 'latest', projectId, projectItemId || 'legacy'] as const,
   detail: (id: string) => [...KEYS.all, id] as const,
-  draft: (projectId: string) => [...KEYS.all, 'draft', projectId] as const,
+  draft: (projectId: string, projectItemId?: string) => [...KEYS.all, 'draft', projectId, projectItemId || 'legacy'] as const,
 };
 
-export function useBlueprintsByProject(projectId: string) {
+export function useBlueprintsByProject(projectId: string, projectItemId?: string) {
   return useQuery({
-    queryKey: KEYS.byProject(projectId),
+    queryKey: KEYS.byProject(projectId, projectItemId),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<Blueprint[]>>(
         `/blueprints/project/${projectId}`,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
       return data.data;
     },
@@ -28,12 +29,13 @@ export function useBlueprintsByProject(projectId: string) {
   });
 }
 
-export function useLatestBlueprint(projectId: string) {
+export function useLatestBlueprint(projectId: string, projectItemId?: string) {
   return useQuery({
-    queryKey: KEYS.latest(projectId),
+    queryKey: KEYS.latest(projectId, projectItemId),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<Blueprint>>(
         `/blueprints/project/${projectId}/latest`,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
       return data.data;
     },
@@ -52,12 +54,13 @@ export function useBlueprint(id: string) {
   });
 }
 
-export function useBlueprintDraft(projectId: string, options?: { enabled?: boolean }) {
+export function useBlueprintDraft(projectId: string, options?: { enabled?: boolean }, projectItemId?: string) {
   return useQuery({
-    queryKey: KEYS.draft(projectId),
+    queryKey: KEYS.draft(projectId, projectItemId),
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<BlueprintDraft | null>>(
         `/blueprints/project/${projectId}/draft`,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
       return data.data;
     },
@@ -70,6 +73,7 @@ export function useUploadBlueprint() {
   return useMutation({
     mutationFn: async (body: {
       projectId: string;
+      projectItemId?: string;
       blueprintKey: string;
       designKey: string;
       costingKey: string;
@@ -110,6 +114,7 @@ export function useUpsertBlueprintDraft() {
       ...body
     }: {
       projectId: string;
+      projectItemId?: string;
       mode: 'initial' | 'revision';
       sourceBlueprintId?: string;
       files?: {
@@ -126,7 +131,7 @@ export function useUpsertBlueprintDraft() {
       return data.data;
     },
     onSuccess: (draft) => {
-      qc.setQueryData(KEYS.draft(draft.projectId), draft);
+      qc.setQueryData(KEYS.draft(draft.projectId, draft.projectItemId), draft);
     },
   });
 }
@@ -135,15 +140,19 @@ export function useFinalizeBlueprintDraft() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (projectId: string) => {
+    mutationFn: async (input: string | { projectId: string; projectItemId?: string }) => {
+      const projectId = typeof input === 'string' ? input : input.projectId;
+      const projectItemId = typeof input === 'string' ? undefined : input.projectItemId;
       const { data } = await api.post<ApiResponse<Blueprint>>(
         `/blueprints/project/${projectId}/draft/finalize`,
+        undefined,
+        { params: projectItemId ? { projectItemId } : undefined },
       );
       return data.data;
     },
     onSuccess: (blueprint) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
-      qc.setQueryData(KEYS.draft(blueprint.projectId), null);
+      qc.setQueryData(KEYS.draft(blueprint.projectId, blueprint.projectItemId), null);
     },
   });
 }
@@ -152,12 +161,16 @@ export function useDeleteBlueprintDraft() {
   const qc = useQueryClient();
 
   return useMutation({
-    mutationFn: async (projectId: string) => {
-      await api.delete(`/blueprints/project/${projectId}/draft`);
-      return projectId;
+    mutationFn: async (input: string | { projectId: string; projectItemId?: string }) => {
+      const projectId = typeof input === 'string' ? input : input.projectId;
+      const projectItemId = typeof input === 'string' ? undefined : input.projectItemId;
+      await api.delete(`/blueprints/project/${projectId}/draft`, {
+        params: projectItemId ? { projectItemId } : undefined,
+      });
+      return { projectId, projectItemId };
     },
-    onSuccess: (projectId) => {
-      qc.setQueryData(KEYS.draft(projectId), null);
+    onSuccess: ({ projectId, projectItemId }) => {
+      qc.setQueryData(KEYS.draft(projectId, projectItemId), null);
     },
   });
 }

@@ -19,7 +19,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
-import { ProjectStatus, BlueprintStatus, Role } from '@/lib/constants';
+import { ProjectStatus, BlueprintStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
 
 const STATUS_FILTERS = [
@@ -54,6 +54,23 @@ function statusConfig(status: string) {
 
 function statusLabel(status: string) {
   return String(status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function serviceTypeLabel(value?: string) {
+  if (!value) return '';
+  return SERVICE_TYPE_LABELS[value as keyof typeof SERVICE_TYPE_LABELS]
+    || value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function projectServiceLabel(project: any) {
+  const serviceTypes = Array.isArray(project.serviceTypes) && project.serviceTypes.length
+    ? project.serviceTypes
+    : String(project.serviceType || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+  return serviceTypes.map(serviceTypeLabel).join(', ') || String(project.title || '');
 }
 
 /** Derive the display status: if project is in blueprint phase and the latest
@@ -249,6 +266,9 @@ export function ProjectsPage() {
                       : null;
 
                   return (
+                    (() => {
+                      const serviceLabel = projectServiceLabel(project);
+                      return (
                     <TableRow
                       key={String(project._id)}
                       className="group cursor-pointer border-b border-[color:var(--color-border)] transition-colors hover:bg-[color:var(--color-muted)]/70"
@@ -260,7 +280,7 @@ export function ProjectsPage() {
                           <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${cfg.bar}`} />
                           <div className="min-w-0">
                             <p className="max-w-[260px] truncate text-[15px] font-medium text-[var(--color-card-foreground)] transition-colors group-hover:text-[var(--text-metal-color)]">
-                              {String(project.serviceType || project.title || '')}
+                              {serviceLabel}
                             </p>
                             {project.projectNumber && (
                               <p className="text-[10px] font-bold text-[var(--text-metal-color)] tracking-tight">
@@ -331,6 +351,8 @@ export function ProjectsPage() {
                         </Link>
                       </TableCell>
                     </TableRow>
+                      );
+                    })()
                   );
                 })}
                   </Fragment>
@@ -361,6 +383,9 @@ export function ProjectsPage() {
                   : null;
 
               return (
+                (() => {
+                  const serviceLabel = projectServiceLabel(project);
+                  return (
                 <Link
                   key={String(project._id)}
                   to={`/projects/${project._id}`}
@@ -370,7 +395,7 @@ export function ProjectsPage() {
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`h-2 w-2 rounded-full shrink-0 ${cfg.bar}`} />
                       <p className="truncate text-[15px] font-semibold text-[var(--color-card-foreground)]">
-                        {String(project.title || '')}
+                        {serviceLabel}
                       </p>
                       {project.projectNumber && (
                         <span className="text-[10px] font-bold text-[var(--text-metal-color)] tracking-tight bg-[color:var(--color-muted)] px-1 rounded">
@@ -385,7 +410,7 @@ export function ProjectsPage() {
 
                   {project.serviceType && (
                     <span className="metal-pill mt-1 ml-4 inline-block rounded-full px-1.5 py-0.5 text-[11px] text-[var(--text-metal-color)]">
-                      {String(project.serviceType)}
+                      {serviceLabel}
                     </span>
                   )}
 
@@ -404,6 +429,8 @@ export function ProjectsPage() {
                     )}
                   </div>
                 </Link>
+                  );
+                })()
               );
             })}
               </div>

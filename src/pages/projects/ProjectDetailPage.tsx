@@ -6,7 +6,8 @@ import {
   Download, Loader2, Phone, UserPlus, Upload, Camera, Video,
   PenTool, ChevronDown, ChevronUp, Users, Eye, Check, X, ExternalLink,
   Info, CheckCircle2, AlertTriangle,
-  RotateCcw,
+  RotateCcw, Fence, Grid3x3, DoorOpen, Armchair, ChefHat, Utensils,
+  BookOpen, Frame, Umbrella, ArrowUpFromLine, Wrench, Layers, DoorClosed,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -50,10 +51,10 @@ import { useUsers, useSignature } from '@/hooks/useUsers';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
-import { Role, StaffAvailabilityStatus, ProjectStatus } from '@/lib/constants';
+import { Role, StaffAvailabilityStatus, ProjectStatus, ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
 import { cn, extractErrorMessage } from '@/lib/utils';
-import type { ApiResponse, VisitReport } from '@/lib/types';
+import type { ApiResponse, ProjectItem, VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
 import { SignaturePad } from '@/components/shared/SignaturePad';
 
@@ -66,10 +67,31 @@ const LazyFabricationTab = lazy(() =>
 );
 
 // ── Types ──
-type TabKey = 'details' | 'blueprint' | 'payments' | 'fabrication';
+type TabKey = 'details' | 'design_review' | 'contract' | 'blueprint' | 'payments' | 'fabrication';
+
+const SERVICE_ICONS: Record<string, React.ElementType> = {
+  [ServiceType.RAILINGS]: Fence,
+  [ServiceType.GRILLS]: Grid3x3,
+  [ServiceType.GATES]: DoorOpen,
+  [ServiceType.FENCES]: Fence,
+  [ServiceType.KITCHEN_COUNTER]: Utensils,
+  [ServiceType.KITCHEN_CABINET]: ChefHat,
+  [ServiceType.TABLE]: BookOpen,
+  [ServiceType.CHAIR]: Armchair,
+  [ServiceType.SHELVING]: Layers,
+  [ServiceType.DOOR]: DoorClosed,
+  [ServiceType.WINDOW_FRAME]: Frame,
+  [ServiceType.CANOPY]: Umbrella,
+  [ServiceType.STAIRCASE]: ArrowUpFromLine,
+  [ServiceType.BALUSTRADE]: Fence,
+  [ServiceType.SIGNAGE]: PenTool,
+  [ServiceType.CUSTOM]: Wrench,
+};
 
 const ALL_TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'details', label: 'Details', icon: FileText },
+  { key: 'design_review', label: 'Design Review', icon: PenTool },
+  { key: 'contract', label: 'Contract', icon: ScrollText },
   { key: 'blueprint', label: 'Blueprint', icon: Image },
   { key: 'payments', label: 'Payments', icon: CreditCard },
   { key: 'fabrication', label: 'Fabrication', icon: Hammer },
@@ -98,6 +120,225 @@ const getFileExtension = (fileKey: string) => {
 };
 
 const isImageFileKey = (fileKey: string) => IMAGE_FILE_EXTENSIONS.has(getFileExtension(fileKey));
+
+function formatServiceTypeLabel(serviceType?: string) {
+  if (!serviceType) return '';
+  return SERVICE_TYPE_LABELS[serviceType as keyof typeof SERVICE_TYPE_LABELS]
+    || serviceType.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+function getDisplayItemStatus(projectStatus?: string, itemStatus?: string) {
+  if (
+    projectStatus === ProjectStatus.BLUEPRINT
+    && [ProjectStatus.DRAFT, ProjectStatus.SUBMITTED].includes(itemStatus as ProjectStatus)
+  ) {
+    return ProjectStatus.BLUEPRINT;
+  }
+
+  return itemStatus || projectStatus || 'draft';
+}
+
+function getProjectServiceItems(project?: { items?: ProjectItem[]; serviceTypes?: string[]; serviceType?: string; status?: string }) {
+  if (!project) return [];
+
+  if (project.items?.length) {
+    return project.items.map((item) => ({
+      id: item._id,
+      serviceType: item.serviceType,
+      label: item.title || formatServiceTypeLabel(item.serviceType),
+      status: getDisplayItemStatus(project.status, item.status),
+      Icon: SERVICE_ICONS[item.serviceType] || Wrench,
+      item,
+    }));
+  }
+
+  const rawItems = project.serviceTypes?.length
+    ? project.serviceTypes
+    : String(project.serviceType || '')
+      .split(',')
+      .map((value) => value.trim())
+      .filter(Boolean);
+
+  return [...new Set(rawItems)].map((serviceType) => ({
+    id: serviceType,
+    serviceType,
+    label: formatServiceTypeLabel(serviceType),
+    status: project.status || 'draft',
+    Icon: SERVICE_ICONS[serviceType] || Wrench,
+  }));
+}
+
+function ProjectItemsStrip({
+  items,
+  isDark,
+  activeItemId,
+  onSelect,
+}: {
+  items: Array<{ id: string; serviceType: string; label: string; status: string; Icon: React.ElementType }>;
+  isDark: boolean;
+  activeItemId: string;
+  onSelect: (itemId: string) => void;
+}) {
+  if (items.length <= 1) return null;
+
+  return (
+    <div className={cn(
+      'w-full rounded-2xl border border-[color:var(--color-border)]/60 p-4 shadow-sm sm:p-5',
+      isDark
+        ? 'bg-slate-950/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.18)]'
+        : 'bg-white shadow-[0_12px_28px_rgba(15,23,42,0.06)]',
+    )}>
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-metal-muted-color)] dark:text-slate-400">
+            Items ({items.length})
+          </p>
+          <p className="mt-1 text-xs text-[var(--text-metal-color)] dark:text-slate-300">
+            Select an item to view its blueprint, payments, fabrication, and details.
+          </p>
+        </div>
+      </div>
+      <div className="flex gap-3 overflow-x-auto overflow-y-visible pb-1">
+        {items.map(({ label, Icon }, index) => {
+          const item = items[index]!;
+          const isActive = item.id === activeItemId;
+
+          return (
+          <button
+            type="button"
+            key={`${item.id}-${index}`}
+            onClick={() => onSelect(item.id)}
+            className={cn(
+              'relative flex min-w-[210px] max-w-[300px] shrink-0 cursor-pointer items-center gap-3 rounded-2xl border px-4 py-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40 sm:min-w-[240px]',
+              isActive
+                ? isDark
+                  ? 'border-sky-400/45 bg-sky-500/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_16px_30px_rgba(14,165,233,0.08)] ring-1 ring-sky-300/20'
+                  : 'border-sky-300 bg-sky-50 shadow-[0_12px_24px_rgba(2,132,199,0.10)] ring-1 ring-sky-200'
+                : isDark
+                  ? 'border-white/10 bg-white/[0.04] hover:border-slate-500 hover:bg-white/[0.07] active:scale-[0.98]'
+                  : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98]',
+            )}
+          >
+            <div className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+              isActive
+                ? isDark
+                  ? 'bg-sky-400/15 text-sky-100'
+                  : 'bg-sky-100 text-sky-800'
+                : isDark
+                  ? 'bg-slate-900 text-slate-400'
+                  : 'bg-slate-100 text-slate-600',
+            )}>
+              <Icon className="h-5 w-5" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-50">{label}</p>
+              <span className={cn(
+                'mt-1 inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-medium',
+                isDark ? 'bg-white/[0.08] text-slate-200' : 'bg-slate-100 text-slate-700',
+              )}>
+                <span className={cn('h-1.5 w-1.5 rounded-full', isActive ? 'bg-sky-400' : 'bg-slate-400')} />
+                {item.status.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+              </span>
+            </div>
+            <span className={cn(
+              'absolute right-2 top-2 flex h-5 w-5 items-center justify-center rounded-full text-[10px] font-bold',
+              isActive
+                ? isDark
+                  ? 'bg-sky-400/15 text-sky-100'
+                  : 'bg-sky-100 text-sky-800'
+                : isDark
+                  ? 'bg-slate-900 text-slate-400'
+                  : 'bg-slate-100 text-slate-500',
+            )}>
+              {index + 1}
+            </span>
+          </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function PaymentItemSummaryCard({
+  projectId,
+  itemId,
+  label,
+  isActive,
+  isDark,
+  shouldHideAmount,
+  onSelect,
+}: {
+  projectId: string;
+  itemId: string;
+  label: string;
+  isActive: boolean;
+  isDark: boolean;
+  shouldHideAmount: boolean;
+  onSelect: () => void;
+}) {
+  const { data: plan, isLoading } = usePaymentPlan(projectId, itemId);
+  const totalPaid = plan?.stages?.reduce((sum, stage) => sum + Number(stage.amountPaid || 0), 0) || 0;
+  const remaining = plan?.stages?.reduce((sum, stage) => sum + Number(stage.remainingBalance ?? stage.amount ?? 0), 0) || 0;
+  const paidStages = plan?.stages?.filter((stage) => String(stage.status) === 'verified').length || 0;
+  const totalStages = plan?.stages?.length || 0;
+  const firstStage = plan?.stages?.[0];
+
+  return (
+    <button
+      type="button"
+      onClick={onSelect}
+      className={cn(
+        'rounded-2xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400/40',
+        isActive
+          ? isDark
+            ? 'border-sky-400/45 bg-sky-500/10 shadow-[0_16px_28px_rgba(14,165,233,0.10)]'
+            : 'border-sky-300 bg-sky-50 shadow-[0_12px_24px_rgba(2,132,199,0.10)]'
+          : isDark
+            ? 'border-white/10 bg-white/[0.04] hover:border-slate-500 hover:bg-white/[0.07]'
+            : 'border-slate-200 bg-white hover:border-slate-300 hover:bg-slate-50',
+      )}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <p className={cn('truncate text-sm font-semibold', isDark ? 'text-slate-50' : 'text-slate-950')}>{label}</p>
+          <p className={cn('mt-1 text-xs', isDark ? 'text-slate-400' : 'text-slate-600')}>
+            {isLoading ? 'Loading payment plan...' : plan ? `${paidStages}/${totalStages} stages verified` : 'No payment plan yet'}
+          </p>
+        </div>
+        {firstStage && <StatusBadge status={String(firstStage.status)} />}
+      </div>
+      {plan && (
+        <div className="mt-4 grid grid-cols-2 gap-3">
+          <div>
+            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', isDark ? 'text-slate-500' : 'text-slate-500')}>Total</p>
+            <p className={cn('mt-1 text-sm font-semibold', isDark ? 'text-slate-100' : 'text-slate-900')}>
+              {shouldHideAmount ? '***' : formatCurrency(Number(plan.totalAmount))}
+            </p>
+          </div>
+          <div>
+            <p className={cn('text-[11px] font-semibold uppercase tracking-[0.14em]', isDark ? 'text-slate-500' : 'text-slate-500')}>Paid</p>
+            <p className={cn('mt-1 text-sm font-semibold', isDark ? 'text-emerald-200' : 'text-emerald-700')}>
+              {shouldHideAmount ? '***' : formatCurrency(totalPaid)}
+            </p>
+          </div>
+          <div className="col-span-2">
+            <div className={cn('h-2 rounded-full', isDark ? 'bg-slate-900' : 'bg-slate-200')}>
+              <div
+                className="h-2 rounded-full bg-emerald-500"
+                style={{ width: `${plan.totalAmount > 0 ? Math.min(100, Math.round((totalPaid / plan.totalAmount) * 100)) : 0}%` }}
+              />
+            </div>
+            <p className={cn('mt-1 text-xs', isDark ? 'text-slate-400' : 'text-slate-600')}>
+              {shouldHideAmount ? 'Remaining balance hidden' : `${formatCurrency(Math.max(0, remaining))} remaining`}
+            </p>
+          </div>
+        </div>
+      )}
+    </button>
+  );
+}
 
 // ── Media Thumbnail Component (shows real image thumbnail) ──
 function MediaThumbnail({ fileKey, type, onPreview }: { fileKey: string; type: 'image' | 'video'; onPreview?: (key: string) => void }) {
@@ -163,7 +404,10 @@ function MediaThumbnail({ fileKey, type, onPreview }: { fileKey: string; type: '
           </div>
         </>
       )}
-      <span className="absolute bottom-0.5 text-[9px] text-[#86868b] dark:text-slate-400 truncate max-w-[90%] px-1">
+      <span 
+        className="absolute bottom-0.5 text-[9px] text-[#86868b] dark:text-slate-400 truncate max-w-[90%] px-1"
+        title={fileKey.split('/').pop() || fileKey}
+      >
         {fileKey.split('/').pop()?.substring(0, 12)}
       </span>
     </button>
@@ -215,9 +459,153 @@ function SummaryMetricCard({
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   return (
-    <div className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-2xl border border-[color:var(--color-border)]/60 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_34px_rgba(0,0,0,0.2)]`}>
+    <div className={cn(
+      'rounded-2xl border border-[color:var(--color-border)]/60 p-4 shadow-sm',
+      isDark ? 'bg-slate-950/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]' : 'bg-white',
+      accent && (isDark ? 'border-sky-400/30 bg-sky-500/10' : 'border-sky-200 bg-sky-50/70'),
+    )}>
       <p className={`text-[11px] font-semibold uppercase tracking-[0.14em] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{label}</p>
       <p className={`mt-2 text-sm ${accent ? 'font-semibold' : 'font-semibold'} sm:text-base ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>{value}</p>
+    </div>
+  );
+}
+
+function ProjectLifecycle({
+  status,
+  currentStepIndex,
+}: {
+  status: string;
+  currentStepIndex: number;
+}) {
+  const safeIndex = currentStepIndex >= 0 ? currentStepIndex : 0;
+  const currentLabel = LIFECYCLE_STEPS[safeIndex]?.label || status.replace(/_/g, ' ');
+
+  return (
+    <section className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white p-4 shadow-sm dark:bg-slate-950/45 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)] sm:p-5">
+      <div className="mb-4 flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-metal-muted-color)] dark:text-slate-400">
+            Workflow
+          </p>
+          <p className="mt-1 text-sm font-semibold capitalize text-slate-950 dark:text-slate-50">
+            Current stage: {currentLabel}
+          </p>
+        </div>
+        <span className="w-fit rounded-full border border-[color:var(--color-border)]/60 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+          Step {safeIndex + 1} of {LIFECYCLE_STEPS.length}
+        </span>
+      </div>
+
+      <div className="overflow-x-auto pb-1">
+        <ol className="grid min-w-[720px] grid-cols-6 gap-3 sm:min-w-0">
+          {LIFECYCLE_STEPS.map((step, index) => {
+            const isCurrent = step.key === status;
+            const isPast = index < safeIndex;
+            const isDone = isPast || isCurrent;
+
+            return (
+              <li key={step.key} className="relative">
+                {index > 0 && (
+                  <div
+                    className={cn(
+                      'absolute -left-3 top-5 h-0.5 w-3',
+                      index <= safeIndex ? 'bg-sky-400 dark:bg-sky-300' : 'bg-slate-200 dark:bg-slate-800',
+                    )}
+                  />
+                )}
+                <div
+                  className={cn(
+                    'rounded-2xl border px-3 py-3 text-center transition-colors',
+                    isCurrent
+                      ? 'border-sky-300 bg-sky-50 text-sky-950 ring-1 ring-sky-200 dark:border-sky-400/45 dark:bg-sky-500/10 dark:text-sky-50 dark:ring-sky-300/20'
+                      : isPast
+                        ? 'border-emerald-200 bg-emerald-50 text-emerald-900 dark:border-emerald-400/25 dark:bg-emerald-500/10 dark:text-emerald-100'
+                        : 'border-slate-200 bg-slate-50 text-slate-600 dark:border-white/10 dark:bg-white/[0.04] dark:text-slate-300',
+                  )}
+                >
+                  <div
+                    className={cn(
+                      'mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold',
+                      isCurrent
+                        ? 'bg-sky-100 text-sky-900 dark:bg-sky-400/20 dark:text-sky-50'
+                        : isPast
+                          ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-400/15 dark:text-emerald-100'
+                          : 'bg-white text-slate-500 dark:bg-slate-900 dark:text-slate-400',
+                    )}
+                  >
+                    {isPast ? <Check className="h-4 w-4" /> : index + 1}
+                  </div>
+                  <p className={cn('mt-2 text-xs font-semibold', isDone ? '' : 'opacity-75')}>{step.label}</p>
+                </div>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </section>
+  );
+}
+
+function DetailSectionCard({
+  title,
+  icon: Icon,
+  children,
+  className,
+  action,
+}: {
+  title: string;
+  icon?: React.ElementType;
+  children: React.ReactNode;
+  className?: string;
+  action?: React.ReactNode;
+}) {
+  return (
+    <Card className={cn(
+      'overflow-hidden rounded-3xl border border-[color:var(--color-border)]/60 bg-white shadow-[0_16px_40px_rgba(15,23,42,0.06)] dark:bg-slate-950/45 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_42px_rgba(0,0,0,0.18)]',
+      className,
+    )}>
+      <CardHeader className="border-b border-[color:var(--color-border)]/45 bg-slate-50/80 px-4 py-4 dark:bg-white/[0.03] sm:px-6">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <CardTitle className="flex items-center gap-3 text-base font-bold text-slate-950 dark:text-slate-50 sm:text-lg">
+            {Icon && (
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-sky-700 dark:bg-sky-400/10 dark:text-sky-100">
+                <Icon className="h-5 w-5" />
+              </span>
+            )}
+            {title}
+          </CardTitle>
+          {action}
+        </div>
+      </CardHeader>
+      <CardContent className="px-4 py-5 sm:px-6">
+        {children}
+      </CardContent>
+    </Card>
+  );
+}
+
+function DetailField({
+  label,
+  value,
+  children,
+  className,
+}: {
+  label: string;
+  value?: React.ReactNode;
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn(
+      'rounded-2xl border border-[color:var(--color-border)]/50 bg-slate-50/75 p-4 dark:bg-white/[0.04]',
+      className,
+    )}>
+      <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-slate-500 dark:text-slate-400">
+        {label}
+      </p>
+      <div className="mt-2 text-sm font-semibold leading-relaxed text-slate-950 dark:text-slate-100">
+        {children || value || 'Not provided'}
+      </div>
     </div>
   );
 }
@@ -249,15 +637,12 @@ export function ProjectDetailPage() {
     if (path.endsWith('/payments')) return 'payments';
     if (path.endsWith('/fabrication')) return 'fabrication';
 
-    // Role-based defaults if no URL segment
-    const userRole = useAuthStore.getState().user?.roles;
-    const isTechStaff = userRole?.some(r => r === Role.ENGINEER || r === Role.FABRICATION_STAFF);
-    if (isTechStaff) return 'blueprint';
-
     return 'details';
   }, [location.pathname]);
 
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+  const [activeProjectItem, setActiveProjectItem] = useState('');
+  const [isProjectOverviewOpen, setIsProjectOverviewOpen] = useState(false);
 
   const handleTabKeyDown = (event: React.KeyboardEvent<HTMLButtonElement>, currentKey: TabKey) => {
     const currentIndex = tabs.findIndex((tab) => tab.key === currentKey);
@@ -286,9 +671,20 @@ export function ProjectDetailPage() {
 
   // ── Data queries ──
   const { data: project, isLoading, isError, refetch } = useProject(id!);
-  const { data: blueprint } = useLatestBlueprint(id!);
-  const { data: paymentPlan } = usePaymentPlan(id!);
-  const { data: payments } = usePaymentsByProject(id!);
+  const projectServiceItems = useMemo(() => getProjectServiceItems(project), [project]);
+  const activeProjectItemId = useMemo(() => {
+    if (!projectServiceItems.length) return undefined;
+    if (activeProjectItem && projectServiceItems.some((item) => item.id === activeProjectItem)) {
+      return activeProjectItem;
+    }
+    return projectServiceItems[0]?.id;
+  }, [activeProjectItem, projectServiceItems]);
+  const activeProjectItemRecord = useMemo(() => (
+    project?.items?.find((item) => item._id === activeProjectItemId)
+  ), [project?.items, activeProjectItemId]);
+  const { data: blueprint } = useLatestBlueprint(id!, activeProjectItemRecord?._id);
+  const { data: paymentPlan } = usePaymentPlan(id!, activeProjectItemRecord?._id);
+  const { data: payments } = usePaymentsByProject(id!, activeProjectItemRecord?._id);
 
   // ── Mutations ──
   const generateContract = useGenerateContract();
@@ -317,7 +713,7 @@ export function ProjectDetailPage() {
   const tabs = useMemo(() => {
     if (isEngineer || isFabricationStaff) {
       // Prioritize Blueprint for tech staff and hide Payments
-      const order: TabKey[] = ['blueprint', 'fabrication', 'details'];
+      const order: TabKey[] = ['details', 'design_review', 'contract', 'blueprint', 'fabrication'];
       return order
         .map((k) => ALL_TABS.find((t) => t.key === k))
         .filter(Boolean) as typeof ALL_TABS;
@@ -358,12 +754,15 @@ export function ProjectDetailPage() {
 
   // ── Derived ──
   const visitReport: VisitReport | null = useMemo(() => {
+    const activeReport = activeProjectItemRecord?.ocularVisitReportId || activeProjectItemRecord?.consultationVisitReportId;
+    if (activeReport && typeof activeReport !== 'string') return activeReport as VisitReport;
     if (!project?.visitReportId || typeof project.visitReportId === 'string') return null;
     return project.visitReportId as VisitReport;
-  }, [project]);
+  }, [activeProjectItemRecord, project]);
 
 
-  const currentStepIndex = LIFECYCLE_STEPS.findIndex((s) => s.key === project?.status);
+  const activeWorkflowStatus = getDisplayItemStatus(project?.status, activeProjectItemRecord?.status) || 'submitted';
+  const currentStepIndex = LIFECYCLE_STEPS.findIndex((s) => s.key === activeWorkflowStatus);
 
   const isAssignedEngineer = useMemo(() => {
     if (!project) return false;
@@ -389,7 +788,16 @@ export function ProjectDetailPage() {
     const fromList = salesStaffList.find((staff) => staff._id === project.salesStaffId);
     return fromList ? `${fromList.firstName} ${fromList.lastName}` : 'Assigned sales staff';
   }, [project?.salesStaffId, salesStaffList]);
-  const hasInitialDesign = Boolean(project?.initialDesignKeys?.length || project?.initialDesignNotes);
+  const activeInitialDesignKeys = useMemo(
+    () => (activeProjectItemRecord?.initialDesignKeys?.length
+      ? activeProjectItemRecord.initialDesignKeys
+      : project?.initialDesignKeys || []),
+    [activeProjectItemRecord?.initialDesignKeys, project?.initialDesignKeys],
+  );
+  const activeInitialDesignNotes = activeProjectItemRecord?.initialDesignNotes ?? project?.initialDesignNotes;
+  const activeDesignReviewStatus = activeProjectItemRecord?.designReviewStatus || project?.designReviewStatus || 'not_required';
+  const activeDesignReviewNotes = activeProjectItemRecord?.designReviewNotes ?? project?.designReviewNotes;
+  const hasInitialDesign = Boolean(activeInitialDesignKeys.length || activeInitialDesignNotes);
   const initialDesignBackfill = project?.initialDesignBackfill;
   const hasBackfilledInitialDesign = Boolean(initialDesignBackfill?.backfilledAt);
   const hasVisitMeasurements = Boolean(
@@ -411,7 +819,8 @@ export function ProjectDetailPage() {
     (isAdmin || isAssignedEngineer)
     && hasInitialDesign
     && !hasBackfilledInitialDesign
-    && project?.designReviewStatus === 'pending',
+    && !blueprint
+    && ['pending', 'not_required'].includes(activeDesignReviewStatus),
   );
   const canManageInitialDesign = Boolean((isAdmin || isAssignedSales) && !blueprint && !hasBackfilledInitialDesign);
   const canBackfillInitialDesign = Boolean(
@@ -471,13 +880,13 @@ export function ProjectDetailPage() {
   }, [currentSalesStaffId]);
 
   useEffect(() => {
-    setInitialDesignKeys(project?.initialDesignKeys || []);
-    setInitialDesignNotes(project?.initialDesignNotes || '');
+    setInitialDesignKeys(activeInitialDesignKeys);
+    setInitialDesignNotes(activeInitialDesignNotes || '');
     setInitialDesignBackfillReason(
       project?.initialDesignBackfill?.reason ||
       'Synthetic demo backfill for a historical project that originally skipped the initial design step.',
     );
-  }, [project?.initialDesignKeys, project?.initialDesignNotes, project?.initialDesignBackfill?.reason]);
+  }, [activeInitialDesignKeys, activeInitialDesignNotes, project?.initialDesignBackfill?.reason]);
 
   // ── Handlers ──
   const [contractSignatureKey, setContractSignatureKey] = useState('');
@@ -523,6 +932,7 @@ export function ProjectDetailPage() {
         id: project._id,
         decision,
         notes: designReviewNotes.trim() || undefined,
+        projectItemId: activeProjectItemRecord?._id,
       });
       toast.success(
         decision === 'approved'
@@ -557,6 +967,7 @@ export function ProjectDetailPage() {
         id: project._id,
         initialDesignKeys,
         initialDesignNotes: initialDesignNotes.trim() || undefined,
+        projectItemId: activeProjectItemRecord?._id,
       });
       toast.success('Initial design updated and sent back for engineer review.');
       refetch();
@@ -728,6 +1139,10 @@ export function ProjectDetailPage() {
   if (isError || !project) return <PageError onRetry={refetch} />;
 
   const hasFabLead = project.fabricationLeadId && typeof project.fabricationLeadId !== 'string';
+  const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
+  const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
+  const headerTitle = activeProjectServiceLabel || projectServiceTitle;
+  const activeStageLabel = LIFECYCLE_STEPS[currentStepIndex]?.label || activeWorkflowStatus.replace(/_/g, ' ');
 
   return (
     <div className="space-y-5 sm:space-y-6">
@@ -745,7 +1160,7 @@ export function ProjectDetailPage() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
             <h1 className="text-lg sm:text-2xl font-bold tracking-tight text-[var(--color-card-foreground)] truncate">
-              {project.serviceType || project.title}
+              {headerTitle}
             </h1>
             {project.projectNumber && (
               <span className="ml-2 inline-flex items-center rounded-lg bg-[color:var(--color-muted)] dark:bg-slate-800 border border-[color:var(--color-border)] dark:border-slate-700 px-2.5 py-1 text-xs font-bold tracking-tight text-[var(--text-metal-color)] dark:text-slate-300 shadow-sm">
@@ -760,82 +1175,84 @@ export function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* ── Lifecycle Stepper ── */}
-      {project.status !== 'cancelled' && (
-        <>
-          {/* Mobile: compact progress bar */}
-          <div className="sm:hidden">
-            <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-semibold text-[var(--color-card-foreground)]">
-                {LIFECYCLE_STEPS[currentStepIndex]?.label}
-              </p>
-              <p className="text-xs text-[var(--text-metal-color)] dark:text-slate-200">
-                Step {currentStepIndex + 1} of {LIFECYCLE_STEPS.length}
-              </p>
-            </div>
-            <div className="h-2 rounded-full overflow-hidden bg-[color:var(--color-muted)] dark:bg-white/10">
-              <div
-                className="h-full bg-[var(--color-card-foreground)] rounded-full transition-all duration-500"
-                style={{ width: `${((currentStepIndex + 1) / LIFECYCLE_STEPS.length) * 100}%` }}
-              />
-            </div>
-            <div className="flex justify-between mt-1.5">
-              {LIFECYCLE_STEPS.map((step, i) => (
-                <span
-                  key={step.key}
-                  className={cn(
-                    'text-[10px] font-medium',
-                    i === currentStepIndex ? 'text-[var(--color-card-foreground)] font-semibold dark:text-slate-50' : i < currentStepIndex ? 'text-[var(--text-metal-color)] dark:text-slate-200' : 'text-[var(--color-border)] dark:text-slate-300',
-                  )}
-                >
-                  {i === 0 || i === LIFECYCLE_STEPS.length - 1 || i === currentStepIndex ? step.label : ''}
-                </span>
-              ))}
-            </div>
-          </div>
+      {/* Tabs */}
+      <div>
+        <div
+          className="flex gap-2 overflow-x-auto rounded-2xl border border-[color:var(--color-border)]/60 bg-white p-2 shadow-sm no-scrollbar dark:bg-slate-950/45 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]"
+          role="tablist"
+          aria-label="Project detail sections"
+        >
+          {tabs.map((tab) => (
+            <button
+              type="button"
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              onKeyDown={(event) => handleTabKeyDown(event, tab.key)}
+              role="tab"
+              id={`project-tab-${tab.key}`}
+              aria-selected={activeTab === tab.key}
+              aria-controls={`project-panel-${tab.key}`}
+              tabIndex={activeTab === tab.key ? 0 : -1}
+              className={cn(
+                'flex min-w-fit items-center gap-1.5 whitespace-nowrap rounded-xl border px-3.5 py-2.5 text-sm font-semibold transition-colors sm:gap-2 sm:px-4',
+                activeTab === tab.key
+                  ? 'border-sky-300 bg-sky-50 text-sky-950 shadow-sm dark:border-sky-400/40 dark:bg-sky-500/10 dark:text-sky-50'
+                  : 'border-transparent text-slate-600 hover:bg-slate-50 hover:text-slate-950 dark:text-slate-300 dark:hover:bg-white/[0.06] dark:hover:text-slate-50',
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {/* Desktop: circle stepper */}
-          <div className="hidden sm:flex items-start py-2">
-            {LIFECYCLE_STEPS.map((step, i) => {
-              const isCurrent = step.key === project.status;
-              const isPast = i < currentStepIndex;
-              return (
-                <div key={step.key} className={cn('flex items-center', i > 0 ? 'flex-1' : '')}>
-                  {i > 0 && (
-                    <div
-                      className={cn(
-                        'h-0.5 flex-1 min-w-4 mt-[18px]',
-                        isPast ? 'bg-[var(--color-card-foreground)]' : 'bg-[color:var(--color-border)] dark:bg-white/14',
-                      )}
-                    />
-                  )}
-                  <div className="flex flex-col items-center gap-1 shrink-0">
-                    <div
-                      className={cn(
-                        'flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold transition-colors',
-                        isCurrent
-                          ? 'bg-[var(--color-card-foreground)] text-[var(--color-card)] ring-2 ring-[color:var(--color-border)] dark:ring-white/18'
-                          : isPast
-                            ? 'bg-[var(--color-card-foreground)] text-[var(--color-card)] dark:shadow-[0_0_0_1px_rgba(255,255,255,0.08)]'
-                            : 'bg-[color:var(--color-muted)] text-[var(--text-metal-muted-color)] dark:border dark:border-white/14 dark:bg-white/[0.06] dark:text-slate-100',
-                      )}
-                    >
-                      {isPast ? <Check className="h-4 w-4" /> : i + 1}
-                    </div>
-                    <span
-                      className={cn(
-                        'whitespace-nowrap text-xs font-medium',
-                        isCurrent ? 'text-[var(--color-card-foreground)] font-semibold dark:text-slate-50' : isPast ? 'text-[var(--text-metal-color)] dark:text-slate-200' : 'text-[var(--text-metal-muted-color)] dark:text-slate-300',
-                      )}
-                    >
-                      {step.label}
-                    </span>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </>
+      {(projectServiceItems.length > 1 || project.status !== 'cancelled') && (
+        <section className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+          <button
+            type="button"
+            onClick={() => setIsProjectOverviewOpen((open) => !open)}
+            aria-expanded={isProjectOverviewOpen}
+            className="flex w-full flex-col gap-3 px-4 py-3 text-left transition-colors hover:bg-slate-50 dark:hover:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:px-5"
+          >
+            <div className="flex min-w-0 items-start gap-3">
+              <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-slate-100 text-slate-700 dark:bg-slate-900 dark:text-slate-300">
+                <Layers className="h-4 w-4" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-slate-950 dark:text-slate-50">Project Overview</p>
+                <p className="mt-0.5 truncate text-xs text-slate-600 dark:text-slate-300">
+                  {projectServiceItems.length > 1 ? `${projectServiceItems.length} items` : 'Single item'}
+                  {activeProjectServiceLabel ? ` · Viewing ${activeProjectServiceLabel}` : ''}
+                  {project.status !== 'cancelled' ? ` · ${activeStageLabel}` : ''}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2 pl-12 sm:pl-0">
+              {project.status !== 'cancelled' && (
+                <span className="w-fit rounded-full border border-[color:var(--color-border)]/60 bg-slate-50 px-3 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                  Step {Math.max(currentStepIndex, 0) + 1} of {LIFECYCLE_STEPS.length}
+                </span>
+              )}
+              {isProjectOverviewOpen ? <ChevronUp className="h-4 w-4 text-slate-500" /> : <ChevronDown className="h-4 w-4 text-slate-500" />}
+            </div>
+          </button>
+
+          {isProjectOverviewOpen && (
+            <div className="space-y-4 border-t border-[color:var(--color-border)]/60 p-4 sm:p-5">
+              <ProjectItemsStrip
+                items={projectServiceItems}
+                isDark={isDark}
+                activeItemId={activeProjectItemId || ''}
+                onSelect={setActiveProjectItem}
+              />
+
+              {project.status !== 'cancelled' && (
+                <ProjectLifecycle status={activeWorkflowStatus} currentStepIndex={currentStepIndex} />
+              )}
+            </div>
+          )}
+        </section>
       )}
 
       {/* ── Customer Status Guide Banner ── */}
@@ -1172,89 +1589,52 @@ export function ProjectDetailPage() {
         </>
       )}
 
-      {/* Tabs */}
-      <div className="-mx-3 sm:mx-0">
-        <div
-          className="flex overflow-x-auto border-b border-[color:var(--color-border)] px-3 sm:px-0 no-scrollbar"
-          role="tablist"
-          aria-label="Project detail sections"
-        >
-          {tabs.map((tab) => (
-            <button
-              type="button"
-              key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              onKeyDown={(event) => handleTabKeyDown(event, tab.key)}
-              role="tab"
-              id={`project-tab-${tab.key}`}
-              aria-selected={activeTab === tab.key}
-              aria-controls={`project-panel-${tab.key}`}
-              tabIndex={activeTab === tab.key ? 0 : -1}
-              className={cn(
-                'flex items-center gap-1.5 sm:gap-2 whitespace-nowrap border-b-2 px-3.5 sm:px-4 py-3 text-sm font-medium transition-colors',
-                activeTab === tab.key
-                  ? 'border-[var(--color-card-foreground)] text-[var(--color-card-foreground)]'
-                  : 'border-transparent text-[var(--text-metal-color)] dark:text-slate-300 hover:text-[var(--color-card-foreground)] dark:hover:text-slate-100',
-              )}
-            >
-              <tab.icon className="h-4 w-4" />
-              {tab.label}
-            </button>
-          ))}
-        </div>
-      </div>
-
       {/* ════════════════  DETAILS TAB  ════════════════ */}
       {activeTab === 'details' && (
         <div
-          className="grid gap-6 lg:grid-cols-2 -mx-3 sm:mx-0"
+          className="grid gap-5 lg:grid-cols-2"
           role="tabpanel"
           id="project-panel-details"
           aria-labelledby="project-tab-details"
         >
           {/* Project Info */}
-          <Card className={cn(
-            isDark ? 'metal-panel-strong' : 'metal-panel',
-            'rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60',
-            isCustomer && 'lg:col-span-2'
-          )}>
-            <CardHeader className="px-4 sm:px-6">
-              <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Project Info</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4 px-4 sm:px-6">
+          <DetailSectionCard
+            title="Project Snapshot"
+            icon={FileText}
+            className="lg:col-span-2"
+            action={<StatusBadge status={project.status} />}
+          >
+            <div className="grid gap-3 sm:grid-cols-2">
               {project.description && (
-                <div>
-                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Description</p>
-                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.description}</p>
-                </div>
+                <DetailField label="Description" value={project.description} className="sm:col-span-2" />
               )}
               {isStaff && project.customerName && (
-                <div>
-                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Customer</p>
-                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.customerName}</p>
-                </div>
+                <DetailField label="Customer" value={project.customerName} />
               )}
               {project.serviceType && (
-                <div>
-                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Service Type</p>
-                  <p className={`mt-1 text-sm capitalize ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.serviceType.replace(/_/g, ' ')}</p>
-                </div>
+                <DetailField label="Items">
+                  <p>{projectServiceTitle}</p>
+                  {activeProjectServiceLabel && projectServiceItems.length > 1 && (
+                    <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                      Viewing: <span className="text-sky-700 dark:text-sky-200">{activeProjectServiceLabel}</span>
+                    </p>
+                  )}
+                </DetailField>
               )}
               {project.siteAddress && (
-                <div>
-                  <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Site Address</p>
-                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.siteAddress}</p>
-                </div>
+                <DetailField label="Site Address" value={project.siteAddress} className="sm:col-span-2" />
               )}
-              <div>
-                <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Status</p>
-                <div className="mt-1"><StatusBadge status={project.status} /></div>
-              </div>
-            </CardContent>
-          </Card>
+              <DetailField label="Project Status">
+                <StatusBadge status={project.status} />
+              </DetailField>
+              {project.projectNumber && (
+                <DetailField label="Project Number" value={project.projectNumber} />
+              )}
+            </div>
+          </DetailSectionCard>
 
           {isStaff && !hasInitialDesign && project.status !== 'draft' && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/40">
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/40 lg:col-span-2">
               <CardHeader className="px-4 sm:px-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900 dark:text-amber-100">
                   <AlertTriangle className="h-5 w-5" />
@@ -1313,7 +1693,7 @@ export function ProjectDetailPage() {
           )}
 
           {isStaff && hasInitialDesign && hasBackfilledInitialDesign && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/80 dark:bg-amber-950/40">
+            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/80 dark:bg-amber-950/40 lg:col-span-2">
               <CardHeader className="px-4 sm:px-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900 dark:text-amber-100">
                   <AlertTriangle className="h-5 w-5" />
@@ -1336,219 +1716,31 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          {isStaff && hasInitialDesign && (
-            <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-[#c8c8cd]/50">
-              <CardHeader className="px-4 sm:px-6">
-                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                  <CardTitle className="text-base sm:text-lg text-[#1d1d1f] dark:text-slate-100">Initial Design Review</CardTitle>
-                  <span className={cn(
-                    'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium w-fit capitalize',
-                    project.designReviewStatus === 'approved' && 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200',
-                    project.designReviewStatus === 'declined' && 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200',
-                    project.designReviewStatus === 'pending' && 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
-                    (!project.designReviewStatus || project.designReviewStatus === 'not_required') && 'border-gray-200 bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
-                  )}>
-                    {(project.designReviewStatus || 'not_required').replace('_', ' ')}
-                  </span>
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-4 px-4 sm:px-6">
-                <p className="text-sm text-[#6e6e73] dark:text-slate-400">
-                  {hasBackfilledInitialDesign
-                    ? 'This package was added later as synthetic demo reference data. It documents a backfill for this historical record and does not mean the original review step happened on time.'
-                    : 'Sales uploaded the rough sketch, inspiration, or reference files collected during and after the ocular visit. Engineering should review this package before continuing.'}
-                </p>
-
-                {!!project.initialDesignKeys?.length && (
-                  <div className="grid grid-cols-1 gap-3 2xl:grid-cols-2">
-                    {project.initialDesignKeys.map((key) => (
-                      <button
-                        key={key}
-                        type="button"
-                        onClick={() => {
-                          if (isImageFileKey(key)) {
-                            setLightboxKey(key);
-                            return;
-                          }
-                          openAuthenticatedFile(key);
-                        }}
-                        className={cn(
-                          'group relative w-full overflow-hidden rounded-xl border border-[#d2d2d7] dark:border-slate-700 bg-[#f5f5f7] dark:bg-slate-800 text-left',
-                          isImageFileKey(key) ? 'cursor-zoom-in' : 'cursor-pointer',
-                        )}
-                        title={isImageFileKey(key) ? 'Click to preview image' : 'Open file'}
-                      >
-                        {isImageFileKey(key) ? (
-                          <div className="relative aspect-[4/3]">
-                            <AuthImage
-                              fileKey={key}
-                              alt={getFileName(key) || 'Initial design'}
-                              className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
-                              fallback={
-                                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-[#f5f5f7] dark:bg-slate-800 px-4 py-5 text-center">
-                                  <Image className="h-8 w-8 text-[#86868b] dark:text-slate-400" />
-                                  <span className="line-clamp-2 break-words text-xs font-medium text-[#3a3a3e] dark:text-slate-300">
-                                    {getFileName(key)}
-                                  </span>
-                                  <span className="text-[11px] uppercase tracking-[0.2em] text-[#86868b] dark:text-slate-400">
-                                    {getFileExtension(key) || 'file'}
-                                  </span>
-                                </div>
-                              }
-                            />
-                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-3 py-2">
-                              <span className="block truncate text-xs font-medium text-white">
-                                {getFileName(key)}
-                              </span>
-                            </div>
-                          </div>
-                        ) : (
-                          <div className="flex min-h-[112px] items-center gap-3 px-4 py-4 sm:min-h-[132px]">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white dark:bg-slate-800 text-[#6e6e73] dark:text-slate-400 shadow-sm">
-                              <FileText className="h-6 w-6" />
-                            </div>
-                            <div className="min-w-0">
-                              <p className="truncate text-sm font-medium text-[#1d1d1f] dark:text-slate-100">
-                                {getFileName(key)}
-                              </p>
-                              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-[#86868b] dark:text-slate-400">
-                                {getFileExtension(key) || 'file'}
-                              </p>
-                              <p className="mt-2 text-xs text-[#6e6e73] dark:text-slate-400">
-                                Tap to open this reference file.
-                              </p>
-                            </div>
-                          </div>
-                        )}
-                      </button>
-                    ))}
-                  </div>
-                )}
-
-                {project.initialDesignNotes && (
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73] dark:text-slate-400">
-                      {hasBackfilledInitialDesign ? 'Backfill Notes' : 'Sales Notes'}
-                    </p>
-                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-[#f5f5f7] dark:bg-slate-800 p-3 text-sm text-[#3a3a3e] dark:text-slate-300">
-                      {project.initialDesignNotes}
-                    </p>
-                  </div>
-                )}
-
-                {project.designReviewNotes && (
-                  <div>
-                    <p className="text-xs font-medium uppercase tracking-wider text-[#6e6e73] dark:text-slate-400">Latest Review Notes</p>
-                    <p className="mt-1 whitespace-pre-wrap rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-white dark:bg-slate-800 p-3 text-sm text-[#3a3a3e] dark:text-slate-300">
-                      {project.designReviewNotes}
-                    </p>
-                  </div>
-                )}
-
-                {canManageInitialDesign && (
-                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-[#fbfbfd] dark:bg-slate-900/90 p-4">
-                    <div>
-                      <p className="text-sm font-medium text-[#1d1d1f] dark:text-slate-100">Sales Resubmission</p>
-                      <p className="mt-1 text-xs text-[#6e6e73] dark:text-slate-400">
-                        {project.designReviewStatus === 'declined'
-                          ? 'Engineering requested changes. Update the files or notes here and resubmit for review.'
-                          : 'You can refine the initial design package before the engineer uploads the first blueprint.'}
-                      </p>
-                    </div>
-                    <FileUpload
-                      folder="projects/initial-design"
-                      accept="image/*,.pdf"
-                      maxSizeMB={5}
-                      maxFiles={10}
-                      label="Upload revised initial design files"
-                      existingKeys={initialDesignKeys}
-                      onUploadComplete={setInitialDesignKeys}
-                      onUploadingChange={setInitialDesignUploading}
-                    />
-                    <Textarea
-                      value={initialDesignNotes}
-                      onChange={(e) => setInitialDesignNotes(e.target.value)}
-                      placeholder="Add sales notes, clarified customer preferences, or engineer-requested adjustments."
-                      className="min-h-[96px] rounded-xl border-[#d2d2d7] dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-                    />
-                    <Button
-                      className="w-full bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:bg-none dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white sm:w-auto"
-                      onClick={handleResubmitInitialDesign}
-                      disabled={resubmitInitialDesign.isPending || initialDesignUploading}
-                    >
-                      {resubmitInitialDesign.isPending || initialDesignUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
-                      Save & Resubmit Initial Design
-                    </Button>
-                  </div>
-                )}
-
-                {canReviewInitialDesign && (
-                  <div className="space-y-3 rounded-xl border border-[#e8e8ed] dark:border-slate-700 bg-[#fbfbfd] dark:bg-slate-900/90 p-4">
-                    <div>
-                      <p className="text-sm font-medium text-[#1d1d1f] dark:text-slate-100">Engineer Decision</p>
-                      <p className="mt-1 text-xs text-[#6e6e73] dark:text-slate-400">Approve if the reference is sufficient to proceed, or decline it with notes for sales staff.</p>
-                    </div>
-                    <Textarea
-                      value={designReviewNotes}
-                      onChange={(e) => setDesignReviewNotes(e.target.value)}
-                      placeholder="Add internal review notes. Required when declining."
-                      className="min-h-[96px] rounded-xl border-[#d2d2d7] dark:border-slate-700 bg-white dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
-                    />
-                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
-                      <Button
-                        variant="destructive"
-                        className="w-full sm:w-auto"
-                        onClick={() => requestReviewInitialDesign('declined')}
-                        disabled={reviewInitialDesign.isPending}
-                      >
-                        <X className="mr-2 h-4 w-4" />
-                        Decline Initial Design
-                      </Button>
-                      <Button
-                        className="w-full bg-[linear-gradient(180deg,#2ca36f_0%,#1e7c54_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_12px_24px_rgba(21,98,70,0.24)] hover:bg-[linear-gradient(180deg,#33b47b_0%,#238960_100%)] dark:border dark:border-emerald-600/40 dark:bg-[linear-gradient(180deg,#34c084_0%,#238960_100%)] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_14px_28px_rgba(7,58,40,0.28)] dark:hover:bg-[linear-gradient(180deg,#3ad18f_0%,#28976a_100%)] sm:ml-auto sm:w-auto"
-                        onClick={() => requestReviewInitialDesign('approved')}
-                        disabled={reviewInitialDesign.isPending}
-                      >
-                        {reviewInitialDesign.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
-                        Approve Initial Design
-                      </Button>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          )}
 
           {/* Team (internal staff only — customers see simplified view) */}
           {isStaff ? (
-          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
-            <CardHeader className="px-4 sm:px-6">
-              <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Team</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-6 px-4 sm:px-6">
-              <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+          <DetailSectionCard title="Team & Ownership" icon={Users} className="lg:col-span-2">
+              <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
                 {/* Sales Staff */}
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Sales Staff</p>
-                  <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                <DetailField label="Sales Staff">
+                  <p>
                     {currentSalesStaffName}
                   </p>
-                </div>
+                </DetailField>
 
                 {/* Engineers */}
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Engineers</p>
+                <DetailField label="Engineers">
                   {project.engineerIds.length > 0 ? (
                     <div className="mt-1 space-y-2">
                       {project.engineerIds.map((eng: any) => (
-                        <div key={String(eng._id || eng)} className="flex items-center gap-2">
-                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                        <div key={String(eng._id || eng)} className="flex flex-wrap items-center gap-2">
+                          <p className="text-sm">
                             {eng.firstName ? `${eng.firstName} ${eng.lastName}` : String(eng)}
                           </p>
                           {eng.phone && (
                             <a
                               href={`tel:${eng.phone}`}
-                              className={`inline-flex items-center gap-1 text-xs ${isDark ? 'text-slate-300 hover:text-slate-100' : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)]'}`}
+                              className="inline-flex items-center gap-1 text-xs text-sky-700 hover:text-sky-900 dark:text-sky-200 dark:hover:text-sky-100"
                             >
                               <Phone className="h-3 w-3" />
                               {eng.phone}
@@ -1559,38 +1751,36 @@ export function ProjectDetailPage() {
                     </div>
                   ) : (
                     <div className="mt-2">
-                      <p className={`text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
+                      <p className="text-sm italic text-slate-500 dark:text-slate-400">Not assigned yet</p>
                     </div>
                   )}
-                </div>
+                </DetailField>
 
                 {/* Fabrication Lead */}
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Lead</p>
+                <DetailField label="Fabrication Lead">
                   {hasFabLead ? (
-                    <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                    <p>
                       {(project.fabricationLeadId as any).firstName} {(project.fabricationLeadId as any).lastName}
                     </p>
                   ) : (
-                    <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
+                    <p className="text-sm italic text-slate-500 dark:text-slate-400">Not assigned yet</p>
                   )}
-                </div>
+                </DetailField>
 
                 {/* Fabrication Assistants */}
-                <div>
-                  <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Fabrication Assistants</p>
+                <DetailField label="Fabrication Assistants">
                   {project.fabricationAssistantIds.length > 0 ? (
                     <div className="mt-1 space-y-1">
                       {project.fabricationAssistantIds.map((a: any) => (
-                        <p key={String(a._id || a)} className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                        <p key={String(a._id || a)} className="text-sm">
                           {a.firstName ? `${a.firstName} ${a.lastName}` : String(a)}
                         </p>
                       ))}
                     </div>
                   ) : (
-                    <p className={`mt-1 text-sm italic ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Not assigned yet</p>
+                    <p className="text-sm italic text-slate-500 dark:text-slate-400">Not assigned yet</p>
                   )}
-                </div>
+                </DetailField>
               </div>
 
               {canReassignProjectSales && (
@@ -1736,38 +1926,26 @@ export function ProjectDetailPage() {
                   Reassign Fabrication Team
                 </Button>
               )}
-            </CardContent>
-          </Card>
+          </DetailSectionCard>
           ) : (
             /* Customer sees a simple info card instead of team details */
-            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Project Team</CardTitle>
-              </CardHeader>
-              <CardContent className="px-4 sm:px-6">
-                <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+            <DetailSectionCard title="Project Team" icon={Users} className="lg:col-span-2">
+                <p className="text-sm leading-relaxed text-slate-600 dark:text-slate-300">
                   Your project is being handled by our expert team of engineers and fabrication specialists. 
                   We&apos;ll keep you updated on progress through notifications.
                 </p>
                 {project.engineerIds.length > 0 && (
-                  <p className={`mt-3 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-                    <span className={`font-medium ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{project.engineerIds.length}</span> engineer{project.engineerIds.length > 1 ? 's' : ''} assigned
+                  <p className="mt-3 text-sm text-slate-600 dark:text-slate-300">
+                    <span className="font-semibold text-slate-950 dark:text-slate-100">{project.engineerIds.length}</span> engineer{project.engineerIds.length > 1 ? 's' : ''} assigned
                   </p>
                 )}
-              </CardContent>
-            </Card>
+            </DetailSectionCard>
           )}
 
           {/* ── Visit Report (Site Survey Data) — Staff only ── */}
           {isStaff && visitReport && (
-            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
-              <CardHeader className="px-4 sm:px-6">
-                <CardTitle className={`flex items-center gap-2 text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
-                  <Camera className="h-5 w-5" />
-                  Site Visit Report
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4 px-4 sm:px-6">
+            <DetailSectionCard title="Site Visit Report" icon={Camera} className="lg:col-span-2">
+              <div className="space-y-5">
                 {visitReport.visitType === 'ocular' && !hasVisitMeasurements && (
                   <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-3">
                     <div className="flex items-start gap-3">
@@ -1795,21 +1973,12 @@ export function ProjectDetailPage() {
                 )}
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                    <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Report Status</p>
-                    <p className={`text-sm capitalize ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.status}</p>
-                  </div>
+                  <DetailField label="Report Status" value={visitReport.status} />
                   {visitReport.actualVisitDateTime && (
-                    <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                      <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Actual Visit Date</p>
-                      <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')}</p>
-                    </div>
+                    <DetailField label="Actual Visit Date" value={format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')} />
                   )}
                   {(visitReport.measurementUnit || visitReport.measurements?.unit) && (
-                    <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                      <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Measurement Unit</p>
-                      <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.measurementUnit || visitReport.measurements?.unit}</p>
-                    </div>
+                    <DetailField label="Measurement Unit" value={visitReport.measurementUnit || visitReport.measurements?.unit} />
                   )}
                 </div>
 
@@ -1932,256 +2101,421 @@ export function ProjectDetailPage() {
                 {/* Customer Requirements & other text fields */}
                 <div className="grid gap-3 sm:grid-cols-2">
                   {visitReport.customerRequirements && (
-                    <div>
-                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Customer Requirements</p>
-                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.customerRequirements}</p>
-                    </div>
+                    <DetailField label="Customer Requirements" value={visitReport.customerRequirements} />
                   )}
                   {visitReport.materials && (
-                    <div>
-                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Materials</p>
-                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.materials}</p>
-                    </div>
+                    <DetailField label="Materials" value={visitReport.materials} />
                   )}
                   {visitReport.finishes && (
-                    <div>
-                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Finishes</p>
-                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.finishes}</p>
-                    </div>
+                    <DetailField label="Finishes" value={visitReport.finishes} />
                   )}
                   {visitReport.preferredDesign && (
-                    <div>
-                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Preferred Design</p>
-                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.preferredDesign}</p>
-                    </div>
+                    <DetailField label="Preferred Design" value={visitReport.preferredDesign} />
                   )}
                   {visitReport.notes && (
-                    <div className="sm:col-span-2">
-                      <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Notes</p>
-                      <p className={`mt-1 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.notes}</p>
-                    </div>
+                    <DetailField label="Notes" value={visitReport.notes} className="sm:col-span-2" />
                   )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </DetailSectionCard>
           )}
 
-          {/* Contract Card */}
-          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60 lg:col-span-2`}>
-            <CardHeader className="px-4 sm:px-6">
-              <CardTitle className={`flex items-center gap-2 text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
-                <ScrollText className="h-5 w-5" />
-                Contract
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="px-4 sm:px-6">
-              {project.contractKey ? (
-                <div className="space-y-4">
-                  {/* Contract info + download */}
-                  <div className="space-y-3">
-                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-                      Contract generated on{' '}
-                      {project.contractGeneratedAt
-                        ? format(new Date(project.contractGeneratedAt), 'MMM d, yyyy h:mm a')
-                        : 'N/A'}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      <Button
-                        size="sm"
-                        variant="prominent"
-                        onClick={() => handleDownloadContract('original')}
-                        disabled={!!project.originalContractDownloadedAt}
-                      >
-                        <Download className="mr-1.5 h-4 w-4" />
-                        {project.originalContractDownloadedAt
-                          ? 'Original Downloaded'
-                          : 'Download Original'}
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDownloadContract('copy')}
-                        className={isDark ? 'border-white/12 bg-white/[0.05] text-slate-100 hover:bg-white/[0.08]' : 'border-[color:var(--color-border)] bg-white text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]'}
-                      >
-                        <Download className="mr-1.5 h-4 w-4" />
-                        Download Copy
-                      </Button>
-                      {canGenerate && (
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          onClick={handleGenerateContract}
-                          disabled={generateContract.isPending}
-                          className={isDark ? 'text-slate-300 hover:text-slate-100' : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)]'}
-                        >
-                          {generateContract.isPending && (
-                            <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                          )}
-                          Regenerate
-                        </Button>
-                      )}
-                    </div>
-                  </div>
+        </div>
+      )}
 
-                  {/* Signing status */}
-                  {project.contractSignedAt ? (
-                    <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-4`}>
-                      <div className={`flex items-center gap-2 ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>
-                        <Check className="h-5 w-5" />
-                        <span className="text-sm font-semibold">Contract Signed</span>
-                      </div>
-                      <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
-                        Signed on {format(new Date(project.contractSignedAt), 'MMM d, yyyy h:mm a')}
+      {/* ════════════════  DESIGN REVIEW TAB  ════════════════ */}
+      {activeTab === 'design_review' && (
+        <div
+          className="grid gap-5 lg:grid-cols-2"
+          role="tabpanel"
+          id="project-panel-design_review"
+          aria-labelledby="project-tab-design_review"
+        >
+          {isStaff && hasInitialDesign ? (
+            <DetailSectionCard
+              title="Initial Design Review"
+              icon={PenTool}
+              className="lg:col-span-2"
+              action={(
+                <span className={cn(
+                  'inline-flex items-center rounded-full border px-2.5 py-1 text-xs font-medium w-fit capitalize',
+                  activeDesignReviewStatus === 'approved' && 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200',
+                  activeDesignReviewStatus === 'declined' && 'border-red-200 bg-red-50 text-red-700 dark:border-red-800 dark:bg-red-950/40 dark:text-red-200',
+                  activeDesignReviewStatus === 'pending' && 'border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200',
+                  activeDesignReviewStatus === 'not_required' && 'border-gray-200 bg-gray-50 text-gray-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300',
+                )}>
+                  {activeDesignReviewStatus.replace('_', ' ')}
+                </span>
+              )}
+            >
+              <div className="space-y-4">
+                <p className="text-sm text-slate-600 dark:text-slate-300">
+                  {hasBackfilledInitialDesign
+                    ? 'This package was added later as synthetic demo reference data. It documents a backfill for this historical record and does not mean the original review step happened on time.'
+                    : 'Sales uploaded the rough sketch, inspiration, or reference files collected during and after the ocular visit. Engineering should review this package before continuing.'}
+                </p>
+
+                {activeInitialDesignKeys.length > 0 && (
+                  <div className="grid grid-cols-1 gap-3">
+                    {activeInitialDesignKeys.map((key) => (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => {
+                          if (isImageFileKey(key)) {
+                            setLightboxKey(key);
+                            return;
+                          }
+                          openAuthenticatedFile(key);
+                        }}
+                        className={cn(
+                          'group relative w-full overflow-hidden rounded-2xl border border-[color:var(--color-border)]/55 bg-slate-50 text-left dark:border-slate-700 dark:bg-slate-900/60',
+                          isImageFileKey(key) ? 'cursor-zoom-in' : 'cursor-pointer',
+                        )}
+                        title={isImageFileKey(key) ? 'Click to preview image' : 'Open file'}
+                      >
+                        {isImageFileKey(key) ? (
+                          <div className="relative aspect-[4/3]">
+                            <AuthImage
+                              fileKey={key}
+                              alt={getFileName(key) || 'Initial design'}
+                              className="absolute inset-0 h-full w-full object-cover transition-transform group-hover:scale-105"
+                              fallback={(
+                                <div className="flex h-full w-full flex-col items-center justify-center gap-2 bg-slate-100 px-4 py-5 text-center dark:bg-slate-900">
+                                  <Image className="h-8 w-8 text-slate-400" />
+                                  <span className="line-clamp-2 break-words text-xs font-medium text-slate-600 dark:text-slate-300">
+                                    {getFileName(key)}
+                                  </span>
+                                  <span className="text-[11px] uppercase tracking-[0.2em] text-slate-400">
+                                    {getFileExtension(key) || 'file'}
+                                  </span>
+                                </div>
+                              )}
+                            />
+                            <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent px-3 py-2">
+                              <span 
+                                className="block truncate text-xs font-medium text-white"
+                                title={getFileName(key)}
+                              >
+                                {getFileName(key)}
+                              </span>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="flex min-h-[112px] items-center gap-3 px-4 py-4 sm:min-h-[132px]">
+                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-slate-500 shadow-sm dark:bg-slate-800 dark:text-slate-400">
+                              <FileText className="h-6 w-6" />
+                            </div>
+                            <div className="min-w-0">
+                              <p 
+                                className="truncate text-sm font-medium text-slate-950 dark:text-slate-100"
+                                title={getFileName(key)}
+                              >
+                                {getFileName(key)}
+                              </p>
+                              <p className="mt-1 text-xs uppercase tracking-[0.2em] text-slate-400">
+                                {getFileExtension(key) || 'file'}
+                              </p>
+                              <p className="mt-2 text-xs text-slate-500 dark:text-slate-400">
+                                Tap to open this reference file.
+                              </p>
+                            </div>
+                          </div>
+                        )}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {activeInitialDesignNotes && (
+                  <DetailField
+                    label={hasBackfilledInitialDesign ? 'Backfill Notes' : 'Sales Notes'}
+                    value={activeInitialDesignNotes}
+                  />
+                )}
+
+                {activeDesignReviewNotes && (
+                  <DetailField label="Latest Review Notes" value={activeDesignReviewNotes} />
+                )}
+
+                {canManageInitialDesign && (
+                  <div className="space-y-3 rounded-2xl border border-[color:var(--color-border)]/55 bg-slate-50 p-4 dark:bg-white/[0.04]">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">Sales Resubmission</p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                        {activeDesignReviewStatus === 'declined'
+                          ? 'Engineering requested changes. Update the files or notes here and resubmit for review.'
+                          : 'You can refine the initial design package before the engineer uploads the first blueprint.'}
                       </p>
                     </div>
-                  ) : isCustomer ? (
-                    <div className={`space-y-3 rounded-xl border-2 p-4 ${isDark ? 'border-amber-400/70 bg-[linear-gradient(180deg,rgba(120,53,15,0.18)_0%,rgba(15,23,42,0.96)_22%,rgba(2,6,23,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_48px_rgba(2,6,23,0.32)]' : 'border-amber-300 bg-amber-50/50'}`}>
-                      <div>
-                        <p className={`flex items-center gap-1.5 text-sm font-semibold ${isDark ? 'text-amber-200' : 'text-amber-800'}`}>
-                          <PenTool className="h-3.5 w-3.5" />
-                          E-Sign Your Contract
-                        </p>
-                        <p className={`mt-0.5 text-[11px] ${isDark ? 'text-amber-100/80' : 'text-amber-700'}`}>
-                          Review the contract above, then sign below.
-                        </p>
-                      </div>
+                    <FileUpload
+                      folder="projects/initial-design"
+                      accept="image/*,.pdf"
+                      maxSizeMB={5}
+                      maxFiles={10}
+                      label="Upload revised initial design files"
+                      existingKeys={initialDesignKeys}
+                      onUploadComplete={setInitialDesignKeys}
+                      onUploadingChange={setInitialDesignUploading}
+                    />
+                    <Textarea
+                      value={initialDesignNotes}
+                      onChange={(e) => setInitialDesignNotes(e.target.value)}
+                      placeholder="Add sales notes, clarified customer preferences, or engineer-requested adjustments."
+                      className="min-h-[96px] rounded-2xl border border-[color:var(--color-border)]/55 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                    />
+                    <Button
+                      className="w-full rounded-xl [background-image:none] bg-[#223246] text-white hover:bg-[#31577a] dark:border dark:border-white/12 dark:[background-image:none] dark:bg-[#223246] dark:text-slate-100 dark:hover:bg-[#365f86] sm:w-auto"
+                      onClick={handleResubmitInitialDesign}
+                      disabled={resubmitInitialDesign.isPending || initialDesignUploading}
+                    >
+                      {resubmitInitialDesign.isPending || initialDesignUploading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload className="mr-2 h-4 w-4" />}
+                      Save & Resubmit Initial Design
+                    </Button>
+                  </div>
+                )}
 
-                      {/* Saved signature option */}
-                      {savedSignature?.signatureKey && !useNewSignature && (
-                        <div className="space-y-1.5">
-                          <p className={`text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Your Saved Signature</p>
-                          <div className={`flex items-center gap-2 rounded-lg border p-2 transition-colors ${isDark ? (usingSavedContractSignature ? 'border-emerald-400/55 bg-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(52,211,153,0.18)]' : 'border-slate-700 bg-slate-950/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]') : (usingSavedContractSignature ? 'border-emerald-300 bg-white shadow-[0_0_0_1px_rgba(16,185,129,0.14)]' : 'border-gray-200 bg-white')}`}>
-                            <AuthImage
-                              fileKey={savedSignature.signatureKey}
-                              alt="Saved signature"
-                              className="h-9 max-w-[140px] object-contain"
-                            />
-                            <div className="flex-1" />
-                            <Button
-                              size="sm"
-                              disabled={usingSavedContractSignature}
-                              className={isDark
-                                ? (usingSavedContractSignature
-                                  ? 'rounded-lg border border-emerald-400/45 bg-emerald-500/18 text-emerald-200 shadow-none disabled:opacity-100'
-                                  : 'rounded-lg border border-slate-300/70 bg-[linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_12px_28px_rgba(2,6,23,0.24)] hover:bg-[linear-gradient(180deg,#ffffff_0%,#edf2f7_100%)]')
-                                : (usingSavedContractSignature
-                                  ? 'rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 shadow-none disabled:opacity-100'
-                                  : 'rounded-lg bg-[#1d1d1f] text-white hover:bg-[#2d2d2f]')}
-                              onClick={() => setContractSignatureKey(savedSignature.signatureKey!)}
-                            >
-                              <Check className="mr-1.5 h-3.5 w-3.5" />
-                              {usingSavedContractSignature ? 'Selected' : 'Use This'}
-                            </Button>
-                          </div>
+                {canReviewInitialDesign && (
+                  <div className="space-y-3 rounded-2xl border border-[color:var(--color-border)]/55 bg-slate-50 p-4 dark:bg-white/[0.04]">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">Engineer Decision</p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">Approve if the reference is sufficient to proceed, or decline it with notes for sales staff.</p>
+                    </div>
+                    <Textarea
+                      value={designReviewNotes}
+                      onChange={(e) => setDesignReviewNotes(e.target.value)}
+                      placeholder="Add internal review notes. Required when declining."
+                      className="min-h-[96px] rounded-2xl border border-[color:var(--color-border)]/55 bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                    />
+                    <div className="flex flex-col gap-2 sm:flex-row sm:justify-between">
+                      <Button
+                        variant="destructive"
+                        className="w-full sm:w-auto"
+                        onClick={() => requestReviewInitialDesign('declined')}
+                        disabled={reviewInitialDesign.isPending}
+                      >
+                        <X className="mr-2 h-4 w-4" />
+                        Decline Initial Design
+                      </Button>
+                      <Button
+                        className="w-full bg-[linear-gradient(180deg,#2ca36f_0%,#1e7c54_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.14),0_12px_24px_rgba(21,98,70,0.24)] hover:bg-[linear-gradient(180deg,#33b47b_0%,#238960_100%)] dark:border dark:border-emerald-600/40 dark:bg-[linear-gradient(180deg,#34c084_0%,#238960_100%)] dark:text-white dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.1),0_14px_28px_rgba(7,58,40,0.28)] dark:hover:bg-[linear-gradient(180deg,#3ad18f_0%,#28976a_100%)] sm:ml-auto sm:w-auto"
+                        onClick={() => requestReviewInitialDesign('approved')}
+                        disabled={reviewInitialDesign.isPending}
+                      >
+                        {reviewInitialDesign.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Check className="mr-2 h-4 w-4" />}
+                        Approve Initial Design
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </DetailSectionCard>
+          ) : (
+            <DetailSectionCard title="Design Review" icon={PenTool} className="lg:col-span-2">
+              <p className="text-sm text-slate-600 dark:text-slate-300">
+                This project does not have an initial design package ready for review yet.
+              </p>
+            </DetailSectionCard>
+          )}
+        </div>
+      )}
+
+      {/* ════════════════  CONTRACT TAB  ════════════════ */}
+      {activeTab === 'contract' && (
+        <div
+          className="grid gap-5 lg:grid-cols-2"
+          role="tabpanel"
+          id="project-panel-contract"
+          aria-labelledby="project-tab-contract"
+        >
+          <DetailSectionCard title="Contract" icon={ScrollText} className="lg:col-span-2">
+            {project.contractKey ? (
+              <div className="space-y-4">
+                <div className="space-y-3">
+                  <p className="text-sm text-slate-600 dark:text-slate-300">
+                    Contract generated on{' '}
+                    {project.contractGeneratedAt
+                      ? format(new Date(project.contractGeneratedAt), 'MMM d, yyyy h:mm a')
+                      : 'N/A'}
+                  </p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      size="sm"
+                      variant="prominent"
+                      onClick={() => handleDownloadContract('original')}
+                      disabled={!!project.originalContractDownloadedAt}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" />
+                      {project.originalContractDownloadedAt ? 'Original Downloaded' : 'Download Original'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() => handleDownloadContract('copy')}
+                      className={isDark ? 'border-white/12 bg-white/[0.05] text-slate-100 hover:bg-white/[0.08]' : 'border-[color:var(--color-border)] bg-white text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]'}
+                    >
+                      <Download className="mr-1.5 h-4 w-4" />
+                      Download Copy
+                    </Button>
+                    {canGenerate && (
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={handleGenerateContract}
+                        disabled={generateContract.isPending}
+                        className={isDark ? 'text-slate-300 hover:text-slate-100' : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)]'}
+                      >
+                        {generateContract.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                        Regenerate
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {project.contractSignedAt ? (
+                  <div className="rounded-2xl border border-[color:var(--color-border)]/55 bg-slate-50 p-4 dark:bg-white/[0.04]">
+                    <div className="flex items-center gap-2 text-slate-950 dark:text-slate-100">
+                      <Check className="h-5 w-5" />
+                      <span className="text-sm font-semibold">Contract Signed</span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Signed on {format(new Date(project.contractSignedAt), 'MMM d, yyyy h:mm a')}
+                    </p>
+                  </div>
+                ) : isCustomer ? (
+                  <div className={`space-y-3 rounded-2xl border-2 p-4 ${isDark ? 'border-amber-400/70 bg-[linear-gradient(180deg,rgba(120,53,15,0.18)_0%,rgba(15,23,42,0.96)_22%,rgba(2,6,23,0.98)_100%)] shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_24px_48px_rgba(2,6,23,0.32)]' : 'border-amber-300 bg-amber-50/50'}`}>
+                    <div>
+                      <p className={`flex items-center gap-1.5 text-sm font-semibold ${isDark ? 'text-amber-200' : 'text-amber-800'}`}>
+                        <PenTool className="h-3.5 w-3.5" />
+                        E-Sign Your Contract
+                      </p>
+                      <p className={`mt-0.5 text-[11px] ${isDark ? 'text-amber-100/80' : 'text-amber-700'}`}>
+                        Review the contract above, then sign below.
+                      </p>
+                    </div>
+
+                    {savedSignature?.signatureKey && !useNewSignature && (
+                      <div className="space-y-1.5">
+                        <p className={`text-[10px] font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-gray-500'}`}>Your Saved Signature</p>
+                        <div className={`flex items-center gap-2 rounded-lg border p-2 transition-colors ${isDark ? (usingSavedContractSignature ? 'border-emerald-400/55 bg-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_0_0_1px_rgba(52,211,153,0.18)]' : 'border-slate-700 bg-slate-950/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]') : (usingSavedContractSignature ? 'border-emerald-300 bg-white shadow-[0_0_0_1px_rgba(16,185,129,0.14)]' : 'border-gray-200 bg-white')}`}>
+                          <AuthImage fileKey={savedSignature.signatureKey} alt="Saved signature" className="h-9 max-w-[140px] object-contain" />
+                          <div className="flex-1" />
+                          <Button
+                            size="sm"
+                            disabled={usingSavedContractSignature}
+                            className={isDark
+                              ? (usingSavedContractSignature
+                                ? 'rounded-lg border border-emerald-400/45 bg-emerald-500/18 text-emerald-200 shadow-none disabled:opacity-100'
+                                : 'rounded-lg border border-slate-300/70 bg-[linear-gradient(180deg,#f8fafc_0%,#e2e8f0_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.88),0_12px_28px_rgba(2,6,23,0.24)] hover:bg-[linear-gradient(180deg,#ffffff_0%,#edf2f7_100%)]')
+                              : (usingSavedContractSignature
+                                ? 'rounded-lg border border-emerald-300 bg-emerald-50 text-emerald-700 shadow-none disabled:opacity-100'
+                                : 'rounded-lg bg-[#1d1d1f] text-white hover:bg-[#2d2d2f]')}
+                            onClick={() => setContractSignatureKey(savedSignature.signatureKey!)}
+                          >
+                            <Check className="mr-1.5 h-3.5 w-3.5" />
+                            {usingSavedContractSignature ? 'Selected' : 'Use This'}
+                          </Button>
+                        </div>
+                        <button
+                          type="button"
+                          className={`text-[11px] underline underline-offset-2 ${isDark ? 'text-amber-300 hover:text-amber-200' : 'text-amber-700 hover:text-amber-900'}`}
+                          onClick={() => {
+                            setUseNewSignature(true);
+                            if (contractSignatureKey === savedSignature.signatureKey) {
+                              setContractSignatureKey('');
+                            }
+                          }}
+                        >
+                          Draw a new signature instead
+                        </button>
+                      </div>
+                    )}
+
+                    {(!savedSignature?.signatureKey || useNewSignature) && (
+                      <div className="space-y-2">
+                        {useNewSignature && (
                           <button
                             type="button"
                             className={`text-[11px] underline underline-offset-2 ${isDark ? 'text-amber-300 hover:text-amber-200' : 'text-amber-700 hover:text-amber-900'}`}
                             onClick={() => {
-                              setUseNewSignature(true);
-                              if (contractSignatureKey === savedSignature.signatureKey) {
-                                setContractSignatureKey('');
+                              setUseNewSignature(false);
+                              if (savedSignature?.signatureKey) {
+                                setContractSignatureKey(savedSignature.signatureKey);
                               }
                             }}
                           >
-                            Draw a new signature instead
+                            &larr; Use saved signature instead
                           </button>
-                        </div>
-                      )}
-
-                      {/* Draw new signature (shown if no saved sig or user chose to draw new) */}
-                      {(!savedSignature?.signatureKey || useNewSignature) && (
-                        <div className="space-y-2">
-                          {useNewSignature && (
-                            <button
-                              type="button"
-                              className={`text-[11px] underline underline-offset-2 ${isDark ? 'text-amber-300 hover:text-amber-200' : 'text-amber-700 hover:text-amber-900'}`}
-                              onClick={() => {
-                                setUseNewSignature(false);
-                                if (savedSignature?.signatureKey) {
-                                  setContractSignatureKey(savedSignature.signatureKey);
-                                }
-                              }}
-                            >
-                              &larr; Use saved signature instead
-                            </button>
-                          )}
-                          <SignaturePad
-                            onSave={(key) => setContractSignatureKey(key)}
-                            existingKey={null}
-                            width={400}
-                            height={80}
-                            hideSaveButton={false}
-                          />
-                        </div>
-                      )}
-
-                      {contractSignatureKey && (
-                        <p className={`flex items-center gap-1 text-xs ${isDark ? 'text-emerald-300' : 'text-[#6e6e73]'}`}>
-                          <Check className="h-3.5 w-3.5" /> Signature captured
-                        </p>
-                      )}
-                      <Button
-                        onClick={handleSignContract}
-                        disabled={!contractSignatureKey || signContractMutation.isPending}
-                        className={isDark ? 'w-full rounded-lg border border-emerald-400/60 bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_16px_32px_rgba(6,78,59,0.28)] hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none' : 'w-full rounded-lg bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] disabled:opacity-40'}
-                      >
-                        {signContractMutation.isPending ? (
-                          <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-                        ) : (
-                          <PenTool className="mr-1.5 h-4 w-4" />
                         )}
-                        {signContractMutation.isPending ? 'Signing...' : 'Sign Contract'}
-                      </Button>
-                    </div>
-                  ) : (
-                    <div className={`rounded-xl border p-3 ${isDark ? 'border-amber-500/35 bg-amber-500/10' : 'border-amber-200 bg-amber-50/50'}`}>
-                      <p className={`text-sm ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>
-                        Awaiting customer signature. The customer must e-sign this contract before payments can proceed.
-                      </p>
-                    </div>
-                  )}
-                </div>
-              ) : canGenerate &&
-                ['payment_pending', 'fabrication', 'completed'].includes(project.status) ? (
-                <div className="space-y-2">
-                  <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>No contract has been generated yet.</p>
-                  <Button
-                    size="sm"
-                    variant="prominent"
-                    onClick={handleGenerateContract}
-                    disabled={generateContract.isPending}
-                  >
-                    {generateContract.isPending && (
-                      <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                        <SignaturePad
+                          onSave={(key) => setContractSignatureKey(key)}
+                          existingKey={null}
+                          width={400}
+                          height={80}
+                          hideSaveButton={false}
+                        />
+                      </div>
                     )}
-                    <ScrollText className="mr-1.5 h-4 w-4" />
-                    Generate Contract
-                  </Button>
-                </div>
-              ) : (
-                <p className={`py-2 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-                  {project.status === 'approved'
-                    ? 'Contract will be generated after the customer chooses a payment plan.'
-                    : ['payment_pending', 'fabrication', 'completed'].includes(project.status)
+
+                    {contractSignatureKey && (
+                      <p className={`flex items-center gap-1 text-xs ${isDark ? 'text-emerald-300' : 'text-[#6e6e73]'}`}>
+                        <Check className="h-3.5 w-3.5" /> Signature captured
+                      </p>
+                    )}
+                    <Button
+                      onClick={handleSignContract}
+                      disabled={!contractSignatureKey || signContractMutation.isPending}
+                      className={isDark ? 'w-full rounded-lg border border-emerald-400/60 bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_16px_32px_rgba(6,78,59,0.28)] hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)] disabled:opacity-100 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none' : 'w-full rounded-lg bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] disabled:opacity-40'}
+                    >
+                      {signContractMutation.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <PenTool className="mr-1.5 h-4 w-4" />}
+                      {signContractMutation.isPending ? 'Signing...' : 'Sign Contract'}
+                    </Button>
+                  </div>
+                ) : (
+                  <div className={`rounded-xl border p-3 ${isDark ? 'border-amber-500/35 bg-amber-500/10' : 'border-amber-200 bg-amber-50/50'}`}>
+                    <p className={`text-sm ${isDark ? 'text-amber-200' : 'text-amber-700'}`}>
+                      Awaiting customer signature. The customer must e-sign this contract before payments can proceed.
+                    </p>
+                  </div>
+                )}
+              </div>
+            ) : canGenerate &&
+              ['payment_pending', 'fabrication', 'completed'].includes(project.status) ? (
+              <div className="space-y-2">
+                <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>No contract has been generated yet.</p>
+                <Button size="sm" variant="prominent" onClick={handleGenerateContract} disabled={generateContract.isPending}>
+                  {generateContract.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                  <ScrollText className="mr-1.5 h-4 w-4" />
+                  Generate Contract
+                </Button>
+              </div>
+            ) : (
+              <p className={`py-2 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                {project.status === 'approved'
+                  ? 'Contract will be generated after the customer chooses a payment plan.'
+                  : ['payment_pending', 'fabrication', 'completed'].includes(project.status)
                     ? 'No contract generated yet.'
                     : 'Contract will be available after blueprint acceptance.'}
-                </p>
-              )}
-            </CardContent>
-          </Card>
+              </p>
+            )}
+          </DetailSectionCard>
         </div>
       )}
 
       {/* ════════════════  BLUEPRINT TAB  ════════════════ */}
       <div
-        className={cn('-mx-3 sm:mx-0', activeTab === 'blueprint' ? '' : 'hidden')}
+        className={cn(activeTab === 'blueprint' ? '' : 'hidden')}
         role="tabpanel"
         id="project-panel-blueprint"
         aria-labelledby="project-tab-blueprint"
       >
         {activeTab === 'blueprint' && (
           <Suspense fallback={<TabPanelFallback message="Loading the blueprint workspace and costing details." />}>
-            <LazyBlueprintTab projectId={id!} onNavigateToDetails={() => setActiveTab('details')} />
+            <LazyBlueprintTab
+              projectId={id!}
+              projectItemId={activeProjectItemRecord?._id}
+              onNavigateToDetails={() => setActiveTab('details')}
+            />
           </Suspense>
         )}
       </div>
@@ -2189,12 +2523,12 @@ export function ProjectDetailPage() {
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
       {activeTab === 'payments' && isCustomer && !project?.contractSignedAt && (
         <div
-          className="-mx-3 sm:mx-0"
+          className="w-full"
           role="tabpanel"
           id="project-panel-payments"
           aria-labelledby="project-tab-payments"
         >
-          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
+          <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
             <CardContent className="flex flex-col items-center text-center py-12 px-6">
               <div className="silver-sheen mb-4 flex h-14 w-14 items-center justify-center rounded-full">
                 <ScrollText className="h-7 w-7 text-[#33414d] dark:text-[#33414d]" />
@@ -2230,22 +2564,61 @@ export function ProjectDetailPage() {
       )}
       {activeTab === 'payments' && (!isCustomer || project?.contractSignedAt) && (
         <div
-          className="space-y-4 -mx-3 sm:mx-0"
+          className="space-y-4"
           role="tabpanel"
           id="project-panel-payments"
           aria-labelledby="project-tab-payments"
         >
-          {paymentPlan && (
-            <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
+          {projectServiceItems.length > 1 && (
+            <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
               <CardHeader className="px-4 sm:px-6">
-                <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment Plan</CardTitle>
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <div>
+                    <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment Overview</CardTitle>
+                    <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
+                      This project has multiple items. Each item keeps its own plan, receipts, and payment status.
+                    </p>
+                  </div>
+                  <span className="w-fit rounded-full border border-[color:var(--color-border)]/60 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                    {projectServiceItems.length} items
+                  </span>
+                </div>
+              </CardHeader>
+              <CardContent className="grid gap-3 px-4 sm:grid-cols-2 sm:px-6 xl:grid-cols-3">
+                {projectServiceItems.map((item) => (
+                  <PaymentItemSummaryCard
+                    key={item.id}
+                    projectId={id!}
+                    itemId={item.id}
+                    label={item.label}
+                    isActive={item.id === activeProjectItemId}
+                    isDark={isDark}
+                    shouldHideAmount={Boolean(shouldHideAmount)}
+                    onSelect={() => setActiveProjectItem(item.id)}
+                  />
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {paymentPlan && (
+            <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
+              <CardHeader className="px-4 sm:px-6">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
+                  <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment Plan</CardTitle>
+                  {activeProjectServiceLabel && (
+                    <span className="w-fit rounded-full border border-[color:var(--color-border)]/60 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                      {activeProjectServiceLabel}
+                    </span>
+                  )}
+                </div>
               </CardHeader>
               <CardContent className="px-4 sm:px-6">
                 <div className="space-y-3">
                   {paymentPlan.stages.map((stage) => (
                     <div
                       key={String(stage.stageId)}
-                      className="metal-panel flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[color:var(--color-border)]/55 p-3.5 sm:p-4 transition-colors hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_18px_32px_rgba(0,0,0,0.22)]"
+                      className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-border)]/55 bg-slate-50 p-3.5 transition-colors dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:p-4"
                     >
                       <div>
                         <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{String(stage.label)}</p>
@@ -2264,7 +2637,7 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-none sm:rounded-xl border-x-0 sm:border-x border-[color:var(--color-border)]/60`}>
+          <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
             <CardHeader className="px-4 sm:px-6">
               <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment History</CardTitle>
             </CardHeader>
@@ -2274,7 +2647,7 @@ export function ProjectDetailPage() {
                   {payments.map((p) => (
                     <div
                       key={String(p._id)}
-                      className="metal-panel flex flex-col min-[400px]:flex-row min-[400px]:items-center min-[400px]:justify-between gap-1.5 min-[400px]:gap-2 rounded-xl border border-[color:var(--color-border)]/55 p-3.5 sm:p-4"
+                      className="flex flex-col gap-3 rounded-xl border border-[color:var(--color-border)]/55 bg-slate-50 p-3.5 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between sm:p-4"
                     >
                       <div>
                         <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>
@@ -2293,7 +2666,9 @@ export function ProjectDetailPage() {
                   ))}
                 </div>
               ) : (
-                <p className="text-sm text-[#6e6e73] py-4">No payments yet.</p>
+                <p className="rounded-xl border border-dashed border-[color:var(--color-border)]/60 bg-slate-50 px-4 py-6 text-center text-sm text-slate-600 dark:bg-white/[0.04] dark:text-slate-300">
+                  No payments recorded for this item yet.
+                </p>
               )}
             </CardContent>
           </Card>
@@ -2303,7 +2678,7 @@ export function ProjectDetailPage() {
       {/* ════════════════  FABRICATION TAB  ════════════════ */}
       {activeTab === 'fabrication' && (
         <div
-          className="-mx-3 sm:mx-0"
+          className="w-full"
           role="tabpanel"
           id="project-panel-fabrication"
           aria-labelledby="project-tab-fabrication"
@@ -2311,6 +2686,7 @@ export function ProjectDetailPage() {
           <Suspense fallback={<TabPanelFallback message="Loading fabrication updates, assignments, and delivery milestones." />}>
             <LazyFabricationTab
               projectId={id!}
+              projectItemId={activeProjectItemRecord?._id}
               projectStatus={project.status}
               installationConfirmedAt={project?.installationConfirmedAt}
               canViewUpdates={canViewFabrication}
