@@ -173,7 +173,8 @@ export function AccountProfilePage() {
     'h-11 rounded-xl border-[color:var(--color-border)] bg-[color:var(--color-card)]/85 text-[var(--color-card-foreground)] placeholder:text-[var(--color-muted-foreground)] focus:border-[var(--color-accent)] focus:ring-[color:var(--color-accent)]/20 transition-colors';
 
   const hasPinnedLocation = Boolean(pinnedLocation);
-  const hasSavedSignature = Boolean(signatureData?.signatureKey);
+  const isCashier = Boolean(user?.roles.includes(Role.CASHIER));
+  const hasSavedSignature = isCashier && Boolean(signatureData?.signatureKey);
   const isInternalAvailabilityUser = Boolean(
     user?.roles.some((role) => [
       Role.APPOINTMENT_AGENT,
@@ -213,7 +214,7 @@ export function AccountProfilePage() {
   return (
     <div className="space-y-6">
     <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)]">
-      <CardContent className="grid gap-3 p-4 sm:grid-cols-3 sm:p-5">
+      <CardContent className={`grid gap-3 p-4 sm:p-5 ${isCashier ? 'sm:grid-cols-3' : 'sm:grid-cols-2'}`}>
         <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">Profile</p>
           <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">Contact details ready</p>
@@ -224,11 +225,13 @@ export function AccountProfilePage() {
           <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">{hasPinnedLocation ? 'Pinned location saved' : 'Location still missing'}</p>
           <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">Pinned map coordinates help the team validate ocular visits faster and reduce address ambiguity.</p>
         </div>
-        <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">E-signature</p>
-          <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">{hasSavedSignature ? 'Signature on file' : 'Signature not saved yet'}</p>
-          <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">Saving your signature now keeps approvals and payment verification quicker later in the project flow.</p>
-        </div>
+        {isCashier && (
+          <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">Cashier signature</p>
+            <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">{hasSavedSignature ? 'Signature on file' : 'Signature not saved yet'}</p>
+            <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">Used by cashier accounts for payment verification records.</p>
+          </div>
+        )}
       </CardContent>
     </Card>
 
@@ -479,27 +482,28 @@ export function AccountProfilePage() {
       </CardContent>
     </Card>
 
-    {/* E-Signature Section */}
-    <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)] backdrop-blur-sm">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-lg font-semibold text-[var(--color-card-foreground)]">
-          <PenTool className="h-5 w-5 text-[var(--text-metal-muted-color)]" />
-          E-Signature
-        </CardTitle>
-        <CardDescription className="text-[var(--text-metal-muted-color)]">
-          Draw your signature for use in contracts and official documents.
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <SignaturePad
-          existingKey={signatureData?.signatureKey}
-          onSave={(key) => saveSignature.mutate(key)}
-          isSaving={saveSignature.isPending}
-          onDelete={() => deleteSignature.mutate(undefined, { onSuccess: () => toast.success('Signature removed') })}
-          isDeleting={deleteSignature.isPending}
-        />
-      </CardContent>
-    </Card>
+    {isCashier && (
+      <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)] backdrop-blur-sm">
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-lg font-semibold text-[var(--color-card-foreground)]">
+            <PenTool className="h-5 w-5 text-[var(--text-metal-muted-color)]" />
+            Cashier Signature
+          </CardTitle>
+          <CardDescription className="text-[var(--text-metal-muted-color)]">
+            Draw the signature used for cashier payment verification records.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <SignaturePad
+            existingKey={signatureData?.signatureKey}
+            onSave={(key) => saveSignature.mutate(key)}
+            isSaving={saveSignature.isPending}
+            onDelete={() => deleteSignature.mutate(undefined, { onSuccess: () => toast.success('Signature removed') })}
+            isDeleting={deleteSignature.isPending}
+          />
+        </CardContent>
+      </Card>
+    )}
     </div>
   );
 }

@@ -244,7 +244,7 @@ export function RegisterPage() {
     }
   };
 
-  const inputClasses = 'label-font h-11 rounded-none border-white/10 bg-white/[0.03] px-3 text-sm tracking-[0.08em] text-white placeholder:text-[11px] placeholder:tracking-[0.04em] placeholder:text-white/65 focus-visible:border-[#FFD700]/30 focus-visible:ring-0 transition-all focus:bg-white/[0.05]';
+  const inputClasses = 'label-font h-11 rounded-none border-white/10 bg-white/[0.03] px-3 text-sm tracking-[0.08em] text-white placeholder:text-white/65 focus-visible:border-[#FFD700]/30 focus-visible:ring-0 transition-all focus:bg-white/[0.05]';
 
   return (
     <div className="landing-atelier dark relative flex min-h-screen overflow-hidden bg-black text-white/90">

@@ -229,8 +229,8 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
   switch (role) {
     case Role.CUSTOMER:
       return [
-        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', detail: 'Visit requests you submitted that are still waiting for the team to confirm a schedule.', path: '/appointments', color: 'text-[#2b3138] silver-sheen', badgeTone: 'attention' },
         activeProjects,
+        { label: 'Pending Visits', value: d?.pendingAppointments ?? 0, icon: Clock, description: 'Awaiting confirmation', detail: 'Visit requests you submitted that are still waiting for the team to confirm a schedule.', path: '/appointments', color: 'text-[#2b3138] silver-sheen', badgeTone: 'attention' },
         { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Invoices due', detail: 'Payments that still need your action before the project can move forward.', path: '/payments', color: 'text-[#2b3138] silver-sheen', badgeTone: 'pending' },
         { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently in the workshop and not yet ready for installation or handover.', path: '/projects', color: 'text-[#2b3138] silver-sheen', badgeTone: 'fabrication' },
       ];
@@ -287,7 +287,7 @@ function getRoleActions(role: Role): QuickAction[] {
   switch (role) {
     case Role.CUSTOMER:
       actions.push(
-        { label: 'Book Visit', path: '/appointments/book', icon: CalendarCheck, description: 'Schedule appointment', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
+        { label: 'Book Appointment', path: '/appointments/book', icon: CalendarCheck, description: 'Schedule appointment', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
         { label: 'My Projects', path: '/projects', icon: FolderOpen, description: 'View project status', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
         { label: 'Payments', path: '/payments', icon: CreditCard, description: 'Payment history', color: 'from-[#4a4a4e] to-[#3a3a3e]' },
       );

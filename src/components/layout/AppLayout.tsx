@@ -260,6 +260,7 @@ export function AppLayout() {
       Role.FABRICATION_STAFF,
     ].includes(role)),
   );
+  const isCashier = Boolean(user?.roles.includes(Role.CASHIER));
   const isTimedIn = Boolean(user?.activeShift);
   const timeClockPending = timeInMutation.isPending || timeOutMutation.isPending;
 
@@ -275,23 +276,25 @@ export function AppLayout() {
   };
 
   const profileChecks = useMemo(() => {
-    if (!user) return { completed: 0, total: 3, percent: 0 };
+    if (!user) return { completed: 0, total: 2, percent: 0 };
     const hasAddress = Boolean(
       user.addressData?.formattedAddress
       || user.addressData?.street
       || user.addressData?.city,
     );
-    const completed = [
+    const checks = [
       Boolean(user.isEmailVerified),
       hasAddress,
-      Boolean(signatureData?.signatureKey),
-    ].filter(Boolean).length;
+    ];
+    if (isCashier) checks.push(Boolean(signatureData?.signatureKey));
+    const total = checks.length;
+    const completed = checks.filter(Boolean).length;
     return {
       completed,
-      total: 3,
-      percent: Math.round((completed / 3) * 100),
+      total,
+      percent: Math.round((completed / total) * 100),
     };
-  }, [signatureData?.signatureKey, user]);
+  }, [isCashier, signatureData?.signatureKey, user]);
 
   const profileChecklist = useMemo(() => {
     if (!user) return [] as Array<{ label: string; done: boolean; path: string }>;
@@ -300,12 +303,19 @@ export function AppLayout() {
       || user.addressData?.street
       || user.addressData?.city,
     );
-    return [
+    const checklist = [
       { label: 'Verify your email address', done: Boolean(user.isEmailVerified), path: '/account/security' },
       { label: 'Complete your address details', done: hasAddress, path: '/account/profile' },
-      { label: 'Save your e-signature', done: Boolean(signatureData?.signatureKey), path: '/account/profile' },
     ];
-  }, [signatureData?.signatureKey, user]);
+    if (isCashier) {
+      checklist.push({
+        label: 'Save your cashier signature',
+        done: Boolean(signatureData?.signatureKey),
+        path: '/account/profile',
+      });
+    }
+    return checklist;
+  }, [isCashier, signatureData?.signatureKey, user]);
 
   // ── Real-time socket connection ──────────────────────────────────────
   const addNotificationRef = useRef(addNotification);
@@ -958,7 +968,7 @@ export function AppLayout() {
             <DialogHeader>
               <DialogTitle>Profile Completion</DialogTitle>
               <DialogDescription>
-                Keep your account complete to avoid workflow blockers in payments, contracts, and approvals.
+                Keep your account complete to avoid workflow blockers.
               </DialogDescription>
             </DialogHeader>
 

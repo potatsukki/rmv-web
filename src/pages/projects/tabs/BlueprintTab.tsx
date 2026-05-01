@@ -795,8 +795,8 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
         onSuccess: () => {
           toast.success(
             component === 'blueprint'
-              ? 'Design approved! Next: review and approve the costing breakdown.'
-              : 'Costing approved! You can now accept the full blueprint to proceed.',
+              ? 'Design approved! Next: review and approve the billing summary.'
+              : 'Billing approved! You can now choose a payment plan to proceed.',
             { duration: 5000 },
           );
           refetch();
@@ -1327,7 +1327,7 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
           <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-[#6e6e73]">No blueprints have been uploaded yet.</p>
           <p className="text-xs text-[#86868b] mt-1">
-            The engineering team will upload drawings and costing for your review.
+            The engineering team will upload drawings and billing details for your review.
           </p>
         </CardContent>
       </Card>
@@ -1402,6 +1402,38 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
             </div>
           )}
 
+          {bp.quotation && bp.quotation.total > 0 && (
+            <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
+              <CardContent className="px-4 py-4 sm:px-6">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                  <div>
+                    <p className={`text-xs font-semibold uppercase tracking-[0.14em] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
+                      {canReviewBlueprint ? 'Design And Billing Package' : 'Design And Costing Package'}
+                    </p>
+                    <p className={`mt-1 text-lg font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
+                      {canReviewBlueprint ? 'Review both the design and billing before proceeding to payment.' : 'Blueprint, design render, and costing basis are ready for this item.'}
+                    </p>
+                    <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                      {canReviewBlueprint
+                        ? 'The design card shows the visual output. The billing summary shows the customer-facing quotation total for payment.'
+                        : 'Use the design card for customer-facing output, the costing sheet for the price basis, and the technical blueprint for fabrication execution.'}
+                    </p>
+                  </div>
+                  <div className={`grid gap-3 sm:grid-cols-2 lg:min-w-[320px] ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>
+                    <div className={`rounded-xl border p-3 ${isDark ? 'border-slate-700 bg-slate-900/65' : 'border-[color:var(--color-border)]/55 bg-[color:var(--color-muted)]/55'}`}>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Quoted Total</p>
+                      <p className="mt-1 text-xl font-bold">{formatCurrency(bp.quotation.total)}</p>
+                    </div>
+                    <div className={`rounded-xl border p-3 ${isDark ? 'border-slate-700 bg-slate-900/65' : 'border-[color:var(--color-border)]/55 bg-[color:var(--color-muted)]/55'}`}>
+                      <p className={`text-[11px] font-semibold uppercase tracking-[0.12em] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Estimated Duration</p>
+                      <p className="mt-1 text-base font-semibold">{bp.quotation.estimatedDuration || 'Not provided yet'}</p>
+                    </div>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
           {/* Design + billing cards for customers; full costing remains staff-only. */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Design Card — shown to everyone */}
@@ -1468,6 +1500,9 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
               <CardContent className="pt-6 space-y-4 px-4 sm:px-6">
                 {canReviewBlueprint ? (
                   <div className={`rounded-xl border border-[color:var(--color-border)]/50 p-4 ${isDark ? 'bg-slate-900/45 dark:border-slate-700' : 'bg-[color:var(--color-muted)]/55'}`}>
+                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                      This billing summary is the customer-facing quotation tied to the approved design.
+                    </p>
                     <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Total Billing</p>
                     <p className={`mt-1 text-2xl font-bold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
                       {formatCurrency(getPayableQuotationTotal(bp))}
@@ -1477,7 +1512,12 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                     )}
                   </div>
                 ) : (
-                  <FilePreviewThumb fileKey={bp.costingKey} label="Costing Sheet" />
+                  <div className="space-y-3">
+                    <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                      The costing sheet contains the detailed pricing basis that supports the quotation shown to the customer.
+                    </p>
+                    <FilePreviewThumb fileKey={bp.costingKey} label="Costing Sheet" />
+                  </div>
                 )}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
                   {!canReviewBlueprint && (
@@ -1557,7 +1597,7 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                       <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
                         {hasPayableQuotation(bp)
                           ? 'Choose your payment plan to continue directly to payment.'
-                          : 'Engineering needs to upload costing with a valid total before a payment plan can be created.'}
+                          : 'Engineering needs to upload billing with a valid total before a payment plan can be created.'}
                       </p>
                     </div>
                     <Button
@@ -1894,14 +1934,10 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
             <div className="space-y-5 mt-2">
               {/* Quotation Summary */}
               <div className="space-y-3 rounded-xl bg-gray-50 p-4 dark:bg-slate-800/70">
-                <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">Quotation Summary</p>
+                <p className="text-sm font-semibold text-gray-700 dark:text-slate-200">Billing Summary</p>
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-                  <span className="text-gray-500 dark:text-slate-400">Materials</span>
-                  <span className="text-right font-medium dark:text-slate-100">{formatCurrency(acceptDialog.blueprint.quotation.materials)}</span>
-                  <span className="text-gray-500 dark:text-slate-400">Labor</span>
-                  <span className="text-right font-medium dark:text-slate-100">{formatCurrency(acceptDialog.blueprint.quotation.labor)}</span>
-                  <span className="border-t border-gray-200 pt-2 font-semibold text-gray-700 dark:border-slate-600 dark:text-slate-200">Base Total</span>
-                  <span className="border-t border-gray-200 pt-2 text-right font-bold text-emerald-700 dark:border-slate-600 dark:text-emerald-300">
+                  <span className="font-semibold text-gray-700 dark:text-slate-200">Total Billing</span>
+                  <span className="text-right font-bold text-emerald-700 dark:text-emerald-300">
                     {formatCurrency(getPayableQuotationTotal(acceptDialog.blueprint))}
                   </span>
                 </div>

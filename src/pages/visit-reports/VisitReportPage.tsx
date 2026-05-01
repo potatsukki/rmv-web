@@ -407,6 +407,10 @@ export function VisitReportPage() {
     : undefined;
   const sharedRecommendedOcularDate = report?.recommendedOcularDate || siblingOcularScheduleSource?.recommendedOcularDate;
   const sharedRecommendedOcularSlot = report?.recommendedOcularSlot || siblingOcularScheduleSource?.recommendedOcularSlot;
+  const siblingDiscussionSource = effectiveVisitType === 'consultation'
+    ? siblingReports?.find((sibling) => Boolean(sibling.discussionNotes?.trim()))
+    : undefined;
+  const sharedDiscussionNotes = report?.discussionNotes || siblingDiscussionSource?.discussionNotes;
   const isRecommendedOcularScheduleLocked = Boolean(
     effectiveVisitType === 'consultation'
     && siblingOcularScheduleSource
@@ -439,7 +443,7 @@ export function VisitReportPage() {
     setNotes(report.notes || '');
 
     // Consultation-specific fields
-    setDiscussionNotes(report.discussionNotes || '');
+    setDiscussionNotes(sharedDiscussionNotes || '');
     setConsultationOutcome(report.consultationOutcome || (sharedRecommendedOcularDate || sharedRecommendedOcularSlot ? 'schedule_ocular' : 'schedule_ocular'));
     setNoOcularReason(report.noOcularReason || '');
     setInitialDesignKeys(report.initialDesignKeys || []);
@@ -661,6 +665,7 @@ export function VisitReportPage() {
               id: String(sibling._id),
               visitType: 'consultation',
               actualVisitDateTime: normalizedActualVisitDateTime,
+              discussionNotes: discussionNotes || undefined,
               consultationOutcome,
               noOcularReason: noOcularReason || undefined,
               ...(consultationOutcome === 'schedule_ocular' && {
@@ -1428,6 +1433,28 @@ export function VisitReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="rounded-xl border border-cyan-200 bg-cyan-50/70 p-4 dark:border-cyan-500/35 dark:bg-cyan-500/10">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-cyan-700 dark:text-cyan-200">
+                    Customer Request Context
+                  </p>
+                  <p className="mt-1 text-sm font-semibold text-cyan-900 dark:text-cyan-100">
+                    The customer is asking for {appointmentItemsText}.
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {appointmentItemNames.map((itemName) => (
+                      <span
+                        key={itemName}
+                        className="rounded-full border border-cyan-300 bg-white/80 px-3 py-1 text-xs font-medium text-cyan-900 dark:border-cyan-400/40 dark:bg-slate-900/60 dark:text-cyan-100"
+                      >
+                        {itemName}
+                      </span>
+                    ))}
+                  </div>
+                  <p className="mt-3 text-xs text-cyan-800 dark:text-cyan-200">
+                    Capture one consultation summary first. Detailed measurements, materials, and attachments come after you proceed to project creation.
+                  </p>
+                </div>
+
                 <div className="space-y-1.5 mb-4">
                   <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Discussion Notes
@@ -1439,7 +1466,26 @@ export function VisitReportPage() {
                     className={cn('min-h-[160px]', editInputClassName)}
                   />
                 </div>
+              </CardContent>
+            </Card>
+          )}
 
+          {visitType === 'consultation' && isProjectCreationMode && (
+            <Card className={editSectionClassName}>
+              <CardContent className="pt-6">
+                <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 dark:border-emerald-500/35 dark:bg-emerald-500/10">
+                  <div className="flex items-start gap-3">
+                    <Send className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300" />
+                    <div>
+                      <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
+                        Next step: Create the project package
+                      </p>
+                      <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-200">
+                        The consultation notes are already captured for {appointmentItemsText}. Complete the project details below, then click Create Project. The next screen will be the signed contract upload step before engineering can claim the job.
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           )}
@@ -1750,7 +1796,7 @@ export function VisitReportPage() {
           isProjectCreationMode
             ? effectiveVisitType === 'ocular'
               ? 'This will update the existing project with the on-site measurements and details collected during the ocular visit. The initial design package will also be submitted to engineering for approval, and the appointment will be marked as completed. Are you sure?'
-              : 'This will create the project from the consultation details and submit it to engineering. Make sure measurements, materials, design references, and attachments are complete.'
+              : 'This will create the internal draft project from the consultation details. You will be redirected to upload the signed contract before engineering can claim or progress the job.'
             : `Choose whether this consultation needs an ocular visit for ${appointmentItemsText}.`
         }
         confirmLabel={effectiveVisitType === 'consultation' && !isProjectCreationMode ? (consultationOutcome === 'schedule_ocular' ? 'Schedule Ocular Visit' : 'Proceed Without Ocular') : 'Create Project'}

@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, MoreHorizontal, ShieldCheck } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck } from 'lucide-react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
@@ -59,6 +59,21 @@ const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
 const PAYMENT_READY_PROJECT_STATUSES = new Set(['payment_pending', 'fabrication', 'completed']);
+const PAYMENT_READY_ITEM_STATUSES = new Set(['payment_pending', 'fabrication', 'completed']);
+
+const getPaymentListStatus = (project: { status: string; items?: { status: string }[] }) => {
+  if (PAYMENT_READY_PROJECT_STATUSES.has(String(project.status))) {
+    return String(project.status);
+  }
+
+  return project.items?.some((item) => PAYMENT_READY_ITEM_STATUSES.has(String(item.status)))
+    ? 'payment_pending'
+    : String(project.status);
+};
+
+const isPaymentListReady = (project: { status: string; items?: { status: string }[] }) =>
+  PAYMENT_READY_PROJECT_STATUSES.has(String(project.status))
+  || Boolean(project.items?.some((item) => PAYMENT_READY_ITEM_STATUSES.has(String(item.status))));
 
 const historyStatusConfig: Record<string, { label: string; className: string }> = {
   verified: { label: 'Paid', className: 'border border-[#7aa18a] bg-[linear-gradient(180deg,#e1f1e6_0%,#c6e0cf_100%)] text-[#234b32] shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-emerald-600/50 dark:bg-[linear-gradient(180deg,rgba(39,84,59,0.9)_0%,rgba(24,53,38,0.92)_100%)] dark:text-emerald-100' },
@@ -159,9 +174,13 @@ export function PaymentsPage() {
   const navigate = useNavigate();
   useEffect(() => {
     if (selectedProjectId) return;
-    const stateProjectId = (location.state as { projectId?: string })?.projectId;
+    const state = location.state as { projectId?: string; projectItemId?: string };
+    const stateProjectId = state?.projectId;
     if (stateProjectId) {
       setSelectedProjectId(stateProjectId);
+      if (state.projectItemId) {
+        setSelectedProjectItemId(state.projectItemId);
+      }
       // Consume the state so it doesn't re-trigger when clearing the project selection
       navigate(location.pathname + location.search, { replace: true, state: {} });
     }
@@ -227,10 +246,10 @@ export function PaymentsPage() {
   const filteredProjects = useMemo(() => {
     if (!projects?.items) return [];
     let items = isCustomer
-      ? projects.items.filter((p) => PAYMENT_READY_PROJECT_STATUSES.has(String(p.status)))
+      ? projects.items.filter((p) => isPaymentListReady(p))
       : projects.items;
     if (statusFilter !== 'all') {
-      items = items.filter((p) => String(p.status) === statusFilter);
+      items = items.filter((p) => getPaymentListStatus(p) === statusFilter);
     }
     if (projectSearch.trim()) {
       const q = projectSearch.toLowerCase();
@@ -247,9 +266,9 @@ export function PaymentsPage() {
   const projectStatuses = useMemo(() => {
     if (!projects?.items) return [];
     const items = isCustomer
-      ? projects.items.filter((p) => PAYMENT_READY_PROJECT_STATUSES.has(String(p.status)))
+      ? projects.items.filter((p) => isPaymentListReady(p))
       : projects.items;
-    return [...new Set(items.map((p) => String(p.status)))];
+    return [...new Set(items.map((p) => getPaymentListStatus(p)))];
   }, [projects, isCustomer]);
 
 
@@ -468,7 +487,7 @@ export function PaymentsPage() {
                           {String(p.serviceType || '').replace(/_/g, ' ')}
                         </p>
                       </div>
-                      <StatusBadge status={String(p.status)} />
+                      <StatusBadge status={getPaymentListStatus(p)} />
                       <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-metal-muted-color)] transition-colors group-hover:text-[var(--text-metal-color)]" />
                     </div>
                     {/* Desktop row */}
@@ -486,7 +505,7 @@ export function PaymentsPage() {
                         {String(p.serviceType || '').replace(/_/g, ' ')}
                       </p>
                       <div className="flex justify-center">
-                        <StatusBadge status={String(p.status)} />
+                        <StatusBadge status={getPaymentListStatus(p)} />
                       </div>
                       <ChevronRight className="h-4 w-4 text-[var(--text-metal-muted-color)] group-hover:text-[var(--color-card-foreground)] transition-colors dark:group-hover:text-slate-100" />
                     </div>
@@ -867,8 +886,8 @@ export function PaymentsPage() {
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
                                 <Button variant="outline" size="sm" className="w-full justify-between items-center rounded-lg h-9 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 border-slate-200 dark:border-slate-800">
-                                  <span>Actions</span>
-                                  <MoreHorizontal className="h-4 w-4" />
+                                  <span>Pay Now</span>
+                                  <CreditCard className="h-4 w-4" />
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-[calc(100vw-3rem)] sm:w-48 dark:bg-slate-900 dark:border-slate-800">
@@ -966,9 +985,13 @@ export function PaymentsPage() {
                           {showPayButtons && (
                             <DropdownMenu>
                               <DropdownMenuTrigger asChild>
-                                <Button variant="ghost" size="sm" className="h-8 w-8 p-0 metal-pill">
-                                  <span className="sr-only">Open menu</span>
-                                  <MoreHorizontal className="h-4 w-4" />
+                                <Button
+                                  variant="prominent"
+                                  size="sm"
+                                  className="h-8 rounded-lg border border-emerald-300/70 !bg-emerald-600 !bg-none px-3 text-xs !text-white hover:!bg-emerald-500 dark:border-emerald-300/55 dark:!bg-emerald-500 dark:!text-slate-950 dark:hover:!bg-emerald-400"
+                                >
+                                  <CreditCard className="mr-1.5 h-3.5 w-3.5" />
+                                  Pay Now
                                 </Button>
                               </DropdownMenuTrigger>
                               <DropdownMenuContent align="end" className="w-48 dark:bg-slate-900 dark:border-slate-800">

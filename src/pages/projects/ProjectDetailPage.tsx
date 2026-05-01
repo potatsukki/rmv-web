@@ -699,6 +699,9 @@ export function ProjectDetailPage() {
   const { data: blueprint } = useLatestBlueprint(id!, activeProjectItemRecord?._id);
   const { data: paymentPlan } = usePaymentPlan(id!, activeProjectItemRecord?._id);
   const { data: payments } = usePaymentsByProject(id!, activeProjectItemRecord?._id);
+  const hasPayablePaymentStage = Boolean(paymentPlan?.stages?.some((stage) => (
+    ['pending', 'declined'].includes(String(stage.status))
+  )));
   const projectPaymentPlanItemIds = useMemo(
     () => projectServiceItems.map((item) => item.id),
     [projectServiceItems],
@@ -884,16 +887,22 @@ export function ProjectDetailPage() {
     }, 0)
   ), [projectPaymentPlanQueries]);
   const showPaymentsTabIndicator = paymentTabPendingCount > 0;
-  const hasVerifiedInitialFabricationPayment = Boolean(
+  const allRequiredInitialFabricationPaymentsVerified = Boolean(
     project?.status === ProjectStatus.FABRICATION
     || project?.status === ProjectStatus.COMPLETED
-    || paymentPlan?.stages?.[0]?.status === 'verified'
-    || projectPaymentPlanQueries.some((query) => query.data?.stages?.[0]?.status === 'verified'),
+    || (
+      projectPaymentPlanItemIds.length > 0
+      && projectPaymentPlanQueries.length === projectPaymentPlanItemIds.length
+      && projectPaymentPlanQueries.every((query) => query.data?.stages?.[0]?.status === 'verified')
+    )
+    || (
+      projectPaymentPlanItemIds.length === 0
+      && paymentPlan?.stages?.[0]?.status === 'verified'
+    ),
   );
   const hasReachedFabricationPaymentStage = Boolean(
     project
-    && [ProjectStatus.PAYMENT_PENDING, ProjectStatus.FABRICATION, ProjectStatus.COMPLETED].includes(project.status as ProjectStatus)
-    && hasVerifiedInitialFabricationPayment,
+    && allRequiredInitialFabricationPaymentsVerified,
   );
   const canStartFabricationSetup = Boolean(
     project
@@ -2558,12 +2567,37 @@ export function ProjectDetailPage() {
             <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
               <CardHeader className="px-4 sm:px-6">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                  <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment Plan</CardTitle>
-                  {activeProjectServiceLabel && (
-                    <span className="w-fit rounded-full border border-[color:var(--color-border)]/60 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
-                      {activeProjectServiceLabel}
-                    </span>
-                  )}
+                  <div>
+                    <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment Plan</CardTitle>
+                    {hasPayablePaymentStage && isCustomer && (
+                      <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
+                        Payment is ready. Continue to the Payments page to pay by QR or request cash payment.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    {activeProjectServiceLabel && (
+                      <span className="w-fit rounded-full border border-[color:var(--color-border)]/60 bg-slate-50 px-2.5 py-1 text-xs font-semibold text-slate-700 dark:bg-slate-900 dark:text-slate-200">
+                        {activeProjectServiceLabel}
+                      </span>
+                    )}
+                    {hasPayablePaymentStage && isCustomer && (
+                      <Button
+                        type="button"
+                        variant="prominent"
+                        className="w-full rounded-xl border border-emerald-300/70 !bg-emerald-600 !bg-none px-4 !text-white shadow-[0_12px_28px_rgba(16,185,129,0.24)] hover:!bg-emerald-500 dark:border-emerald-300/55 dark:!bg-emerald-500 dark:!text-slate-950 dark:hover:!bg-emerald-400 sm:w-auto"
+                        onClick={() => navigate('/payments', {
+                          state: {
+                            projectId: id,
+                            projectItemId: activeProjectItemRecord?._id,
+                          },
+                        })}
+                      >
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Pay Now
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent className="px-4 sm:px-6">
