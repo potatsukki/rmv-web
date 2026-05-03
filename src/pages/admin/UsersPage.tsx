@@ -362,6 +362,7 @@ export function UsersPage() {
         filters={[{ value: 'all', label: 'All' }, ...ROLES.filter((role) => !isEmployeeMonitoringPage || role.value !== Role.CUSTOMER)]}
         activeFilter={roleFilter}
         onFilterChange={setRoleFilter}
+        searchWidthClassName="lg:max-w-sm"
       />
 
       {/* Users */}
@@ -500,16 +501,16 @@ export function UsersPage() {
           </div>
 
           {/* ── Desktop table (md+) ── */}
-          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] md:block">
-            <Table>
+          <div className="metal-panel hidden overflow-x-auto rounded-[1.5rem] md:block">
+            <Table className="min-w-[980px]">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">User</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Email</TableHead>
-                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Phone</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Role</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Availability</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="w-[210px] pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">User</TableHead>
+                  <TableHead className="w-[250px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Email</TableHead>
+                  <TableHead className="hidden w-[135px] text-xs font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Phone</TableHead>
+                  <TableHead className="w-[155px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Role</TableHead>
+                  <TableHead className="w-[230px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Availability</TableHead>
+                  <TableHead className="w-[110px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
                   <TableHead className="w-10 pr-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>

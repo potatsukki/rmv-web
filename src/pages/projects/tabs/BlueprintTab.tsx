@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
-import { extractErrorMessage } from '@/lib/utils';
+import { cn, extractErrorMessage } from '@/lib/utils';
 import { resolveBlockedAction, type BlockedActionInfo } from '@/lib/blocked-actions';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -48,6 +48,7 @@ import type { Blueprint, BlueprintDraft, VisitReport } from '@/lib/types';
 interface BlueprintTabProps {
   projectId: string;
   projectItemId?: string;
+  mode?: 'blueprint' | 'costing';
 }
 
 type DraftFileMeta = { name: string; type: string; size: number; key: string; uploadedAt: string };
@@ -273,11 +274,13 @@ function FilePreviewThumb({ fileKey, label }: { fileKey: string | undefined | nu
   );
 }
 
-export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
+export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: BlueprintTabProps) {
   const navigate = useNavigate();
   const user = useAuthStore((s) => s.user);
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
+  const isBlueprintMode = mode === 'blueprint';
+  const isCostingMode = mode === 'costing';
   const isEngineer = user?.roles?.some((r: string) => r === 'engineer');
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
@@ -889,7 +892,12 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
 
       await finalizeDraftMutation.mutateAsync({ projectId, projectItemId });
 
-      toast.success(blueprint ? 'Revision uploaded successfully!' : 'Blueprint uploaded successfully!', { duration: 5000 });
+      toast.success(
+        blueprint
+          ? 'Revision submitted. Your part is complete for now; waiting for customer approval of design and billing.'
+          : 'Blueprint and costing submitted. Your part is complete for now; waiting for customer approval of design and billing.',
+        { duration: 7000 },
+      );
       
       setBlueprintFileMeta(null);
       setDesignFileMeta(null);
@@ -921,8 +929,8 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
       <Card className={`-mx-3 rounded-none border-x-0 sm:mx-0 sm:rounded-xl sm:border-x ${isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60 dark:border-slate-700 dark:bg-slate-950/85' : 'border-[#c8c8cd]/50'}`}>
         <CardHeader className="px-4 sm:px-6">
           <CardTitle className={`flex items-center gap-2 text-lg ${isDark ? 'text-slate-50' : 'text-[#1d1d1f]'}`}>
-            <Image className="h-5 w-5" />
-            Blueprint & Design
+            {isCostingMode ? <Info className="h-5 w-5" /> : <Image className="h-5 w-5" />}
+            {isCostingMode ? 'Costing & Quotation' : 'Blueprint & Design'}
           </CardTitle>
         </CardHeader>
         <CardContent className="px-4 sm:px-6">
@@ -932,8 +940,10 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                 <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Version {blueprint.version}</p>
                 <StatusBadge status={blueprint.status} />
               </div>
-              <div className="grid gap-3 sm:grid-cols-3">
-                <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
+              <div className={cn('grid gap-3', isBlueprintMode ? 'sm:grid-cols-2' : 'sm:grid-cols-1')}>
+                {isBlueprintMode && (
+                  <>
+                    <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
                   <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Blueprint</p>
                   <p className={`mt-1 text-[10px] ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Technical (for fabrication)</p>
                   <Button
@@ -945,8 +955,8 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                     <Download className="mr-1 h-3 w-3" />
                     Download
                   </Button>
-                </div>
-                <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
+                    </div>
+                    <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
                   <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Design</p>
                   <p className={`mt-1 text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>
                     {blueprint.blueprintApproved ? 'Approved' : 'Pending Review'}
@@ -964,8 +974,11 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                   ) : (
                     <p className={`mt-1 text-[10px] italic ${isDark ? 'text-slate-400' : 'text-[#86868b]'}`}>Not uploaded</p>
                   )}
-                </div>
-                <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
+                    </div>
+                  </>
+                )}
+                {isCostingMode && (
+                  <div className={`rounded-xl border p-4 ${isDark ? 'border-slate-700 bg-slate-900/75 shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_34px_rgba(2,6,23,0.24)]' : 'border-[#c8c8cd]/50 bg-[#f5f5f7]/50'}`}>
                   <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Costing</p>
                   <p className={`mt-1 text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>
                     {blueprint.costingApproved ? 'Approved' : 'Pending Review'}
@@ -979,7 +992,8 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                     <Download className="mr-1 h-3 w-3" />
                     Download
                   </Button>
-                </div>
+                  </div>
+                )}
               </div>
               {(blueprint.revisionNotes || (blueprint.revisionRefKeys && blueprint.revisionRefKeys.length > 0)) && (
                 <div className={`space-y-3 rounded-xl border p-4 ${isDark ? 'border-amber-500/35 bg-amber-500/10' : 'border-amber-200 bg-amber-50/50'}`}>
@@ -1016,34 +1030,40 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
               {blueprint.status === 'revision_requested' && isAssigned && (
                 <div className={`space-y-3 rounded-xl border border-dashed p-4 ${isDark ? 'border-slate-700 bg-slate-950/35' : 'border-[#c8c8cd]'}`}>
                   <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Upload Revision</p>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <FilePickerWithPreview
-                      fileMeta={blueprintFileMeta}
-                      isUploading={uploadingFile === 'blueprint'}
-                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'blueprint')}
-                      onRemove={() => handleDraftFileRemove('blueprint')}
-                      accept=".pdf,.png,.jpg,.jpeg,.dwg"
-                      label="Blueprint File *"
-                    />
-                    <FilePickerWithPreview
-                      fileMeta={designFileMeta}
-                      isUploading={uploadingFile === 'design'}
-                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
-                      onRemove={() => handleDraftFileRemove('design')}
-                      accept=".pdf,.png,.jpg,.jpeg"
-                      label="Design File *"
-                    />
-                    <FilePickerWithPreview
-                      fileMeta={costingFileMeta}
-                      isUploading={uploadingFile === 'costing'}
-                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'costing')}
-                      onRemove={() => handleDraftFileRemove('costing')}
-                      accept=".pdf,.xlsx,.xls,.csv"
-                      label="Costing File *"
-                    />
+                  <div className={cn('grid gap-3', isBlueprintMode ? 'sm:grid-cols-2' : 'sm:grid-cols-1')}>
+                    {isBlueprintMode && (
+                      <>
+                        <FilePickerWithPreview
+                          fileMeta={blueprintFileMeta}
+                          isUploading={uploadingFile === 'blueprint'}
+                          onFileSelect={(f) => f && handleDraftFileUpload(f, 'blueprint')}
+                          onRemove={() => handleDraftFileRemove('blueprint')}
+                          accept=".pdf,.png,.jpg,.jpeg,.dwg"
+                          label="Blueprint File *"
+                        />
+                        <FilePickerWithPreview
+                          fileMeta={designFileMeta}
+                          isUploading={uploadingFile === 'design'}
+                          onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
+                          onRemove={() => handleDraftFileRemove('design')}
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          label="Design File *"
+                        />
+                      </>
+                    )}
+                    {isCostingMode && (
+                      <FilePickerWithPreview
+                        fileMeta={costingFileMeta}
+                        isUploading={uploadingFile === 'costing'}
+                        onFileSelect={(f) => f && handleDraftFileUpload(f, 'costing')}
+                        onRemove={() => handleDraftFileRemove('costing')}
+                        accept=".pdf,.xlsx,.xls,.csv"
+                        label="Costing File *"
+                      />
+                    )}
                   </div>
 
-                  {quotationFormJSX}
+                  {isCostingMode && quotationFormJSX}
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1053,15 +1073,17 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                         <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><CheckCircle className="h-3 w-3" /> Draft up to date</span>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      className={uploadActionButtonClass}
-                      onClick={handleBlueprintUpload}
-                      disabled={uploading || !blueprintFileMeta || !designFileMeta || !costingFileMeta || isSavingDraft || !!uploadingFile}
-                    >
-                      {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                      Upload Revision
-                    </button>
+                    {isCostingMode && (
+                      <button
+                        type="button"
+                        className={uploadActionButtonClass}
+                        onClick={handleBlueprintUpload}
+                        disabled={uploading || !blueprintFileMeta || !designFileMeta || !costingFileMeta || isSavingDraft || !!uploadingFile}
+                      >
+                        {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
+                        Upload Revision
+                      </button>
+                    )}
                   </div>
                 </div>
               )}
@@ -1071,35 +1093,43 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
               {/* First blueprint upload */}
               {canUploadInitialBlueprint ? (
                 <div className={`space-y-3 rounded-xl border border-dashed p-4 ${isDark ? 'border-slate-700 bg-slate-950/35' : 'border-[#c8c8cd]'}`}>
-                  <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>Upload Blueprint, Design & Costing</p>
-                  <div className="grid gap-3 sm:grid-cols-3">
-                    <FilePickerWithPreview
-                      fileMeta={blueprintFileMeta}
-                      isUploading={uploadingFile === 'blueprint'}
-                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'blueprint')}
-                      onRemove={() => handleDraftFileRemove('blueprint')}
-                      accept=".pdf,.png,.jpg,.jpeg,.dwg"
-                      label="Blueprint File *"
-                    />
-                    <FilePickerWithPreview
-                      fileMeta={designFileMeta}
-                      isUploading={uploadingFile === 'design'}
-                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
-                      onRemove={() => handleDraftFileRemove('design')}
-                      accept=".pdf,.png,.jpg,.jpeg"
-                      label="Design File *"
-                    />
-                    <FilePickerWithPreview
-                      fileMeta={costingFileMeta}
-                      isUploading={uploadingFile === 'costing'}
-                      onFileSelect={(f) => f && handleDraftFileUpload(f, 'costing')}
-                      onRemove={() => handleDraftFileRemove('costing')}
-                      accept=".pdf,.xlsx,.xls,.csv"
-                      label="Costing File *"
-                    />
+                  <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[#3a3a3e]'}`}>
+                    {isCostingMode ? 'Upload Costing & Quotation' : 'Upload Blueprint & Design'}
+                  </p>
+                  <div className={cn('grid gap-3', isBlueprintMode ? 'sm:grid-cols-2' : 'sm:grid-cols-1')}>
+                    {isBlueprintMode && (
+                      <>
+                        <FilePickerWithPreview
+                          fileMeta={blueprintFileMeta}
+                          isUploading={uploadingFile === 'blueprint'}
+                          onFileSelect={(f) => f && handleDraftFileUpload(f, 'blueprint')}
+                          onRemove={() => handleDraftFileRemove('blueprint')}
+                          accept=".pdf,.png,.jpg,.jpeg,.dwg"
+                          label="Blueprint File *"
+                        />
+                        <FilePickerWithPreview
+                          fileMeta={designFileMeta}
+                          isUploading={uploadingFile === 'design'}
+                          onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
+                          onRemove={() => handleDraftFileRemove('design')}
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          label="Design File *"
+                        />
+                      </>
+                    )}
+                    {isCostingMode && (
+                      <FilePickerWithPreview
+                        fileMeta={costingFileMeta}
+                        isUploading={uploadingFile === 'costing'}
+                        onFileSelect={(f) => f && handleDraftFileUpload(f, 'costing')}
+                        onRemove={() => handleDraftFileRemove('costing')}
+                        accept=".pdf,.xlsx,.xls,.csv"
+                        label="Costing File *"
+                      />
+                    )}
                   </div>
 
-                  {quotationFormJSX}
+                  {isCostingMode && quotationFormJSX}
 
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-2">
                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400">
@@ -1109,19 +1139,23 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                         <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400"><CheckCircle className="h-3 w-3" /> Draft up to date</span>
                       )}
                     </div>
-                    <button
-                      type="button"
-                      className={uploadActionButtonClass}
-                      onClick={handleBlueprintUpload}
-                      disabled={uploading || !blueprintFileMeta || !designFileMeta || !costingFileMeta || isSavingDraft || !!uploadingFile}
-                    >
-                      {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
-                      Upload Blueprint
-                    </button>
+                    {isCostingMode && (
+                      <button
+                        type="button"
+                        className={uploadActionButtonClass}
+                        onClick={handleBlueprintUpload}
+                        disabled={uploading || !blueprintFileMeta || !designFileMeta || !costingFileMeta || isSavingDraft || !!uploadingFile}
+                      >
+                        {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Upload className="mr-1.5 h-4 w-4" />}
+                        Finalize Costing
+                      </button>
+                    )}
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-[#6e6e73] py-4">No blueprint uploaded yet.</p>
+                <p className="text-sm text-[#6e6e73] py-4">
+                  {isCostingMode ? 'No costing package uploaded yet.' : 'No blueprint uploaded yet.'}
+                </p>
               )}
             </div>
           )}
@@ -1327,7 +1361,9 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
           <FileText className="h-10 w-10 text-gray-300 mx-auto mb-3" />
           <p className="text-sm text-[#6e6e73]">No blueprints have been uploaded yet.</p>
           <p className="text-xs text-[#86868b] mt-1">
-            The engineering team will upload drawings and billing details for your review.
+            {isCostingMode
+              ? 'The engineering team will upload costing and billing details for your review.'
+              : 'The engineering team will upload drawings for your review.'}
           </p>
         </CardContent>
       </Card>
@@ -1353,7 +1389,7 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
           </div>
 
           {/* ── Customer Step Guide ── */}
-          {canReviewBlueprint && ['uploaded', 'revision_uploaded', 'approved'].includes(bp.status) && (
+          {isCostingMode && canReviewBlueprint && ['uploaded', 'revision_uploaded', 'approved'].includes(bp.status) && (
             <div className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} overflow-hidden rounded-none border border-[color:var(--color-border)]/60 sm:rounded-xl border-x-0 sm:border-x dark:border-slate-700`}>
               <div className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} border-b border-[color:var(--color-border)]/55 px-4 py-3 sm:px-5 dark:border-slate-700`}>
                 <p className={`text-xs font-semibold uppercase tracking-wider ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>Your Review Progress</p>
@@ -1402,7 +1438,7 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
             </div>
           )}
 
-          {bp.quotation && bp.quotation.total > 0 && (
+          {isCostingMode && bp.quotation && bp.quotation.total > 0 && (
             <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
               <CardContent className="px-4 py-4 sm:px-6">
                 <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
@@ -1435,8 +1471,9 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
           )}
 
           {/* Design + billing cards for customers; full costing remains staff-only. */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className={cn('grid grid-cols-1 gap-4', isCostingMode ? 'md:grid-cols-1' : 'md:grid-cols-1')}>
             {/* Design Card — shown to everyone */}
+            {isBlueprintMode && (
             <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
               <CardHeader className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} flex flex-row items-center justify-between border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6 dark:border-slate-700`}>
                 <div className="flex items-center gap-2">
@@ -1479,8 +1516,10 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                 </div>
               </CardContent>
             </Card>
+            )}
 
             {/* Costing/Billing Card */}
+            {isCostingMode && (
             <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
               <CardHeader className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} flex flex-row items-center justify-between border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6 dark:border-slate-700`}>
                 <div className="flex items-center gap-2">
@@ -1541,10 +1580,11 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
                 </div>
               </CardContent>
             </Card>
+            )}
           </div>
 
           {/* Technical Blueprint — staff/engineer/admin only, hidden from customers */}
-          {!canReviewBlueprint && (
+          {isBlueprintMode && !canReviewBlueprint && (
             <div className="metal-panel-strong rounded-[1.25rem] border border-[color:var(--color-border)]/60 px-4 py-3.5 dark:border-slate-700 dark:bg-slate-950/85">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1566,7 +1606,7 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
           )}
 
           {/* -- Prominent Accept CTA -- shown when both approved and customer hasn't accepted yet */}
-          {canReviewBlueprint && bp.blueprintApproved && bp.costingApproved &&
+          {isCostingMode && canReviewBlueprint && bp.blueprintApproved && bp.costingApproved &&
            ['uploaded', 'revision_uploaded', 'approved'].includes(bp.status) && (
             <Card className="rounded-none border-x-0 border-emerald-200 bg-gradient-to-r from-emerald-50 to-emerald-50/50 shadow-sm sm:rounded-xl sm:border-x dark:border-emerald-500/35 dark:from-emerald-500/12 dark:to-slate-900 dark:bg-none">
               <CardContent className="flex flex-col sm:flex-row items-center gap-4 py-5 px-4 sm:px-6">
@@ -1650,7 +1690,7 @@ export function BlueprintTab({ projectId, projectItemId }: BlueprintTabProps) {
           )}
 
           {/* Quotation Summary */}
-          {bp.quotation && bp.quotation.total > 0 && (
+          {isCostingMode && bp.quotation && bp.quotation.total > 0 && (
             <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
               <CardHeader className={`${isDark ? 'bg-slate-900/70 dark:border-slate-700' : 'bg-[color:var(--color-muted)]/55'} border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6`}>
                 <div className="flex items-center justify-between">

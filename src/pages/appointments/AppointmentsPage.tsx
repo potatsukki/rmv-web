@@ -76,6 +76,30 @@ const statusConfig: Record<string, { label: string; dot: string; badge: string }
   },
 };
 
+function compareAppointmentAscending(a: Appointment, b: Appointment) {
+  const aDate = a.date || '';
+  const bDate = b.date || '';
+  if (aDate !== bDate) return aDate < bDate ? -1 : 1;
+
+  const aSlot = a.slotCode || '';
+  const bSlot = b.slotCode || '';
+  if (aSlot !== bSlot) return aSlot < bSlot ? -1 : 1;
+
+  return String(a._id).localeCompare(String(b._id));
+}
+
+function compareAppointmentDescending(a: Appointment, b: Appointment) {
+  const aDate = a.date || '';
+  const bDate = b.date || '';
+  if (aDate !== bDate) return aDate < bDate ? 1 : -1;
+
+  const aSlot = a.slotCode || '';
+  const bSlot = b.slotCode || '';
+  if (aSlot !== bSlot) return aSlot < bSlot ? 1 : -1;
+
+  return String(b._id).localeCompare(String(a._id));
+}
+
 export function AppointmentsPage() {
   const { user } = useAuthStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
@@ -140,8 +164,12 @@ export function AppointmentsPage() {
       },
     ].filter((section) => section.items.length > 0);
   } else {
-    const upcomingItems = appointments.filter(a => !['completed', 'cancelled', 'no_show'].includes(a.status));
-    const recentItems = appointments.filter(a => ['completed', 'cancelled', 'no_show'].includes(a.status));
+    const upcomingItems = appointments
+      .filter(a => !['completed', 'cancelled', 'no_show'].includes(a.status))
+      .sort(compareAppointmentAscending);
+    const recentItems = appointments
+      .filter(a => ['completed', 'cancelled', 'no_show'].includes(a.status))
+      .sort(compareAppointmentDescending);
 
     sections = [
       {

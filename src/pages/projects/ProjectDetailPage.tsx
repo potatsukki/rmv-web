@@ -7,7 +7,7 @@ import {
   PenTool, ChevronDown, ChevronUp, Users, Eye, Check, X, ExternalLink,
   Info, CheckCircle2, AlertTriangle,
   RotateCcw, Fence, Grid3x3, DoorOpen, Armchair, ChefHat, Utensils,
-  BookOpen, Frame, Umbrella, ArrowUpFromLine, Wrench, Layers, DoorClosed,
+  BookOpen, Frame, Umbrella, ArrowUpFromLine, Wrench, Layers, DoorClosed, Calculator,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -51,6 +51,7 @@ import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { ContractStatus, Role, StaffAvailabilityStatus, ProjectStatus, ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
+import { getEngineerWorkflowState, type EngineerWorkflowState } from '@/lib/engineer-workflow';
 import { cn, extractErrorMessage } from '@/lib/utils';
 import type { ApiResponse, ProjectItem, VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
@@ -64,7 +65,7 @@ const LazyFabricationTab = lazy(() =>
 );
 
 // ── Types ──
-type TabKey = 'details' | 'design_review' | 'contract' | 'blueprint' | 'payments' | 'fabrication';
+type TabKey = 'details' | 'design_review' | 'contract' | 'blueprint' | 'costing' | 'payments' | 'fabrication';
 
 const SERVICE_ICONS: Record<string, React.ElementType> = {
   [ServiceType.RAILINGS]: Fence,
@@ -90,6 +91,7 @@ const ALL_TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'design_review', label: 'Design Review', icon: PenTool },
   { key: 'contract', label: 'Contract', icon: ScrollText },
   { key: 'blueprint', label: 'Blueprint', icon: Image },
+  { key: 'costing', label: 'Costing', icon: Calculator },
   { key: 'payments', label: 'Payments', icon: CreditCard },
   { key: 'fabrication', label: 'Fabrication', icon: Hammer },
 ];
@@ -632,6 +634,7 @@ export function ProjectDetailPage() {
     const path = location.pathname;
     if (path.endsWith('/contract')) return 'contract';
     if (path.endsWith('/blueprint')) return 'blueprint';
+    if (path.endsWith('/costing')) return 'costing';
     if (path.endsWith('/payments')) return 'payments';
     if (path.endsWith('/fabrication')) return 'fabrication';
 
@@ -730,7 +733,9 @@ export function ProjectDetailPage() {
   const tabs = useMemo(() => {
     if (isEngineer || isFabricationStaff) {
       // Prioritize Blueprint for tech staff and hide Payments
-      const order: TabKey[] = ['details', 'design_review', 'contract', 'blueprint', 'fabrication'];
+      const order: TabKey[] = isEngineer
+        ? ['details', 'design_review', 'contract', 'blueprint', 'costing', 'fabrication']
+        : ['details', 'design_review', 'contract', 'blueprint', 'fabrication'];
       return order
         .map((k) => ALL_TABS.find((t) => t.key === k))
         .filter(Boolean) as typeof ALL_TABS;
@@ -878,6 +883,14 @@ export function ProjectDetailPage() {
     && project
     && activeWorkflowStatus === ProjectStatus.BLUEPRINT
     && (!blueprint || blueprint.status === 'revision_requested'),
+  );
+  const activeQuotationTotal = Number(blueprint?.quotation?.total || 0);
+  const showCostingTabIndicator = Boolean(
+    isAssignedEngineer
+    && project
+    && activeWorkflowStatus === ProjectStatus.BLUEPRINT
+    && activeProjectItemRecord
+    && (!blueprint?.costingKey || !blueprint?.quotation || activeQuotationTotal <= 0),
   );
   const paymentTabPendingCount = useMemo(() => (
     projectPaymentPlanQueries.reduce((count, query) => {
@@ -1068,6 +1081,10 @@ export function ProjectDetailPage() {
       toast.error('Please select a fabrication lead');
       return;
     }
+    if (!canStartFabricationSetup) {
+      toast.error('Team assignment unlocks after the required customer payment is verified.');
+      return;
+    }
     try {
       await assignFabrication.mutateAsync({
         id: id!,
@@ -1114,6 +1131,10 @@ export function ProjectDetailPage() {
   };
 
   const handleOpenFabricationAssign = () => {
+    if (!canStartFabricationSetup) {
+      toast.error('Team assignment unlocks after the required customer payment is verified.');
+      return;
+    }
     setShowFabForm(true);
     requestAnimationFrame(() => {
       fabricationAssignFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1162,6 +1183,109 @@ export function ProjectDetailPage() {
   if (isError || !project) return <PageError onRetry={refetch} />;
 
   const hasFabLead = project.fabricationLeadId && typeof project.fabricationLeadId !== 'string';
+  const engineerSubmissionComplete = Boolean(
+    blueprint
+    && blueprint.status !== 'revision_requested'
+    && blueprint.blueprintKey
+    && blueprint.designKey
+    && blueprint.costingKey
+    && blueprint.quotation
+    && activeQuotationTotal > 0,
+  );
+  const hasCustomerApprovedDesignAndBilling = Boolean(blueprint?.blueprintApproved && blueprint?.costingApproved);
+  const engineerWorkflowState = getEngineerWorkflowState({
+    hasFabLead: Boolean(hasFabLead),
+    engineerSubmissionComplete,
+    hasCustomerApprovedDesignAndBilling,
+    canStartFabricationSetup,
+  });
+  const engineerWorkflowUi: Record<EngineerWorkflowState, {
+    title: string;
+    description: string;
+    owner: string;
+    unlock: string;
+    icon: React.ElementType;
+    tone: 'blue' | 'amber' | 'emerald' | 'violet' | 'slate';
+  }> = {
+    needs_engineer_work: {
+      title: blueprint?.status === 'revision_requested' ? 'Revision needed' : 'Engineer work needed',
+      description: blueprint?.status === 'revision_requested'
+        ? (blueprint.revisionNotes || 'Customer requested changes. Update the blueprint and costing before customer review continues.')
+        : 'Complete the blueprint, design files, costing, and quotation so the customer can review them.',
+      owner: 'Engineer',
+      unlock: 'Final blueprint and costing submission',
+      icon: Upload,
+      tone: blueprint?.status === 'revision_requested' ? 'amber' : 'blue',
+    },
+    waiting_customer_approval: {
+      title: 'Waiting for Customer Approval',
+      description: 'Your part is complete for now. Waiting for customer approval of design and billing.',
+      owner: 'Customer',
+      unlock: 'Customer approval',
+      icon: Info,
+      tone: 'amber',
+    },
+    waiting_customer_payment: {
+      title: 'Waiting for Customer Payment',
+      description: 'Team assignment will unlock after customer payment is verified.',
+      owner: 'Cashier/Payment Verification',
+      unlock: 'Verified payment',
+      icon: CreditCard,
+      tone: 'amber',
+    },
+    ready_for_team_assignment: {
+      title: 'Customer payment verified',
+      description: 'Customer payment verified. You may now assign fabrication team.',
+      owner: 'Engineer',
+      unlock: 'Fabrication team assigned',
+      icon: Users,
+      tone: 'violet',
+    },
+    team_assigned: {
+      title: 'Fabrication team assigned',
+      description: 'The fabrication team is assigned. Fabrication preparation can proceed.',
+      owner: 'Fabrication Team',
+      unlock: 'Fabrication progress updates',
+      icon: CheckCircle2,
+      tone: 'emerald',
+    },
+  };
+  const engineerWorkflow = engineerWorkflowUi[engineerWorkflowState];
+  const engineerWorkflowToneClass = {
+    blue: isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-blue-200 bg-blue-50/50',
+    amber: isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-amber-200 bg-amber-50/50',
+    emerald: isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-emerald-200 bg-emerald-50/50',
+    violet: isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-violet-200 bg-violet-50/50',
+    slate: isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-slate-200 bg-slate-50/60',
+  }[engineerWorkflow.tone];
+  const engineerWorkflowIconClass = {
+    blue: isDark ? 'text-slate-300' : 'text-blue-600',
+    amber: isDark ? 'text-amber-300' : 'text-amber-600',
+    emerald: isDark ? 'text-emerald-300' : 'text-emerald-600',
+    violet: isDark ? 'text-violet-300' : 'text-violet-600',
+    slate: isDark ? 'text-slate-300' : 'text-slate-600',
+  }[engineerWorkflow.tone];
+  const engineerWorkflowTextClass = {
+    blue: isDark ? 'text-slate-100' : 'text-blue-800',
+    amber: isDark ? 'text-slate-100' : 'text-amber-800',
+    emerald: isDark ? 'text-slate-100' : 'text-emerald-800',
+    violet: isDark ? 'text-slate-100' : 'text-violet-800',
+    slate: isDark ? 'text-slate-100' : 'text-slate-800',
+  }[engineerWorkflow.tone];
+  const engineerWorkflowMutedClass = {
+    blue: isDark ? 'text-slate-400' : 'text-blue-700',
+    amber: isDark ? 'text-slate-400' : 'text-amber-700',
+    emerald: isDark ? 'text-slate-400' : 'text-emerald-700',
+    violet: isDark ? 'text-slate-400' : 'text-violet-700',
+    slate: isDark ? 'text-slate-400' : 'text-slate-600',
+  }[engineerWorkflow.tone];
+  const showLockedFabricationAssignmentCallout = Boolean(
+    isEngineer
+    && isAssignedEngineer
+    && !hasFabLead
+    && ['waiting_customer_approval', 'waiting_customer_payment'].includes(engineerWorkflowState),
+  );
+  const EngineerWorkflowIcon = engineerWorkflow.icon;
   const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
   const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
   const headerTitle = activeProjectServiceLabel || projectServiceTitle;
@@ -1241,6 +1365,19 @@ export function ProjectDetailPage() {
               {tab.key === 'blueprint' && showBlueprintTabIndicator && (
                 <span
                   aria-label="Blueprint requires attention"
+                  className={cn(
+                    'absolute right-2 top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none',
+                    activeTab === tab.key
+                      ? 'bg-sky-700 text-white dark:bg-sky-300 dark:text-slate-950'
+                      : 'bg-rose-500 text-white dark:bg-rose-400 dark:text-slate-950',
+                  )}
+                >
+                  1
+                </span>
+              )}
+              {tab.key === 'costing' && showCostingTabIndicator && (
+                <span
+                  aria-label="Costing requires attention"
                   className={cn(
                     'absolute right-2 top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none',
                     activeTab === tab.key
@@ -1581,6 +1718,34 @@ export function ProjectDetailPage() {
               </CardContent>
             </Card>
           )}
+          {isAssignedEngineer && (
+            <Card className={cn(
+              'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
+              engineerWorkflowToneClass,
+            )}>
+              <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                <div className="flex items-start gap-3 min-w-0">
+                  <EngineerWorkflowIcon className={cn('mt-0.5 h-5 w-5 shrink-0', engineerWorkflowIconClass)} />
+                  <div className="min-w-0">
+                    <p className={cn('text-sm font-semibold', engineerWorkflowTextClass)}>{engineerWorkflow.title}</p>
+                    <p className={cn('mt-0.5 text-xs leading-relaxed', engineerWorkflowMutedClass)}>
+                      {engineerWorkflow.description}
+                    </p>
+                  </div>
+                </div>
+                <div className="grid gap-2 sm:min-w-[260px] sm:grid-cols-2">
+                  <div className={cn('rounded-lg border px-3 py-2', isDark ? 'border-slate-700/80 bg-slate-950/40' : 'border-white/70 bg-white/70')}>
+                    <p className={cn('text-[10px] font-semibold uppercase tracking-wider', isDark ? 'text-slate-400' : 'text-slate-500')}>Current Owner</p>
+                    <p className={cn('mt-0.5 text-xs font-semibold', isDark ? 'text-slate-100' : 'text-slate-900')}>{engineerWorkflow.owner}</p>
+                  </div>
+                  <div className={cn('rounded-lg border px-3 py-2', isDark ? 'border-slate-700/80 bg-slate-950/40' : 'border-white/70 bg-white/70')}>
+                    <p className={cn('text-[10px] font-semibold uppercase tracking-wider', isDark ? 'text-slate-400' : 'text-slate-500')}>Unlocks On</p>
+                    <p className={cn('mt-0.5 text-xs font-semibold', isDark ? 'text-slate-100' : 'text-slate-900')}>{engineerWorkflow.unlock}</p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          )}
           {project.status === 'blueprint' && isAssignedEngineer && !blueprint && (
             <Card className={cn(
               'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
@@ -1873,6 +2038,23 @@ export function ProjectDetailPage() {
                     {reassignProjectSales.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
                     Reassign Sales Staff
                   </Button>
+                </div>
+              )}
+
+              {showLockedFabricationAssignmentCallout && (
+                <div className="mt-4 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/30 p-4">
+                  <div className="flex items-start gap-3">
+                    <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
+                    <div className="min-w-0">
+                      <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Fabrication assignment locked</p>
+                      <p className="mt-1 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+                        Your part is complete for now. Team assignment is locked because the next action is still with the customer and payment verification.
+                      </p>
+                      <p className="mt-1 text-xs leading-relaxed text-amber-800 dark:text-amber-200">
+                        Team assignment will unlock after customer payment is verified.
+                      </p>
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -2485,10 +2667,29 @@ export function ProjectDetailPage() {
         aria-labelledby="project-tab-blueprint"
       >
         {activeTab === 'blueprint' && (
-          <Suspense fallback={<TabPanelFallback message="Loading the blueprint workspace and costing details." />}>
+          <Suspense fallback={<TabPanelFallback message="Loading the blueprint workspace." />}>
             <LazyBlueprintTab
               projectId={id!}
               projectItemId={activeProjectItemRecord?._id}
+              mode="blueprint"
+            />
+          </Suspense>
+        )}
+      </div>
+
+      {/* ════════════════  COSTING TAB  ════════════════ */}
+      <div
+        className={cn(activeTab === 'costing' ? '' : 'hidden')}
+        role="tabpanel"
+        id="project-panel-costing"
+        aria-labelledby="project-tab-costing"
+      >
+        {activeTab === 'costing' && (
+          <Suspense fallback={<TabPanelFallback message="Loading the costing workspace." />}>
+            <LazyBlueprintTab
+              projectId={id!}
+              projectItemId={activeProjectItemRecord?._id}
+              mode="costing"
             />
           </Suspense>
         )}
@@ -2511,11 +2712,11 @@ export function ProjectDetailPage() {
                 Choose Payment Plan First
               </h3>
               <p className={`mb-6 max-w-sm text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-                Choose your payment plan in the Blueprint tab first. After that, you can continue directly to payment.
+                Choose your payment plan in the Costing tab first. After that, you can continue directly to payment.
               </p>
               <Button
                 className="rounded-xl border border-emerald-300/70 !bg-emerald-600 !bg-none px-6 !text-white shadow-[0_12px_28px_rgba(16,185,129,0.28)] hover:!bg-emerald-500 dark:border-emerald-300/55 dark:!bg-emerald-500 dark:!text-slate-950 dark:hover:!bg-emerald-400"
-                onClick={() => setActiveTab('blueprint')}
+                onClick={() => setActiveTab('costing')}
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 Choose Payment Plan

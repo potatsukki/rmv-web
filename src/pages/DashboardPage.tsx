@@ -212,6 +212,23 @@ function getKpiBadgeClass(tone: KpiItem['badgeTone']) {
   }
 }
 
+function roleCanOpenDashboardPath(role: Role, path: string) {
+  const basePath = path.split('?')[0] || path;
+  const allowedRolesByPath: Array<{ prefix: string; roles: Role[] }> = [
+    { prefix: '/projects', roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN] },
+    { prefix: '/appointments', roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN] },
+    { prefix: '/payments', roles: [Role.CUSTOMER, Role.CASHIER, Role.SALES_STAFF, Role.ADMIN] },
+    { prefix: '/cash', roles: [Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
+    { prefix: '/visit-reports', roles: [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN] },
+    { prefix: '/reports', roles: [Role.CASHIER, Role.ADMIN] },
+    { prefix: '/users', roles: [Role.ADMIN] },
+    { prefix: '/notifications', roles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ENGINEER, Role.CASHIER, Role.FABRICATION_STAFF, Role.ADMIN] },
+  ];
+
+  const rule = allowedRolesByPath.find((item) => basePath === item.prefix || basePath.startsWith(`${item.prefix}/`));
+  return !rule || rule.roles.includes(role);
+}
+
 function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): KpiItem[] {
   const d = data as Record<string, number> | undefined;
 
@@ -257,7 +274,6 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
         { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', detail: 'Submitted payment proofs that still need cashier review before they can be marked paid.', path: '/payments?tab=cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
         { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash transactions that still need collection, confirmation, or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
-        activeProjects,
       ];
     case Role.FABRICATION_STAFF:
       return [
@@ -360,11 +376,13 @@ export function DashboardPage() {
   const primaryRole =
     user?.roles.find((r) => r !== Role.ADMIN) ?? user?.roles[0] ?? Role.CUSTOMER;
   const isCustomerRole = user?.roles.includes(Role.CUSTOMER);
+  const dashboardRole = primaryRole as Role;
   const kpis = getRoleKpis(
     primaryRole as Role,
     data as Record<string, unknown> | undefined,
-  );
-  const actions = getRoleActions(primaryRole as Role);
+  ).filter((item) => roleCanOpenDashboardPath(dashboardRole, item.path));
+  const actions = getRoleActions(primaryRole as Role)
+    .filter((action) => roleCanOpenDashboardPath(dashboardRole, action.path));
   const featuredKpis = kpis.slice(0, Math.min(2, kpis.length));
   const secondaryKpis = kpis.slice(featuredKpis.length);
   const actionHeading = getRoleActionHeading(primaryRole as Role);

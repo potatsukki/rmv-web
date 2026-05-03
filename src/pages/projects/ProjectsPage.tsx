@@ -92,9 +92,28 @@ function deriveDisplayStatus(project: { status?: string; latestBlueprintStatus?:
   return { status: ps, label: statusLabel(ps), cfg };
 }
 
+function getActionSortTime(project: any) {
+  const candidates = [
+    project.targetDate,
+    project.deadline,
+    project.dueDate,
+    project.fabricationTargetDate,
+    project.fabricationDeadline,
+    project.createdAt,
+  ];
+
+  for (const value of candidates) {
+    if (!value) continue;
+    const time = new Date(String(value)).getTime();
+    if (!Number.isNaN(time)) return time;
+  }
+
+  return 0;
+}
+
 export function ProjectsPage() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState('active');
   const [search, setSearch] = useState('');
   const { user } = useAuthStore();
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
@@ -121,7 +140,7 @@ export function ProjectsPage() {
 
   const upcomingItems = projects
     .filter((p: any) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(p.status as ProjectStatus))
-    .sort((a: any, b: any) => new Date(String(b.createdAt || '')).getTime() - new Date(String(a.createdAt || '')).getTime());
+    .sort((a: any, b: any) => getActionSortTime(a) - getActionSortTime(b));
     
   const recentItems = projects
     .filter((p: any) => [ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(p.status as ProjectStatus))

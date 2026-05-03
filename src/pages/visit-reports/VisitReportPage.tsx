@@ -375,6 +375,8 @@ export function VisitReportPage() {
       date?: string;
       slotCode?: string;
       status?: string;
+      customerName?: string;
+      customerPhone?: string;
       attendanceStatus?: string;
       actualArrivalAt?: string;
       consultationStartedAt?: string;
@@ -383,6 +385,10 @@ export function VisitReportPage() {
     }
     : null;
   const attendanceStatus = appointmentRecord?.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
+  const contactPersonLabel = [
+    appointmentRecord?.customerName || report?.customerName,
+    appointmentRecord?.customerPhone,
+  ].filter(Boolean).join(' • ');
   const scheduledOcularVisitDateTime =
     effectiveVisitType === 'ocular' && appointmentRecord?.date && appointmentRecord?.slotCode
       ? `${appointmentRecord.date}T${appointmentRecord.slotCode}`
@@ -988,15 +994,22 @@ export function VisitReportPage() {
 
         {/* Address & Markers moved to header area for visibility */}
         {report.appointmentId && typeof report.appointmentId === 'object' && (
-          <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-100 bg-gray-50/50 dark:border-white/10 dark:bg-white/5 max-w-full sm:max-w-xs">
-            {((report.appointmentId as any).addressStructured?.addressType === 'personal' || !(report.appointmentId as any).addressStructured?.addressType) ? (
-              <Home className="h-4 w-4 text-blue-500 shrink-0" />
-            ) : (
-              <Briefcase className="h-4 w-4 text-amber-500 shrink-0" />
+          <div className="flex flex-col gap-1 max-w-full sm:max-w-xs">
+            <div className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-100 bg-gray-50/50 dark:border-white/10 dark:bg-white/5">
+              {((report.appointmentId as any).addressStructured?.addressType === 'personal' || !(report.appointmentId as any).addressStructured?.addressType) ? (
+                <Home className="h-4 w-4 text-blue-500 shrink-0" />
+              ) : (
+                <Briefcase className="h-4 w-4 text-amber-500 shrink-0" />
+              )}
+              <p className="text-xs text-gray-600 dark:text-slate-400 truncate">
+                {(report.appointmentId as any).formattedAddress || (report.appointmentId as any).customerAddress || 'No address provided'}
+              </p>
+            </div>
+            {effectiveVisitType === 'ocular' && contactPersonLabel && (
+              <div className="rounded-xl border border-gray-100 bg-white/70 px-3 py-1.5 text-xs text-gray-700 dark:border-white/10 dark:bg-white/5 dark:text-slate-300">
+                Contact Person: {contactPersonLabel}
+              </div>
             )}
-            <p className="text-xs text-gray-600 dark:text-slate-400 truncate">
-              {(report.appointmentId as any).formattedAddress || (report.appointmentId as any).customerAddress || 'No address provided'}
-            </p>
           </div>
         )}
       </div>

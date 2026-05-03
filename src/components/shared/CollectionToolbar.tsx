@@ -47,13 +47,13 @@ export function CollectionToolbar({
       )}
     >
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-          <div className="max-w-2xl">
+        <div className="flex min-w-0 flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+          <div className="min-w-0 max-w-2xl">
             <p className="text-xl font-semibold tracking-tight text-[#18202a] dark:text-[#f7fbff]">{title}</p>
             <p className="mt-1 text-sm leading-relaxed text-[#5f6d7c] dark:text-[#e4edf7]">{description}</p>
           </div>
-          <div className="flex w-full flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto lg:min-w-[28rem]">
-            <div className={cn('relative w-full lg:min-w-[24rem]', searchWidthClassName)}>
+          <div className="flex w-full min-w-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end lg:w-auto lg:min-w-0 lg:max-w-[32rem]">
+            <div className={cn('relative w-full min-w-0 sm:min-w-[18rem] lg:min-w-[20rem]', searchWidthClassName)}>
               <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5b6a79] dark:text-[#24364a]" />
               <Input
                 placeholder={searchPlaceholder}

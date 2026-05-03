@@ -202,6 +202,19 @@ export function AppointmentDetailPage() {
   );
   const canStartOcularProgress = !isOcularAppointment || hasCustomerSiteLocation;
   const customerSiteLocationRequiredMessage = 'Customer site location is required before starting the ocular visit.';
+  const usePinnedAddressForOfficialAddress = () => {
+    const parts = customerAddress
+      .split(',')
+      .map((part) => part.trim())
+      .filter(Boolean);
+    if (!parts.length) return;
+
+    setAddrStreet(parts[0] || customerAddress);
+    if (!addrBarangay && parts.length > 3) setAddrBarangay(parts[1] || '');
+    if (!addrCity && parts.length > 2) setAddrCity(parts[parts.length - 3] || parts[parts.length - 2] || '');
+    if (!addrProvince && parts.length > 1) setAddrProvince(parts[parts.length - 2] || '');
+    toast.success('Pinned map address copied. You can still edit the official address.');
+  };
 
   const customerCanManageAppointment =
     isCustomer &&
@@ -558,6 +571,12 @@ export function AppointmentDetailPage() {
           label={isCustomer ? 'Assigned Staff' : 'Customer'}
           value={isCustomer ? appt.salesStaffName || 'Pending assignment' : appt.customerName || 'Not yet attached'}
         />
+        {isOcularAppointment && !isCustomer && (
+          <SummaryCard
+            label="Contact Person"
+            value={[appt.customerName || 'Not yet attached', appt.customerPhone].filter(Boolean).join(' • ')}
+          />
+        )}
         <SummaryCard
           label="Location & Fee"
           value={appt.type === 'ocular'
@@ -879,7 +898,17 @@ export function AppointmentDetailPage() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Official Site Address</p>
-                {!user?.addressData?.street && !user?.addressData?.city && (
+                {customerAddress ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={usePinnedAddressForOfficialAddress}
+                    className="h-8 rounded-full px-3 text-xs"
+                  >
+                    Use pinned map address
+                  </Button>
+                ) : !user?.addressData?.street && !user?.addressData?.city && (
                   <span className="rounded-full border border-amber-200 bg-amber-50 px-2 py-0.5 text-xs text-amber-600 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
                     Not set in profile — please fill in
                   </span>

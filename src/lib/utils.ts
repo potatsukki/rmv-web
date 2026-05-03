@@ -58,6 +58,22 @@ export function extractItems<T>(value: unknown): T[] {
   return [];
 }
 
+export function normalizeSearchText(value?: unknown): string {
+  return String(value ?? '')
+    .toLowerCase()
+    .replace(/[_\W]+/g, ' ')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+export function matchesSearchTokens(values: unknown[], query: string): boolean {
+  const normalizedQuery = normalizeSearchText(query);
+  if (!normalizedQuery) return true;
+
+  const haystack = normalizeSearchText(values.filter(Boolean).join(' '));
+  return normalizedQuery.split(' ').every((token) => haystack.includes(token));
+}
+
 export function extractLocalDateValue(value?: string | Date | null): string {
   if (!value) return '';
 

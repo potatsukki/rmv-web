@@ -332,6 +332,12 @@ export function AppLayout() {
       addNotificationRef.current(n);
       queryClientRef.current.invalidateQueries({ queryKey: ['notifications'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['appointments'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['projects'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['visit-reports'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['blueprints'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['fabrication'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['cash'] });
       toast(n.title + ': ' + n.message);
     };
 

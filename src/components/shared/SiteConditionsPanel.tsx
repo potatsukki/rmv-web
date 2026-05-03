@@ -49,10 +49,10 @@ export function SiteConditionsPanel({
       <div className="grid grid-cols-1 min-[400px]:grid-cols-2 gap-3">
         <div className="space-y-1">
           <Label className="text-[11px] font-medium text-gray-500 uppercase tracking-wider dark:text-slate-500">
-            Floor Type
+            Floor Type (Optional / N/A OK)
           </Label>
           <Input
-            placeholder="e.g., Tile, Concrete"
+            placeholder="e.g., Tile, Concrete, N/A"
             value={value.floorType || ''}
             onChange={(e) => update('floorType', e.target.value || undefined)}
             disabled={disabled}
@@ -74,7 +74,7 @@ export function SiteConditionsPanel({
       </div>
 
       {/* Utilities */}
-      <div className="flex gap-4">
+      <div className="flex flex-wrap gap-4">
         <label className="flex items-center gap-2 cursor-pointer">
           <input
             type="checkbox"
@@ -83,7 +83,7 @@ export function SiteConditionsPanel({
             disabled={disabled}
             className="h-4 w-4 rounded border-[#c8c8cd] accent-[#6e6e73] focus:ring-[#6e6e73]/20"
           />
-          <span className="text-sm text-gray-700 dark:text-slate-300">Electrical nearby</span>
+          <span className="text-sm text-gray-700 dark:text-slate-300">Electrical nearby if applicable</span>
         </label>
         <label className="flex items-center gap-2 cursor-pointer">
           <input
@@ -93,7 +93,7 @@ export function SiteConditionsPanel({
             disabled={disabled}
             className="h-4 w-4 rounded border-[#c8c8cd] accent-[#6e6e73] focus:ring-[#6e6e73]/20"
           />
-          <span className="text-sm text-gray-700 dark:text-slate-300">Plumbing nearby</span>
+          <span className="text-sm text-gray-700 dark:text-slate-300">Plumbing nearby if applicable</span>
         </label>
       </div>
 

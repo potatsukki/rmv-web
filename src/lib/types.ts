@@ -128,6 +128,7 @@ export interface Appointment {
   _id: string;
   customerId: string;
   customerName?: string;
+  customerPhone?: string;
   salesStaffId?:
     | string
     | {
