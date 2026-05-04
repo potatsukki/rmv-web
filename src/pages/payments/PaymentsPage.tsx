@@ -75,6 +75,79 @@ const isPaymentListReady = (project: { status: string; items?: { status: string 
   PAYMENT_READY_PROJECT_STATUSES.has(String(project.status))
   || Boolean(project.items?.some((item) => PAYMENT_READY_ITEM_STATUSES.has(String(item.status))));
 
+type PaymentListProject = {
+  _id: string;
+  title: string;
+  serviceType?: string;
+  siteAddress?: string;
+  status: string;
+  items?: { _id: string; status: string }[];
+};
+
+function PaymentProjectRow({
+  project,
+  onSelect,
+}: {
+  project: PaymentListProject;
+  onSelect: (projectId: string) => void;
+}) {
+  const projectItemIds = useMemo(
+    () => (project.items || []).map((item) => String(item._id)),
+    [project.items],
+  );
+  const planQueries = useProjectPaymentPlans(String(project._id), projectItemIds);
+  const listStatus = useMemo(() => {
+    const plans = planQueries.map((query) => query.data).filter(Boolean);
+    const hasPlans = plans.length > 0;
+    const allStagesVerified = hasPlans && plans.every((plan) =>
+      Array.isArray(plan?.stages)
+      && plan.stages.length > 0
+      && plan.stages.every((stage) => stage.status === PaymentStageStatus.VERIFIED),
+    );
+    return {
+      status: allStagesVerified ? 'verified' : getPaymentListStatus(project),
+      label: allStagesVerified ? 'Paid' : undefined,
+    };
+  }, [planQueries, project]);
+
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(String(project._id))}
+      className="group w-full px-4 py-4 text-left transition-colors hover:bg-[color:var(--color-muted)]/70 sm:px-6"
+    >
+      <div className="sm:hidden flex items-center gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">{String(project.title)}</p>
+          <p className="mt-0.5 truncate text-xs capitalize text-[var(--text-metal-color)]">
+            {String(project.serviceType || '').replace(/_/g, ' ')}
+          </p>
+        </div>
+        <StatusBadge status={listStatus.status} label={listStatus.label} />
+        <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-metal-muted-color)] transition-colors group-hover:text-[var(--text-metal-color)]" />
+      </div>
+      <div className="hidden sm:grid sm:grid-cols-[1fr_140px_140px_32px] gap-3 items-center">
+        <div className="min-w-0">
+          <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)] group-hover:text-[var(--text-metal-color)] dark:group-hover:text-slate-200">{String(project.title)}</p>
+          {project.siteAddress && (
+            <p className="mt-0.5 truncate text-xs text-[var(--text-metal-color)] dark:text-slate-300">
+              <MapPin className="inline h-3 w-3 mr-1" />
+              {String(project.siteAddress)}
+            </p>
+          )}
+        </div>
+        <p className="truncate text-xs capitalize text-[var(--text-metal-color)] dark:text-slate-300">
+          {String(project.serviceType || '').replace(/_/g, ' ')}
+        </p>
+        <div className="flex justify-center">
+          <StatusBadge status={listStatus.status} label={listStatus.label} />
+        </div>
+        <ChevronRight className="h-4 w-4 text-[var(--text-metal-muted-color)] group-hover:text-[var(--color-card-foreground)] transition-colors dark:group-hover:text-slate-100" />
+      </div>
+    </button>
+  );
+}
+
 const historyStatusConfig: Record<string, { label: string; className: string }> = {
   verified: { label: 'Paid', className: 'border border-[#7aa18a] bg-[linear-gradient(180deg,#e1f1e6_0%,#c6e0cf_100%)] text-[#234b32] shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-emerald-600/50 dark:bg-[linear-gradient(180deg,rgba(39,84,59,0.9)_0%,rgba(24,53,38,0.92)_100%)] dark:text-emerald-100' },
   approved: { label: 'Approved', className: 'border border-[#7aa18a] bg-[linear-gradient(180deg,#e1f1e6_0%,#c6e0cf_100%)] text-[#234b32] shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-emerald-600/50 dark:bg-[linear-gradient(180deg,rgba(39,84,59,0.9)_0%,rgba(24,53,38,0.92)_100%)] dark:text-emerald-100' },
@@ -159,6 +232,18 @@ export function PaymentsPage() {
   const { data: allHistory, isLoading: historyLoading } = useMyPaymentHistory();
   const [historySearch, setHistorySearch] = useState('');
   const [selectedHistoryPayment, setSelectedHistoryPayment] = useState<PaymentHistoryItem | null>(null);
+  const planSummary = useMemo(() => {
+    if (!plan?.stages?.length) {
+      return { awaitingCount: 0, verifiedCount: 0, allVerified: false };
+    }
+    const awaitingCount = plan.stages.filter((stage) => stage.status === 'proof_submitted').length;
+    const verifiedCount = plan.stages.filter((stage) => stage.status === PaymentStageStatus.VERIFIED).length;
+    return {
+      awaitingCount,
+      verifiedCount,
+      allVerified: verifiedCount === plan.stages.length,
+    };
+  }, [plan]);
 
   const filteredHistory = useMemo(() => {
     if (!allHistory) return [];
@@ -473,43 +558,11 @@ export function PaymentsPage() {
             <div className="divide-y divide-[color:var(--color-border)]">
               {filteredProjects.length > 0 ? (
                 filteredProjects.map((p) => (
-                  <button
+                  <PaymentProjectRow
                     key={String(p._id)}
-                    type="button"
-                    onClick={() => setSelectedProjectId(String(p._id))}
-                    className="group w-full px-4 py-4 text-left transition-colors hover:bg-[color:var(--color-muted)]/70 sm:px-6"
-                  >
-                    {/* Mobile row */}
-                    <div className="sm:hidden flex items-center gap-3">
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">{String(p.title)}</p>
-                        <p className="mt-0.5 truncate text-xs capitalize text-[var(--text-metal-color)]">
-                          {String(p.serviceType || '').replace(/_/g, ' ')}
-                        </p>
-                      </div>
-                      <StatusBadge status={getPaymentListStatus(p)} />
-                      <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-metal-muted-color)] transition-colors group-hover:text-[var(--text-metal-color)]" />
-                    </div>
-                    {/* Desktop row */}
-                    <div className="hidden sm:grid sm:grid-cols-[1fr_140px_140px_32px] gap-3 items-center">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)] group-hover:text-[var(--text-metal-color)] dark:group-hover:text-slate-200">{String(p.title)}</p>
-                        {p.siteAddress && (
-                          <p className="mt-0.5 truncate text-xs text-[var(--text-metal-color)] dark:text-slate-300">
-                            <MapPin className="inline h-3 w-3 mr-1" />
-                            {String(p.siteAddress)}
-                          </p>
-                        )}
-                      </div>
-                      <p className="truncate text-xs capitalize text-[var(--text-metal-color)] dark:text-slate-300">
-                        {String(p.serviceType || '').replace(/_/g, ' ')}
-                      </p>
-                      <div className="flex justify-center">
-                        <StatusBadge status={getPaymentListStatus(p)} />
-                      </div>
-                      <ChevronRight className="h-4 w-4 text-[var(--text-metal-muted-color)] group-hover:text-[var(--color-card-foreground)] transition-colors dark:group-hover:text-slate-100" />
-                    </div>
-                  </button>
+                    project={p as PaymentListProject}
+                    onSelect={setSelectedProjectId}
+                  />
                 ))
               ) : (
                 <div className="p-4">
@@ -679,7 +732,12 @@ export function PaymentsPage() {
                   : isCustomer ? 'Submit and track your payments' : 'View payment details'}
               </p>
             </div>
-            {selectedProject && <StatusBadge status={String(selectedProject.status)} />}
+            {selectedProject && (
+              <StatusBadge
+                status={planSummary.allVerified ? 'verified' : String(selectedProject.status)}
+                label={planSummary.allVerified ? 'Paid' : undefined}
+              />
+            )}
           </div>
 
           {/* Item Selector (if multi-item) */}
@@ -724,10 +782,7 @@ export function PaymentsPage() {
         <>
           {/* ── Payment Status Banner ── */}
           {plan && (() => {
-            const awaitingCount = plan.stages.filter(s => s.status === 'proof_submitted').length;
-            const verifiedCount = plan.stages.filter(s => s.status === PaymentStageStatus.VERIFIED).length;
-            const allVerified = verifiedCount === plan.stages.length;
-            if (allVerified) return (
+            if (planSummary.allVerified) return (
               <Card className="rounded-none -mx-3 border-x-0 border-[#98b49f] bg-[linear-gradient(180deg,rgba(238,246,241,0.92)_0%,rgba(220,234,222,0.86)_100%)] dark:border-emerald-800 dark:bg-emerald-900/30 sm:mx-0 sm:rounded-xl sm:border-x">
                 <CardContent className="flex items-start gap-3 py-3 px-4">
                   <CreditCard className="mt-0.5 h-5 w-5 shrink-0 text-[#56715f] dark:text-emerald-300" />
@@ -738,7 +793,7 @@ export function PaymentsPage() {
                 </CardContent>
               </Card>
             );
-            if (awaitingCount > 0) return (
+            if (planSummary.awaitingCount > 0) return (
               <Card className="rounded-none -mx-3 border-x-0 border-[#8da4b8] bg-[linear-gradient(180deg,rgba(238,244,249,0.94)_0%,rgba(216,228,238,0.86)_100%)] dark:border-blue-800 dark:bg-blue-900/30 sm:mx-0 sm:rounded-xl sm:border-x">
                 <CardContent className="flex items-start gap-3 py-3 px-4">
                   <Clock className="mt-0.5 h-5 w-5 shrink-0 text-[#4f6679] dark:text-blue-300" />
@@ -746,8 +801,8 @@ export function PaymentsPage() {
                     <p className="text-sm font-semibold text-[#324657] dark:text-blue-200">Payment Awaiting Verification</p>
                     <p className="mt-0.5 text-xs text-[#4f6679] dark:text-blue-300">
                       {isCashier
-                        ? `${awaitingCount} payment${awaitingCount > 1 ? 's' : ''} need${awaitingCount === 1 ? 's' : ''} your verification.`
-                        : `${awaitingCount} payment${awaitingCount > 1 ? 's' : ''} received and awaiting cashier verification. This page updates automatically.`}
+                        ? `${planSummary.awaitingCount} payment${planSummary.awaitingCount > 1 ? 's' : ''} need${planSummary.awaitingCount === 1 ? 's' : ''} your verification.`
+                        : `${planSummary.awaitingCount} payment${planSummary.awaitingCount > 1 ? 's' : ''} received and awaiting cashier verification. This page updates automatically.`}
                     </p>
                   </div>
                   {isCashier && (

@@ -300,6 +300,8 @@ export function AppointmentDetailPage() {
     'h-10 rounded-xl border border-slate-300 bg-white px-4 text-sm font-semibold text-slate-700 shadow-sm transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-300/70 disabled:opacity-60 dark:border-slate-600/70 dark:bg-slate-900/40 dark:text-slate-200 dark:shadow-none dark:hover:border-slate-500 dark:hover:bg-slate-800/70 dark:focus-visible:ring-slate-400/30';
   const attendanceDangerButtonClassName =
     'h-10 rounded-xl border border-red-300 bg-red-50 px-4 text-sm font-semibold text-red-700 shadow-sm transition-colors hover:border-red-400 hover:bg-red-100 focus-visible:ring-2 focus-visible:ring-red-300/70 disabled:opacity-60 dark:border-red-500/35 dark:bg-red-950/35 dark:text-red-200 dark:shadow-none dark:hover:border-red-400/50 dark:hover:bg-red-900/45 dark:focus-visible:ring-red-400/25';
+  const attendanceCompleteButtonClassName =
+    'inline-flex h-11 items-center gap-2 rounded-xl border border-emerald-400/60 bg-emerald-600 px-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(5,150,105,0.3)] transition-colors hover:border-emerald-300 hover:bg-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-300/60 disabled:opacity-60 dark:border-emerald-300/45 dark:bg-emerald-500 dark:text-white dark:shadow-[0_16px_36px_rgba(16,185,129,0.22)] dark:hover:border-emerald-200 dark:hover:bg-emerald-400 dark:focus-visible:ring-emerald-300/40';
   const canUpdateAttendance = Boolean(
     isOfficeConsultation &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
@@ -650,9 +652,16 @@ export function AppointmentDetailPage() {
                   </>
                 )}
                 {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
-                  <Button onClick={() => updateAttendance('complete')} disabled={attendanceMutation.isPending} className={attendancePrimaryButtonClassName}>
-                    Complete Consultation
-                  </Button>
+                  <div className="flex w-full justify-end pt-2">
+                    <Button
+                      onClick={() => updateAttendance('complete')}
+                      disabled={attendanceMutation.isPending}
+                      className={attendanceCompleteButtonClassName}
+                    >
+                      <CheckCircle2 className="h-4 w-4" />
+                      Complete Consultation
+                    </Button>
+                  </div>
                 )}
               </div>
             )}

@@ -1258,8 +1258,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   <CheckCircle className="mr-1 h-3 w-3" /> Approved
                 </Badge>
               ) : (
-                <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700">
-                  Pending Review
+                <Badge variant="outline" className="h-5 rounded-full border-amber-400/45 bg-amber-500/8 px-1.5 text-[10px] font-medium tracking-[0.01em] text-amber-200 shadow-none dark:border-amber-400/40 dark:bg-amber-500/8 dark:text-amber-200">
+                  Review
                 </Badge>
               )}
             </CardHeader>
@@ -1531,8 +1531,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                     <CheckCircle className="mr-1 h-3 w-3" /> Approved
                   </Badge>
                 ) : (
-                  <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300">
-                    Pending Review
+                  <Badge variant="outline" className="h-5 rounded-full border-amber-400/45 bg-amber-500/8 px-1.5 text-[10px] font-medium tracking-[0.01em] text-amber-200 shadow-none dark:border-amber-400/40 dark:bg-amber-500/8 dark:text-amber-200">
+                    Review
                   </Badge>
                 )}
               </CardHeader>

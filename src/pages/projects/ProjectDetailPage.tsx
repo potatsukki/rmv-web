@@ -892,6 +892,26 @@ export function ProjectDetailPage() {
     && activeProjectItemRecord
     && (!blueprint?.costingKey || !blueprint?.quotation || activeQuotationTotal <= 0),
   );
+  const blueprintReadyForCustomerReview = Boolean(
+    isCustomer
+    && blueprint
+    && blueprint.status !== 'revision_requested'
+    && blueprint.blueprintKey
+    && blueprint.designKey
+    && blueprint.costingKey
+    && blueprint.quotation
+    && activeQuotationTotal > 0,
+  );
+  const showCustomerBlueprintApprovalIndicator = Boolean(
+    blueprintReadyForCustomerReview
+    && !blueprint?.blueprintApproved,
+  );
+  const showCustomerCostingApprovalIndicator = Boolean(
+    blueprintReadyForCustomerReview
+    && !blueprint?.costingApproved,
+  );
+  const showBlueprintTabBadge = showBlueprintTabIndicator || showCustomerBlueprintApprovalIndicator;
+  const showCostingTabBadge = showCostingTabIndicator || showCustomerCostingApprovalIndicator;
   const paymentTabPendingCount = useMemo(() => (
     projectPaymentPlanQueries.reduce((count, query) => {
       const plan = query.data;
@@ -921,6 +941,12 @@ export function ProjectDetailPage() {
     project
     && hasReachedFabricationPaymentStage,
   );
+  const isActivePaymentPlanFullyVerified = Boolean(
+    paymentPlan?.stages?.length
+    && paymentPlan.stages.every((stage) => String(stage.status) === 'verified'),
+  );
+  const projectStatusBadgeStatus = isActivePaymentPlanFullyVerified ? 'verified' : activeWorkflowStatus;
+  const projectStatusBadgeLabel = isActivePaymentPlanFullyVerified ? 'Paid' : undefined;
 
   const availabilityLabel = (status?: StaffAvailabilityStatus) => {
     switch (status) {
@@ -1314,7 +1340,7 @@ export function ProjectDetailPage() {
                 {project.projectNumber}
               </span>
             )}
-            <StatusBadge status={activeWorkflowStatus} />
+            <StatusBadge status={projectStatusBadgeStatus} label={projectStatusBadgeLabel} />
           </div>
           <p className="text-xs sm:text-sm text-[var(--text-metal-color)] dark:text-slate-300 mt-0.5">
             Created {format(new Date(project.createdAt), 'MMM d, yyyy')}
@@ -1362,9 +1388,9 @@ export function ProjectDetailPage() {
                   1
                 </span>
               )}
-              {tab.key === 'blueprint' && showBlueprintTabIndicator && (
+              {tab.key === 'blueprint' && showBlueprintTabBadge && (
                 <span
-                  aria-label="Blueprint requires attention"
+                  aria-label={showCustomerBlueprintApprovalIndicator ? 'Blueprint approval pending' : 'Blueprint requires attention'}
                   className={cn(
                     'absolute right-2 top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none',
                     activeTab === tab.key
@@ -1375,9 +1401,9 @@ export function ProjectDetailPage() {
                   1
                 </span>
               )}
-              {tab.key === 'costing' && showCostingTabIndicator && (
+              {tab.key === 'costing' && showCostingTabBadge && (
                 <span
-                  aria-label="Costing requires attention"
+                  aria-label={showCustomerCostingApprovalIndicator ? 'Costing approval pending' : 'Costing requires attention'}
                   className={cn(
                     'absolute right-2 top-1.5 inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[10px] font-bold leading-none',
                     activeTab === tab.key
@@ -1519,7 +1545,7 @@ export function ProjectDetailPage() {
           </CardContent>
         </Card>
       )}
-      {isCustomer && project.status === 'payment_pending' && !!paymentPlan && (
+      {isCustomer && project.status === 'payment_pending' && !!paymentPlan && !isActivePaymentPlanFullyVerified && (
         <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/50 dark:bg-amber-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
             <CreditCard className="h-5 w-5 text-amber-600 dark:text-amber-300 mt-0.5 shrink-0" />
@@ -1817,7 +1843,7 @@ export function ProjectDetailPage() {
             title="Project Snapshot"
             icon={FileText}
             className="lg:col-span-2"
-            action={<StatusBadge status={project.status} />}
+            action={<StatusBadge status={projectStatusBadgeStatus} label={projectStatusBadgeLabel} />}
           >
             <div className="grid gap-3 sm:grid-cols-2">
               {project.description && (
@@ -1840,7 +1866,7 @@ export function ProjectDetailPage() {
                 <DetailField label="Site Address" value={project.siteAddress} className="sm:col-span-2" />
               )}
               <DetailField label="Project Status">
-                <StatusBadge status={project.status} />
+                <StatusBadge status={projectStatusBadgeStatus} label={projectStatusBadgeLabel} />
               </DetailField>
               {project.projectNumber && (
                 <DetailField label="Project Number" value={project.projectNumber} />

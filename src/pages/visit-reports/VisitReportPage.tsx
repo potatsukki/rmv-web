@@ -20,6 +20,7 @@ import {
   Wrench,
   Home,
   Briefcase,
+  CheckCircle2,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -1363,7 +1364,18 @@ export function VisitReportPage() {
                             </>
                           )}
                           {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
-                            <Button type="button" size="sm" onClick={() => updateConsultationAttendance('complete')} disabled={attendanceMutation.isPending} className="rounded-xl">Complete Consultation</Button>
+                            <div className="flex w-full justify-end pt-2">
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={() => updateConsultationAttendance('complete')}
+                                disabled={attendanceMutation.isPending}
+                                className="h-10 rounded-xl border border-emerald-400/60 bg-emerald-600 px-4 text-sm font-semibold text-white shadow-[0_12px_30px_rgba(5,150,105,0.3)] transition-colors hover:border-emerald-300 hover:bg-emerald-500 focus-visible:ring-2 focus-visible:ring-emerald-300/60 disabled:opacity-60 dark:border-emerald-300/45 dark:bg-emerald-500 dark:text-white dark:shadow-[0_16px_36px_rgba(16,185,129,0.22)] dark:hover:border-emerald-200 dark:hover:bg-emerald-400 dark:focus-visible:ring-emerald-300/40"
+                              >
+                                <CheckCircle2 className="h-4 w-4" />
+                                Complete Consultation
+                              </Button>
+                            </div>
                           )}
                         </div>
                       )}
