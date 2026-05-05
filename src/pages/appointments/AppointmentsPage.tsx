@@ -100,6 +100,22 @@ function compareAppointmentDescending(a: Appointment, b: Appointment) {
   return String(b._id).localeCompare(String(a._id));
 }
 
+function appointmentActivityTime(appt: Appointment) {
+  const updatedAt = appt.updatedAt ? new Date(appt.updatedAt).getTime() : 0;
+  if (!Number.isNaN(updatedAt) && updatedAt > 0) return updatedAt;
+
+  const createdAt = appt.createdAt ? new Date(appt.createdAt).getTime() : 0;
+  return Number.isNaN(createdAt) ? 0 : createdAt;
+}
+
+function compareAppointmentLatestActivity(a: Appointment, b: Appointment) {
+  const aTime = appointmentActivityTime(a);
+  const bTime = appointmentActivityTime(b);
+  if (aTime !== bTime) return bTime - aTime;
+
+  return compareAppointmentAscending(a, b);
+}
+
 export function AppointmentsPage() {
   const { user } = useAuthStore();
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
@@ -151,16 +167,26 @@ export function AppointmentsPage() {
   let sections: Array<{ key: string; label: string; items: Appointment[] }> = [];
 
   if (isQueueRole) {
+    const sortUpcomingQueueItems = !statusFilter && !search
+      ? compareAppointmentLatestActivity
+      : compareAppointmentAscending;
+
     sections = [
       {
         key: 'upcoming',
         label: 'Upcoming and Actionable',
-        items: queueItems.filter((item) => item.segment === 'upcoming').map((item) => item.appointment),
+        items: queueItems
+          .filter((item) => item.segment === 'upcoming')
+          .map((item) => item.appointment)
+          .sort(sortUpcomingQueueItems),
       },
       {
         key: 'recent',
         label: (statusFilter !== null || search) ? 'Recent and History' : `Recent (${recentWindowDays} days)`,
-        items: queueItems.filter((item) => item.segment === 'recent').map((item) => item.appointment),
+        items: queueItems
+          .filter((item) => item.segment === 'recent')
+          .map((item) => item.appointment)
+          .sort(compareAppointmentDescending),
       },
     ].filter((section) => section.items.length > 0);
   } else {
