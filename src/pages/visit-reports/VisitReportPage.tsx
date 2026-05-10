@@ -844,6 +844,10 @@ export function VisitReportPage() {
         toast.error('Consultation report cannot be submitted because the consultation was marked as Rescheduled. Save notes only.');
         return;
       }
+      if (attendanceStatus === AppointmentAttendanceStatus.CUSTOMER_DECLINED) {
+        toast.error('Consultation report cannot be submitted because the customer declined to proceed. Save notes only.');
+        return;
+      }
       if (attendanceStatus !== AppointmentAttendanceStatus.COMPLETED) {
         toast.error('Complete the consultation attendance before submitting the consultation report.');
         return;

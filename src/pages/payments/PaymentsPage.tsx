@@ -51,6 +51,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useUnpaidOcularFees } from '@/hooks/useAppointments';
+import { resolvePaymentWorkflowStatus } from '@/lib/workflow-status';
 
 
 import { CashierQueuePage } from './CashierQueuePage';
@@ -94,15 +95,15 @@ type PaymentListProject = {
 };
 
 const PAYMENT_STATUS_LABELS: Record<PaymentListStatus, string> = {
-  payment_pending: 'Payment Pending',
-  for_verification: 'For Verification',
+  payment_pending: 'Payment Required',
+  for_verification: 'Awaiting Cashier Verification',
   partially_paid: 'Partially Paid',
   paid: 'Paid',
 };
 
 const PAYMENT_STATUS_BADGES: Record<PaymentListStatus, { status: string; label: string }> = {
   payment_pending: { status: 'payment_pending', label: 'Payment Pending' },
-  for_verification: { status: 'proof_submitted', label: 'For Verification' },
+  for_verification: { status: 'proof_submitted', label: 'Awaiting Cashier Verification' },
   partially_paid: { status: 'approved', label: 'Partially Paid' },
   paid: { status: 'verified', label: 'Paid' },
 };
@@ -110,14 +111,19 @@ const PAYMENT_STATUS_BADGES: Record<PaymentListStatus, { status: string; label: 
 const formatStatusLabel = (status: string) =>
   status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
-const derivePaymentListStatus = (plans: any[]): PaymentListStatus => {
-  const stages = plans.flatMap((plan) => Array.isArray(plan?.stages) ? plan.stages : []);
-  if (!stages.length) return 'payment_pending';
+const formatProjectStageFilterLabel = (status: string) => {
+  if (status === 'paid') return 'Paid';
+  if (status === 'payment_pending') return 'Billing';
+  if (status === 'fabrication') return 'Fabrication';
+  if (status === 'completed') return 'Completed';
+  return formatStatusLabel(status);
+};
 
-  const verifiedCount = stages.filter((stage) => stage.status === PaymentStageStatus.VERIFIED).length;
-  if (verifiedCount === stages.length) return 'paid';
-  if (stages.some((stage) => stage.status === PaymentStageStatus.PROOF_SUBMITTED)) return 'for_verification';
-  if (verifiedCount > 0) return 'partially_paid';
+const derivePaymentListStatus = (plans: any[]): PaymentListStatus => {
+  const status = resolvePaymentWorkflowStatus(plans);
+  if (status.key === 'paid') return 'paid';
+  if (status.key === 'payment_for_verification') return 'for_verification';
+  if (status.key === 'partially_paid') return 'partially_paid';
   return 'payment_pending';
 };
 
@@ -204,7 +210,7 @@ const historyStatusConfig: Record<string, { label: string; className: string }> 
   verified: { label: 'Paid', className: 'border border-[#7aa18a] bg-[linear-gradient(180deg,#e1f1e6_0%,#c6e0cf_100%)] text-[#234b32] shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-emerald-600/50 dark:bg-[linear-gradient(180deg,rgba(39,84,59,0.9)_0%,rgba(24,53,38,0.92)_100%)] dark:text-emerald-100' },
   approved: { label: 'Approved', className: 'border border-[#7aa18a] bg-[linear-gradient(180deg,#e1f1e6_0%,#c6e0cf_100%)] text-[#234b32] shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-emerald-600/50 dark:bg-[linear-gradient(180deg,rgba(39,84,59,0.9)_0%,rgba(24,53,38,0.92)_100%)] dark:text-emerald-100' },
   pending: { label: 'Pending', className: 'border border-[#c49a62] bg-[linear-gradient(180deg,#f4e6d2_0%,#e5cfab_100%)] text-[#6d4b1f] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-amber-600/50 dark:bg-[linear-gradient(180deg,rgba(102,70,24,0.92)_0%,rgba(67,45,16,0.92)_100%)] dark:text-amber-100' },
-  proof_submitted: { label: 'Awaiting Verification', className: 'border border-[#7899b4] bg-[linear-gradient(180deg,#e0edf7_0%,#c7dced_100%)] text-[#274860] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-blue-600/50 dark:bg-[linear-gradient(180deg,rgba(36,69,96,0.92)_0%,rgba(23,45,63,0.92)_100%)] dark:text-blue-100' },
+  proof_submitted: { label: 'Awaiting Cashier Verification', className: 'border border-[#7899b4] bg-[linear-gradient(180deg,#e0edf7_0%,#c7dced_100%)] text-[#274860] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-blue-600/50 dark:bg-[linear-gradient(180deg,rgba(36,69,96,0.92)_0%,rgba(23,45,63,0.92)_100%)] dark:text-blue-100' },
   declined: { label: 'Declined', className: 'border border-[#bf7d77] bg-[linear-gradient(180deg,#f6e2df_0%,#e6c4bf_100%)] text-[#6b2d28] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-red-600/50 dark:bg-[linear-gradient(180deg,rgba(100,45,41,0.92)_0%,rgba(69,29,26,0.92)_100%)] dark:text-red-100' },
 };
 
@@ -566,7 +572,7 @@ export function PaymentsPage() {
                   { value: 'all', label: 'All Project Stages' },
                   ...projectStages.map((status) => ({
                     value: status,
-                    label: formatStatusLabel(status),
+                    label: formatProjectStageFilterLabel(status),
                   })),
                 ]}
                 activeFilter={projectStageFilter}

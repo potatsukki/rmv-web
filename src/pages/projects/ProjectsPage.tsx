@@ -5,7 +5,6 @@ import { format, formatDistanceToNow } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableBody,
@@ -21,14 +20,18 @@ import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, BlueprintStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { formatPersonName } from '@/lib/address';
+import { StatusBadge } from '@/components/shared/StatusBadge';
+import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
+import type { Project } from '@/lib/types';
 
 const STATUS_FILTERS = [
-  { label: 'All Projects', value: '' },
-  { label: 'Active', value: 'active' },
-  { label: 'Blueprint', value: ProjectStatus.BLUEPRINT },
-  { label: 'Pending Payment', value: ProjectStatus.PAYMENT_PENDING },
-  { label: 'In Fabrication', value: ProjectStatus.FABRICATION },
+  { label: 'All', value: '' },
+  { label: 'Needs Action', value: 'active' },
+  { label: 'Design / Blueprint', value: ProjectStatus.BLUEPRINT },
+  { label: 'Billing', value: ProjectStatus.PAYMENT_PENDING },
+  { label: 'Fabrication', value: ProjectStatus.FABRICATION },
   { label: 'Completed', value: ProjectStatus.COMPLETED },
+  { label: 'Cancelled', value: ProjectStatus.CANCELLED },
 ];
 
 function statusConfig(status: string) {
@@ -50,10 +53,6 @@ function statusConfig(status: string) {
     default:
       return { badge: 'border-[#c6ccd3] text-[#5b6470] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)] dark:border-slate-600 dark:text-slate-200 dark:bg-slate-700/60', bar: 'bg-[#9ca6b1]' };
   }
-}
-
-function statusLabel(status: string) {
-  return String(status || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
 function serviceTypeLabel(value?: string) {
@@ -88,8 +87,9 @@ function deriveDisplayStatus(project: { status?: string; latestBlueprintStatus?:
       cfg: { badge: 'border-orange-200 text-orange-700 bg-orange-50', bar: 'bg-orange-500' },
     };
   }
+  const workflow = resolveProjectWorkflowStatus({ project: project as Project });
   const cfg = statusConfig(ps);
-  return { status: ps, label: statusLabel(ps), cfg };
+  return { status: workflow.key, label: workflow.label, cfg, workflow };
 }
 
 function getActionSortTime(project: any) {
@@ -263,7 +263,7 @@ export function ProjectsPage() {
                       </TableCell>
                     </TableRow>
                     {section.items.map((project: any) => {
-                  const { label: displayLabel, cfg } = deriveDisplayStatus(project);
+                  const { status: displayStatus, label: displayLabel, cfg } = deriveDisplayStatus(project);
                   const engineers = Array.isArray(project.engineerIds)
                     ? (project.engineerIds as unknown as { firstName: string; lastName: string }[]).filter(
                         (e) => typeof e === 'object',
@@ -302,9 +302,7 @@ export function ProjectsPage() {
 
                       {/* Status */}
                       <TableCell className="py-5">
-                        <Badge variant="outline" className={`text-[11px] font-bold uppercase tracking-wider ${cfg.badge}`}>
-                          {displayLabel}
-                        </Badge>
+                        <StatusBadge status={displayStatus} label={displayLabel} className="text-[11px] uppercase" />
                       </TableCell>
 
                       {/* Customer â€” lg+ staff only */}
@@ -392,7 +390,7 @@ export function ProjectsPage() {
                   </p>
                 </div>
                 {section.items.map((project: any) => {
-              const { label: displayLabel, cfg } = deriveDisplayStatus(project);
+              const { status: displayStatus, label: displayLabel, cfg } = deriveDisplayStatus(project);
               const customer =
                 project.customerId && typeof project.customerId === 'object'
                   ? (project.customerId as { firstName: string; lastName: string })
@@ -419,9 +417,7 @@ export function ProjectsPage() {
                         </span>
                       )}
                     </div>
-                    <Badge variant="outline" className={`text-[11px] font-bold uppercase tracking-wider shrink-0 ${cfg.badge}`}>
-                      {displayLabel}
-                    </Badge>
+                    <StatusBadge status={displayStatus} label={displayLabel} className="shrink-0 text-[11px] uppercase" />
                   </div>
 
                   {project.serviceType && (

@@ -205,6 +205,7 @@ export function AccountProfilePage() {
     'h-11 rounded-xl border-[color:var(--color-border)] bg-[color:var(--color-card)]/85 text-[var(--color-card-foreground)] placeholder:text-[var(--color-muted-foreground)] focus:border-[var(--color-accent)] focus:ring-[color:var(--color-accent)]/20 transition-colors';
 
   const isCashier = Boolean(user?.roles.includes(Role.CASHIER));
+  const isCustomer = user?.roles.includes(Role.CUSTOMER);
   const isInternalAvailabilityUser = Boolean(
     user?.roles.some((role) => [
       Role.APPOINTMENT_AGENT,
@@ -351,6 +352,7 @@ export function AccountProfilePage() {
             </div>
           </div>
 
+          {isCustomer && (
           <div className="space-y-1.5 rounded-2xl border border-[color:var(--color-border)]/55 bg-[color:var(--color-card)]/65 p-4 sm:p-5">
             <div>
               <Label htmlFor="address" className="text-[var(--color-card-foreground)] text-[13px] font-medium">
@@ -566,6 +568,7 @@ export function AccountProfilePage() {
               </div>
             </div>
           </div>
+          )}
 
           <div className="mt-6 flex items-center justify-end gap-4 border-t border-[color:var(--color-border)]/50 pt-4">
             {isDirty && (

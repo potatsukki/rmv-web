@@ -23,13 +23,19 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { Role, AppointmentStatus, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
 import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
+import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Requested', value: AppointmentStatus.REQUESTED },
-  { label: 'Reschedule', value: AppointmentStatus.RESCHEDULE_REQUESTED },
-  { label: 'Confirmed', value: AppointmentStatus.CONFIRMED },
-  { label: 'Ready for Ocular', value: AppointmentStatus.READY_FOR_OCULAR },
+  {
+    label: 'Needs Action',
+    value: [
+      AppointmentStatus.REQUESTED,
+      AppointmentStatus.CONFIRMED,
+      AppointmentStatus.RESCHEDULE_REQUESTED,
+      AppointmentStatus.READY_FOR_OCULAR,
+    ].join(','),
+  },
   { label: 'Completed', value: AppointmentStatus.COMPLETED },
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
 ];
@@ -75,6 +81,18 @@ const statusConfig: Record<string, { label: string; dot: string; badge: string }
     dot: 'bg-[#aa7f53]',
     badge: 'border-[#c4a07d] text-[#7b5d3f] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)]',
   },
+};
+
+const workflowDotClass: Record<string, string> = {
+  gray: 'bg-[#9ca6b1]',
+  blue: 'bg-[#708ca6]',
+  green: 'bg-[#6c8f7d]',
+  yellow: 'bg-[#a97d49]',
+  red: 'bg-[#b96c66]',
+  purple: 'bg-[#8277a3]',
+  orange: 'bg-[#aa7f53]',
+  indigo: 'bg-[#5b6785]',
+  cyan: 'bg-[#4f6d78]',
 };
 
 function compareAppointmentAscending(a: Appointment, b: Appointment) {
@@ -238,16 +256,6 @@ export function AppointmentsPage() {
     : appointments;
 
   const recentWindowDays = queueQuery.data?.recentWindowDays || 14;
-  const hasActiveCustomerOcularFollowUp = visibleAppointments.some((appt) =>
-    appt.type === 'ocular'
-    && !['completed', 'cancelled', 'no_show'].includes(appt.status),
-  );
-  const isCompletedConsultationWithOcularFollowUp = (appt: Appointment) =>
-    appt.type === 'office'
-    && appt.status === AppointmentStatus.COMPLETED
-    && appt.consultationReportSubmitted
-    && hasActiveCustomerOcularFollowUp;
-  
   let sections: Array<{ key: string; label: string; items: Appointment[] }> = [];
 
   if (isQueueRole) {
@@ -279,7 +287,6 @@ export function AppointmentsPage() {
       .sort(compareAppointmentAscending);
     const recentItems = visibleAppointments
       .filter(a => ['completed', 'cancelled', 'no_show'].includes(a.status))
-      .filter(a => !isCompletedConsultationWithOcularFollowUp(a))
       .sort(compareAppointmentDescending);
 
     sections = [
@@ -507,8 +514,11 @@ export function AppointmentsPage() {
                   </div>
                 </Fragment>
                 {section.items.map((appt) => {
-                  const statusKey = getStatusKey(appt);
-                  const config = statusConfig[statusKey] ?? statusConfig.requested!;
+                  const workflowStatus = resolveAppointmentWorkflowStatus({
+                    ...appt,
+                    status: getStatusKey(appt),
+                  });
+                  const config = statusConfig[getStatusKey(appt)] ?? statusConfig.requested!;
                   const queueMeta = queueMetaByAppointmentId.get(appt._id);
 
                   return (
@@ -521,13 +531,13 @@ export function AppointmentsPage() {
                         {/* Row 1: Status dot + Name + Badge + Chevron */}
                         <div className="flex items-center justify-between gap-2 min-w-0">
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className={`h-2 w-2 rounded-full flex-shrink-0 ${config.dot}`} />
+                            <div className={`h-2 w-2 rounded-full flex-shrink-0 ${workflowDotClass[workflowStatus.tone] || config.dot}`} />
                             <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
                               {appt.customerName || 'Appointment'}
                             </p>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <StatusBadge status={statusKey} label={config.label} className="h-5 px-1.5 py-0 text-[10px]" />
+                            <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="h-5 px-1.5 py-0 text-[10px]" />
                             <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500" />
                           </div>
                         </div>
@@ -615,8 +625,11 @@ export function AppointmentsPage() {
                       </TableRow>
                     </Fragment>
                     {section.items.map((appt) => {
-                      const statusKey = getStatusKey(appt);
-                      const config = statusConfig[statusKey] ?? statusConfig.requested!;
+                      const workflowStatus = resolveAppointmentWorkflowStatus({
+                        ...appt,
+                        status: getStatusKey(appt),
+                      });
+                      const config = statusConfig[getStatusKey(appt)] ?? statusConfig.requested!;
                       const queueMeta = queueMetaByAppointmentId.get(appt._id);
                       const queueActions = [
                         queueMeta?.actions.reviewReportPath
@@ -639,7 +652,7 @@ export function AppointmentsPage() {
                           {/* Customer */}
                           <TableCell className="pl-5 py-5">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${config.dot}`} />
+                              <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${workflowDotClass[workflowStatus.tone] || config.dot}`} />
                               <div className="min-w-0">
                                 <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100 transition-colors group-hover:text-[#4f6679] dark:group-hover:text-sky-300">
                                   {appt.customerName || 'Appointment'}
@@ -737,7 +750,7 @@ export function AppointmentsPage() {
 
                           {/* Status */}
                           <TableCell className="py-5">
-                            <StatusBadge status={statusKey} label={config.label} className="text-[11px]" />
+                            <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="text-[11px]" />
                           </TableCell>
 
                           {/* Arrow */}

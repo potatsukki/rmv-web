@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Link, NavLink, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import type { ElementType } from 'react';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   ArrowDown,
   ArrowUp,
@@ -12,7 +13,10 @@ import {
   LifeBuoy,
   FolderOpen,
   CalendarCheck,
+  Mail,
+  MessageCircle,
   Pencil,
+  Phone,
   Plus,
   Save,
   Search,
@@ -27,7 +31,6 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { Separator } from '@/components/ui/separator';
 import { Textarea } from '@/components/ui/textarea';
 import { useConfigs, useUpdateConfig } from '@/hooks/useConfig';
 import { canAccessPath } from '@/lib/auth-routing';
@@ -48,23 +51,13 @@ type SystemLink = {
   path: string;
 };
 
-type HelpMediaType = 'image' | 'video' | 'embed';
-
-type HelpMedia = {
-  type: HelpMediaType;
-  title: string;
-  url: string;
-  caption?: string;
-};
-type HelpMediaBlock = { media: HelpMedia };
-type HelpBodyBlock = string | HelpMediaBlock;
 type HelpArticle = {
   slug: string;
   title: string;
   summary: string;
   roles?: Role[];
   keywords?: string[];
-  body: HelpBodyBlock[];
+  body: string[];
   checklist?: string[];
   systemLinks?: SystemLink[];
 };
@@ -142,14 +135,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: ALL_ROLES,
         body: [
           'Open Account Settings and complete your profile details, especially contact information and location.',
-          {
-            media: {
-              type: 'image',
-              title: 'Account Profile Page',
-              url: '/help-media/account-profile.png',
-              caption: 'Live screenshot of the Account Profile screen used for identity, location, and signature readiness.',
-            },
-          },
           'Verify your email and upload or draw your signature to remove most process blockers.',
           'Some role actions are hidden until profile requirements are met.',
         ],
@@ -172,14 +157,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: ALL_ROLES,
         body: [
           'Use the sidebar and mobile navigation to move between the modules your account is allowed to access.',
-          {
-            media: {
-              type: 'image',
-              title: 'Dashboard Navigation Snapshot',
-              url: '/help-media/dashboard-overview.png',
-              caption: 'Live screenshot showing sidebar groups, quick actions, and role-aware navigation context.',
-            },
-          },
           'Use the top-bar quick search to jump to pages, projects, appointments, and other records that your role can open.',
           'Help articles support deep links, so teams can point users directly to the right guidance page.',
         ],
@@ -224,26 +201,19 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
       {
         slug: 'appointment-lifecycle',
         title: 'Appointment Lifecycle',
-        summary: 'From request to completion, including reschedules and no-shows.',
+        summary: 'From request to completion, including reschedules, no-shows, and declined consultations.',
         roles: APPOINTMENT_HELP_ROLES,
         body: [
           'Customers can book their own first office consultation, while appointment agents can create that consultation on behalf of a customer.',
-          {
-            media: {
-              type: 'image',
-              title: 'Appointments Workspace Snapshot',
-              url: '/help-media/appointments-overview.png',
-              caption: 'Live screenshot of the Appointments workspace for lifecycle and status handling.',
-            },
-          },
           'Sales staff should only schedule ocular visits after consultation, not the customer’s first appointment.',
+          'If the customer decides not to proceed during consultation, assigned sales staff can mark Customer Declined so the appointment is cancelled and the report workflow stops.',
           'Status changes are visible in the appointment detail flow and reflected in notifications.',
-          'Cashiers and admins can coordinate on ocular fee queues when payment proof is involved.',
+          'Cashiers and admins can coordinate on ocular fee queues when manual payment review is involved.',
         ],
         checklist: [
           'Confirm appointment details',
           'Track status transitions',
-          'Handle reschedule requests promptly',
+          'Record no-show, reschedule, or customer-declined outcomes from the appointment detail page',
         ],
         systemLinks: [
           { label: 'Appointments', path: '/appointments' },
@@ -258,14 +228,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: VISIT_REPORT_HELP_ROLES,
         body: [
           'Use Visit Reports to consolidate site measurements, customer requirements, and constraints.',
-          {
-            media: {
-              type: 'image',
-              title: 'Visit Reports Workspace Snapshot',
-              url: '/help-media/visit-reports-overview.png',
-              caption: 'Live screenshot of the Visit Reports module used by sales and engineering teams.',
-            },
-          },
           'Keep reports concise but complete, because downstream blueprint and costing depend on accuracy.',
           'Use consistent language and include attachments where required by your team standards.',
         ],
@@ -283,19 +245,11 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: APPOINTMENT_HELP_ROLES,
         body: [
           'Ocular pricing uses a base NCR fee and can increase based on measured distance for non-NCR locations.',
-          {
-            media: {
-              type: 'image',
-              title: 'Ocular Fee Queue Snapshot',
-              url: '/help-media/ocular-fee-queue.png',
-              caption: 'Live screenshot of the ocular fee verification queue and status handling workflow.',
-            },
-          },
           'For routes that require fee verification, payment must be confirmed before dependent scheduling actions continue.',
-          'Customers should ensure pinned locations are accurate to avoid incorrect fee calculations and reschedule delays.',
+          'Customers should keep their Account Profile address and saved map pin accurate, because sales staff schedule ocular visits from the saved customer location.',
         ],
         checklist: [
-          'Pin exact location before submitting',
+          'Customer updates Account Profile address and saved map pin before the sales consultation is completed',
           'Review computed ocular fee before payment',
           'Track fee verification status on appointment details',
         ],
@@ -311,13 +265,14 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: APPOINTMENT_HELP_ROLES,
         body: [
           'Appointments move through controlled states such as requested, confirmed, completed, cancelled, no-show, and reschedule requested.',
+          'Office consultation attendance also tracks scheduled, on time, late arrival, in progress, completed, rescheduled, no-show, and customer declined.',
           'Each state affects what actions remain available to customer, agent, and assigned staff in the page UI.',
           'When troubleshooting, first confirm the current status before attempting follow-up actions like payments or report submission.',
         ],
         checklist: [
           'Validate current appointment status first',
           'Use history/timeline context before escalating',
-          'Coordinate no-show and reschedule decisions with assigned staff',
+          'Coordinate no-show, reschedule, and customer-declined decisions with assigned staff',
         ],
         systemLinks: [{ label: 'Appointments', path: '/appointments' }],
       },
@@ -353,14 +308,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: PROJECT_HELP_ROLES,
         body: [
           'Fabrication updates are represented as lifecycle steps with clear progression markers.',
-          {
-            media: {
-              type: 'image',
-              title: 'Projects Workspace Snapshot',
-              url: '/help-media/projects-overview.png',
-              caption: 'Live screenshot from the Projects workspace where fabrication and milestone progress are tracked.',
-            },
-          },
           'Quality check and post-check transitions should be communicated immediately to reduce ambiguity.',
           'Use project-level updates to ensure customer visibility and internal coordination.',
         ],
@@ -421,34 +368,18 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
     articles: [
       {
         slug: 'customer-payments',
-        title: 'Payment Submission and Verification',
-        summary: 'How payment proof, cash intent, and stage verification move through the system.',
+        title: 'Payment Checkout and Verification',
+        summary: 'How PayMongo checkout, cash requests, and stage verification move through the system.',
         roles: PAYMENT_HELP_ROLES,
-        keywords: ['payment proof', 'cash intent', 'invoice', 'stage payment', 'verification'],
+        keywords: ['paymongo', 'cash intent', 'invoice', 'stage payment', 'verification'],
         body: [
-          'Eligible payment stages support proof submission and cash intent requests depending on the user workflow.',
-          {
-            media: {
-              type: 'image',
-              title: 'Payments Workspace Snapshot',
-              url: '/help-media/payments-overview.png',
-              caption: 'Live screenshot of the Payments workspace where stage payments and statuses are reviewed.',
-            },
-          },
+          'Eligible payment stages support PayMongo QR checkout and cash payment requests depending on the customer workflow.',
           'Cash intent requests move to pending verification queues so cashier review is auditable.',
-          {
-            media: {
-              type: 'image',
-              title: 'Cashier Queue Snapshot',
-              url: '/help-media/cashier-queue.png',
-              caption: 'Live screenshot of cashier verification workflow for proof and queue decisions.',
-            },
-          },
           'Payment stage progression updates project visibility and financial reporting.',
         ],
         checklist: [
           'Confirm the correct payment stage before acting',
-          'Submit proof or cash intent with complete details',
+          'Use PayMongo checkout or request cash payment for the correct stage',
           'Monitor verification status in the payment timeline',
         ],
         systemLinks: [{ label: 'Payments', path: '/payments' }],
@@ -456,19 +387,11 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
       {
         slug: 'cashier-verification',
         title: 'Cashier Verification Queue',
-        summary: 'Operational process for pending proofs and cash collection checks.',
+        summary: 'Operational process for received payment records and cash collection checks.',
         roles: [Role.CASHIER, Role.ADMIN],
-        keywords: ['cashier queue', 'proof review', 'decline payment', 'verify payment'],
+        keywords: ['cashier queue', 'payment record review', 'decline payment', 'verify payment'],
         body: [
-          'Use Cashier Queue for pending payment proofs and cash verification decisions.',
-          {
-            media: {
-              type: 'image',
-              title: 'Cashier Verification Queue Snapshot',
-              url: '/help-media/cashier-queue.png',
-              caption: 'Live screenshot of cashier verification where proof submissions are reviewed and actioned.',
-            },
-          },
+          'Use Cashier Queue for received PayMongo payment records and cash verification decisions.',
           'Maintain strict decision discipline because approvals and rejections trigger customer notifications.',
           'Coordinate discrepancies with admin and document outcomes in the action context.',
         ],
@@ -486,16 +409,16 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
       {
         slug: 'payment-stage-status-reference',
         title: 'Payment Stage Status Reference',
-        summary: 'Interpret pending, proof submitted, verified, and declined outcomes.',
+        summary: 'Interpret pending, awaiting cashier verification, verified, and declined outcomes.',
         roles: PAYMENT_HELP_ROLES,
-        keywords: ['proof submitted', 'verified payment', 'declined payment', 'payment status'],
+        keywords: ['awaiting cashier verification', 'verified payment', 'declined payment', 'payment status'],
         body: [
           'Each payment stage follows strict status transitions that define what the current role can do next.',
-          'Declined proofs require corrected re-submission and should include clear decline reasons for faster recovery.',
+          'Declined payment records require the customer to try payment again or coordinate the issue with staff.',
           'Verified stages can activate downstream project/fabrication transitions depending on plan and gate configuration.',
         ],
         checklist: [
-          'Use the latest stage status before re-submitting proof',
+          'Use the latest stage status before retrying payment',
           'Capture clear notes for any decline decision',
           'Monitor next-stage activation after verification',
         ],
@@ -553,14 +476,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: [Role.ADMIN],
         body: [
           'Settings centralize operational toggles and system behavior values.',
-          {
-            media: {
-              type: 'image',
-              title: 'System Settings Snapshot',
-              url: '/help-media/settings-overview.png',
-              caption: 'Live screenshot of admin settings used for platform-level controls and governance.',
-            },
-          },
           'Config-backed pages like Help can be maintained without redeploying frontend code.',
           'Use controlled updates and clear descriptions for each config key.',
         ],
@@ -578,14 +493,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: SLOT_CONTROL_ROLES,
         body: [
           'Slot Management controls open and blocked booking windows.',
-          {
-            media: {
-              type: 'image',
-              title: 'Slot Management Snapshot',
-              url: '/help-media/slot-management-overview.png',
-              caption: 'Live screenshot of slot controls for calendar governance, blocked windows, and availability rules.',
-            },
-          },
           'Use this carefully during holidays, high volume periods, and maintenance windows.',
           'Coordinate changes with agents and customer-facing announcements.',
         ],
@@ -603,14 +510,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: [Role.ADMIN],
         body: [
           'Manage Accounts is the authoritative panel for staff and customer account administration.',
-          {
-            media: {
-              type: 'image',
-              title: 'Manage Accounts Snapshot',
-              url: '/help-media/users-overview.png',
-              caption: 'Live screenshot of user and role governance controls in the Manage Accounts module.',
-            },
-          },
           'Assign roles carefully to avoid accidental exposure of restricted modules.',
           'Use principle-of-least-privilege for operational safety and audit quality.',
         ],
@@ -648,14 +547,6 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: REPORTING_HELP_ROLES,
         body: [
           'Operational reporting should align with verified payments, cash handling, and status transitions across the system.',
-          {
-            media: {
-              type: 'image',
-              title: 'Reports Workspace Snapshot',
-              url: '/help-media/reports-overview.png',
-              caption: 'Live screenshot of reports and analytics views used for reconciliation and audit readiness.',
-            },
-          },
           'Cashiers should use reports together with queue history to validate daily reconciliation, while admins can combine reports with audit and timeline evidence for disputes.',
           'Use role-restricted report views responsibly and avoid exporting stale snapshots for official reconciliations.',
         ],
@@ -825,29 +716,13 @@ function paragraphAnchorTitle(text: string, index: number) {
   return `${normalized.slice(0, 48)}...`;
 }
 
-function mediaAnchorId(index: number) {
-  return `media-${index + 1}`;
-}
-
 function getArticleToc(article: HelpArticle) {
   const items: Array<{ id: string; title: string }> = [{ id: 'overview', title: 'Overview' }];
-  let textIdx = 0;
-  let mediaIdx = 0;
-  article.body.forEach((block) => {
-    if (typeof block === 'string') {
-      items.push({
-        id: paragraphAnchorId(textIdx),
-        title: paragraphAnchorTitle(block, textIdx),
-      });
-      textIdx += 1;
-      return;
-    }
-
+  article.body.forEach((block, textIdx) => {
     items.push({
-      id: mediaAnchorId(mediaIdx),
-      title: block.media.title,
+      id: paragraphAnchorId(textIdx),
+      title: paragraphAnchorTitle(block, textIdx),
     });
-    mediaIdx += 1;
   });
 
   if (article.checklist && article.checklist.length > 0) {
@@ -863,8 +738,8 @@ function getArticleToc(article: HelpArticle) {
 const SEARCH_SYNONYMS: Record<string, string[]> = {
   account: ['account', 'accounts', 'profile', 'login', 'password', 'security', 'session', 'access', 'recovery'],
 
-  payment: ['payment', 'payments', 'invoice', 'proof', 'verify', 'verified', 'declined'],
-  cashier: ['cashier', 'queue', 'verification', 'proof review'],
+  payment: ['payment', 'payments', 'invoice', 'paymongo', 'verify', 'verified', 'declined'],
+  cashier: ['cashier', 'queue', 'verification', 'payment review'],
   booking: ['booking', 'book', 'appointment', 'schedule', 'reschedule', 'visit'],
   appointment: ['appointment', 'appointments', 'booking', 'visit', 'reschedule', 'no-show'],
   project: ['project', 'projects', 'blueprint', 'fabrication', 'milestone'],
@@ -940,10 +815,7 @@ function getSearchMatches(query: string, visibleKnowledgeBase: HelpCategory[]): 
         article.slug,
         ...(article.keywords || []),
         ...(article.systemLinks?.map((link) => `${link.label} ${link.path}`) || []),
-        ...article.body.map((block) => {
-          if (typeof block === 'string') return block;
-          return [block.media.title, block.media.caption || '', block.media.url].join(' ');
-        }),
+        ...article.body,
         ...(article.checklist || []),
       ]
         .join(' ')
@@ -973,46 +845,23 @@ function getSectionIcon(heading: string) {
   return BookOpen;
 }
 
-function resolveSafeExternalUrl(raw: string): string | null {
-  if (!raw) return null;
-  try {
-    const parsed = new URL(raw);
-    if (!['https:', 'http:'].includes(parsed.protocol)) return null;
-    return parsed.toString();
-  } catch {
-    return null;
-  }
+function getCategoryVisual(slug: string) {
+  const visualMap: Record<string, { icon: ElementType; accent: string; glow: string }> = {
+    'getting-started': { icon: BookOpen, accent: 'text-sky-300', glow: 'bg-sky-500/15 border-sky-400/25' },
+    'appointments-visits': { icon: CalendarCheck, accent: 'text-emerald-300', glow: 'bg-emerald-500/15 border-emerald-400/25' },
+    'projects-fabrication': { icon: FolderOpen, accent: 'text-violet-300', glow: 'bg-violet-500/15 border-violet-400/25' },
+    payments: { icon: CreditCard, accent: 'text-amber-300', glow: 'bg-amber-500/15 border-amber-400/25' },
+    'operations-admin': { icon: Settings, accent: 'text-cyan-300', glow: 'bg-cyan-500/15 border-cyan-400/25' },
+    'support-and-troubleshooting': { icon: HelpCircle, accent: 'text-rose-300', glow: 'bg-rose-500/15 border-rose-400/25' },
+  };
+
+  return visualMap[slug] || { icon: Wrench, accent: 'text-blue-300', glow: 'bg-blue-500/15 border-blue-400/25' };
 }
 
-function resolveEmbedUrl(raw: string): string | null {
-  const safe = resolveSafeExternalUrl(raw);
-  if (!safe) return null;
-  const parsed = new URL(safe);
-  const host = parsed.hostname.replace(/^www\./, '').toLowerCase();
-
-  if (host === 'youtu.be') {
-    const id = parsed.pathname.split('/').filter(Boolean)[0];
-    return id ? `https://www.youtube.com/embed/${id}` : null;
-  }
-
-  if (host === 'youtube.com' || host === 'm.youtube.com') {
-    if (parsed.pathname.startsWith('/embed/')) return parsed.toString();
-    const id = parsed.searchParams.get('v');
-    return id ? `https://www.youtube.com/embed/${id}` : null;
-  }
-
-  if (host === 'vimeo.com') {
-    const id = parsed.pathname.split('/').filter(Boolean)[0];
-    return id ? `https://player.vimeo.com/video/${id}` : null;
-  }
-
-  if (host === 'loom.com') {
-    const segments = parsed.pathname.split('/').filter(Boolean);
-    const id = segments[1];
-    return id ? `https://www.loom.com/embed/${id}` : null;
-  }
-
-  return null;
+function getPopularArticles(categories: HelpCategory[]) {
+  return categories
+    .flatMap((category) => category.articles.map((article) => ({ category, article })))
+    .slice(0, 6);
 }
 
 function HelpCategoryRoute({ categories }: { categories: HelpCategory[] }) {
@@ -1023,30 +872,53 @@ function HelpCategoryRoute({ categories }: { categories: HelpCategory[] }) {
     return <Navigate to="/help" replace />;
   }
 
+  const visual = getCategoryVisual(category.slug);
+  const IconComp = visual.icon;
+
   return (
-    <Card className="rounded-2xl border-[color:var(--color-border)]/60">
-      <CardHeader>
-        <CardTitle className="text-lg text-[var(--color-card-foreground)]">{category.title}</CardTitle>
-        <CardDescription className="text-[var(--text-metal-color)]">{category.description}</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
+    <div className="space-y-5">
+      <Card className="overflow-hidden rounded-[1.4rem] border-[color:var(--color-border)]/60 bg-[radial-gradient(circle_at_18%_0%,rgba(59,130,246,0.16),transparent_34%),linear-gradient(135deg,rgba(15,23,42,0.92),rgba(15,23,42,0.64))]">
+        <CardHeader className="space-y-4 p-6">
+          <Link to="/help" className="inline-flex w-fit items-center gap-1 text-xs font-semibold text-[var(--text-metal-muted-color)] hover:text-[var(--color-card-foreground)]">
+            Help Center <ChevronRight className="h-3.5 w-3.5" /> {category.title}
+          </Link>
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex items-start gap-4">
+              <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border ${visual.glow}`}>
+                <IconComp className={`h-7 w-7 ${visual.accent}`} />
+              </div>
+              <div>
+                <CardTitle className="text-2xl text-[var(--color-card-foreground)]">{category.title}</CardTitle>
+                <CardDescription className="mt-2 max-w-2xl text-sm leading-relaxed text-[var(--text-metal-color)]">
+                  {category.description}
+                </CardDescription>
+              </div>
+            </div>
+            <Badge className="w-fit rounded-full border border-white/10 bg-white/10 px-3 py-1 text-xs text-slate-100">
+              {category.articles.length} articles
+            </Badge>
+          </div>
+        </CardHeader>
+      </Card>
+
+      <div className="grid gap-3 md:grid-cols-2">
         {category.articles.map((article) => (
           <Link
             key={article.slug}
             to={`/help/${category.slug}/${article.slug}`}
-            className="group block rounded-xl border border-[color:var(--color-border)]/60 p-4 transition-colors hover:border-[color:var(--color-border)] hover:bg-[color:var(--color-muted)]/35"
+            className="group flex min-h-[140px] flex-col justify-between rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/75 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-400/40 hover:shadow-[0_20px_50px_rgba(15,23,42,0.18)]"
           >
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{article.title}</h3>
-                <p className="mt-1 text-sm text-[var(--text-metal-color)]">{article.summary}</p>
-              </div>
-              <ChevronRight className="h-4 w-4 text-[var(--text-metal-muted-color)] transition-transform group-hover:translate-x-0.5" />
+            <div>
+              <h3 className="text-base font-semibold text-[var(--color-card-foreground)]">{article.title}</h3>
+              <p className="mt-2 text-sm leading-relaxed text-[var(--text-metal-color)]">{article.summary}</p>
+            </div>
+            <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-blue-300">
+              Read article <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
             </div>
           </Link>
         ))}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }
 
@@ -1072,127 +944,87 @@ function HelpArticleRoute({ categories }: { categories: HelpCategory[] }) {
   }, [article.slug, location.hash]);
 
   return (
-    <Card className="rounded-2xl border-[color:var(--color-border)]/60">
-      <CardHeader className="space-y-3">
-        <div className="flex items-center gap-2 text-xs font-medium text-[var(--text-metal-muted-color)]">
-          <Link to="/help" className="hover:text-[var(--color-card-foreground)]">Help</Link>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <Link to={`/help/${category.slug}`} className="hover:text-[var(--color-card-foreground)]">
-            {category.title}
-          </Link>
-          <ChevronRight className="h-3.5 w-3.5" />
-          <span className="text-[var(--color-card-foreground)]">{article.title}</span>
-        </div>
+    <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+      <Card className="rounded-[1.4rem] border-[color:var(--color-border)]/60">
+        <CardHeader className="space-y-4 p-6">
+          <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-[var(--text-metal-muted-color)]">
+            <Link to="/help" className="hover:text-[var(--color-card-foreground)]">Help</Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <Link to={`/help/${category.slug}`} className="hover:text-[var(--color-card-foreground)]">
+              {category.title}
+            </Link>
+            <ChevronRight className="h-3.5 w-3.5" />
+            <span className="text-[var(--color-card-foreground)]">{article.title}</span>
+          </div>
 
-        <div>
-          <CardTitle className="text-lg text-[var(--color-card-foreground)]">{article.title}</CardTitle>
-          <CardDescription className="mt-1 text-[var(--text-metal-color)]">{article.summary}</CardDescription>
-        </div>
-      </CardHeader>
-      <CardContent className="space-y-5">
-        <div className="rounded-xl border border-[color:var(--color-border)]/60 p-4">
-          <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-muted-color)]">On this page</p>
-          <div className="mt-2 flex flex-wrap gap-2">
+          <div className="max-w-3xl">
+            <CardTitle className="text-2xl text-[var(--color-card-foreground)]">{article.title}</CardTitle>
+            <CardDescription className="mt-2 text-sm leading-relaxed text-[var(--text-metal-color)]">{article.summary}</CardDescription>
+          </div>
+        </CardHeader>
+        <CardContent className="space-y-6 px-6 pb-6">
+          <div id="overview" className="space-y-4 scroll-mt-28">
+            {article.body.map((block, idx) => (
+              <div key={`${article.slug}-p-${idx}`} id={paragraphAnchorId(idx)} className="scroll-mt-28">
+                <p className="text-[15px] leading-7 text-[var(--text-metal-color)]">{block}</p>
+              </div>
+            ))}
+          </div>
+
+          {article.checklist && article.checklist.length > 0 && (
+            <div id="checklist" className="scroll-mt-28 rounded-2xl border border-emerald-400/20 bg-emerald-500/5 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-300">Checklist</p>
+              <div className="mt-3 grid gap-2">
+                {article.checklist.map((item, idx) => (
+                  <p key={`${article.slug}-c-${idx}`} className="text-sm text-[var(--text-metal-color)]">- {item}</p>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {article.systemLinks && article.systemLinks.length > 0 && (
+            <div id="system-links" className="scroll-mt-28 rounded-2xl border border-blue-400/20 bg-blue-500/5 p-5">
+              <p className="text-xs font-semibold uppercase tracking-[0.12em] text-blue-300">Open in system</p>
+              <div className="mt-3 flex flex-wrap gap-2">
+                {article.systemLinks.map((item) => (
+                  <Button key={`${article.slug}-${item.path}`} size="sm" variant="outline" className="rounded-lg" asChild>
+                    <Link to={item.path}>{item.label}</Link>
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      <aside className="space-y-3 xl:sticky xl:top-24 xl:h-fit">
+        <Card className="rounded-2xl border-[color:var(--color-border)]/60">
+          <CardHeader className="pb-3">
+            <CardTitle className="text-sm text-[var(--color-card-foreground)]">On this page</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-1">
             {tocItems.map((item) => (
               <a
                 key={`${article.slug}-toc-${item.id}`}
                 href={`#${item.id}`}
-                className="rounded-full border border-[color:var(--color-border)]/60 px-3 py-1 text-xs text-[var(--text-metal-color)] transition-colors hover:bg-[color:var(--color-muted)]/45"
+                className="block rounded-lg px-3 py-2 text-xs text-[var(--text-metal-color)] transition-colors hover:bg-[color:var(--color-muted)]/45 hover:text-[var(--color-card-foreground)]"
               >
                 {item.title}
               </a>
             ))}
-          </div>
-        </div>
-
-        <div id="overview" className="space-y-3 scroll-mt-28">
-          {(() => {
-            let textIdx = 0;
-            let mediaIdx = 0;
-            return article.body.map((block, idx) => {
-              if (typeof block === 'string') {
-                const anchor = paragraphAnchorId(textIdx);
-                textIdx += 1;
-                return (
-                  <div key={`${article.slug}-p-${idx}`} id={anchor} className="scroll-mt-28">
-                    <p className="text-sm leading-relaxed text-[var(--text-metal-color)]">{block}</p>
-                  </div>
-                );
-              }
-
-              const media = block.media;
-              const anchor = mediaAnchorId(mediaIdx);
-              mediaIdx += 1;
-
-              const mediaUrl = resolveSafeExternalUrl(media.url);
-              const embedUrl = media.type === 'embed' ? resolveEmbedUrl(media.url) : null;
-
-              return (
-                <div key={`${article.slug}-m-${idx}`} id={anchor} className="scroll-mt-28 rounded-xl border border-[color:var(--color-border)]/60 p-3">
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-muted-color)]">{media.title}</p>
-                  <div className="mt-2 overflow-hidden rounded-lg border border-[color:var(--color-border)]/60 bg-black/5">
-                    {media.type === 'image' && mediaUrl && (
-                      <img src={mediaUrl} alt={media.title} className="w-full h-auto object-cover" loading="lazy" />
-                    )}
-
-                    {media.type === 'video' && mediaUrl && (
-                      <video controls className="w-full h-auto" preload="metadata">
-                        <source src={mediaUrl} />
-                        Your browser does not support this video format.
-                      </video>
-                    )}
-
-                    {media.type === 'embed' && embedUrl && (
-                      <iframe
-                        title={media.title}
-                        src={embedUrl}
-                        className="w-full aspect-video"
-                        loading="lazy"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    )}
-
-                    {((media.type === 'embed' && !embedUrl) || (media.type !== 'embed' && !mediaUrl)) && (
-                      <div className="p-4 text-sm text-[var(--text-metal-color)]">
-                        Media preview unavailable. Please verify the media URL.
-                      </div>
-                    )}
-                  </div>
-                  {media.caption && (
-                    <p className="mt-2 text-xs text-[var(--text-metal-muted-color)]">{media.caption}</p>
-                  )}
-                </div>
-              );
-            });
-          })()}
-        </div>
-
-        {article.checklist && article.checklist.length > 0 && (
-          <div id="checklist" className="scroll-mt-28 rounded-xl border border-[color:var(--color-border)]/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-muted-color)]">Checklist</p>
-            <div className="mt-2 space-y-1.5">
-              {article.checklist.map((item, idx) => (
-                <p key={`${article.slug}-c-${idx}`} className="text-sm text-[var(--text-metal-color)]">- {item}</p>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {article.systemLinks && article.systemLinks.length > 0 && (
-          <div id="system-links" className="scroll-mt-28 rounded-xl border border-[color:var(--color-border)]/60 p-4">
-            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-muted-color)]">Open in system</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {article.systemLinks.map((item) => (
-                <Button key={`${article.slug}-${item.path}`} size="sm" variant="outline" className="rounded-lg" asChild>
-                  <Link to={item.path}>{item.label}</Link>
-                </Button>
-              ))}
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          </CardContent>
+        </Card>
+        <Card className="rounded-2xl border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/70">
+          <CardContent className="p-4">
+            <p className="text-xs font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-muted-color)]">Topic</p>
+            <Link to={`/help/${category.slug}`} className="mt-2 flex items-center justify-between rounded-lg border border-[color:var(--color-border)]/50 p-3 text-sm font-semibold text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]/35">
+              {category.title}
+              <ChevronRight className="h-4 w-4 text-[var(--text-metal-muted-color)]" />
+            </Link>
+          </CardContent>
+        </Card>
+      </aside>
+    </div>
   );
 }
 
@@ -1220,6 +1052,7 @@ export function HelpCenterPage() {
   const [sections, setSections] = useState(parsed.sections);
   const [roleSections, setRoleSections] = useState<HelpContent['roleSections']>(parsed.roleSections || {});
   const [collapsedRoleGroups, setCollapsedRoleGroups] = useState<Partial<Record<Role, boolean>>>({});
+  const [isManagedNotesOpen, setIsManagedNotesOpen] = useState(false);
   const [search, setSearch] = useState('');
   const location = useLocation();
 
@@ -1240,6 +1073,7 @@ export function HelpCenterPage() {
   );
 
   const searchResults = useMemo(() => getSearchMatches(search, visibleKnowledgeBase), [search, visibleKnowledgeBase]);
+  const popularArticles = useMemo(() => getPopularArticles(visibleKnowledgeBase), [visibleKnowledgeBase]);
 
   const startEdit = () => {
     setTitle(parsed.title);
@@ -1373,17 +1207,18 @@ export function HelpCenterPage() {
   };
 
   return (
-    <div className="space-y-4">
-      <Card className="metal-panel rounded-[1.6rem] border-[color:var(--color-border)]/60 overflow-hidden">
-        <CardHeader className="space-y-4">
+    <div className="space-y-5">
+      <Card className="relative overflow-hidden rounded-[1.8rem] border-blue-400/20 bg-[radial-gradient(circle_at_50%_115%,rgba(37,99,235,0.5),transparent_35%),radial-gradient(circle_at_50%_120%,rgba(14,165,233,0.35),transparent_47%),linear-gradient(180deg,rgba(15,23,42,0.94),rgba(2,6,23,0.94))] shadow-[0_24px_80px_rgba(2,6,23,0.28)]">
+        <div className="absolute inset-x-0 bottom-0 h-24 bg-[radial-gradient(ellipse_at_center,rgba(59,130,246,0.42),transparent_68%)]" />
+        <CardHeader className="relative space-y-4 px-5 py-8 sm:py-10">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mx-auto mb-3 silver-sheen flex h-12 w-12 items-center justify-center rounded-2xl shadow-[0_14px_28px_rgba(15,23,42,0.12)]">
-              <LifeBuoy className="h-6 w-6 text-[#33414d]" />
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl border border-blue-300/30 bg-blue-500/20 shadow-[0_0_34px_rgba(59,130,246,0.35)]">
+              <LifeBuoy className="h-6 w-6 text-blue-200" />
             </div>
-            <CardTitle className="text-2xl text-[var(--color-card-foreground)]">
+            <CardTitle className="text-2xl text-white sm:text-3xl">
               {isCustomerView ? 'How can we help you?' : 'How can your team get help today?'}
             </CardTitle>
-            <CardDescription className="mt-1 text-[var(--text-metal-color)]">
+            <CardDescription className="mx-auto mt-2 max-w-2xl text-sm text-slate-300">
               {isCustomerView
                 ? 'Find answers about bookings, payments, account setup, and project tracking.'
                 : 'Find internal guidance for queues, approvals, controls, operations, and troubleshooting.'}
@@ -1396,7 +1231,7 @@ export function HelpCenterPage() {
               <Input
                 value={search}
                 onChange={(event) => setSearch(event.target.value)}
-                className="h-11 rounded-xl pl-9 shadow-[inset_0_1px_0_rgba(255,255,255,0.6)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.06)]"
+                className="h-12 rounded-full border-blue-300/30 bg-slate-950/70 pl-10 text-slate-100 shadow-[0_0_30px_rgba(59,130,246,0.28)] placeholder:text-slate-500 focus-visible:ring-blue-400"
                 placeholder={
                   isCustomerView
                     ? 'Search topics like account, booking, payments...'
@@ -1411,7 +1246,7 @@ export function HelpCenterPage() {
                   type="button"
                   size="sm"
                   variant="outline"
-                  className="rounded-full border-[color:var(--color-border)]/70 bg-white/70 text-xs text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] dark:bg-transparent"
+                  className="rounded-full border-white/10 bg-white/5 text-xs text-slate-300 hover:bg-white/10 hover:text-white"
                   onClick={() => handleQuickTopicClick(topic)}
                 >
                   {topic.label}
@@ -1450,145 +1285,141 @@ export function HelpCenterPage() {
         </Card>
       )}
 
-      <div className="grid gap-5 xl:grid-cols-[300px_minmax(0,1fr)]">
-        <Card className="h-fit rounded-2xl border-[color:var(--color-border)]/60 xl:sticky xl:top-24">
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base text-[var(--color-card-foreground)]">
-              {isCustomerView ? 'Customer Knowledge Layers' : 'Internal Knowledge Layers'}
-            </CardTitle>
-            <CardDescription className="text-[var(--text-metal-color)]">
-              {isCustomerView
-                ? 'Customer-facing guides for the full service journey.'
-                : 'Team-facing guides for internal operations and controls.'}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <NavLink
-              to="/help"
-              end
-              className={({ isActive }) =>
-                `block rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
-                    ? 'bg-[color:var(--color-muted)] text-[var(--color-card-foreground)]'
-                    : 'text-[var(--text-metal-color)] hover:bg-[color:var(--color-muted)]/40'
-                }`
-              }
-            >
-              {isCustomerView ? 'Customer Overview' : 'Internal Overview'}
-            </NavLink>
-
-            {visibleKnowledgeBase.map((category) => (
-              <div key={category.slug} className="space-y-1.5">
-                <NavLink
-                  to={`/help/${category.slug}`}
-                  className={({ isActive }) =>
-                    `block rounded-lg px-3 py-2 text-sm font-semibold transition-colors ${
-                      isActive
-                        ? 'bg-[color:var(--color-muted)] text-[var(--color-card-foreground)]'
-                        : 'text-[var(--text-metal-color)] hover:bg-[color:var(--color-muted)]/40'
-                    }`
-                  }
-                >
-                  {category.title}
-                </NavLink>
-                <div className="ml-2 space-y-1 border-l border-[color:var(--color-border)]/60 pl-2">
-                  {category.articles.map((article) => (
-                    <NavLink
-                      key={`${category.slug}-${article.slug}`}
-                      to={`/help/${category.slug}/${article.slug}`}
-                      className={({ isActive }) =>
-                        `block rounded-md px-2 py-1.5 text-xs transition-colors ${
-                          isActive
-                            ? 'bg-[color:var(--color-muted)] text-[var(--color-card-foreground)]'
-                            : 'text-[var(--text-metal-muted-color)] hover:bg-[color:var(--color-muted)]/35 hover:text-[var(--text-metal-color)]'
-                        }`
-                      }
-                    >
-                      {article.title}
-                    </NavLink>
-                  ))}
-                </div>
-              </div>
-            ))}
-          </CardContent>
-        </Card>
-
-        <Routes>
+      <Routes>
           <Route
             index
             element={
               <div className="space-y-5">
-                <Card className="rounded-2xl border-[color:var(--color-border)]/60">
-                  <CardHeader>
-                    <CardTitle className="text-lg text-[var(--color-card-foreground)]">
-                      {isCustomerView ? 'Customer Knowledge Map' : 'Internal Knowledge Map'}
-                    </CardTitle>
-                    <CardDescription className="text-[var(--text-metal-color)]">
-                      Use layered routes like /help/getting-started/account-setup or /help/payments/customer-payments.
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                <section className="space-y-3">
+                  <div className="flex items-end justify-between gap-3">
+                    <div>
+                      <h2 className="text-lg font-semibold text-[var(--color-card-foreground)]">Browse Help Topics</h2>
+                      <p className="text-sm text-[var(--text-metal-color)]">
+                        Choose a topic and jump straight into the article you need.
+                      </p>
+                    </div>
+                    <Link to="/help/support-and-troubleshooting" className="hidden text-xs font-semibold text-blue-300 hover:text-blue-200 sm:inline-flex">
+                      View all articles <ChevronRight className="ml-1 h-3.5 w-3.5" />
+                    </Link>
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
                     {visibleKnowledgeBase.map((category) => {
-                      const iconMap: Record<string, React.ElementType> = {
-                        'getting-started': BookOpen,
-                        'appointments-visits': CalendarCheck,
-                        'projects-fabrication': FolderOpen,
-                        'payments': CreditCard,
-                        'operations-admin': Settings,
-                        'support-and-troubleshooting': HelpCircle,
-                      };
-                      const IconComp = iconMap[category.slug] || Wrench;
+                      const visual = getCategoryVisual(category.slug);
+                      const IconComp = visual.icon;
                       return (
-                      <Link
-                        key={`map-${category.slug}`}
-                        to={`/help/${category.slug}`}
-                        className="group block rounded-[1.2rem] border border-[color:var(--color-border)]/60 p-5 transition-all hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_20px_34px_rgba(18,22,27,0.1)] hover:border-[color:var(--color-border)]"
-                      >
-                        <div className="flex items-start gap-3">
-                          <div className="silver-sheen flex h-10 w-10 shrink-0 items-center justify-center rounded-xl shadow-[0_10px_22px_rgba(15,23,42,0.1)] transition-transform group-hover:scale-[1.04]">
-                            <IconComp className="h-5 w-5 text-[#33414d]" />
-                          </div>
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center justify-between gap-2">
-                              <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{category.title}</h3>
-                              <Badge
-                                variant="secondary"
-                                className="shrink-0 rounded-full border border-white/30 bg-[linear-gradient(180deg,#f7fafc_0%,#dbe3eb_100%)] px-2 py-0.5 text-[10px] font-semibold text-[#334155] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(30,41,59,0.9)_0%,rgba(15,23,42,0.95)_100%)] dark:text-slate-300"
-                              >
-                                {category.articles.length}
-                              </Badge>
+                        <Link
+                          key={`map-${category.slug}`}
+                          to={`/help/${category.slug}`}
+                          className="group flex min-h-[150px] flex-col justify-between rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/70 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-400/40 hover:shadow-[0_22px_50px_rgba(15,23,42,0.18)]"
+                        >
+                          <div>
+                            <div className={`mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border ${visual.glow}`}>
+                              <IconComp className={`h-5 w-5 ${visual.accent}`} />
                             </div>
-                            <p className="mt-1.5 text-xs leading-relaxed text-[var(--text-metal-color)]">{category.description}</p>
+                            <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{category.title}</h3>
+                            <p className="mt-2 line-clamp-2 text-xs leading-relaxed text-[var(--text-metal-color)]">{category.description}</p>
                           </div>
-                        </div>
-                        <div className="mt-3 flex items-center gap-1 text-xs font-medium text-[var(--text-metal-muted-color)] group-hover:text-[var(--color-card-foreground)] transition-colors">
-                          Browse articles <ChevronRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
-                        </div>
-                      </Link>
+                          <div className="mt-4 flex items-center justify-between text-xs">
+                            <span className="text-[var(--text-metal-muted-color)]">{category.articles.length} articles</span>
+                            <ChevronRight className="h-4 w-4 text-[var(--text-metal-muted-color)] transition-transform group-hover:translate-x-0.5 group-hover:text-blue-300" />
+                          </div>
+                        </Link>
                       );
                     })}
-                  </CardContent>
-                </Card>
+                  </div>
+                </section>
 
-                {isInternalView && isLoading ? (
-                  <Card className="rounded-2xl border-[color:var(--color-border)]/60">
-                    <CardContent className="py-10 text-sm text-[var(--text-metal-color)]">Loading help content...</CardContent>
+                <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_360px]">
+                  <Card className="rounded-2xl border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/70">
+                    <CardHeader className="pb-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div>
+                          <CardTitle className="text-base text-[var(--color-card-foreground)]">Popular Articles</CardTitle>
+                          <CardDescription className="text-[var(--text-metal-color)]">
+                            Useful guides based on your visible help topics.
+                          </CardDescription>
+                        </div>
+                        <BookOpen className="h-5 w-5 text-blue-300" />
+                      </div>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                      {popularArticles.map(({ category, article }) => (
+                        <Link
+                          key={`popular-${category.slug}-${article.slug}`}
+                          to={`/help/${category.slug}/${article.slug}`}
+                          className="group flex items-center justify-between gap-3 rounded-xl border border-[color:var(--color-border)]/50 p-3 transition-colors hover:bg-[color:var(--color-muted)]/35"
+                        >
+                          <div className="min-w-0">
+                            <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">{article.title}</p>
+                            <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">{category.title}</p>
+                          </div>
+                          <ChevronRight className="h-4 w-4 shrink-0 text-[var(--text-metal-muted-color)] transition-transform group-hover:translate-x-0.5 group-hover:text-blue-300" />
+                        </Link>
+                      ))}
+                    </CardContent>
                   </Card>
-                ) : isInternalView ? (
+
+                  <Card className="rounded-2xl border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/70">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base text-[var(--color-card-foreground)]">Need More Help?</CardTitle>
+                      <CardDescription className="text-[var(--text-metal-color)]">
+                        Quick support options when an article is not enough.
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+                      {[
+                        { title: 'Live Chat', text: 'Chat with support in real time.', icon: MessageCircle, tone: 'text-sky-300 bg-sky-500/15 border-sky-400/25' },
+                        { title: 'Email Support', text: 'Send your question and get a reply.', icon: Mail, tone: 'text-emerald-300 bg-emerald-500/15 border-emerald-400/25' },
+                        { title: 'Call Support', text: 'Speak with a staff member during business hours.', icon: Phone, tone: 'text-violet-300 bg-violet-500/15 border-violet-400/25' },
+                      ].map((item) => {
+                        const IconComp = item.icon;
+                        return (
+                          <div key={item.title} className="rounded-2xl border border-[color:var(--color-border)]/50 p-4 text-center">
+                            <div className={`mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-2xl border ${item.tone}`}>
+                              <IconComp className="h-5 w-5" />
+                            </div>
+                            <p className="text-sm font-semibold text-[var(--color-card-foreground)]">{item.title}</p>
+                            <p className="mt-1 text-xs leading-relaxed text-[var(--text-metal-color)]">{item.text}</p>
+                          </div>
+                        );
+                      })}
+                    </CardContent>
+                  </Card>
+                </div>
+
+                {isAdmin && isInternalView && (
+                  isLoading ? (
+                    <Card className="rounded-2xl border-[color:var(--color-border)]/60">
+                      <CardContent className="py-10 text-sm text-[var(--text-metal-color)]">Loading help content...</CardContent>
+                    </Card>
+                  ) : (
                   <Card className="rounded-2xl border-[color:var(--color-border)]/60">
                     <CardHeader className="flex flex-row items-start justify-between gap-3">
                       <div>
                         <CardTitle className="text-lg text-[var(--color-card-foreground)]">Managed Notes</CardTitle>
                         <CardDescription className="text-[var(--text-metal-color)]">
-                          Config-backed notes that admins can update without deployment.
+                          Admin-only config notes. Open this section only when you need to update the help copy.
                         </CardDescription>
                       </div>
-                      {isAdmin && !isEditing && (
-                        <Button variant="outline" size="sm" className="rounded-lg" onClick={startEdit}>
-                          <Pencil className="mr-1.5 h-4 w-4" /> Edit
+                      <div className="flex flex-wrap gap-2">
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="rounded-lg"
+                          onClick={() => setIsManagedNotesOpen((prev) => !prev)}
+                        >
+                          {isManagedNotesOpen ? <ChevronUp className="mr-1.5 h-4 w-4" /> : <ChevronDown className="mr-1.5 h-4 w-4" />}
+                          {isManagedNotesOpen ? 'Hide' : 'Show'}
                         </Button>
-                      )}
+                        {isManagedNotesOpen && !isEditing && (
+                          <Button variant="outline" size="sm" className="rounded-lg" onClick={startEdit}>
+                            <Pencil className="mr-1.5 h-4 w-4" /> Edit
+                          </Button>
+                        )}
+                      </div>
                     </CardHeader>
+                    {isManagedNotesOpen && (
                     <CardContent className="space-y-4">
                       {isEditing ? (
                         <div className="space-y-4">
@@ -1771,36 +1602,9 @@ export function HelpCenterPage() {
                         </div>
                       )}
                     </CardContent>
+                    )}
                   </Card>
-                ) : (
-                  <Card className="rounded-2xl border-[color:var(--color-border)]/60">
-                    <CardHeader>
-                      <CardTitle className="text-lg text-[var(--color-card-foreground)]">Need More Help?</CardTitle>
-                      <CardDescription className="text-[var(--text-metal-color)]">
-                        If you cannot find what you need, contact support through notifications or your assigned staff.
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {sections.map((section, idx) => {
-                        const IconComp = getSectionIcon(section.heading);
-                        return (
-                          <div key={`customer-note-${section.heading}-${idx}`} className="rounded-xl border border-[color:var(--color-border)]/60 p-4">
-                            <div className="flex items-start gap-3">
-                              <div className="silver-sheen flex h-9 w-9 shrink-0 items-center justify-center rounded-xl shadow-[0_10px_22px_rgba(15,23,42,0.1)]">
-                                <IconComp className="h-4.5 w-4.5 text-[#33414d]" />
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <h3 className="text-sm font-semibold text-[var(--color-card-foreground)]">{section.heading}</h3>
-                                {section.body && (
-                                  <p className="mt-1.5 whitespace-pre-line text-sm text-[var(--text-metal-color)]">{section.body}</p>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </CardContent>
-                  </Card>
+                  )
                 )}
               </div>
             }
@@ -1809,12 +1613,6 @@ export function HelpCenterPage() {
           <Route path=":categorySlug/:articleSlug" element={<HelpArticleRoute categories={visibleKnowledgeBase} />} />
           <Route path="*" element={<Navigate to="/help" replace />} />
         </Routes>
-      </div>
-
-      <Separator className="my-1" />
-      <p className="text-xs text-[var(--text-metal-muted-color)]">
-        Tip: Share deep links directly to a topic using URLs like /help/payments/cashier-verification.
-      </p>
     </div>
   );
 }

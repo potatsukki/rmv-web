@@ -45,6 +45,7 @@ import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { Role } from '@/lib/constants';
 import type { Blueprint, BlueprintDraft, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
+import { resolveBlueprintWorkflowStatus } from '@/lib/workflow-status';
 
 interface BlueprintTabProps {
   projectId: string;
@@ -915,10 +916,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const quotationStatus = blueprint?.quotationReviewStatus || (blueprint?.quotation ? 'for_review' : 'draft');
   const quotationStatusLabel = {
     draft: 'Draft',
-    for_review: 'Pending Release',
+    for_review: 'Preparing Quotation',
     approved: 'Approved',
-    sent_to_customer: 'Sent to Customer',
+    sent_to_customer: 'Review Design & Billing',
   }[quotationStatus] || 'Draft';
+  const blueprintWorkflowStatus = resolveBlueprintWorkflowStatus(blueprint);
   const previewDialog = (
     <Dialog
       open={Boolean(previewFile)}
@@ -1227,7 +1229,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
               <div className="space-y-4">
               <div className="flex items-center justify-between">
                 <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Version {blueprint.version}</p>
-                <StatusBadge status={blueprint.status} />
+                <StatusBadge status={blueprintWorkflowStatus.key} label={blueprintWorkflowStatus.label} />
               </div>
               <div className={cn('grid gap-4', isBlueprintMode ? 'md:grid-cols-2' : 'md:grid-cols-1')}>
                 {isBlueprintMode && (
@@ -1593,7 +1595,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
               </span>
             </div>
-            <StatusBadge status={blueprint.status} />
+            <StatusBadge status={blueprintWorkflowStatus.key} label={blueprintWorkflowStatus.label} />
           </div>
 
         {/* Two file cards: Blueprint + Design */}
@@ -1822,7 +1824,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   </Badge>
                 ) : bp.quotationReviewStatus !== 'sent_to_customer' ? (
                   <Badge variant="outline" className="h-5 rounded-full border-sky-400/45 bg-sky-500/10 px-1.5 text-[10px] font-medium tracking-[0.01em] text-sky-200 shadow-none">
-                    {bp.quotationReviewStatus === 'for_review' ? 'Pending Release' : 'Draft'}
+                    {bp.quotationReviewStatus === 'for_review' ? 'Preparing Quotation' : 'Draft'}
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="h-5 rounded-full border-amber-400/45 bg-amber-500/8 px-1.5 text-[10px] font-medium tracking-[0.01em] text-amber-200 shadow-none dark:border-amber-400/40 dark:bg-amber-500/8 dark:text-amber-200">

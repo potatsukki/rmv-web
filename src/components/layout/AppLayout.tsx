@@ -109,8 +109,8 @@ const quickSearchItems: QuickSearchItem[] = [
   {
     title: 'Payments',
     path: '/payments',
-    description: 'Invoices, proofs, and payment statuses',
-    keywords: ['billing', 'invoice', 'proof'],
+    description: 'Invoices, payment records, and payment statuses',
+    keywords: ['billing', 'invoice', 'payment records'],
     roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN],
   },
   {

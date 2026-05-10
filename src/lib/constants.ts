@@ -43,6 +43,7 @@ export enum AppointmentAttendanceStatus {
   COMPLETED = 'completed',
   RESCHEDULED = 'rescheduled',
   NO_SHOW = 'no_show',
+  CUSTOMER_DECLINED = 'customer_declined',
 }
 
 export const APPOINTMENT_TYPE_LABELS: Record<string, string> = {

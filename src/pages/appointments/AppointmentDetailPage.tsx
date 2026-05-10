@@ -285,11 +285,17 @@ export function AppointmentDetailPage() {
   );
 
   const updateAttendance = async (
-    action: 'check_in' | 'start' | 'complete' | 'no_show' | 'reschedule',
+    action: 'check_in' | 'start' | 'complete' | 'no_show' | 'reschedule' | 'customer_declined',
   ) => {
-    const notesRequired = action === 'no_show' || action === 'reschedule';
+    const notesRequired = action === 'no_show' || action === 'reschedule' || action === 'customer_declined';
     const notes = notesRequired
-      ? window.prompt(action === 'no_show' ? 'Enter no-show notes' : 'Enter reschedule reason')
+      ? window.prompt(
+          action === 'no_show'
+            ? 'Enter no-show notes'
+            : action === 'customer_declined'
+              ? 'Enter the reason the customer declined to proceed'
+              : 'Enter reschedule reason',
+        )
       : undefined;
     if (notesRequired && !notes?.trim()) {
       toast.error('Notes are required for this attendance action');
@@ -305,6 +311,8 @@ export function AppointmentDetailPage() {
       toast.success(
         action === 'complete'
           ? 'Consultation attendance completed. You can now submit the consultation report.'
+          : action === 'customer_declined'
+            ? 'Consultation marked as customer declined. The workflow has been stopped.'
           : 'Consultation attendance updated',
       );
     } catch (err) {
@@ -605,6 +613,11 @@ export function AppointmentDetailPage() {
                 Customer arrived after the grace period.
               </div>
             )}
+            {attendanceStatus === AppointmentAttendanceStatus.CUSTOMER_DECLINED && (
+              <div className="rounded-xl border border-red-200/20 bg-red-500/10 p-3 text-sm text-red-200">
+                Customer declined to proceed during consultation. This appointment is cancelled and will not continue to the report workflow.
+              </div>
+            )}
             {isOutsideConsultationWindow(appt.actualArrivalAt) && (
               <div className="rounded-xl border border-red-200/20 bg-red-500/10 p-3 text-sm text-red-200">
                 Customer is outside the booked consultation window. Continue only if the staff schedule allows it.
@@ -663,10 +676,19 @@ export function AppointmentDetailPage() {
                       <CalendarIcon className="mr-2 h-4 w-4" />
                       Request Reschedule
                     </button>
+                    <button
+                      type="button"
+                      onClick={() => updateAttendance('customer_declined')}
+                      disabled={attendanceMutation.isPending}
+                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 text-sm font-semibold text-[#dc2626] transition-colors hover:bg-red-50 hover:text-[#b91c1c] disabled:pointer-events-none disabled:opacity-50 dark:border-white/12 dark:bg-transparent dark:text-[#ff6b63] dark:hover:bg-white/8 dark:hover:text-[#ff8a84]"
+                    >
+                      <CalendarX className="mr-2 h-4 w-4" />
+                      Customer Declined
+                    </button>
                   </div>
                 )}
                 {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
-                  <div className="flex w-full justify-start pt-1">
+                  <div className="grid gap-4 pt-1 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => updateAttendance('complete')}
@@ -675,6 +697,15 @@ export function AppointmentDetailPage() {
                     >
                       <CheckCircle2 className="h-4 w-4" />
                       Complete Consultation
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => updateAttendance('customer_declined')}
+                      disabled={attendanceMutation.isPending}
+                      className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 text-sm font-semibold text-[#dc2626] transition-colors hover:bg-red-50 hover:text-[#b91c1c] disabled:pointer-events-none disabled:opacity-50 dark:border-white/12 dark:bg-transparent dark:text-[#ff6b63] dark:hover:bg-white/8 dark:hover:text-[#ff8a84]"
+                    >
+                      <CalendarX className="h-4 w-4" />
+                      Customer Declined
                     </button>
                   </div>
                 )}

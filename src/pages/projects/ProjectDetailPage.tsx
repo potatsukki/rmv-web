@@ -55,7 +55,8 @@ import { ContractStatus, Role, StaffAvailabilityStatus, ProjectStatus, ServiceTy
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications } from '@/lib/service-specifications';
 import { cn, extractErrorMessage } from '@/lib/utils';
-import type { ApiResponse, ProjectItem, VisitReport } from '@/lib/types';
+import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
+import type { ApiResponse, PaymentPlan, ProjectItem, VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
 
 const LazyBlueprintTab = lazy(() =>
@@ -810,8 +811,15 @@ export function ProjectDetailPage() {
     paymentPlan?.stages?.length
     && paymentPlan.stages.every((stage) => String(stage.status) === 'verified'),
   );
-  const projectStatusBadgeStatus = isActivePaymentPlanFullyVerified ? 'verified' : activeWorkflowStatus;
-  const projectStatusBadgeLabel = isActivePaymentPlanFullyVerified ? 'Paid' : undefined;
+  const workflowStatus = resolveProjectWorkflowStatus({
+    project,
+    item: activeProjectItemRecord,
+    blueprint,
+    paymentPlans: [paymentPlan as PaymentPlan | undefined],
+    isCustomer,
+  });
+  const projectStatusBadgeStatus = workflowStatus.key || (isActivePaymentPlanFullyVerified ? 'verified' : activeWorkflowStatus);
+  const projectStatusBadgeLabel = workflowStatus.label || (isActivePaymentPlanFullyVerified ? 'Paid' : undefined);
   const contractFileName = project?.contractFileName || (project?.contractFileKey ? getFileName(project.contractFileKey) : 'Signed contract');
   const contractFileExtension = getFileExtension(contractFileName);
   const contractIsPdf = contractFileExtension === 'pdf' || project?.contractContentType === 'application/pdf';

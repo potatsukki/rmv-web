@@ -93,7 +93,7 @@ export function CashierQueuePage() {
     try {
       setBlockedAction(null);
       await declineMutation.mutateAsync({ id: declineDialog.id, reason: declineReason });
-      toast.success('Payment declined — the customer has been notified and can re-submit.', { duration: 5000 });
+      toast.success('Payment marked as not accepted — the customer has been notified and can try again.', { duration: 5000 });
       setDeclineDialog({ open: false, id: '' });
       setDeclineReason('');
     } catch (err) {
@@ -108,7 +108,7 @@ export function CashierQueuePage() {
     <div className="space-y-6">
       <div className="metal-panel rounded-[1.75rem] p-5">
         <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-50">Cashier Queue</h1>
-        <p className="text-sm text-[#616a74] dark:text-slate-300">Review and verify payment submissions</p>
+        <p className="text-sm text-[#616a74] dark:text-slate-300">Review and verify received payment records</p>
       </div>
 
       {blockedAction && (
@@ -134,7 +134,7 @@ export function CashierQueuePage() {
         <EmptyState
           icon={<CreditCard className="h-16 w-16" />}
           title="No pending payments"
-          description="All payment submissions have been reviewed."
+            description="All received payment records have been reviewed."
         />
       ) : (
         <div className="space-y-3">

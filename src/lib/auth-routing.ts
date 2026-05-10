@@ -53,7 +53,7 @@ export function getDefaultAuthenticatedPath(): string {
 }
 
 export function canAccessPath(pathname: string, roles: Role[]): boolean {
-  const normalizedPath = pathname || '/dashboard';
+  const normalizedPath = (pathname || '/dashboard').split(/[?#]/)[0] || '/dashboard';
   const matchingRule = PROTECTED_ROUTE_RULES.find((rule) => rule.pattern.test(normalizedPath));
 
   if (!matchingRule) {
