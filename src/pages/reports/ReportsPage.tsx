@@ -184,19 +184,19 @@ function KpiCard({
   return (
     <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-[1.5rem] border-[color:var(--color-border)]/60 transition-all hover:-translate-y-0.5 hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.86),0_24px_38px_rgba(18,22,27,0.12)] dark:hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_24px_42px_rgba(0,0,0,0.3)]`}>
       <CardContent className="p-4 sm:p-5">
-        <div className="flex items-start justify-between mb-3">
+        <div className="mb-3 flex items-start justify-between">
           <div className="silver-sheen flex h-11 w-11 items-center justify-center rounded-2xl shadow-[0_18px_30px_rgba(15,23,42,0.14)] dark:shadow-[0_20px_34px_rgba(0,0,0,0.34)]">
             <Icon className="h-[1.35rem] w-[1.35rem] text-[#33414d] dark:text-[#33414d]" />
           </div>
         </div>
-        <div className={`text-[1.75rem] leading-none sm:text-[2rem] font-semibold tracking-[-0.03em] ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
+        <div className={`min-w-0 break-words text-[clamp(1.35rem,1.9vw,1.9rem)] font-semibold leading-tight tracking-[-0.04em] ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
           {value}
         </div>
-        <p className={`mt-2 text-[11px] font-semibold uppercase tracking-[0.12em] sm:text-xs ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+        <p className={`mt-2 break-words text-[11px] font-semibold uppercase tracking-[0.12em] sm:text-xs ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
           {label}
         </p>
         {subtitle && (
-          <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{subtitle}</p>
+          <p className={`mt-1 break-words text-[11px] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{subtitle}</p>
         )}
       </CardContent>
     </Card>
@@ -216,6 +216,7 @@ export function ReportsPage() {
     ? 'bg-[radial-gradient(circle_at_top,rgba(148,163,184,0.16),rgba(2,6,23,0.94)_62%)]'
     : 'bg-[radial-gradient(circle_at_top,rgba(255,255,255,0.74),rgba(238,242,247,0.96)_68%)]';
   const isAdmin = user?.roles?.includes(Role.ADMIN);
+  const isCashier = user?.roles?.includes(Role.CASHIER);
   const canAccessCashierReports = user?.roles?.some((role) => [Role.CASHIER, Role.ADMIN].includes(role));
   const [revenueGroupBy, setRevenueGroupBy] = useState<GroupBy>('month');
   const [lifecycleRange, setLifecycleRange] = useState<LifecycleRange>('7d');
@@ -233,7 +234,7 @@ export function ReportsPage() {
   const { data: paymentStages, isLoading: psLoading } = usePaymentStageReport(!!canAccessCashierReports);
   const { data: workload, isLoading: wlLoading } = useWorkloadReport(!!isAdmin);
   const { data: conversion, isLoading: convLoading } = useConversionReport(!!isAdmin);
-  const { data: dashboard, isLoading: dashLoading } = useDashboardSummary(!!isAdmin);
+  const { data: dashboard, isLoading: dashLoading } = useDashboardSummary(!!canAccessCashierReports);
   const { data: configs } = useConfigs();
   const lifecycleFeatureEnabled = (() => {
     const feature = configs?.find((cfg) => cfg.key === 'feature_lifecycle_mismatch_analytics');
@@ -322,7 +323,7 @@ export function ReportsPage() {
     });
   };
 
-  const anyKpiLoading = revLoading || psLoading || (isAdmin ? convLoading || dashLoading : false);
+  const anyKpiLoading = revLoading || psLoading || dashLoading || (isAdmin ? convLoading : false);
 
   return (
     <div className="space-y-4">
@@ -337,16 +338,18 @@ export function ReportsPage() {
         >
           Analytics Dashboard
         </button>
-        <button
-          onClick={() => setActiveTab('visit_reports')}
-          className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors ${
-            activeTab === 'visit_reports'
-              ? 'text-[var(--color-card-foreground)] border-b-2 border-cyan-500 bg-[color:var(--color-muted)]/40'
-              : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]/20'
-          }`}
-        >
-          Visit Reports
-        </button>
+        {!isCashier && (
+          <button
+            onClick={() => setActiveTab('visit_reports')}
+            className={`px-4 py-2 text-sm font-semibold rounded-t-lg transition-colors ${
+              activeTab === 'visit_reports'
+                ? 'text-[var(--color-card-foreground)] border-b-2 border-cyan-500 bg-[color:var(--color-muted)]/40'
+                : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] hover:bg-[color:var(--color-muted)]/20'
+            }`}
+          >
+            Visit Reports
+          </button>
+        )}
       </div>
 
       {activeTab === 'analytics' && (
@@ -471,13 +474,13 @@ export function ReportsPage() {
 
       {/* ── KPI Cards ── */}
       <div
-        className={`grid gap-3 grid-cols-2 ${
-          isAdmin ? 'lg:grid-cols-5' : 'lg:grid-cols-3'
+        className={`grid grid-cols-1 gap-3 sm:grid-cols-2 ${
+          isAdmin ? 'lg:grid-cols-3 2xl:grid-cols-5' : 'lg:grid-cols-3'
         }`}
       >
         <KpiCard
-          label="Total Revenue"
-          value={formatCurrencyFull(revenue?.totalRevenue ?? 0)}
+          label="Monthly Revenue"
+          value={formatCurrencyFull(dashboard?.revenueThisMonth ?? 0)}
           icon={Coins}
           isLoading={anyKpiLoading}
           isDark={isDark}
@@ -1156,7 +1159,7 @@ export function ReportsPage() {
       </div>
       )}
 
-      {activeTab === 'visit_reports' && (
+      {!isCashier && activeTab === 'visit_reports' && (
         <VisitReportsListPage isEmbedded />
       )}
     </div>

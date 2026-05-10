@@ -39,6 +39,7 @@ export function useVisitReports(params?: Record<string, string>) {
       });
       return data.data;
     },
+    staleTime: 15_000,
   });
 }
 
@@ -50,6 +51,7 @@ export function useVisitReport(id: string) {
       return data.data;
     },
     enabled: !!id,
+    staleTime: 15_000,
   });
 }
 
@@ -66,6 +68,7 @@ export function useVisitReportsByAppointment(appointmentId: string) {
       return data.data;
     },
     enabled: !!appointmentId,
+    staleTime: 15_000,
   });
 }
 
@@ -98,10 +101,6 @@ export function useCreateVisitReport() {
     },
     onSuccess: (report) => {
       syncVisitReportCaches(qc, report);
-      qc.invalidateQueries({ queryKey: KEYS.all });
-      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
-      const appointmentId = rawId(report.appointmentId);
-      if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
     },
   });
 }
@@ -157,10 +156,6 @@ export function useUpdateVisitReport() {
     },
     onSuccess: (report) => {
       syncVisitReportCaches(qc, report);
-      qc.invalidateQueries({ queryKey: KEYS.all });
-      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
-      const appointmentId = rawId(report.appointmentId);
-      if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
     },
   });
 }

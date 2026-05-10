@@ -17,8 +17,10 @@ import { usePendingPayments, useVerifyPayment, useDeclinePayment, useOverduePaym
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useThemeStore } from '@/stores/theme.store';
+import { useAuthStore } from '@/stores/auth.store';
 import { useSignature } from '@/hooks/useUsers';
 import { SignaturePad } from '@/components/shared/SignaturePad';
+import { Role } from '@/lib/constants';
 import {
   Dialog,
   DialogContent,
@@ -34,15 +36,19 @@ const formatCurrency = (v: number) =>
 function getPaymentContext(p: any) {
   const proj = typeof p.projectId === 'object' ? p.projectId : null;
   const cust = proj?.customerId && typeof proj.customerId === 'object' ? proj.customerId : null;
+  const explicitCustomerName = typeof p.customerName === 'string' ? p.customerName.trim() : '';
+  const explicitProjectTitle = typeof p.projectTitle === 'string' ? p.projectTitle.trim() : '';
   return {
-    projectTitle: proj?.title || 'Unknown Project',
-    customerName: cust ? `${cust.firstName} ${cust.lastName}` : 'Unknown Customer',
+    projectTitle: explicitProjectTitle || proj?.title || 'Unknown Project',
+    customerName: explicitCustomerName || (cust ? `${cust.firstName} ${cust.lastName}` : 'Unknown Customer'),
   };
 }
 
 export function CashierQueuePage() {
+  const { user } = useAuthStore();
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
+  const isCashier = Boolean(user?.roles?.includes(Role.CASHIER));
   const { data: payments, isLoading, isError, refetch } = usePendingPayments();
   const { data: overduePayments, isLoading: overdueLoading } = useOverduePayments();
   const { data: savedSignature } = useSignature();
@@ -219,7 +225,7 @@ export function CashierQueuePage() {
       )}
 
       {/* ── Overdue Payments Section ── */}
-      {!overdueLoading && overduePaymentList.length > 0 && (
+      {!isCashier && !overdueLoading && overduePaymentList.length > 0 && (
         <Card className="rounded-xl border-red-200 bg-red-50/30 dark:border-red-900/60 dark:bg-red-950/30">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-red-700">

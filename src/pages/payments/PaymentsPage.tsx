@@ -3,6 +3,7 @@ import { format, differenceInDays } from 'date-fns';
 import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck } from 'lucide-react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { MAX_PAYMENT_AMOUNT } from '@/lib/money';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
 import { resolveBlockedAction, type BlockedActionInfo } from '@/lib/blocked-actions';
@@ -88,6 +89,7 @@ type PaymentListStatus = 'payment_pending' | 'for_verification' | 'partially_pai
 type PaymentListProject = {
   _id: string;
   title: string;
+  customerName?: string;
   serviceType?: string;
   siteAddress?: string;
   status: string;
@@ -171,6 +173,9 @@ function PaymentProjectRow({
       <div className="sm:hidden flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">{String(project.title)}</p>
+          <p className="mt-0.5 truncate text-xs text-[var(--text-metal-color)]">
+            {project.customerName || 'Unknown Customer'}
+          </p>
           <p className="mt-0.5 truncate text-xs capitalize text-[var(--text-metal-color)]">
             {String(project.serviceType || '').replace(/_/g, ' ')}
           </p>
@@ -184,6 +189,9 @@ function PaymentProjectRow({
       <div className="hidden sm:grid sm:grid-cols-[1fr_140px_140px_150px_32px] gap-3 items-center">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)] group-hover:text-[var(--text-metal-color)] dark:group-hover:text-slate-200">{String(project.title)}</p>
+          <p className="mt-0.5 truncate text-xs text-[var(--text-metal-color)] dark:text-slate-300">
+            {project.customerName || 'Unknown Customer'}
+          </p>
           {project.siteAddress && (
             <p className="mt-0.5 truncate text-xs text-[var(--text-metal-color)] dark:text-slate-300">
               <MapPin className="inline h-3 w-3 mr-1" />
@@ -440,6 +448,7 @@ export function PaymentsPage() {
       const q = projectSearch.toLowerCase();
       items = items.filter((p) =>
         String(p.title).toLowerCase().includes(q) ||
+        String(p.customerName || '').toLowerCase().includes(q) ||
         String(p.serviceType || '').toLowerCase().includes(q) ||
         String(p.siteAddress || '').toLowerCase().includes(q)
       );
@@ -498,6 +507,10 @@ export function PaymentsPage() {
     const amount = parseFloat(cashAmount);
     if (!amount || amount <= 0) {
       toast.error('Enter a valid amount');
+      return;
+    }
+    if (amount > MAX_PAYMENT_AMOUNT) {
+      toast.error('Amount is too large');
       return;
     }
     try {
@@ -1382,6 +1395,7 @@ export function PaymentsPage() {
               <Input
                 type="number"
                 step="0.01"
+                max={MAX_PAYMENT_AMOUNT}
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
                 placeholder="0.00"

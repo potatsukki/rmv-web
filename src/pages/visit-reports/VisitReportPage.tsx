@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { format, addDays, getDay, startOfDay } from 'date-fns';
 import {
@@ -17,6 +17,7 @@ import {
   AlertTriangle,
   Wrench,
   Loader2,
+  X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -70,7 +71,7 @@ import {
   SLOT_CODES,
 } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications, SiteConditions, UserAddress, VisitReport } from '@/lib/types';
-import type { DesignTemplate } from '@/lib/design-templates';
+import { getDesignTemplatePlaceholderImage, type DesignTemplate } from '@/lib/design-templates';
 import { getMissingRequiredSpecificationFields, getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 
 
@@ -134,6 +135,8 @@ function getIncompleteOcularFields(report: {
   photoKeys?: string[];
   initialDesignKeys?: string[];
   initialDesignNotes?: string;
+  selectedDesignTemplateId?: string;
+  selectedDesignTemplateName?: string;
   selectedDesignTemplateImageUrl?: string;
 }) {
   const missing: string[] = [];
@@ -191,6 +194,8 @@ function getIncompleteOcularFields(report: {
   }
   if ((report.photoKeys?.length || 0) === 0) missing.push('site photos');
   const hasInitialDesignReference = (report.initialDesignKeys?.length || 0) > 0
+    || isNonEmptyString(report.selectedDesignTemplateId)
+    || isNonEmptyString(report.selectedDesignTemplateName)
     || isNonEmptyString(report.selectedDesignTemplateImageUrl);
   if (!hasInitialDesignReference) missing.push('initial design files');
 
@@ -223,6 +228,26 @@ function getAppointmentServiceLabels(appointment: unknown) {
   return serviceTypes.map((serviceType) => getServiceTypeLabel(serviceType, value.serviceTypeCustom));
 }
 
+function getAppointmentServiceTypeChoices(appointment: unknown) {
+  if (!appointment || typeof appointment !== 'object') return [];
+
+  const value = appointment as {
+    serviceTypes?: string[];
+    serviceType?: string;
+    customerSiteDetails?: {
+      serviceTypes?: string[];
+    };
+  };
+
+  const combined = [
+    ...(value.serviceTypes || []),
+    ...(value.customerSiteDetails?.serviceTypes || []),
+    ...(value.serviceType ? [value.serviceType] : []),
+  ].filter(Boolean);
+
+  return [...new Set(combined)];
+}
+
 function getLocalVisitParts(value?: string | Date | null) {
   if (!value) return null;
   const date = new Date(value);
@@ -235,6 +260,54 @@ function getLocalVisitParts(value?: string | Date | null) {
     date: isoLocal.slice(0, 10),
     slot: `${String(local.getHours()).padStart(2, '0')}:00`,
   };
+}
+
+function sanitizeSpecificationsForSave(value: ServiceSpecifications): ServiceSpecifications | undefined {
+  const next: ServiceSpecifications = {};
+
+  Object.entries(value || {}).forEach(([sectionKey, sectionValue]) => {
+    if (!sectionValue || typeof sectionValue !== 'object') return;
+
+    const cleanSection: Record<string, string | number | boolean> = {};
+    Object.entries(sectionValue as Record<string, unknown>).forEach(([fieldKey, fieldValue]) => {
+      if (fieldValue === '' || fieldValue === null || fieldValue === undefined) return;
+      if (typeof fieldValue === 'number' && !Number.isFinite(fieldValue)) return;
+      if (typeof fieldValue === 'string' && fieldValue.trim() === '') return;
+      if (typeof fieldValue === 'string' || typeof fieldValue === 'number' || typeof fieldValue === 'boolean') {
+        cleanSection[fieldKey] = fieldValue;
+      }
+    });
+
+    if (Object.keys(cleanSection).length > 0) {
+      next[sectionKey as keyof ServiceSpecifications] = cleanSection;
+    }
+  });
+
+  return Object.keys(next).length > 0 ? next : undefined;
+}
+
+function sanitizeLineItemsForSave(items: LineItem[]): LineItem[] {
+  return items
+    .filter((item) => item.label?.trim())
+    .map((item) => {
+      const cleanItem: LineItem = {
+        label: item.label.trim(),
+        quantity: Number.isInteger(item.quantity) && item.quantity > 0 ? item.quantity : 1,
+      };
+
+      (['length', 'width', 'height', 'area', 'thickness'] as const).forEach((key) => {
+        const value = item[key];
+        if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
+          cleanItem[key] = value;
+        }
+      });
+
+      if (item.notes?.trim()) {
+        cleanItem.notes = item.notes.trim();
+      }
+
+      return cleanItem;
+    });
 }
 
 export function VisitReportPage() {
@@ -314,6 +387,7 @@ export function VisitReportPage() {
   const [formLoaded, setFormLoaded] = useState(false);
   const [noOcularProjectEntryStarted, setNoOcularProjectEntryStarted] = useState(false);
   const [isSwitchingReport, setIsSwitchingReport] = useState(false);
+  const saveDraftInFlightRef = useRef<Promise<VisitReport | null> | null>(null);
   const sourcePath = (location.state as { from?: string } | null)?.from;
 
   // Reset form when switching between reports (route :id changes)
@@ -423,6 +497,9 @@ export function VisitReportPage() {
       attendanceNotes?: string;
     }
     : null;
+  const isAssignedSalesStaff = Boolean(
+    isSalesStaff && appointmentRecord && (appointmentRecord as any).salesStaffId && rawId((appointmentRecord as any).salesStaffId) === String(user?._id),
+  );
   const attendanceStatus = appointmentRecord?.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const contactPersonLabel = [
     appointmentRecord?.customerName || report?.customerName,
@@ -432,9 +509,7 @@ export function VisitReportPage() {
     effectiveVisitType === 'ocular' && appointmentRecord?.date && appointmentRecord?.slotCode
       ? `${appointmentRecord.date}T${appointmentRecord.slotCode}`
       : undefined;
-  const isConsultationSubmissionLocked = effectiveVisitType === 'consultation'
-    && attendanceStatus !== AppointmentAttendanceStatus.COMPLETED;
-  
+
   const isOcularFeeUnpaidOutsideNcr =
     effectiveVisitType === 'ocular' &&
     isPopulatedAppt &&
@@ -599,6 +674,7 @@ export function VisitReportPage() {
     .split(',')
     .map((item) => item.trim())
     .filter(Boolean);
+  const appointmentServiceChoices = getAppointmentServiceTypeChoices(report.appointmentId);
   const appointmentItemsText = appointmentItemNames.length > 1
     ? `both items (${appointmentItemNames.join(' and ')})`
     : `the item (${appointmentItemNames[0] || serviceLabel})`;
@@ -638,7 +714,7 @@ export function VisitReportPage() {
   const handleDesignTemplateSelect = (template: DesignTemplate) => {
     setSelectedDesignTemplateId(template.id);
     setSelectedDesignTemplateName(template.title);
-    setSelectedDesignTemplateImageUrl(template.imageUrl);
+    setSelectedDesignTemplateImageUrl('');
     setMaterials(template.material);
     setFinishes(template.finish);
     setPreferredDesign(template.preferredDesign);
@@ -651,11 +727,18 @@ export function VisitReportPage() {
   const saveDraft = async ({
     showSuccessToast = false,
     showErrorToast = true,
+    syncSiblingReports = true,
   }: {
     showSuccessToast?: boolean;
     showErrorToast?: boolean;
+    syncSiblingReports?: boolean;
   } = {}): Promise<VisitReport | null> => {
-    try {
+    if (saveDraftInFlightRef.current) {
+      return saveDraftInFlightRef.current;
+    }
+
+    const savePromise = (async () => {
+      try {
       const consultationVisitDateTime =
         effectiveVisitType === 'consultation'
           ? appointmentRecord?.consultationStartedAt
@@ -684,8 +767,11 @@ export function VisitReportPage() {
         if (legacyHeight) measurements.height = parseFloat(legacyHeight);
         if (legacyThickness) measurements.thickness = parseFloat(legacyThickness);
         if (legacyMeasurementNotes) measurements.raw = legacyMeasurementNotes;
-        if (!Object.keys(measurements).length) measurements = undefined;
+      if (!Object.keys(measurements).length) measurements = undefined;
       }
+
+      const lineItemsForSave = sanitizeLineItemsForSave(lineItems);
+      const specificationsForSave = sanitizeSpecificationsForSave(specifications);
 
       const savedReport = await updateMutation.mutateAsync({
         id: id!,
@@ -698,13 +784,13 @@ export function VisitReportPage() {
         // Project detail fields can be captured during consultation and refined later.
         ...(canEditProjectDetailsInReport && {
           measurementUnit,
-          lineItems,
+          lineItems: lineItemsForSave,
           measurements,
           siteConditions,
           materials: materials || undefined,
           finishes: finishes || undefined,
           preferredDesign: preferredDesign || undefined,
-          specifications,
+          specifications: specificationsForSave,
           customerRequirements: customerRequirements || undefined,
           notes: notes || undefined,
           photoKeys,
@@ -715,7 +801,7 @@ export function VisitReportPage() {
           initialDesignNotes: initialDesignNotes || undefined,
           selectedDesignTemplateId: selectedDesignTemplateId || undefined,
           selectedDesignTemplateName: selectedDesignTemplateName || undefined,
-          selectedDesignTemplateImageUrl: selectedDesignTemplateImageUrl || undefined,
+          selectedDesignTemplateImageUrl: undefined,
         }),
         // Consultation-specific fields
         ...(visitType === 'consultation' && {
@@ -737,7 +823,7 @@ export function VisitReportPage() {
         }),
       });
 
-      if (visitType === 'consultation' && siblingReports?.length) {
+      if (syncSiblingReports && visitType === 'consultation' && siblingReports?.length) {
         const siblingUpdates = siblingReports.filter((sibling) => (
           String(sibling._id) !== id &&
           [VisitReportStatus.DRAFT, VisitReportStatus.RETURNED].includes(sibling.status as VisitReportStatus)
@@ -776,6 +862,14 @@ export function VisitReportPage() {
       if (showErrorToast) toast.error(extractErrorMessage(err, 'Failed to save report'));
       return null;
     }
+    })();
+
+    saveDraftInFlightRef.current = savePromise;
+    try {
+      return await savePromise;
+    } finally {
+      saveDraftInFlightRef.current = null;
+    }
   };
 
   const handleSave = async () => {
@@ -794,7 +888,11 @@ export function VisitReportPage() {
   const handleBeforeProjectSwitch = async () => {
     setIsSwitchingReport(true);
     if (!canEdit) return true;
-    const saved = await saveDraft({ showSuccessToast: false, showErrorToast: true });
+    const saved = await saveDraft({
+      showSuccessToast: false,
+      showErrorToast: true,
+      syncSiblingReports: false,
+    });
     if (!saved) setIsSwitchingReport(false);
     return Boolean(saved);
   };
@@ -825,6 +923,8 @@ export function VisitReportPage() {
         photoKeys,
         initialDesignKeys,
         initialDesignNotes,
+        selectedDesignTemplateId,
+        selectedDesignTemplateName,
         selectedDesignTemplateImageUrl,
       });
 
@@ -897,6 +997,8 @@ export function VisitReportPage() {
           photoKeys: saved.photoKeys,
           initialDesignKeys: saved.initialDesignKeys,
           initialDesignNotes: saved.initialDesignNotes,
+          selectedDesignTemplateId: saved.selectedDesignTemplateId,
+          selectedDesignTemplateName: saved.selectedDesignTemplateName,
           selectedDesignTemplateImageUrl: saved.selectedDesignTemplateImageUrl,
         });
 
@@ -1018,13 +1120,13 @@ export function VisitReportPage() {
   if (isSwitchingReport) {
     return (
       <div className="flex min-h-[64vh] items-center justify-center">
-        <div className="flex flex-col items-center gap-4 rounded-2xl border border-white/10 bg-[linear-gradient(135deg,rgba(17,24,34,0.98)_0%,rgba(8,14,22,0.98)_100%)] px-10 py-9 text-center shadow-[0_24px_60px_rgba(0,0,0,0.32)]">
-          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-blue-300/25 bg-blue-500/10 text-blue-200">
+        <div className="flex flex-col items-center gap-4 rounded-2xl border border-[#d9dee6] bg-[linear-gradient(135deg,rgba(255,255,255,0.98)_0%,rgba(241,245,249,0.98)_100%)] px-10 py-9 text-center shadow-[0_24px_60px_rgba(15,23,42,0.12)] dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.98)_0%,rgba(8,14,22,0.98)_100%)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.32)]">
+          <div className="flex h-14 w-14 items-center justify-center rounded-full border border-blue-200 bg-blue-50 text-blue-700 dark:border-blue-300/25 dark:bg-blue-500/10 dark:text-blue-200">
             <Loader2 className="h-7 w-7 animate-spin" />
           </div>
           <div>
-            <p className="text-base font-semibold text-slate-100">Loading item details</p>
-            <p className="mt-1 text-sm text-slate-400">Saving the current item and opening the selected one.</p>
+            <p className="text-base font-semibold text-slate-900 dark:text-slate-100">Loading item details</p>
+            <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">Saving the current item and opening the selected one.</p>
           </div>
         </div>
       </div>
@@ -1076,9 +1178,19 @@ export function VisitReportPage() {
           appointmentId={appointmentId}
           activeReportId={String(report._id)}
           defaultVisitType={effectiveVisitType}
-          canAdd={!!isSalesStaff && (isDraft || isReturned) && effectiveVisitType !== 'ocular'}
+          addServiceOptions={appointmentServiceChoices}
+          canAdd={isAssignedSalesStaff && (isDraft || isReturned) && effectiveVisitType !== 'ocular'}
           canEdit={!!(isSalesStaff || isAdmin) && effectiveVisitType !== 'ocular' && !isProjectCreationMode}
           onBeforeNavigate={handleBeforeProjectSwitch}
+          onBeforeAdd={async () => {
+            if (!canEdit) return true;
+            const saved = await saveDraft({
+              showSuccessToast: false,
+              showErrorToast: true,
+              syncSiblingReports: false,
+            });
+            return Boolean(saved);
+          }}
         />
 
       {/* ── Return reason banner ── */}
@@ -1178,13 +1290,11 @@ export function VisitReportPage() {
               <CardContent className="space-y-6">
                 {report.selectedDesignTemplateName && (
                   <div className="overflow-hidden rounded-xl border border-[#d8dee6] bg-[#f8fafc] shadow-[0_6px_18px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800/80">
-                    {report.selectedDesignTemplateImageUrl && (
-                      <img
-                        src={report.selectedDesignTemplateImageUrl}
-                        alt={report.selectedDesignTemplateName}
-                        className="h-48 w-full object-cover"
-                      />
-                    )}
+                    <img
+                      src={getDesignTemplatePlaceholderImage(report.serviceType, report.selectedDesignTemplateName)}
+                      alt={report.selectedDesignTemplateName}
+                      className="h-48 w-full object-cover"
+                    />
                     <div className="p-4">
                       <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Selected Design Reference</p>
                       <p className="mt-1 text-sm text-[#647080] dark:text-slate-400">{report.selectedDesignTemplateName}</p>
@@ -1479,19 +1589,16 @@ export function VisitReportPage() {
           )}
 
           {visitType === 'consultation' && isProjectCreationMode && (
-            <Card className={editSectionClassName}>
+            <Card className={editCardClassName}>
               <CardContent className="pt-6">
-                <div className="rounded-xl border border-emerald-300 bg-emerald-50/80 p-4 dark:border-emerald-500/35 dark:bg-emerald-500/10">
-                  <div className="flex items-start gap-3">
-                    <Send className="mt-0.5 h-5 w-5 shrink-0 text-emerald-700 dark:text-emerald-300" />
-                    <div>
-                      <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">
-                        Next step: Create the project package
-                      </p>
-                      <p className="mt-1 text-sm text-emerald-800 dark:text-emerald-200">
-                        The consultation notes are already captured for {appointmentItemsText}. Complete the project details below, then click Create Project. The next screen will be the signed contract upload step before engineering can claim the job.
-                      </p>
-                    </div>
+                <div>
+                  <p className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
+                    Consultation Notes for {serviceLabel}
+                  </p>
+                  <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700/60 dark:bg-slate-900/50">
+                    <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
+                      {report.discussionNotes || 'No discussion notes recorded.'}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -1534,21 +1641,6 @@ export function VisitReportPage() {
               <p className="text-sm text-gray-600 dark:text-slate-400">
                 Attach the initial design references or sketch notes that engineering should review next.
               </p>
-              {selectedDesignTemplateName && (
-                <div className="overflow-hidden rounded-xl border border-[#d8dee6] bg-[#f8fafc] shadow-[0_6px_18px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800/80">
-                  {selectedDesignTemplateImageUrl && (
-                    <img
-                      src={selectedDesignTemplateImageUrl}
-                      alt={selectedDesignTemplateName}
-                      className="h-48 w-full object-cover"
-                    />
-                  )}
-                  <div className="p-4">
-                    <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Selected Design Reference</p>
-                    <p className="mt-1 text-sm text-[#647080] dark:text-slate-400">{selectedDesignTemplateName}</p>
-                  </div>
-                </div>
-              )}
               <FileUpload
                 folder="visit-reports/initial-design"
                 accept="image/*,.pdf"
@@ -1559,6 +1651,39 @@ export function VisitReportPage() {
                 onUploadComplete={setInitialDesignKeys}
                 onUploadingChange={setInitialDesignUploading}
               />
+              {selectedDesignTemplateName && (
+                <div className="flex items-center gap-3 rounded-2xl border border-[color:var(--color-border)]/60 bg-white/80 p-3 shadow-sm dark:bg-slate-950/45 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
+                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-sky-200/70 bg-slate-100 dark:border-sky-700/70 dark:bg-slate-900">
+                    <img
+                      src={getDesignTemplatePlaceholderImage(serviceType, selectedDesignTemplateName)}
+                      alt={selectedDesignTemplateName}
+                      className="h-full w-full object-cover"
+                    />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-100">
+                      {selectedDesignTemplateName}
+                    </p>
+                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                      Template reference
+                    </p>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-10 w-10 shrink-0 rounded-xl border border-[color:var(--color-border)]/60 bg-white/70 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-200"
+                    onClick={() => {
+                      setSelectedDesignTemplateId('');
+                      setSelectedDesignTemplateName('');
+                      setSelectedDesignTemplateImageUrl('');
+                    }}
+                    aria-label={`Remove ${selectedDesignTemplateName}`}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
               <div className="space-y-1.5">
                 <Label className="text-[13px] font-medium text-gray-700">
                   Initial Design Notes
@@ -1686,7 +1811,7 @@ export function VisitReportPage() {
                     onClick={handlePrimarySubmitClick}
                     disabled={
                       initialDesignUploading
-                      || (!linkedProjectId && (submitMutation.isPending || !!isSubmissionBlocked || isConsultationSubmissionLocked))
+                      || (!linkedProjectId && (submitMutation.isPending || !!isSubmissionBlocked))
                     }
                     className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
                   >
@@ -1738,8 +1863,7 @@ export function VisitReportPage() {
           effectiveVisitType === 'consultation'
           && !isProjectCreationMode
           && (
-            isConsultationSubmissionLocked
-            || (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot || !hasSelectableOcularAddress))
+            (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot || !hasSelectableOcularAddress))
             || (consultationOutcome === 'no_ocular' && !noOcularReason.trim())
           )
         }
@@ -1851,9 +1975,6 @@ export function VisitReportPage() {
               </div>
             ) : (
               <div className="space-y-3">
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-100">
-                  Ocular will be skipped. Make sure the project title and description are complete before continuing.
-                </div>
                 <div className="space-y-1.5">
                   <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
                     Reason ocular is not needed

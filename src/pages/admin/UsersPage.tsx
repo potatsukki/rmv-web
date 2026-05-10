@@ -362,7 +362,6 @@ export function UsersPage() {
         filters={[{ value: 'all', label: 'All' }, ...ROLES.filter((role) => !isEmployeeMonitoringPage || role.value !== Role.CUSTOMER)]}
         activeFilter={roleFilter}
         onFilterChange={setRoleFilter}
-        searchWidthClassName="lg:max-w-sm"
       />
 
       {/* Users */}

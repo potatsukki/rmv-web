@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { format } from 'date-fns';
 import { Wallet, AlertTriangle, Banknote, Loader2, MapPin, Clock, User, Phone, ChevronDown, ChevronUp } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { MAX_PAYMENT_AMOUNT } from '@/lib/money';
 
 import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
@@ -89,6 +90,10 @@ export function CashCollectionsPage() {
       toast.error('Enter a valid amount');
       return;
     }
+    if (amt > MAX_PAYMENT_AMOUNT) {
+      toast.error('Amount is too large');
+      return;
+    }
     try {
       await recordMutation.mutateAsync({
         appointmentId: recordDialog.appointmentId,
@@ -109,6 +114,10 @@ export function CashCollectionsPage() {
     const amt = parseFloat(receiveDialog.amount);
     if (isNaN(amt) || amt < 0) {
       toast.error('Enter a valid amount');
+      return;
+    }
+    if (amt > MAX_PAYMENT_AMOUNT) {
+      toast.error('Amount is too large');
       return;
     }
     try {
@@ -470,6 +479,7 @@ export function CashCollectionsPage() {
             <Input
               type="number"
               step="0.01"
+              max={MAX_PAYMENT_AMOUNT}
               value={receiveDialog.amount}
               onChange={(e) => setReceiveDialog({ ...receiveDialog, amount: e.target.value })}
               placeholder="Enter actual amount received"
@@ -570,6 +580,7 @@ export function CashCollectionsPage() {
               <Input
                 type="number"
                 step="0.01"
+                max={MAX_PAYMENT_AMOUNT}
                 value={recordAmount}
                 onChange={(e) => setRecordAmount(e.target.value)}
                 placeholder="Enter amount collected"

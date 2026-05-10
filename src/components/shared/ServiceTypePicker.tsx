@@ -89,7 +89,7 @@ export function ServiceTypePicker({
   };
 
   const displayLabel = value.length === 0
-    ? 'Select service types'
+    ? 'Select items'
     : value.map(v => v === ServiceType.CUSTOM ? (customValue || 'Custom') : (SERVICE_TYPE_LABELS[v] || v)).join(', ');
 
   const firstSelected = value[0];

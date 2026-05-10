@@ -38,8 +38,34 @@ import { useAuthStore } from '@/stores/auth.store';
 import { Role } from '@/lib/constants';
 import type { AuditLog } from '@/lib/types';
 
-const formatCurrency = (v: number) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
+function formatCurrencyCompact(v: number) {
+  const abs = Math.abs(v);
+  const sign = v < 0 ? '-' : '';
+  const unitTable: Array<{ threshold: number; suffix: string }> = [
+    { threshold: 1e12, suffix: 'T' },
+    { threshold: 1e9, suffix: 'B' },
+    { threshold: 1e6, suffix: 'M' },
+    { threshold: 1e3, suffix: 'K' },
+  ];
+
+  const unit = unitTable.find((u) => abs >= u.threshold);
+  if (!unit) {
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
+  }
+
+  const scaled = abs / unit.threshold;
+  const maxFractionDigits = scaled >= 100 ? 0 : scaled >= 10 ? 1 : 2;
+  const num = new Intl.NumberFormat('en-PH', { maximumFractionDigits: maxFractionDigits }).format(scaled);
+  return `${sign}₱${num}${unit.suffix}`;
+}
+
+function formatCurrencyDashboard(v: number) {
+  // Keep full currency for normal values; compact only when it would overflow KPI cards.
+  if (Math.abs(v) < 1e9) {
+    return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
+  }
+  return formatCurrencyCompact(v);
+}
 
 // ── Audit Action Display Mapping ──
 const AUDIT_ACTION_MAP: Record<string, { icon: React.ElementType; label: string; color: string }> = {
@@ -271,7 +297,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     case Role.CASHIER:
       return [
         { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', detail: 'Received payment records that still need cashier review before they can be marked paid.', path: '/payments?tab=cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
+        { label: 'Monthly Revenue', value: formatCurrencyDashboard(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
         { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash transactions that still need collection, confirmation, or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
       ];
     case Role.FABRICATION_STAFF:
@@ -282,7 +308,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       ];
     case Role.ADMIN:
       return [
-        { label: 'Monthly Revenue', value: formatCurrency(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
+        { label: 'Monthly Revenue', value: formatCurrencyDashboard(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
         activeProjects,
         { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Records to verify', detail: 'Received payment records waiting for cashier review or admin visibility.', path: '/payments?tab=cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', detail: 'All appointments scheduled for today across the operation.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
@@ -456,7 +482,7 @@ export function DashboardPage() {
                       <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-[#7a838d] sm:text-[11px]">
                         {item.label}
                       </p>
-                      <div className="mt-2 text-[clamp(1.95rem,7.4vw,2.25rem)] font-bold leading-none tracking-[-0.035em] text-[#171b21] dark:text-slate-100 sm:mt-2 sm:text-4xl">
+                      <div className="mt-2 truncate text-[clamp(1.95rem,7.4vw,2.25rem)] font-bold leading-none tracking-[-0.035em] text-[#171b21] dark:text-slate-100 sm:mt-2 sm:text-4xl">
                         {item.value}
                       </div>
                       <div className="mt-auto pt-3 sm:mt-0 sm:pt-0">
@@ -489,7 +515,7 @@ export function DashboardPage() {
                         <item.icon className="h-4.5 w-4.5 text-[#2b3138] sm:h-4 sm:w-4" />
                       </div>
                     </div>
-                    <div className="text-[clamp(1.55rem,6.1vw,1.95rem)] font-bold leading-none tracking-[-0.03em] text-[#171b21] dark:text-slate-100 sm:text-2xl">{item.value}</div>
+                    <div className="truncate text-[clamp(1.55rem,6.1vw,1.95rem)] font-bold leading-none tracking-[-0.03em] text-[#171b21] dark:text-slate-100 sm:text-2xl">{item.value}</div>
                     <div className="mt-auto pt-3">
                       <p className="text-[12px] font-semibold text-[#434c56] dark:text-slate-300 sm:text-[11px]">{item.label}</p>
                       {item.description && <p className="mt-1 text-[11px] leading-5 text-[#7a838d] sm:text-[10px]">{item.description}</p>}

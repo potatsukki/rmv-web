@@ -45,6 +45,47 @@ const images = {
   ],
 } as const;
 
+export function getDesignTemplatePlaceholderImage(
+  serviceType?: string,
+  title = 'Design Template',
+): string {
+  const label = title.replace(/&/g, 'and');
+  const type = String(serviceType || ServiceType.CUSTOM).replace(/_/g, ' ').toUpperCase();
+  const accent = serviceType === ServiceType.KITCHEN_COUNTER || serviceType === ServiceType.KITCHEN_CABINET
+    ? '#2f7d68'
+    : serviceType === ServiceType.GATES || serviceType === ServiceType.FENCES || serviceType === ServiceType.GRILLS
+      ? '#5c7694'
+      : serviceType === ServiceType.SIGNAGE
+        ? '#8a6a2f'
+        : '#64748b';
+
+  const svg = `
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 520" role="img" aria-label="${label}">
+      <defs>
+        <linearGradient id="bg" x1="0" x2="1" y1="0" y2="1">
+          <stop offset="0" stop-color="#f8fafc"/>
+          <stop offset="1" stop-color="#dbe3ec"/>
+        </linearGradient>
+        <pattern id="grid" width="48" height="48" patternUnits="userSpaceOnUse">
+          <path d="M 48 0 L 0 0 0 48" fill="none" stroke="#cbd5e1" stroke-width="1"/>
+        </pattern>
+      </defs>
+      <rect width="1200" height="520" fill="url(#bg)"/>
+      <rect width="1200" height="520" fill="url(#grid)" opacity="0.55"/>
+      <rect x="76" y="64" width="1048" height="336" rx="22" fill="#ffffff" opacity="0.82" stroke="#94a3b8" stroke-width="3"/>
+      <path d="M160 328 H1040" stroke="${accent}" stroke-width="12" stroke-linecap="round"/>
+      <path d="M210 328 V156 M370 328 V156 M530 328 V156 M690 328 V156 M850 328 V156 M1010 328 V156" stroke="${accent}" stroke-width="10" stroke-linecap="round" opacity="0.9"/>
+      <path d="M160 156 H1040 M160 242 H1040" stroke="${accent}" stroke-width="10" stroke-linecap="round" opacity="0.72"/>
+      <path d="M140 418 H1060" stroke="#475569" stroke-width="3" stroke-dasharray="18 14" opacity="0.55"/>
+      <text x="76" y="454" fill="#334155" font-family="Arial, sans-serif" font-size="34" font-weight="700">${label}</text>
+      <text x="76" y="490" fill="#64748b" font-family="Arial, sans-serif" font-size="22" letter-spacing="3">${type} TEMPLATE PREVIEW</text>
+      <text x="1030" y="490" fill="${accent}" font-family="Arial, sans-serif" font-size="22" font-weight="700" text-anchor="end">CONCEPT</text>
+    </svg>
+  `;
+
+  return `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+}
+
 function item(
   label: string,
   notes: string,
@@ -206,7 +247,7 @@ function makeTemplate(
   serviceType: ServiceType,
   index: number,
   title: string,
-  imageUrl: string,
+  _imageUrl: string,
   material: string,
   finish: string,
   style: string,
@@ -217,7 +258,7 @@ function makeTemplate(
     id: `${serviceType}-${index + 1}`,
     serviceType,
     title,
-    imageUrl,
+    imageUrl: getDesignTemplatePlaceholderImage(serviceType, title),
     material,
     finish,
     style,
@@ -250,6 +291,11 @@ const catalog: Partial<Record<ServiceType, DesignTemplate[]>> = {
     makeTemplate(ServiceType.GATES, 0, 'Sliding Stainless Gate', images.metal[2], 'Stainless steel tubular frame', 'Brushed satin finish', 'Sliding gate with clean horizontal lines', [item('Gate leaf', 'Confirm clear opening, track length, and motor provision.')], { measurements: { gateWidth: 3600, gateHeight: 1800, openingClearance: 3700 }, materialsDesign: { frameMaterial: 'SS tubular', motionType: 'Sliding', lockType: 'Dropbolt + latch' } }),
     makeTemplate(ServiceType.GATES, 1, 'Swing Gate Frame', images.completed[0], 'Stainless steel frame with sheet accents', 'Powder-coated charcoal finish', 'Two-panel swing gate', [item('Swing gate pair', 'Confirm leaf width, hinge posts, and lockset.')], { measurements: { gateWidth: 3200, gateHeight: 1700, panelCount: 2 }, materialsDesign: { frameMaterial: 'SS frame', motionType: 'Swing', paintFinish: 'Charcoal powder coat' } }),
     makeTemplate(ServiceType.GATES, 2, 'Mixed Panel Gate', images.stall[1], 'Stainless frame with perforated panel inserts', 'Semi-gloss powder coat', 'Privacy gate with panel inserts', [item('Gate panel set', 'Confirm privacy panel height and gap spacing.')], { measurements: { gateWidth: 3000, gateHeight: 1800 }, siteConditions: { groundSlope: 'Slight', fenceConnection: 'Right side wall' }, materialsDesign: { panelStyle: 'Perforated insert', lockType: 'Lever lock' } }),
+  ],
+  [ServiceType.FENCES]: [
+    makeTemplate(ServiceType.FENCES, 0, 'Linear Boundary Fence', images.metal[1], 'Stainless steel posts and horizontal rails', 'Brushed outdoor finish', 'Modern linear perimeter fence', [item('Fence run', 'Confirm total boundary length, post spacing, and gate connection.', { length: 6000, width: 60, height: 1500 })], { measurements: { totalRunLength: 6000, fenceHeight: 1500, postSpacing: 1200 }, siteConditions: { mountingSurface: 'Concrete footing or wall top', outdoorExposure: 'High' }, materialsDesign: { tubeMaterial: 'SS304 tubular', finishType: 'Brushed outdoor', panelStyle: 'Horizontal rail' } }),
+    makeTemplate(ServiceType.FENCES, 1, 'Privacy Panel Fence', images.completed[1], 'Stainless frame with sheet or perforated inserts', 'Powder-coated charcoal finish', 'Privacy fence with panel inserts', [item('Privacy fence bay', 'Confirm panel opacity, height, and bay count.', { length: 2400, width: 50, height: 1800, quantity: 3 })], { measurements: { totalRunLength: 7200, fenceHeight: 1800, panelCount: 3 }, siteConditions: { windExposure: 'Medium', existingWallConnection: 'To confirm' }, materialsDesign: { panelMaterial: 'Perforated stainless insert', finishType: 'Charcoal powder coat', frameMaterial: 'SS rectangular tube' } }),
+    makeTemplate(ServiceType.FENCES, 2, 'Security Fence Extension', images.grill[2], 'Stainless steel vertical bars and top rail', 'Matte protective coating', 'Security-focused fence extension', [item('Fence extension', 'Confirm existing wall height, anchor detail, and bar spacing.', { length: 5000, width: 40, height: 900 })], { measurements: { totalRunLength: 5000, extensionHeight: 900, barSpacing: 100 }, siteConditions: { existingBase: 'Masonry wall', accessConstraints: 'Verify drilling access' }, materialsDesign: { barMaterial: 'SS round bar', finishType: 'Matte protective coat', topDetail: 'Continuous top rail' } }),
   ],
   [ServiceType.DOOR]: [
     makeTemplate(ServiceType.DOOR, 0, 'Stainless Utility Door', images.metal[1], 'Stainless sheet and tubular frame', 'Brushed stainless finish', 'Industrial stainless door', [item('Door assembly', 'Confirm rough opening, swing direction, and hardware.')]),
@@ -291,10 +337,20 @@ const catalog: Partial<Record<ServiceType, DesignTemplate[]>> = {
     makeTemplate(ServiceType.STAIRCASE, 1, 'Industrial Stair Detail', images.completed[0], 'Stainless steel tread and rail parts', 'Anti-slip brushed finish', 'Industrial stair detail', [item('Stair section', 'Confirm tread count and width.')]),
     makeTemplate(ServiceType.STAIRCASE, 2, 'Custom Stair Guard', images.metal[1], 'Stainless tubular guard rail', 'Powder-coated finish', 'Custom stair guard rail', [item('Guard rail', 'Confirm height, run length, and post spacing.')]),
   ],
+  [ServiceType.BALUSTRADE]: [
+    makeTemplate(ServiceType.BALUSTRADE, 0, 'Stair Balustrade Set', images.completed[2], 'Stainless steel handrail and balusters', 'Brushed satin finish', 'Stair balustrade with vertical pickets', [item('Balustrade run', 'Confirm stair pitch, handrail height, and baluster spacing.', { length: 3800, width: 50, height: 1050 })], { measurements: { totalRunLength: 3800, railHeight: 1050, balusterSpacing: 100 }, siteConditions: { mountingSurface: 'Concrete stair side', indoorOutdoorExposure: 'Indoor' }, materialsDesign: { handrailMaterial: 'SS304 round tube', balusterStyle: 'Vertical pickets', finishType: 'Brushed satin' } }),
+    makeTemplate(ServiceType.BALUSTRADE, 1, 'Glass Balustrade Provision', images.metal[2], 'Stainless posts with glass clamp provision', 'Polished stainless finish', 'Glass-ready balustrade system', [item('Glass balustrade section', 'Confirm glass thickness, clamp spacing, and edge clearance.', { length: 3200, width: 50, height: 1100 })], { measurements: { totalRunLength: 3200, railHeight: 1100, sectionCount: 3 }, siteConditions: { mountingSurface: 'Finished floor or side mount', safetyClearance: 'Confirm glass edge clearance' }, materialsDesign: { postMaterial: 'SS316 posts', infillType: 'Glass provision', finishType: 'Polished stainless' } }),
+    makeTemplate(ServiceType.BALUSTRADE, 2, 'Balcony Balustrade', images.metal[0], 'Stainless tubular frame and infill bars', 'Weather-resistant brushed finish', 'Outdoor balcony balustrade', [item('Balcony balustrade', 'Confirm balcony edge length, water exposure, and anchor detail.', { length: 4800, width: 60, height: 1100 })], { measurements: { totalRunLength: 4800, railHeight: 1100, postSpacing: 1000 }, siteConditions: { outdoorExposure: 'High', mountingSurface: 'Concrete slab edge' }, materialsDesign: { frameMaterial: 'SS316 tubular', infillStyle: 'Horizontal bars', finishType: 'Weather brushed' } }),
+  ],
   [ServiceType.CANOPY]: [
     makeTemplate(ServiceType.CANOPY, 0, 'Stainless Canopy Frame', images.completed[0], 'Stainless steel canopy frame', 'Weather-resistant brushed finish', 'Outdoor canopy frame', [item('Canopy frame', 'Confirm projection, width, and roofing material.')], { measurements: { projectionLength: 1800, totalWidth: 4200, supportPostCount: 3 }, materialsDesign: { roofingMaterial: 'Polycarbonate', structuralMaterial: 'SS frame' } }),
     makeTemplate(ServiceType.CANOPY, 1, 'Service Area Canopy', images.kitchen[1], 'Stainless frame with panel provision', 'Satin finish', 'Service area canopy', [item('Canopy section', 'Confirm support posts and drain direction.')], { measurements: { projectionLength: 1500, totalWidth: 3000, heightClearance: 2600 }, siteConditions: { drainageAccess: 'Rear downspout', roofConnectionType: 'Wall anchor' } }),
     makeTemplate(ServiceType.CANOPY, 2, 'Custom Shade Frame', images.metal[2], 'Stainless tubular frame', 'Powder-coated finish', 'Custom shade canopy frame', [item('Shade frame', 'Confirm mounting surface and span.')], { siteConditions: { windExposure: 'High', existingSupportStructure: 'Concrete columns' }, materialsDesign: { finishCoating: 'Powder coat', drainageStyle: 'Front gutter' } }),
+  ],
+  [ServiceType.SIGNAGE]: [
+    makeTemplate(ServiceType.SIGNAGE, 0, 'Stainless Letter Signage', images.completed[0], 'Stainless steel cut letters', 'Brushed stainless finish', 'Wall-mounted letter signage', [item('Letter signage set', 'Confirm wording, letter height, wall surface, and mounting method.', { length: 1800, width: 40, height: 300 })], { measurements: { signWidth: 1800, signHeight: 300, letterDepth: 40 }, siteConditions: { installationLocation: 'Exterior wall', wallMaterial: 'Concrete or cladding' }, materialsDesign: { materialPreference: 'SS304 cut letters', finishPreference: 'Brushed stainless', lightingProvision: 'To confirm' } }),
+    makeTemplate(ServiceType.SIGNAGE, 1, 'Box-Type Sign Frame', images.stall[0], 'Stainless frame with acrylic or panel face', 'Powder-coated frame finish', 'Box signage frame with face panel provision', [item('Sign box frame', 'Confirm sign face size, lighting access, and electrical route.', { length: 2400, width: 120, height: 600 })], { measurements: { signWidth: 2400, signHeight: 600, signDepth: 120 }, siteConditions: { electricalAccess: 'Verify nearby power route', mountingSurface: 'Storefront fascia' }, materialsDesign: { frameMaterial: 'SS frame', faceMaterial: 'Acrylic or ACP panel', finishPreference: 'Powder-coated frame' } }),
+    makeTemplate(ServiceType.SIGNAGE, 2, 'Directional Sign Stand', images.metal[1], 'Stainless post and sign panel frame', 'Satin stainless finish', 'Freestanding directional signage', [item('Directional sign stand', 'Confirm panel count, base plate size, and viewing direction.', { length: 600, width: 80, height: 1600 })], { measurements: { signWidth: 600, signHeight: 400, standHeight: 1600 }, siteConditions: { floorSurface: 'Tile or concrete', accessConstraints: 'Verify walkway clearance' }, materialsDesign: { postMaterial: 'SS tubular post', panelFrame: 'SS angle frame', finishPreference: 'Satin stainless' } }),
   ],
   [ServiceType.CUSTOM]: [
     makeTemplate(ServiceType.CUSTOM, 0, 'Custom Metalwork Reference', images.metal[0], 'Stainless steel, grade to confirm', 'Finish to confirm', 'Custom fabrication reference', [item('Custom item', 'Confirm purpose, dimensions, material, and finish.')]),
@@ -302,10 +358,6 @@ const catalog: Partial<Record<ServiceType, DesignTemplate[]>> = {
     makeTemplate(ServiceType.CUSTOM, 2, 'Kitchen Fabrication Reference', images.kitchen[0], 'Food-grade stainless steel', 'Food-grade brushed finish', 'Kitchen custom fabrication', [item('Custom kitchen item', 'Confirm equipment clearance and sanitation requirements.')]),
   ],
 };
-
-catalog[ServiceType.FENCES] = catalog[ServiceType.RAILINGS];
-catalog[ServiceType.BALUSTRADE] = catalog[ServiceType.RAILINGS];
-catalog[ServiceType.SIGNAGE] = catalog[ServiceType.CUSTOM];
 
 export function getDesignTemplates(serviceType?: string): DesignTemplate[] {
   const key = serviceType as ServiceType | undefined;

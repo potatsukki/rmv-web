@@ -604,22 +604,22 @@ export function AppointmentDetailPage() {
             )}
             {appt.attendanceNotes && (
               <div>
-                <p className="text-[13px] font-medium text-slate-400">Attendance Notes</p>
-                <p className="mt-1 text-sm text-slate-300">{appt.attendanceNotes}</p>
+                <p className="text-[13px] font-medium text-slate-600 dark:text-slate-300">Attendance Notes</p>
+                <p className="mt-1 text-sm leading-6 text-slate-700 dark:text-slate-200">{appt.attendanceNotes}</p>
               </div>
             )}
             {attendanceStatus === AppointmentAttendanceStatus.LATE_ARRIVAL && (
-              <div className="rounded-xl border border-orange-200/20 bg-orange-500/10 p-3 text-sm text-orange-200">
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
                 Customer arrived after the grace period.
               </div>
             )}
             {attendanceStatus === AppointmentAttendanceStatus.CUSTOMER_DECLINED && (
-              <div className="rounded-xl border border-red-200/20 bg-red-500/10 p-3 text-sm text-red-200">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm leading-6 text-rose-900 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-100">
                 Customer declined to proceed during consultation. This appointment is cancelled and will not continue to the report workflow.
               </div>
             )}
             {isOutsideConsultationWindow(appt.actualArrivalAt) && (
-              <div className="rounded-xl border border-red-200/20 bg-red-500/10 p-3 text-sm text-red-200">
+              <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm leading-6 text-rose-900 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-100">
                 Customer is outside the booked consultation window. Continue only if the staff schedule allows it.
               </div>
             )}

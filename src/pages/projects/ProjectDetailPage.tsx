@@ -54,6 +54,7 @@ import { api } from '@/lib/api';
 import { ContractStatus, Role, StaffAvailabilityStatus, ProjectStatus, ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications } from '@/lib/service-specifications';
+import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { cn, extractErrorMessage } from '@/lib/utils';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import type { ApiResponse, PaymentPlan, ProjectItem, VisitReport } from '@/lib/types';
@@ -678,6 +679,8 @@ export function ProjectDetailPage() {
   const activeDesignReviewStatus = activeProjectItemRecord?.designReviewStatus || project?.designReviewStatus || 'not_required';
   const activeDesignReviewNotes = activeProjectItemRecord?.designReviewNotes ?? project?.designReviewNotes;
   const hasInitialDesign = Boolean(activeInitialDesignKeys.length || activeInitialDesignNotes);
+  const activeSelectedDesignTemplateName = activeProjectItemRecord?.selectedDesignTemplateName;
+  const activeSelectedDesignTemplateServiceType = activeProjectItemRecord?.serviceType;
   const initialDesignBackfill = project?.initialDesignBackfill;
   const hasBackfilledInitialDesign = Boolean(initialDesignBackfill?.backfilledAt);
   const primaryInitialDesignKey = activeInitialDesignKeys[0];
@@ -1891,6 +1894,20 @@ export function ProjectDetailPage() {
                     </span>
                   )}
                 </div>
+
+                {!canManageInitialDesign && activeSelectedDesignTemplateName && (
+                  <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border)]/55 bg-slate-50/80 dark:bg-white/[0.035]">
+                    <img
+                      src={getDesignTemplatePlaceholderImage(activeSelectedDesignTemplateServiceType, activeSelectedDesignTemplateName)}
+                      alt={activeSelectedDesignTemplateName}
+                      className="h-44 w-full object-cover"
+                    />
+                    <div className="px-4 py-3">
+                      <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">Design Template Reference</p>
+                      <p className="mt-1 text-sm font-medium text-slate-900 dark:text-slate-100">{activeSelectedDesignTemplateName}</p>
+                    </div>
+                  </div>
+                )}
 
                 {!canManageInitialDesign && activeInitialDesignKeys.length > 0 && (
                   <div className="rounded-[26px] border border-[color:var(--color-border)]/55 bg-slate-50/80 p-4 dark:bg-white/[0.035] sm:p-5">

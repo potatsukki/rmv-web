@@ -1217,11 +1217,6 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   )}
                 </div>
               </div>
-              {isCostingMode && (
-                <Badge className={isDark ? 'border border-sky-400/30 bg-sky-500/10 text-sky-200' : 'bg-blue-50 text-blue-700'}>
-                  {quotationStatusLabel}
-                </Badge>
-              )}
             </div>
           </CardHeader>
           <CardContent className="px-4 sm:px-6">

@@ -180,27 +180,36 @@ interface ProjectNavigatorProps {
   appointmentId: string;
   activeReportId: string;
   defaultVisitType?: string;
+  addServiceOptions?: string[];
   canAdd?: boolean;
   canEdit?: boolean;
   onBeforeNavigate?: (nextReportId: string) => Promise<boolean>;
+  onBeforeAdd?: () => Promise<boolean>;
 }
 
 export function ProjectNavigator({
   appointmentId,
   activeReportId,
   defaultVisitType,
+  addServiceOptions,
   canAdd = false,
   canEdit = false,
   onBeforeNavigate,
+  onBeforeAdd,
 }: ProjectNavigatorProps) {
   const navigate = useNavigate();
+  const addMenuRef = useRef<HTMLDivElement>(null);
   const { data: siblings } = useVisitReportsByAppointment(appointmentId);
   const createMutation = useCreateVisitReport();
   const deleteMutation = useDeleteVisitReport();
   const [adding, setAdding] = useState(false);
+  const addingRef = useRef(false);
+  const [showAddChoices, setShowAddChoices] = useState(false);
   const [renamingId, setRenamingId] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<VisitReport | null>(null);
   const [optimisticActiveId, setOptimisticActiveId] = useState<string | null>(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+  const isNavigatingRef = useRef(false);
 
   const reports: VisitReport[] = siblings ?? [];
   const displayedActiveId = optimisticActiveId || String(activeReportId);
@@ -209,28 +218,58 @@ export function ProjectNavigator({
     setOptimisticActiveId(null);
   }, [activeReportId]);
 
+  useEffect(() => {
+    function handleOutsideClick(event: MouseEvent) {
+      if (!addMenuRef.current) return;
+      if (!addMenuRef.current.contains(event.target as Node)) {
+        setShowAddChoices(false);
+      }
+    }
+    document.addEventListener('mousedown', handleOutsideClick);
+    return () => document.removeEventListener('mousedown', handleOutsideClick);
+  }, []);
+
   // Don't render when there's only 1 report and the user can't add more
   if (reports.length <= 1 && !canAdd) return null;
 
-  const handleAdd = async () => {
-    if (adding) return;
+  const createReport = async (nextServiceType: string) => {
+    if (addingRef.current || isNavigating || createMutation.isPending) return;
+    addingRef.current = true;
     setAdding(true);
     try {
+      if (onBeforeAdd) {
+        const shouldAdd = await onBeforeAdd();
+        if (!shouldAdd) return;
+      }
       const newReport = await createMutation.mutateAsync({
         appointmentId,
         visitType: defaultVisitType,
-        serviceType: ServiceType.CUSTOM,
+        serviceType: nextServiceType,
+        serviceTypeCustom: nextServiceType === ServiceType.CUSTOM ? 'Custom Item' : undefined,
       });
-      toast.success('New item added — give it a name!');
+      setShowAddChoices(false);
+      const nextLabel = SERVICE_TYPE_LABELS[nextServiceType] || 'item';
+      toast.success(`Added ${nextLabel}`);
       navigate(`/visit-reports/${newReport._id}`);
-      // Auto-open rename for the new card after navigation
-      setTimeout(() => setRenamingId(String(newReport._id)), 300);
+      if (nextServiceType === ServiceType.CUSTOM) {
+        // Auto-open rename only for custom item labels.
+        setTimeout(() => setRenamingId(String(newReport._id)), 300);
+      }
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to add item'));
     } finally {
+      addingRef.current = false;
       setAdding(false);
     }
   };
+
+  const allServiceChoices = Object.values(ServiceType);
+  const preferredChoices = (addServiceOptions || [])
+    .filter((option) => allServiceChoices.includes(option as ServiceType));
+  const addChoices = [
+    ...preferredChoices,
+    ...allServiceChoices.filter((option) => !preferredChoices.includes(option)),
+  ];
 
   const handleDelete = async () => {
     if (!deleteTarget) return;
@@ -259,16 +298,23 @@ export function ProjectNavigator({
   };
 
   const handleNavigate = async (nextReportId: string) => {
-    if (nextReportId === String(activeReportId)) return;
+    if (isNavigatingRef.current || nextReportId === String(activeReportId)) return;
+    isNavigatingRef.current = true;
+    setIsNavigating(true);
     setOptimisticActiveId(nextReportId);
-    if (onBeforeNavigate) {
-      const shouldNavigate = await onBeforeNavigate(nextReportId);
-      if (!shouldNavigate) {
-        setOptimisticActiveId(null);
-        return;
+    try {
+      if (onBeforeNavigate) {
+        const shouldNavigate = await onBeforeNavigate(nextReportId);
+        if (!shouldNavigate) {
+          setOptimisticActiveId(null);
+          return;
+        }
       }
+      navigate(`/visit-reports/${nextReportId}`);
+    } finally {
+      isNavigatingRef.current = false;
+      setIsNavigating(false);
     }
-    navigate(`/visit-reports/${nextReportId}`);
   };
 
   return (
@@ -279,23 +325,44 @@ export function ProjectNavigator({
           Items ({reports.length})
         </p>
         {canAdd && (
-          <button
-            type="button"
-            disabled={adding}
-            onClick={handleAdd}
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
-              'bg-[#f0f0f5] text-[#1d1d1f] hover:bg-[#e4e4e9] active:scale-[0.97] dark:border dark:border-white/10 dark:bg-[#182437] dark:text-slate-100 dark:hover:bg-[#213148]',
-              adding && 'opacity-50 pointer-events-none',
+          <div ref={addMenuRef} className="relative">
+            <button
+              type="button"
+              disabled={adding || isNavigating || createMutation.isPending}
+              onClick={() => setShowAddChoices((current) => !current)}
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-xs font-semibold transition-all',
+                'bg-[#f0f0f5] text-[#1d1d1f] hover:bg-[#e4e4e9] active:scale-[0.97] dark:border dark:border-white/10 dark:bg-[#182437] dark:text-slate-100 dark:hover:bg-[#213148]',
+                (adding || isNavigating || createMutation.isPending) && 'opacity-50 pointer-events-none',
+              )}
+            >
+              {adding ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <Plus className="h-3.5 w-3.5" />
+              )}
+              Add Item
+            </button>
+            {showAddChoices && (
+              <div className="absolute right-0 z-30 mt-2 w-[260px] rounded-xl border border-gray-200 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#0f1724]">
+                <p className="px-2 pb-1 pt-0.5 text-[11px] font-semibold uppercase tracking-wide text-gray-500 dark:text-slate-400">
+                  Choose Item Type
+                </p>
+                <div className="max-h-[240px] overflow-y-auto">
+                  {addChoices.map((choice) => (
+                    <button
+                      key={choice}
+                      type="button"
+                      onClick={() => createReport(choice)}
+                      className="flex w-full items-center justify-between rounded-lg px-2 py-1.5 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-slate-200 dark:hover:bg-white/10"
+                    >
+                      <span>{SERVICE_TYPE_LABELS[choice] || choice}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
-          >
-            {adding ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Plus className="h-3.5 w-3.5" />
-            )}
-            Add Item
-          </button>
+          </div>
         )}
       </div>
 
@@ -319,13 +386,13 @@ export function ProjectNavigator({
               tabIndex={0}
               key={id}
               onClick={async () => {
-                if (isRenaming) return;
+                if (isRenaming || isNavigating) return;
                 if (!isActive) await handleNavigate(id);
               }}
               onKeyDown={async (event) => {
                 if (event.key === 'Enter' || event.key === ' ') {
                   event.preventDefault();
-                  if (!isRenaming && !isActive) await handleNavigate(id);
+                  if (!isRenaming && !isNavigating && !isActive) await handleNavigate(id);
                 }
               }}
               className={cn(

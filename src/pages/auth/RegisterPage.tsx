@@ -1,9 +1,9 @@
-import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate } from 'react-router-dom';
-import { Eye, EyeOff, Loader2, Check, ShieldAlert, AlertCircle, ArrowLeft, MapPin } from 'lucide-react';
+import { Eye, EyeOff, Loader2, Check, ShieldAlert, AlertCircle, ArrowLeft } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { signInWithPopup } from 'firebase/auth';
 
@@ -15,11 +15,6 @@ import { api, fetchCsrfToken } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { auth, googleProvider } from '@/lib/firebase';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
-import type { MapPoint } from '@/lib/maps';
-
-const LocationPicker = lazy(() =>
-  import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
-);
 
 const MAX_ATTEMPTS = 5;
 const LOCKOUT_DURATION_MS = 15 * 60 * 1000;
@@ -45,11 +40,6 @@ const registerSchema = z
     lastName: z.string().min(1, 'Last name is required').max(50).regex(/^[a-zA-Z\s'-]+$/, "Special characters are not allowed"),
     email: z.string().email('Invalid email address'),
     phone: z.string().regex(/^(09|\+639)\d{9}$/, 'Must be a valid PH mobile (09XXXXXXXXX)'),
-    street: z.string().max(200).optional().or(z.literal('')),
-    barangay: z.string().max(100).optional().or(z.literal('')),
-    city: z.string().min(1, 'City / municipality is required').max(100),
-    province: z.string().max(100).optional().or(z.literal('')),
-    zip: z.string().max(10).optional().or(z.literal('')),
     password: z
       .string()
       .min(8, 'At least 8 characters')
@@ -164,8 +154,6 @@ export function RegisterPage() {
 
   const [googleLoading, setGoogleLoading] = useState(false);
   const { fetchMe } = useAuthStore();
-  const [pinnedLocation, setPinnedLocation] = useState<MapPoint | null>(null);
-  const [formattedAddress, setFormattedAddress] = useState('');
 
   const handleGoogleSignUp = async () => {
     setGoogleLoading(true);
@@ -224,10 +212,6 @@ export function RegisterPage() {
 
   const onSubmit = async (data: RegisterForm) => {
     if (isLocked) return;
-    if (!pinnedLocation || !formattedAddress.trim()) {
-      toast.error('Pin your default project address before creating an account.');
-      return;
-    }
 
     try {
       const csrfToken = await fetchCsrfToken();
@@ -238,20 +222,6 @@ export function RegisterPage() {
         email: data.email,
         phone: data.phone.startsWith('09') ? '+63' + data.phone.slice(1) : data.phone,
         password: data.password,
-        addressData: {
-          label: 'Primary address',
-          street: data.street || '',
-          barangay: data.barangay || '',
-          city: data.city,
-          province: data.province || '',
-          zip: data.zip || '',
-          country: 'Philippines',
-          addressType: 'business',
-          lat: pinnedLocation.lat,
-          lng: pinnedLocation.lng,
-          formattedAddress,
-          isDefault: true,
-        },
       });
       setAttemptData(0, null);
       setAttempts(0);
@@ -325,7 +295,7 @@ export function RegisterPage() {
                 <Input
                   id="firstName"
                   placeholder="Enter your first name"
-                  className={`${inputClasses} placeholder:text-[9.5px] placeholder:tracking-[0.01em]`}
+                  className={inputClasses}
                   disabled={isLocked}
                   {...register('firstName')}
                 />
@@ -340,7 +310,7 @@ export function RegisterPage() {
                 <Input
                   id="lastName"
                   placeholder="Enter your last name"
-                  className={`${inputClasses} placeholder:text-[9.5px] placeholder:tracking-[0.01em]`}
+                  className={inputClasses}
                   disabled={isLocked}
                   {...register('lastName')}
                 />
@@ -382,39 +352,6 @@ export function RegisterPage() {
               {errors.phone && (
                 <p className="text-xs text-red-500">{errors.phone.message}</p>
               )}
-            </div>
-
-            <div className="space-y-3 border border-white/5 bg-white/[0.02] p-4">
-              <div className="flex items-start gap-2">
-                <MapPin className="mt-0.5 h-4 w-4 text-[#FFD700]" />
-                <div>
-                  <p className="label-font text-[10px] font-black uppercase tracking-[0.3em] text-[#FFD700] gold-glow">
-                    Default Project Address
-                  </p>
-                  <p className="mt-1 text-xs text-[#98a3b2]">Pin the address Sales can use when an ocular visit is needed.</p>
-                </div>
-              </div>
-              <Suspense fallback={<div className="flex h-[260px] items-center justify-center border border-white/10 text-sm text-[#98a3b2]">Loading map...</div>}>
-                <LocationPicker
-                  value={pinnedLocation}
-                  address={formattedAddress}
-                  onChange={(location, address) => {
-                    setPinnedLocation(location);
-                    setFormattedAddress(address || '');
-                  }}
-                />
-              </Suspense>
-              {formattedAddress && (
-                <p className="break-words text-xs text-[#c9d2df]">{formattedAddress}</p>
-              )}
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                <Input placeholder="Street / building" className={inputClasses} {...register('street')} />
-                <Input placeholder="Barangay" className={inputClasses} {...register('barangay')} />
-                <Input placeholder="City / municipality" className={inputClasses} {...register('city')} />
-                <Input placeholder="Province / region" className={inputClasses} {...register('province')} />
-                <Input placeholder="ZIP code" className={inputClasses} {...register('zip')} />
-              </div>
-              {errors.city && <p className="text-xs text-red-500">{errors.city.message}</p>}
             </div>
 
             <div className="space-y-1.5">
