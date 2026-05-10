@@ -913,13 +913,6 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   };
   const hasPayableQuotation = (bp?: Blueprint | null) => Boolean(bp?.quotation);
   const isQuotationSentToCustomer = (bp?: Blueprint | null) => Boolean(bp?.quotation && bp.quotationReviewStatus === 'sent_to_customer');
-  const quotationStatus = blueprint?.quotationReviewStatus || (blueprint?.quotation ? 'for_review' : 'draft');
-  const quotationStatusLabel = {
-    draft: 'Draft',
-    for_review: 'Preparing Quotation',
-    approved: 'Approved',
-    sent_to_customer: 'Review Design & Billing',
-  }[quotationStatus] || 'Draft';
   const blueprintWorkflowStatus = resolveBlueprintWorkflowStatus(blueprint);
   const previewDialog = (
     <Dialog
