@@ -27,7 +27,7 @@ export function DesignTemplateSelector({
         <div>
           <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Design Selection</p>
           <p className="text-xs text-gray-500 dark:text-slate-400">
-            Pick a starting reference. The generated project fields remain editable.
+            Pick a pre-made design. The generated project fields remain editable.
           </p>
         </div>
       </div>
@@ -63,7 +63,7 @@ export function DesignTemplateSelector({
               </div>
               <div className="space-y-2 p-4">
                 <p className="text-sm font-semibold text-gray-950 dark:text-slate-100">{template.title}</p>
-                <p className="line-clamp-2 text-xs text-gray-500 dark:text-slate-400">Starting template for consultation selection.</p>
+                <p className="line-clamp-2 text-xs text-gray-500 dark:text-slate-400">Pre-made design option for customer selection.</p>
               </div>
             </button>
           );

@@ -128,13 +128,6 @@ const getPaymentProjectCustomerName = (project: PaymentListProject) => {
   return 'Customer';
 };
 
-const PAYMENT_STATUS_LABELS: Record<PaymentListStatus, string> = {
-  payment_pending: 'Payment Required',
-  for_verification: 'Awaiting Cashier Verification',
-  partially_paid: 'Partially Paid',
-  paid: 'Paid',
-};
-
 const PAYMENT_STATUS_BADGES: Record<PaymentListStatus, { status: string; label: string }> = {
   payment_pending: { status: 'payment_pending', label: 'Payment Pending' },
   for_verification: { status: 'proof_submitted', label: 'Awaiting Cashier Verification' },
@@ -262,7 +255,6 @@ export function PaymentsPage() {
   const [selectedProjectItemId, setSelectedProjectItemId] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
   const [projectStageFilter, setProjectStageFilter] = useState('all');
-  const [paymentStatusFilter, setPaymentStatusFilter] = useState('all');
   const [activeTab, setActiveTab] = useState('payments');
 
 
@@ -474,9 +466,6 @@ export function PaymentsPage() {
     if (projectStageFilter !== 'all') {
       items = items.filter((p) => getEffectiveProjectStageStatus(p) === projectStageFilter);
     }
-    if (paymentStatusFilter !== 'all') {
-      items = items.filter((p) => paymentStatusByProject.get(String(p._id)) === paymentStatusFilter);
-    }
     if (projectSearch.trim()) {
       const q = projectSearch.toLowerCase();
       items = items.filter((p) =>
@@ -487,7 +476,7 @@ export function PaymentsPage() {
       );
     }
     return items;
-  }, [basePaymentProjects, projectStageFilter, paymentStatusFilter, paymentStatusByProject, projectSearch]);
+  }, [basePaymentProjects, projectStageFilter, paymentStatusByProject, projectSearch]);
 
   // Unique project stages for the stage filter dropdown
   const projectStages = useMemo(
@@ -616,60 +605,20 @@ export function PaymentsPage() {
             <div className="px-4 pb-3 pt-4 sm:px-6">
               <CollectionToolbar
                 title="Find a payment-ready project"
-                description="Search by project details, then use the filters below."
+                description="Search by project details, then filter by project stage."
                 searchPlaceholder="Search projects"
                 searchValue={projectSearch}
                 onSearchChange={setProjectSearch}
-                filters={[]}
-                activeFilter=""
-                onFilterChange={() => undefined}
-                footer={(
-                  <div className="rounded-[1.35rem] border border-[#cfd6df]/70 bg-white/50 p-4 dark:border-white/10 dark:bg-white/5">
-                    <div className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">
-                      Filters
-                    </div>
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {[
-                        { value: 'all-project-stages', label: 'Stage: All Project Stages', kind: 'stage' as const },
-                        ...projectStages.map((status) => ({
-                          value: status,
-                          label: `Stage: ${formatProjectStageFilterLabel(status)}`,
-                          kind: 'stage' as const,
-                        })),
-                        { value: 'all-payment-statuses', label: 'Payment: All Payment Statuses', kind: 'payment' as const },
-                        ...Object.entries(PAYMENT_STATUS_LABELS).map(([value, label]) => ({ value, label, kind: 'payment' as const })),
-                      ].map((filter) => {
-                        const isStage = filter.kind === 'stage';
-                        const isActive = isStage
-                          ? (filter.value === 'all-project-stages' ? projectStageFilter === 'all' : projectStageFilter === filter.value)
-                          : (filter.value === 'all-payment-statuses' ? paymentStatusFilter === 'all' : paymentStatusFilter === filter.value);
-
-                        return (
-                          <button
-                            type="button"
-                            key={`${filter.kind}-${filter.value}`}
-                            onClick={() => {
-                              if (isStage) {
-                                setProjectStageFilter(filter.value === 'all-project-stages' ? 'all' : filter.value);
-                                return;
-                              }
-                              setPaymentStatusFilter(filter.value === 'all-payment-statuses' ? 'all' : filter.value);
-                            }}
-                            aria-pressed={isActive}
-                            className={cn(
-                              'whitespace-nowrap rounded-2xl border px-4 py-2 text-xs font-semibold transition-colors',
-                              isActive
-                                ? 'border-[#98b8ff] bg-[#f4f7ff] text-[#17315d] shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] dark:border-slate-500 dark:bg-slate-100 dark:text-slate-900'
-                                : 'border-[color:var(--color-border)] bg-[color:var(--color-muted)]/40 text-[var(--text-metal-color)] hover:bg-[color:var(--color-muted)]',
-                            )}
-                          >
-                            {filter.label}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                filters={[
+                  { value: 'all', label: 'All Project Stages' },
+                  ...projectStages.map((status) => ({
+                    value: status,
+                    label: formatProjectStageFilterLabel(status),
+                  })),
+                ]}
+                activeFilter={projectStageFilter}
+                onFilterChange={setProjectStageFilter}
+                filterGroupLabel="Project stage filters"
               />
             </div>
 
@@ -744,9 +693,9 @@ export function PaymentsPage() {
                 <div className="p-4">
                   <EmptyState
                     icon={<CreditCard className="h-6 w-6" />}
-                    title={projectSearch || projectStageFilter !== 'all' || paymentStatusFilter !== 'all' ? 'No matching projects' : 'No projects found'}
-                    description={projectSearch || projectStageFilter !== 'all' || paymentStatusFilter !== 'all'
-                      ? 'Try adjusting the search terms, project stage, or payment status filter.'
+                    title={projectSearch || projectStageFilter !== 'all' ? 'No matching projects' : 'No projects found'}
+                    description={projectSearch || projectStageFilter !== 'all'
+                      ? 'Try adjusting the search terms or project stage filter.'
                       : 'Projects with payment plans will appear here once payment-ready work is created.'}
                     className="border-0 bg-transparent py-10 shadow-none"
                   />

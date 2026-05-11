@@ -316,8 +316,8 @@ export function VisitReportPage() {
   const location = useLocation();
   const { user } = useAuthStore();
   const { data: report, isLoading, isError, refetch } = useVisitReport(id!);
-  const appointmentId = report ? rawId(report.appointmentId) : '';
-  const { data: siblingReports } = useVisitReportsByAppointment(appointmentId);
+  const appointmentId = report ? rawId(report.appointmentId) : isError && id ? id : '';
+  const { data: siblingReports, isLoading: isAppointmentReportLookupLoading } = useVisitReportsByAppointment(appointmentId);
 
   const updateMutation = useUpdateVisitReport();
   const submitMutation = useSubmitVisitReport();
@@ -546,6 +546,11 @@ export function VisitReportPage() {
     }
   }, [id, location.state, navigate, report]);
 
+  useEffect(() => {
+    if (!isError || !id || !siblingReports?.length) return;
+    navigate(`/visit-reports/${rawId(siblingReports[0]!._id)}`, { replace: true, state: location.state });
+  }, [id, isError, location.state, navigate, siblingReports]);
+
   // Pre-fill form when data arrives
   if (report && reportMatchesRoute && !formLoaded) {
     setVisitType(effectiveVisitType);
@@ -615,6 +620,7 @@ export function VisitReportPage() {
   );
 
   if (isLoading) return <PageLoader />;
+  if (isError && isAppointmentReportLookupLoading) return <PageLoader />;
   if (isError || !report) return <PageError onRetry={refetch} />;
   if (!reportMatchesRoute || !formLoaded) return <PageLoader />;
 
@@ -1011,9 +1017,19 @@ export function VisitReportPage() {
       }
 
       const savedReportId = rawId(saved._id);
-      await submitMutation.mutateAsync(savedReportId);
+      const submittedReport = await submitMutation.mutateAsync(savedReportId);
+      const submittedReportId = rawId(submittedReport._id);
 
-      await refetch();
+      if (submittedReportId && submittedReportId !== savedReportId) {
+        navigate(`/visit-reports/${submittedReportId}`, { replace: true, state: location.state });
+        setSubmitOpen(false);
+        toast.success(
+          'Ocular visit scheduled. The consultation appointment has been completed and the customer can now submit the site location.',
+          { duration: 5000 },
+        );
+        return;
+      }
+
       if (isProjectCreationMode) {
         let projectId = linkedProjectId;
         if (!projectId) {

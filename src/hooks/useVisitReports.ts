@@ -171,8 +171,7 @@ export function useSubmitVisitReport() {
     },
     onSuccess: (report) => {
       syncVisitReportCaches(qc, report);
-      qc.invalidateQueries({ queryKey: KEYS.all });
-      qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
+      qc.invalidateQueries({ queryKey: KEYS.list() });
       const appointmentId = rawId(report.appointmentId);
       if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
       qc.invalidateQueries({ queryKey: ['projects'] });

@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
   BarChart,
@@ -20,9 +20,6 @@ import {
   Building2,
   MapPin,
   Users,
-  Download,
-  ShieldCheck,
-  RefreshCw,
   Coins,
 } from 'lucide-react';
 
@@ -46,19 +43,7 @@ import {
   useWorkloadReport,
   useConversionReport,
   useDashboardSummary,
-  useAcknowledgeLifecycleMismatchHotspot,
-  useLifecycleMismatchHotspots,
 } from '@/hooks/useReports';
-import { useConfigs, useUpdateConfig } from '@/hooks/useConfig';
-import {
-  buildLifecycleHealthSnapshot,
-  buildLifecycleRangeParams,
-  deriveLifecycleAlert,
-  getLifecycleHelpPath,
-  getLifecycleSeverityThreshold,
-  toIsoDate,
-  type LifecycleRange,
-} from '@/lib/reports-lifecycle';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { Role } from '@/lib/constants';
@@ -83,34 +68,7 @@ const formatCurrencyFull = (v: number) =>
 const formatStatus = (s: string) =>
   s.replace(/_/g, ' ').replace(/\b\w/g, (l) => l.toUpperCase());
 
-const formatDateTime = (value?: string) => {
-  if (!value) return '-';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '-';
-  return date.toLocaleString('en-PH', {
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  });
-};
-
-const formatLastUpdated = (value?: number) => {
-  if (!value) return 'Not yet refreshed';
-  return new Date(value).toLocaleTimeString('en-PH', {
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-  });
-};
-
 type GroupBy = 'day' | 'week' | 'month';
-
-const escapeCsv = (value: unknown) => {
-  const raw = String(value ?? '');
-  return `"${raw.replace(/"/g, '""')}"`;
-};
 
 const CHART_GRID = 'var(--color-border)';
 const CHART_MUTED_TEXT = 'var(--text-metal-muted-color)';
@@ -219,13 +177,7 @@ export function ReportsPage() {
   const isCashier = user?.roles?.includes(Role.CASHIER);
   const canAccessCashierReports = user?.roles?.some((role) => [Role.CASHIER, Role.ADMIN].includes(role));
   const [revenueGroupBy, setRevenueGroupBy] = useState<GroupBy>('month');
-  const [lifecycleRange, setLifecycleRange] = useState<LifecycleRange>('7d');
   const [activeTab, setActiveTab] = useState<'analytics' | 'visit_reports'>('analytics');
-
-  const lifecycleParams = useMemo(
-    () => buildLifecycleRangeParams(lifecycleRange),
-    [lifecycleRange],
-  );
 
   const { data: revenue, isLoading: revLoading } = useRevenueReport({
     groupBy: revenueGroupBy,
@@ -235,93 +187,6 @@ export function ReportsPage() {
   const { data: workload, isLoading: wlLoading } = useWorkloadReport(!!isAdmin);
   const { data: conversion, isLoading: convLoading } = useConversionReport(!!isAdmin);
   const { data: dashboard, isLoading: dashLoading } = useDashboardSummary(!!canAccessCashierReports);
-  const { data: configs } = useConfigs();
-  const lifecycleFeatureEnabled = (() => {
-    const feature = configs?.find((cfg) => cfg.key === 'feature_lifecycle_mismatch_analytics');
-    return typeof feature?.value === 'boolean' ? feature.value : true;
-  })();
-  const updateConfig = useUpdateConfig();
-  const {
-    data: lifecycleHotspots,
-    isLoading: lifecycleLoading,
-    isFetching: lifecycleFetching,
-    refetch: refetchLifecycleHotspots,
-    dataUpdatedAt: lifecycleUpdatedAt,
-  } = useLifecycleMismatchHotspots(
-    lifecycleParams,
-    !!isAdmin && lifecycleFeatureEnabled,
-  );
-  const acknowledgeHotspot = useAcknowledgeLifecycleMismatchHotspot();
-  const lifecycleSeverityThreshold = getLifecycleSeverityThreshold(lifecycleRange);
-  const criticalHotspotCount = (lifecycleHotspots?.items || []).filter((item) => item.count >= lifecycleSeverityThreshold).length;
-  const lifecycleRefreshRatioPct = lifecycleHotspots?.total
-    ? Math.round((lifecycleHotspots.refreshRequiredTotal / lifecycleHotspots.total) * 100)
-    : 0;
-  const lifecycleTopModule = lifecycleHotspots?.byTargetType?.[0]
-    ? formatStatus(String(lifecycleHotspots.byTargetType[0].targetType || 'unknown'))
-    : 'None';
-  const lifecycleEscalationSummary = lifecycleHotspots?.escalationSummary;
-  const lifecycleAlert = deriveLifecycleAlert({
-    range: lifecycleRange,
-    total: lifecycleHotspots?.total ?? 0,
-    refreshRequiredTotal: lifecycleHotspots?.refreshRequiredTotal ?? 0,
-    criticalHotspotCount,
-    trendDelta: lifecycleHotspots?.trend?.trendDelta,
-    trendPercent: lifecycleHotspots?.trend?.trendPercent,
-  });
-  const lifecycleHealthSnapshot = useMemo(
-    () =>
-      buildLifecycleHealthSnapshot(lifecycleAlert, {
-        total: lifecycleHotspots?.total ?? 0,
-        refreshRequiredTotal: lifecycleHotspots?.refreshRequiredTotal ?? 0,
-        criticalHotspotCount,
-      }),
-    [criticalHotspotCount, lifecycleAlert, lifecycleHotspots?.refreshRequiredTotal, lifecycleHotspots?.total],
-  );
-
-  const handleExportLifecycleCsv = () => {
-    if (!lifecycleHotspots?.items?.length) return;
-
-    const header = ['Module', 'Current Status', 'Attempted Status', 'Refresh Required', 'Hits', 'Last Seen'];
-    const rows = lifecycleHotspots.items.map((item) => [
-      formatStatus(String(item.targetType || 'unknown')),
-      formatStatus(String(item.currentStatus || 'unknown')),
-      formatStatus(String(item.attemptedStatus || 'unknown')),
-      item.refreshRequired ? 'yes' : 'no',
-      item.count,
-      formatDateTime(item.lastSeenAt),
-    ]);
-
-    const csv = [header, ...rows]
-      .map((row) => row.map((cell) => escapeCsv(cell)).join(','))
-      .join('\n');
-
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const anchor = document.createElement('a');
-    anchor.href = url;
-    anchor.download = `lifecycle-mismatch-hotspots-${toIsoDate(new Date())}.csv`;
-    document.body.appendChild(anchor);
-    anchor.click();
-    document.body.removeChild(anchor);
-    URL.revokeObjectURL(url);
-  };
-
-  const handleToggleHotspotAcknowledged = async (item: {
-    targetType?: string;
-    currentStatus?: string;
-    attemptedStatus?: string;
-    refreshRequired?: boolean;
-    isAcknowledged?: boolean;
-  }) => {
-    await acknowledgeHotspot.mutateAsync({
-      targetType: item.targetType,
-      currentStatus: item.currentStatus,
-      attemptedStatus: item.attemptedStatus,
-      refreshRequired: item.refreshRequired,
-      acknowledged: item.isAcknowledged ? false : true,
-    });
-  };
 
   const anyKpiLoading = revLoading || psLoading || dashLoading || (isAdmin ? convLoading : false);
 
@@ -376,101 +241,6 @@ export function ReportsPage() {
           </div>
         </div>
       </div>
-
-      {isAdmin && lifecycleFeatureEnabled && (lifecycleHotspots?.total ?? 0) > 0 && (
-        <Card className={`${isDark ? 'metal-panel-strong' : 'metal-panel'} rounded-[1.35rem] border-[color:var(--color-border)]/60`}>
-          <CardContent className="p-4 sm:p-5">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:gap-5">
-              <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className={`h-4 w-4 ${isDark ? 'text-slate-300' : 'text-[#4a5663]'}`} />
-                  <p className={`text-xs font-semibold uppercase tracking-[0.12em] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
-                    Lifecycle Health Snapshot
-                  </p>
-                  <Badge
-                    variant={
-                      lifecycleAlert.level === 'critical'
-                        ? 'destructive'
-                        : lifecycleAlert.level === 'warning'
-                          ? 'warning'
-                          : 'default'
-                    }
-                    className={
-                      lifecycleHealthSnapshot.statusLabel.toLowerCase() === 'healthy' && isDark
-                        ? 'border-emerald-300/45 bg-[linear-gradient(180deg,rgba(74,163,124,0.58)_0%,rgba(39,102,74,0.72)_100%)] text-emerald-50'
-                        : undefined
-                    }
-                  >
-                    {lifecycleHealthSnapshot.statusLabel}
-                  </Badge>
-                </div>
-                <p className={`mt-2 text-sm ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>
-                  {lifecycleHealthSnapshot.headline}
-                </p>
-                <div className={`mt-2 flex flex-wrap items-center gap-x-5 gap-y-1.5 text-xs ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-                  <span>Total mismatches: <strong>{lifecycleHotspots?.total ?? 0}</strong></span>
-                  <span>Refresh required: <strong>{lifecycleRefreshRatioPct}%</strong></span>
-                  <span>Top module: <strong>{lifecycleTopModule}</strong></span>
-                  {lifecycleEscalationSummary && (
-                    <>
-                      <span>Owner: <strong>{lifecycleEscalationSummary.ownerRole}</strong></span>
-                      <span>SLA target: <strong>{lifecycleEscalationSummary.slaHours}h</strong></span>
-                    </>
-                  )}
-                </div>
-                <p className={`mt-1 text-[11px] ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
-                  Last updated {formatLastUpdated(lifecycleUpdatedAt)}. Auto-refresh runs every 60 seconds while this tab is active.
-                </p>
-              </div>
-
-              <div className={`w-full rounded-2xl border px-4 py-4 lg:w-[17rem] ${isDark ? 'border-slate-700/70 bg-slate-900/55' : 'border-[color:var(--color-border)]/65 bg-white/80'}`}>
-                <p className={`text-[11px] font-semibold uppercase tracking-[0.1em] ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`}>
-                  Quick Actions
-                </p>
-                <div className="mt-3 grid gap-2">
-                  <Button
-                    asChild
-                    size="sm"
-                    className={`h-9 w-full rounded-lg px-4 text-xs uppercase tracking-[0.08em] ${
-                      isDark
-                        ? 'border-sky-400/45 bg-[linear-gradient(180deg,rgba(44,115,179,0.45)_0%,rgba(25,67,112,0.55)_100%)] text-sky-100 shadow-[inset_0_1px_0_rgba(186,230,253,0.22),0_10px_20px_rgba(2,8,23,0.28)] hover:bg-[linear-gradient(180deg,rgba(54,128,196,0.48)_0%,rgba(30,79,129,0.58)_100%)]'
-                        : ''
-                    }`}
-                  >
-                    <Link to={lifecycleHealthSnapshot.primaryActionPath}>{lifecycleHealthSnapshot.primaryActionLabel}</Link>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => void refetchLifecycleHotspots()}
-                    disabled={lifecycleFetching}
-                    className={`h-9 w-full rounded-lg px-4 text-xs uppercase tracking-[0.08em] ${
-                      isDark
-                        ? 'border-slate-600/80 bg-slate-900/75 text-slate-100 hover:bg-slate-800/90'
-                        : 'border-[color:var(--color-border)]/70 bg-white/90 text-[var(--color-card-foreground)] hover:bg-white'
-                    }`}
-                  >
-                    <RefreshCw className={`mr-1.5 h-3.5 w-3.5 ${lifecycleFetching ? 'animate-spin' : ''}`} />
-                    Refresh
-                  </Button>
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="sm"
-                    className={`h-9 w-full rounded-lg px-4 text-xs uppercase tracking-[0.08em] ${
-                      isDark
-                        ? 'border-slate-600/80 bg-slate-900/75 text-slate-100 hover:bg-slate-800/90'
-                        : 'border-[color:var(--color-border)]/70 bg-white/90 text-[var(--color-card-foreground)] hover:bg-white'
-                    }`}
-                  >
-                    <a href="#lifecycle-hotspots">View Transition Details</a>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      )}
 
       {/* ── KPI Cards ── */}
       <div
@@ -812,7 +582,7 @@ export function ReportsPage() {
       </div>
 
       {/* ── Staff Workload — admin only ── */}
-      {isAdmin && lifecycleFeatureEnabled && (
+      {isAdmin && (
         <Card className="metal-panel-strong rounded-[1.6rem] border-[color:var(--color-border)]/60">
           <CardHeader className="flex flex-row items-center gap-2">
             <Users className="h-4 w-4 text-[var(--text-metal-muted-color)]" />
@@ -877,285 +647,6 @@ export function ReportsPage() {
         </Card>
       )}
 
-      {/* ── Lifecycle Mismatch Hotspots — admin only ── */}
-      {isAdmin && lifecycleFeatureEnabled && (
-        <Card id="lifecycle-hotspots" className="metal-panel-strong rounded-[1.6rem] border-[color:var(--color-border)]/60">
-          <CardHeader>
-            <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
-              <div>
-                <CardTitle className="text-base font-semibold text-[var(--color-card-foreground)]">
-                  Lifecycle Mismatch Hotspots
-                </CardTitle>
-                <p className={`mt-1 text-sm ${sectionDescriptionClass}`}>
-                  Top blocked transitions grouped by module and attempted status change.
-                </p>
-              </div>
-              <div className="flex flex-wrap items-center gap-2">
-                {(['24h', '7d', '30d', 'all'] as LifecycleRange[]).map((range) => (
-                  <Button
-                    key={range}
-                    variant={lifecycleRange === range ? 'default' : 'outline'}
-                    size="sm"
-                    onClick={() => setLifecycleRange(range)}
-                    className={`rounded-xl h-8 px-3 text-[11px] uppercase tracking-[0.08em] ${
-                      lifecycleRange === range
-                        ? isDark
-                          ? 'border-sky-400/45 bg-[linear-gradient(180deg,rgba(44,115,179,0.45)_0%,rgba(25,67,112,0.55)_100%)] text-sky-100 shadow-[inset_0_1px_0_rgba(186,230,253,0.22),0_12px_22px_rgba(2,8,23,0.32)] hover:bg-[linear-gradient(180deg,rgba(54,128,196,0.48)_0%,rgba(30,79,129,0.58)_100%)]'
-                          : 'border-white/55 bg-[linear-gradient(180deg,rgba(248,250,252,0.99)_0%,rgba(224,232,240,0.97)_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.94),0_12px_22px_rgba(0,0,0,0.18)]'
-                        : isDark
-                          ? 'border-slate-600/80 bg-slate-900/70 text-slate-200 hover:bg-slate-800/90 hover:text-slate-100'
-                          : 'border-[color:var(--color-border)]/70 bg-white/82 text-[var(--text-metal-color)] hover:bg-white'
-                    }`}
-                  >
-                    {range}
-                  </Button>
-                ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={handleExportLifecycleCsv}
-                  disabled={!lifecycleHotspots?.items?.length}
-                  className={`rounded-xl h-8 px-3 text-[11px] uppercase tracking-[0.08em] ${
-                    isDark
-                      ? 'border-slate-600/80 bg-slate-900/75 text-slate-100 hover:bg-slate-800/90 disabled:border-slate-700/60 disabled:text-slate-500'
-                      : 'border-[color:var(--color-border)]/70 bg-white/90 text-[var(--color-card-foreground)] hover:bg-white'
-                  }`}
-                >
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                  Export CSV
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => updateConfig.mutate({ key: 'feature_lifecycle_mismatch_analytics', value: false })}
-                  disabled={updateConfig.isPending}
-                  className={`rounded-xl h-8 px-3 text-[11px] uppercase tracking-[0.08em] ${
-                    isDark
-                      ? 'border-slate-600/80 bg-slate-900/75 text-slate-100 hover:bg-slate-800/90'
-                      : 'border-[color:var(--color-border)]/70 bg-white/90 text-[var(--color-card-foreground)] hover:bg-white'
-                  }`}
-                >
-                  Disable
-                </Button>
-              </div>
-            </div>
-          </CardHeader>
-          <CardContent>
-            {lifecycleLoading ? (
-              <Skeleton className="h-48 w-full rounded-xl" />
-            ) : lifecycleHotspots?.items?.length ? (
-              <>
-                <p className="mb-2 text-xs text-[var(--text-metal-color)]">
-                  Showing {lifecycleHotspots.items.length} grouped hotspots from {lifecycleHotspots.total} lifecycle mismatch events.
-                </p>
-                <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
-                  <Badge variant="outline">
-                    Refresh required: {lifecycleHotspots.refreshRequiredTotal}/{lifecycleHotspots.total || 0}
-                  </Badge>
-                  <Badge variant="outline">
-                    Unacknowledged: {lifecycleHotspots.unacknowledgedCount ?? 0}
-                  </Badge>
-                  <Badge variant="outline">
-                    Acknowledged: {lifecycleHotspots.acknowledgedCount ?? 0}
-                  </Badge>
-                  {lifecycleHotspots.byTargetType?.[0] && (
-                    <Badge variant="outline">
-                      Top module: {formatStatus(String(lifecycleHotspots.byTargetType[0].targetType || 'unknown'))} ({lifecycleHotspots.byTargetType[0].count})
-                    </Badge>
-                  )}
-                  {lifecycleHotspots.trend?.trendPercent != null && (
-                    <Badge variant={lifecycleHotspots.trend.trendDelta && lifecycleHotspots.trend.trendDelta > 0 ? 'warning' : 'default'}>
-                      Trend: {lifecycleHotspots.trend.trendDelta && lifecycleHotspots.trend.trendDelta > 0 ? '+' : ''}{lifecycleHotspots.trend.trendDelta ?? 0}
-                      {' ('}{lifecycleHotspots.trend.trendPercent}%{')'} vs previous window
-                    </Badge>
-                  )}
-                </div>
-                <div className="mb-3 flex items-center gap-2 text-xs">
-                  <Badge
-                    variant={
-                      lifecycleAlert.level === 'critical'
-                        ? 'destructive'
-                        : lifecycleAlert.level === 'warning'
-                          ? 'warning'
-                          : 'default'
-                    }
-                  >
-                    {lifecycleAlert.level === 'critical'
-                      ? 'Critical'
-                      : lifecycleAlert.level === 'warning'
-                        ? 'Watch'
-                        : 'Stable'}
-                  </Badge>
-                  <span className="text-[var(--text-metal-color)]">{lifecycleAlert.message}</span>
-                </div>
-                <div className={`mb-4 rounded-2xl border p-3.5 ${isDark ? 'border-slate-700/80 bg-slate-900/75' : 'border-[color:var(--color-border)]/70 bg-white/90'}`}>
-                  <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
-                    <div className="min-w-0">
-                      <div className="flex items-center gap-2">
-                        <ShieldCheck className={`h-4 w-4 ${isDark ? 'text-slate-300' : 'text-[#4a5663]'}`} />
-                        <Badge
-                          variant={
-                            lifecycleAlert.level === 'critical'
-                              ? 'destructive'
-                              : lifecycleAlert.level === 'warning'
-                                ? 'warning'
-                                : 'default'
-                          }
-                          className={
-                            lifecycleHealthSnapshot.statusLabel.toLowerCase() === 'healthy' && isDark
-                              ? 'border-emerald-300/45 bg-[linear-gradient(180deg,rgba(74,163,124,0.58)_0%,rgba(39,102,74,0.72)_100%)] text-emerald-50'
-                              : undefined
-                          }
-                        >
-                          {lifecycleHealthSnapshot.statusLabel}
-                        </Badge>
-                      </div>
-                      <p className={`mt-2 text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
-                        {lifecycleHealthSnapshot.headline}
-                      </p>
-                      <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>
-                        Use this as your first-pass triage summary before reviewing individual transitions.
-                      </p>
-                    </div>
-                    <div className="flex shrink-0 flex-wrap items-center gap-2">
-                      <Button asChild size="sm" className="h-8 rounded-lg text-[11px] uppercase tracking-[0.08em]">
-                        <Link to={lifecycleHealthSnapshot.primaryActionPath}>{lifecycleHealthSnapshot.primaryActionLabel}</Link>
-                      </Button>
-                      <Button asChild variant="outline" size="sm" className="h-8 rounded-lg text-[11px] uppercase tracking-[0.08em]">
-                        <Link to="/settings">Toggle Feature</Link>
-                      </Button>
-                    </div>
-                  </div>
-                </div>
-                {criticalHotspotCount > 0 && (
-                  <div className="mb-3 flex items-center gap-2 text-xs">
-                    <Badge variant="warning">Attention</Badge>
-                    <span className="text-[var(--text-metal-color)]">
-                      {criticalHotspotCount} hotspot{criticalHotspotCount > 1 ? 's' : ''} exceeded the {lifecycleSeverityThreshold} hit threshold for the selected range.
-                    </span>
-                  </div>
-                )}
-                <Table>
-                  <TableHeader>
-                    <TableRow className="hover:bg-transparent border-[color:var(--color-border)]">
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium">
-                        Module
-                      </TableHead>
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium">
-                        Transition
-                      </TableHead>
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium text-right">
-                        Hits
-                      </TableHead>
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium">
-                        Ack
-                      </TableHead>
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium">
-                        Severity
-                      </TableHead>
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium">
-                        Refresh
-                      </TableHead>
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium">
-                        Last Seen
-                      </TableHead>
-                      <TableHead className="text-[var(--text-metal-color)] text-xs uppercase tracking-wider font-medium text-right">
-                        Guidance
-                      </TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {lifecycleHotspots.items.map((item, index) => (
-                      (() => {
-                        const isCritical = item.count >= lifecycleSeverityThreshold;
-                        return (
-                      <TableRow
-                        key={`${item.targetType || 'unknown'}:${item.currentStatus || 'unknown'}:${item.attemptedStatus || 'unknown'}:${index}`}
-                        className="border-[color:var(--color-border)]/50 hover:bg-[color:var(--color-muted)]/70"
-                      >
-                        <TableCell className="font-medium text-[var(--color-card-foreground)]">
-                          {formatStatus(String(item.targetType || 'unknown'))}
-                        </TableCell>
-                        <TableCell className="text-[var(--text-metal-color)]">
-                          {formatStatus(String(item.currentStatus || 'unknown'))}
-                          {' -> '}
-                          {formatStatus(String(item.attemptedStatus || 'unknown'))}
-                        </TableCell>
-                        <TableCell className="text-right font-semibold text-[var(--color-card-foreground)]">
-                          {item.count}
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={item.isAcknowledged ? 'secondary' : 'warning'}>
-                            {item.isAcknowledged ? 'Acknowledged' : 'Unacknowledged'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={isCritical ? 'destructive' : 'default'}>
-                            {isCritical ? 'High' : 'Normal'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant={item.refreshRequired ? 'warning' : 'default'}>
-                            {item.refreshRequired ? 'Required' : 'No'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-[var(--text-metal-color)]">
-                          {formatDateTime(item.lastSeenAt)}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-1.5">
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              className="h-7 rounded-lg text-[10px] uppercase tracking-[0.08em]"
-                              onClick={() => void handleToggleHotspotAcknowledged(item)}
-                              disabled={acknowledgeHotspot.isPending}
-                            >
-                              {item.isAcknowledged ? 'Clear Ack' : 'Acknowledge'}
-                            </Button>
-                            <Button asChild variant="outline" size="sm" className="h-7 rounded-lg text-[10px] uppercase tracking-[0.08em]">
-                              <Link to={getLifecycleHelpPath(item.targetType, item.currentStatus, item.attemptedStatus)}>Open Help</Link>
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                        );
-                      })()
-                    ))}
-                  </TableBody>
-                </Table>
-              </>
-            ) : (
-              <p className="py-8 text-center text-sm text-[#86868b]">
-                No lifecycle mismatch hotspots yet.
-              </p>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
-      {isAdmin && !lifecycleFeatureEnabled && (
-        <Card className="metal-panel rounded-[1.6rem] border-[color:var(--color-border)]/60">
-          <CardContent className="flex flex-col items-center justify-center gap-3 py-10">
-            <ShieldCheck className={`h-8 w-8 ${isDark ? 'text-slate-500' : 'text-[#9ca6b1]'}`} />
-            <p className={`text-sm font-medium ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-              Lifecycle mismatch analytics is currently disabled.
-            </p>
-            <Button
-              size="sm"
-              className={`h-9 rounded-xl px-5 text-xs uppercase tracking-[0.08em] ${
-                isDark
-                  ? 'border-sky-400/45 bg-[linear-gradient(180deg,rgba(44,115,179,0.45)_0%,rgba(25,67,112,0.55)_100%)] text-sky-100 shadow-[inset_0_1px_0_rgba(186,230,253,0.22),0_12px_22px_rgba(2,8,23,0.32)] hover:bg-[linear-gradient(180deg,rgba(54,128,196,0.48)_0%,rgba(30,79,129,0.58)_100%)]'
-                  : 'border-white/55 bg-[linear-gradient(180deg,rgba(248,250,252,0.99)_0%,rgba(224,232,240,0.97)_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.94),0_12px_22px_rgba(0,0,0,0.18)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(232,238,244,1)_100%)]'
-              }`}
-              disabled={updateConfig.isPending}
-              onClick={() => updateConfig.mutate({ key: 'feature_lifecycle_mismatch_analytics', value: true })}
-            >
-              Enable Lifecycle Analytics
-            </Button>
-          </CardContent>
-        </Card>
-      )}
       </div>
       )}
 
