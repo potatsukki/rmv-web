@@ -1,0 +1,49 @@
+*** Begin Patch
+*** Update File: src/pages/visit-reports/VisitReportPage.tsx
+@@
+-        customerRequirements: customerRequirements || undefined,
+-        notes: notes || undefined,
++        customerRequirements: customerRequirements || discussionNotes || initialDesignNotes || undefined,
++        notes: notes || discussionNotes || initialDesignNotes || undefined,
+@@
+-        ...(visitType === 'consultation' && {
+-          discussionNotes: discussionNotes || undefined,
++        ...(visitType === 'consultation' && {
++          discussionNotes: discussionNotes || initialDesignNotes || undefined,
+           consultationOutcome,
+           noOcularReason: noOcularReason || undefined,
+@@
+-            consultationOutcome,
+-            noOcularReason: noOcularReason || undefined,
+-            ...(consultationOutcome === 'schedule_ocular' && {
++            consultationOutcome,
++            noOcularReason: noOcularReason || undefined,
++            discussionNotes: discussionNotes || initialDesignNotes || undefined,
++            customerRequirements: customerRequirements || discussionNotes || initialDesignNotes || undefined,
++            notes: notes || discussionNotes || initialDesignNotes || undefined,
++            ...(consultationOutcome === 'schedule_ocular' && {
+                 recommendedOcularDate: serializeDateOnlyAsUtcNoon(recommendedOcularDate),
+                 recommendedOcularSlot: recommendedOcularSlot || undefined,
+                 recommendedOcularAddressId: selectedOcularAddress?.id,
+                 recommendedOcularAddress: selectedOcularAddress,
+               }),
+             }),
+*** End Patch
+
+*** Begin Patch
+*** Update File: src/pages/visit-reports/VisitReportPage.tsx
+@@
+-  const lineItems = report.lineItems || [];
++  const lineItems = (report.lineItems || []).filter((item) => item.label?.trim());
+   const hasSpecMeasurements = hasMeaningfulSpecifications(report.specifications, 'measurements');
+   if (lineItems.length > 0 && !hasSpecMeasurements) {
+     lineItems.forEach((item, index) => {
+       const isComplete = isNonEmptyString(item.label)
+         && item.quantity >= 1
+         && item.length != null
+         && item.width != null
+         && item.height != null
+         && item.thickness != null
+         && item.area != null
+         && isNonEmptyString(item.notes);
+*** End Patch

@@ -145,7 +145,7 @@ function getIncompleteOcularFields(report: {
     missing.push('actual visit date and time');
   }
 
-  const lineItems = report.lineItems || [];
+  const lineItems = (report.lineItems || []).filter((item) => item.label?.trim());
   const hasSpecMeasurements = hasMeaningfulSpecifications(report.specifications, 'measurements');
   if (lineItems.length > 0 && !hasSpecMeasurements) {
     lineItems.forEach((item, index) => {
@@ -785,8 +785,8 @@ export function VisitReportPage() {
         actualVisitDateTime: normalizedActualVisitDateTime,
         serviceType: serviceType || undefined,
         serviceTypeCustom: serviceTypeCustom || undefined,
-        customerRequirements: customerRequirements || undefined,
-        notes: notes || undefined,
+        customerRequirements: customerRequirements || discussionNotes || initialDesignNotes || undefined,
+        notes: notes || discussionNotes || initialDesignNotes || undefined,
         // Project detail fields can be captured during consultation and refined later.
         ...(canEditProjectDetailsInReport && {
           measurementUnit,
@@ -811,9 +811,12 @@ export function VisitReportPage() {
         }),
         // Consultation-specific fields
         ...(visitType === 'consultation' && {
-          discussionNotes: discussionNotes || undefined,
-          consultationOutcome,
-          noOcularReason: noOcularReason || undefined,
+          discussionNotes: discussionNotes || initialDesignNotes || undefined,
+            consultationOutcome,
+            noOcularReason: noOcularReason || undefined,
+            discussionNotes: discussionNotes || initialDesignNotes || undefined,
+            customerRequirements: customerRequirements || discussionNotes || initialDesignNotes || undefined,
+            notes: notes || discussionNotes || initialDesignNotes || undefined,
           ...(consultationOutcome === 'schedule_ocular' && {
             recommendedOcularDate: serializeDateOnlyAsUtcNoon(recommendedOcularDate),
             recommendedOcularSlot: recommendedOcularSlot || undefined,
