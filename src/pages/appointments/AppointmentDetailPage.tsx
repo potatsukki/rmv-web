@@ -167,6 +167,26 @@ export function AppointmentDetailPage() {
     }
   }, [canConfirmAppointment, appt?.date, appt?.slotCode, id]);
 
+  useEffect(() => {
+    if (
+      canConfirmAppointment
+      && appt?.salesStaffId
+      && appt.status === AppointmentStatus.REQUESTED
+      && salesStaffList.length > 0
+      && !selectedSalesStaff
+    ) {
+      const assignedId = typeof appt.salesStaffId === 'string'
+        ? appt.salesStaffId
+        : appt.salesStaffId?._id;
+      if (assignedId) {
+        const assignedStaff = salesStaffList.find((s) => s._id === assignedId);
+        if (assignedStaff && assignedStaff.assignmentEligible !== false) {
+          setSelectedSalesStaff(assignedId);
+        }
+      }
+    }
+  }, [canConfirmAppointment, appt?.salesStaffId, appt?.status, salesStaffList, selectedSalesStaff]);
+
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
 
@@ -275,7 +295,7 @@ export function AppointmentDetailPage() {
 
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
-  const canSeeConsultationAttendance = Boolean(isOfficeConsultation && isSalesStaff);
+  const canSeeConsultationAttendance = Boolean(isOfficeConsultation && (isSalesStaff || isAdmin));
   const assignedSalesStaffId = typeof appt.salesStaffId === 'string'
     ? appt.salesStaffId
     : appt.salesStaffId?._id;
@@ -1279,13 +1299,14 @@ export function AppointmentDetailPage() {
                       <button
                         key={s._id}
                         type="button"
-                        onClick={() => setSelectedSalesStaff(s._id)}
+                        onClick={() => !isBlocked && setSelectedSalesStaff(s._id)}
+                        aria-disabled={isBlocked}
                         className={cn(
                           "w-full flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-200 border relative group",
                           isSelected
                             ? "border-blue-500/50 bg-blue-500/10 ring-1 ring-blue-500/20 dark:border-blue-400/40 dark:bg-blue-500/10"
                             : "border-transparent bg-[#f5f5f7] hover:bg-[#ebebed] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]",
-                          isBlocked && !isSelected && "opacity-60"
+                          isBlocked && !isSelected && "opacity-60 pointer-events-none"
                         )}
                       >
                         {isBlocked && (

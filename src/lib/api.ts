@@ -114,7 +114,7 @@ function doCsrfRefresh(): Promise<string> {
 }
 
 // Request interceptor: attach Bearer token + CSRF token
-api.interceptors.request.use((config) => {
+api.interceptors.request.use(async (config) => {
   const { csrfToken, accessToken, refreshToken } = useAuthStore.getState();
 
   // Attach access token as Authorization header (per-tab isolation)
@@ -129,10 +129,18 @@ api.interceptors.request.use((config) => {
   }
 
   // Attach CSRF token on mutating requests
-  if (csrfToken && config.method?.toLowerCase() !== 'get') {
-    config.headers = config.headers ?? {};
-    config.headers['X-CSRF-Token'] = csrfToken;
+  if (config.method?.toLowerCase() !== 'get') {
+    let token = csrfToken;
+    if (!token) {
+      token = await doCsrfRefresh();
+    }
+
+    if (token) {
+      config.headers = config.headers ?? {};
+      config.headers['X-CSRF-Token'] = token;
+    }
   }
+
   return config;
 });
 
