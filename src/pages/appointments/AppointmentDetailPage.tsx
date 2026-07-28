@@ -21,6 +21,7 @@ import {
   useAppointment,
   useConfirmAppointment,
   useCancelAppointment,
+  useReassignAppointmentSales,
   useUpdateVisitStatus,
   useUpdateConsultationAttendance,
   useAgentFinalizeOcular,
@@ -54,6 +55,7 @@ export function AppointmentDetailPage() {
 
   const confirmMutation = useConfirmAppointment();
   const cancelMutation = useCancelAppointment();
+  const reassignMutation = useReassignAppointmentSales();
   const visitStatusMutation = useUpdateVisitStatus();
   const attendanceMutation = useUpdateConsultationAttendance();
 
@@ -87,6 +89,8 @@ export function AppointmentDetailPage() {
     assignmentBlockedReason?: string;
   }[]>([]);
   const [selectedSalesStaff, setSelectedSalesStaff] = useState<string>('');
+  const [reassignOpen, setReassignOpen] = useState(false);
+  const [reassignmentReason, setReassignmentReason] = useState('');
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -218,6 +222,21 @@ export function AppointmentDetailPage() {
     );
   const customerCanReschedule =
     customerCanManageAppointment && appt.rescheduleCount < appt.maxReschedules;
+  const assignedSalesStaffId = typeof appt.salesStaffId === 'string'
+    ? appt.salesStaffId
+    : appt.salesStaffId?._id;
+  const canReassignSalesStaff = Boolean(
+    canConfirmAppointment
+    && assignedSalesStaffId
+    && [
+      AppointmentStatus.CONFIRMED,
+      AppointmentStatus.PREPARING,
+      AppointmentStatus.ON_THE_WAY,
+      AppointmentStatus.ARRIVED_AT_SITE,
+      AppointmentStatus.IN_PROGRESS,
+      AppointmentStatus.RESCHEDULE_REQUESTED,
+    ].includes(appt.status as AppointmentStatus),
+  );
 
   const handleConfirm = async () => {
     const staff = salesStaffList.find(s => s._id === selectedSalesStaff);
@@ -253,6 +272,28 @@ export function AppointmentDetailPage() {
       setCancelReason('');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to cancel'));
+    }
+  };
+
+  const handleReassign = async () => {
+    const staff = salesStaffList.find((candidate) => candidate._id === selectedSalesStaff);
+    if (!selectedSalesStaff || selectedSalesStaff === assignedSalesStaffId || staff?.assignmentEligible === false) {
+      toast.error('Select another eligible sales staff member');
+      return;
+    }
+
+    try {
+      await reassignMutation.mutateAsync({
+        id: id!,
+        salesStaffId: selectedSalesStaff,
+        reason: reassignmentReason.trim() || undefined,
+      });
+      toast.success('Sales staff reassigned and notified');
+      setReassignOpen(false);
+      setReassignmentReason('');
+      setSelectedSalesStaff('');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to reassign sales staff'));
     }
   };
 
@@ -296,9 +337,6 @@ export function AppointmentDetailPage() {
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
   const canSeeConsultationAttendance = Boolean(isOfficeConsultation && (isSalesStaff || isAdmin));
-  const assignedSalesStaffId = typeof appt.salesStaffId === 'string'
-    ? appt.salesStaffId
-    : appt.salesStaffId?._id;
   const canUpdateAttendance = Boolean(
     isOfficeConsultation &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
@@ -1374,6 +1412,84 @@ export function AppointmentDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {canReassignSalesStaff && (
+        <Card className="rounded-xl border-amber-200 bg-amber-50/60 shadow-sm dark:border-amber-500/20 dark:bg-amber-500/[0.06] lg:col-span-2">
+          <CardContent className="flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Sales Staff Assignment</p>
+              <p className="mt-1 text-xs leading-5 text-amber-800 dark:text-amber-200/80">
+                Reassign this appointment if the current staff member cannot take the scheduled visit.
+              </p>
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setSelectedSalesStaff('');
+                setReassignOpen(true);
+              }}
+              className="shrink-0 border-amber-300 bg-white text-amber-900 hover:bg-amber-100 dark:border-amber-500/30 dark:bg-transparent dark:text-amber-100 dark:hover:bg-amber-500/10"
+            >
+              Reassign Staff
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <Dialog open={reassignOpen} onOpenChange={setReassignOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>Reassign Sales Staff</DialogTitle>
+            <DialogDescription>
+              Choose an eligible staff member for {format(new Date(appt.date), 'MMMM d, yyyy')} at {formatSlotTime(appt.slotCode)}.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="max-h-72 space-y-2 overflow-y-auto pr-1">
+            {salesStaffList
+              .filter((staff) => staff._id !== assignedSalesStaffId)
+              .map((staff) => {
+                const isBlocked = staff.assignmentEligible === false;
+                const isSelected = selectedSalesStaff === staff._id;
+                return (
+                  <button
+                    key={staff._id}
+                    type="button"
+                    disabled={isBlocked}
+                    onClick={() => setSelectedSalesStaff(staff._id)}
+                    className={cn(
+                      'w-full rounded-lg border px-3 py-2 text-left text-sm transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                      isSelected
+                        ? 'border-emerald-500 bg-emerald-50 text-emerald-950 dark:border-emerald-500/50 dark:bg-emerald-500/10 dark:text-emerald-100'
+                        : 'border-slate-200 hover:bg-slate-50 dark:border-white/10 dark:hover:bg-white/5',
+                    )}
+                  >
+                    <span className="font-medium">{staff.firstName} {staff.lastName}</span>
+                    <span className="ml-2 text-xs text-slate-500 dark:text-slate-400">
+                      {isBlocked ? staff.assignmentBlockedReason || 'Unavailable' : 'Available'}
+                    </span>
+                  </button>
+                );
+              })}
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="reassignment-reason">Reason (optional)</Label>
+            <Textarea
+              id="reassignment-reason"
+              value={reassignmentReason}
+              onChange={(event) => setReassignmentReason(event.target.value)}
+              maxLength={500}
+              placeholder="e.g. Current staff is unavailable for the scheduled visit"
+            />
+          </div>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={() => setReassignOpen(false)}>Cancel</Button>
+            <Button type="button" onClick={handleReassign} disabled={reassignMutation.isPending || !selectedSalesStaff}>
+              {reassignMutation.isPending ? 'Reassigning...' : 'Confirm Reassignment'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Sales Staff: Finalize Ocular (for REQUESTED oculars where customer has submitted location) */}
       {canFinalizeOcular && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (

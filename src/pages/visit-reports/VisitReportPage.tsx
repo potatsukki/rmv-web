@@ -1982,7 +1982,29 @@ export function VisitReportPage() {
                     </SelectContent>
                   </Select>
                 </div>
-                {/* Ocular Site Address selector removed per UX request */}
+                <div className="space-y-1.5 sm:col-span-2">
+                  <Label className="text-[13px] font-medium text-gray-700 dark:text-slate-300">
+                    Customer Site Address
+                  </Label>
+                  {customerSavedAddresses.length > 0 ? (
+                    <Select value={selectedOcularAddressId} onValueChange={setSelectedOcularAddressId}>
+                      <SelectTrigger className="h-11 rounded-xl border-gray-200 bg-gray-50/50 dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:hover:border-white/30 dark:focus:ring-[#d6b36a]/20">
+                        <SelectValue placeholder="Select a saved customer address" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {customerSavedAddresses.map((address) => (
+                          <SelectItem key={addressSelectionKey(address)} value={addressSelectionKey(address)}>
+                            {address.label ? `${address.label} — ${address.formattedAddress}` : address.formattedAddress}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  ) : (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+                      The customer needs a saved address with a map pin before this ocular visit can be scheduled.
+                    </p>
+                  )}
+                </div>
                 {isRecommendedOcularScheduleLocked && (
                   <p className="sm:col-span-2 rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
                     Date and time were already set for this appointment's other item and cannot be changed here.
