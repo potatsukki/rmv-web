@@ -1,5 +1,5 @@
-import { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { useNavigate } from 'react-router';
 import {
   Armchair,
   ArrowRight,
@@ -9,6 +9,7 @@ import {
   CalendarCheck,
   ChefHat,
   ClipboardList,
+  Clock3,
   DoorClosed,
   DoorOpen,
   Drill,
@@ -16,14 +17,13 @@ import {
   Frame,
   Grid3x3,
   Handshake,
-  Hammer,
   Layers,
   MapPin,
-  Navigation,
+  Mail,
   PenTool,
   Ruler,
-  Search,
   ShieldCheck,
+  Phone,
   Truck,
   Umbrella,
   Utensils,
@@ -41,7 +41,8 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { PublicNavbar } from '@/components/shared/PublicNavbar';
+import { LandingNavbar } from '@/components/landing/LandingNavbar';
+import { PublicFooter } from '@/components/landing/PublicFooter';
 import { useAuthStore } from '@/stores/auth.store';
 import { ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
@@ -55,21 +56,19 @@ type LandingService = {
   variants?: ServiceVariant[];
 };
 
-type GalleryGroup = 'all' | 'kitchen' | 'food-stall' | 'gasline' | 'custom';
-
-type ServiceSpecItem = {
+export type ServiceSpecItem = {
   label: string;
   value: string;
   note?: string;
   required?: boolean;
 };
 
-type ServiceSpecGroup = {
+export type ServiceSpecGroup = {
   title: string;
   items: ServiceSpecItem[];
 };
 
-type ServiceVariant = {
+export type ServiceVariant = {
   id: string;
   title: string;
   image: string;
@@ -1999,162 +1998,136 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
   },
 ];
 
+export const LANDING_SERVICE_VARIANTS: Partial<Record<ServiceType, ServiceVariant[]>> = {
+  [ServiceType.KITCHEN_COUNTER]: KITCHEN_COUNTER_VARIANTS,
+  [ServiceType.KITCHEN_CABINET]: KITCHEN_CABINET_VARIANTS,
+  [ServiceType.RAILINGS]: RAILINGS_VARIANTS,
+  [ServiceType.GATES]: GATES_VARIANTS,
+  [ServiceType.CANOPY]: CANOPY_VARIANTS,
+  [ServiceType.CUSTOM]: CUSTOM_VARIANTS,
+};
+
 const REAL_SERVICES: LandingService[] = SERVICE_ORDER.map((type) => ({
   type,
   label: SERVICE_TYPE_LABELS[type] ?? type,
   imageUrl: SERVICE_IMAGE_PATHS[type],
   description: SERVICE_DESCRIPTIONS[type],
   Icon: SERVICE_ICONS[type],
-  variants:
-    type === ServiceType.KITCHEN_COUNTER
-      ? KITCHEN_COUNTER_VARIANTS
-      : type === ServiceType.KITCHEN_CABINET
-        ? KITCHEN_CABINET_VARIANTS
-        : type === ServiceType.RAILINGS
-          ? RAILINGS_VARIANTS
-          : type === ServiceType.GATES
-            ? GATES_VARIANTS
-            : type === ServiceType.CANOPY
-              ? CANOPY_VARIANTS
-              : type === ServiceType.CUSTOM
-                ? CUSTOM_VARIANTS
-                : undefined,
+  variants: LANDING_SERVICE_VARIANTS[type],
 }));
 
 const FEATURED_SERVICES = [
-  ServiceType.KITCHEN_COUNTER,
-  ServiceType.KITCHEN_CABINET,
-  ServiceType.RAILINGS,
-  ServiceType.GATES,
-  ServiceType.CANOPY,
-  ServiceType.CUSTOM,
-].map((type) => REAL_SERVICES.find((service) => service.type === type)!);
-
-const HERO_CHIPS = [
   ServiceType.RAILINGS,
   ServiceType.GATES,
   ServiceType.KITCHEN_COUNTER,
-  ServiceType.KITCHEN_CABINET,
   ServiceType.CANOPY,
+  ServiceType.STAIRCASE,
+  ServiceType.KITCHEN_CABINET,
+  ServiceType.FENCES,
   ServiceType.CUSTOM,
 ].map((type) => REAL_SERVICES.find((service) => service.type === type)!);
 
-const BOOKING_STEPS: Array<{ title: string; description: string; Icon: LucideIcon }> = [
+const HERO_TRUST_ITEMS: Array<{ title: string; Icon: LucideIcon }> = [
   {
-    title: 'Choose Service',
-    description: 'Select the fabrication service that best matches the project.',
-    Icon: Search,
+    title: 'Premium Quality Materials',
+    Icon: ShieldCheck,
   },
   {
-    title: 'Book Appointment',
-    description: 'Schedule a visit so the team can review the request properly.',
+    title: 'Expert Fabrication',
+    Icon: Drill,
+  },
+  {
+    title: 'On-Time Delivery',
     Icon: CalendarCheck,
   },
   {
-    title: 'Site Visit & Measurement',
-    description: 'Measurements and site conditions are checked before pricing.',
-    Icon: Ruler,
-  },
-  {
-    title: 'Quotation & Estimate',
-    description: 'The scope is reviewed and converted into a project estimate.',
-    Icon: ClipboardList,
-  },
-  {
-    title: 'Fabrication',
-    description: 'Approved work moves into stainless or steel fabrication.',
-    Icon: Hammer,
-  },
-  {
-    title: 'Delivery & Installation',
-    description: 'Finished work is delivered and installed according to project needs.',
-    Icon: Truck,
+    title: 'Satisfaction Guaranteed',
+    Icon: BadgeCheck,
   },
 ];
 
-const GALLERY_FILTERS: Array<{ key: GalleryGroup; label: string }> = [
-  { key: 'all', label: 'All' },
-  { key: 'food-stall', label: 'Food Stall' },
-  { key: 'kitchen', label: 'Kitchen' },
-  { key: 'gasline', label: 'Gasline' },
-  { key: 'custom', label: 'Custom' },
-];
-
-const COMPLETED_WORKS = [
+const FEATURED_PROJECTS = [
   {
-    title: 'Food Stall Counter Setup',
-    group: 'food-stall' as const,
-    groupLabel: 'Food Stall',
-    image: '/landing/food-stall-works/cover.png',
-  },
-  {
-    title: 'Stainless Kitchen Counter',
-    group: 'kitchen' as const,
-    groupLabel: 'Kitchen',
+    title: 'Commercial Kitchen Fit-Out',
+    category: 'Commercial',
     image: '/landing/commercial-kitchens/cover.png',
   },
   {
-    title: 'Kitchen Cabinet System',
-    group: 'kitchen' as const,
-    groupLabel: 'Kitchen',
+    title: 'Stainless Kitchen System',
+    category: 'Stainless Installation',
     image: '/landing/hotel-kitchens/cover.png',
   },
   {
-    title: 'Gasline Installation',
-    group: 'gasline' as const,
-    groupLabel: 'Gasline',
-    image: '/landing/gasline-fire-suppression/project-1.png',
+    title: 'Food Stall Fabrication',
+    category: 'Custom Fabrication',
+    image: '/landing/food-stall-works/cover.png',
   },
   {
-    title: 'Custom Stainless Works',
-    group: 'custom' as const,
-    groupLabel: 'Custom',
+    title: 'Custom Stainless Metalwork',
+    category: 'Residential',
     image: '/landing/custom-metalworks/project-1.png',
   },
 ];
 
-const MATERIALS = [
+const ABOUT_BENEFITS: Array<{ title: string; Icon: LucideIcon }> = [
   {
-    name: '304 Stainless Steel',
-    detail: 'Food-grade and durable',
-    texture: 'bg-[linear-gradient(135deg,#f8fafc_0%,#8d969f_36%,#f7f7f2_52%,#5d6871_100%)]',
-  },
-  {
-    name: '316 Stainless Steel',
-    detail: 'Corrosion resistant',
-    texture: 'bg-[linear-gradient(135deg,#dce4eb_0%,#7b858f_35%,#f4f7f9_55%,#47515b_100%)]',
-  },
-  {
-    name: 'Mirror Finish',
-    detail: 'Reflective polish',
-    texture: 'bg-[linear-gradient(135deg,#17212b_0%,#d9e3ea_45%,#ffffff_52%,#526170_100%)]',
-  },
-  {
-    name: 'Brushed Finish',
-    detail: 'Satin line texture',
-    texture: 'bg-[repeating-linear-gradient(90deg,#bcc4cb_0px,#eef2f4_2px,#7f8992_5px,#d7dde2_8px)]',
-  },
-];
-
-const SERVICE_BENEFITS = [
-  {
-    title: 'Premium Materials',
-    description: 'High-quality stainless steel built to last.',
+    title: 'High Quality Materials',
     Icon: ShieldCheck,
   },
   {
-    title: 'Precision Fabrication',
-    description: 'Expert craftsmanship with attention to detail.',
+    title: 'Expert Fabrication',
     Icon: Drill,
   },
   {
-    title: 'Custom Solutions',
-    description: 'Tailored designs to fit your needs and space.',
+    title: 'Satisfaction Guaranteed',
+    Icon: BadgeCheck,
+  },
+];
+
+const PROCESS_TRUST_ITEMS: Array<{ title: string; description: string; Icon: LucideIcon }> = [
+  {
+    title: 'Made to Measure',
+    description: 'Fabrication planned around the actual project dimensions.',
+    Icon: Ruler,
+  },
+  {
+    title: 'Site Reviewed',
+    description: 'Project conditions are checked before final scope and pricing.',
+    Icon: ClipboardList,
+  },
+  {
+    title: 'Quality Checked',
+    description: 'Work is reviewed through fabrication and finishing stages.',
     Icon: BadgeCheck,
   },
   {
-    title: 'Reliable Service',
-    description: 'On-time delivery and professional support.',
+    title: 'Installation Support',
+    description: 'Finished work is prepared for delivery and site installation.',
+    Icon: Truck,
+  },
+];
+
+const MATERIAL_CHECKLIST = [
+  '304 and 316 stainless steel options',
+  'Precision cutting and welding',
+  'Professional finishing techniques',
+  'Strict quality review',
+];
+
+const TRUST_REASONS: Array<{ title: string; description: string; Icon: LucideIcon }> = [
+  {
+    title: 'Clear Project Communication',
+    description: 'Scope, measurements, and project requirements are reviewed before fabrication begins.',
+    Icon: ClipboardList,
+  },
+  {
+    title: 'Custom-Built Solutions',
+    description: 'Every fabrication is shaped around the function, finish, and dimensions the project needs.',
+    Icon: PenTool,
+  },
+  {
+    title: 'Reliable Fabrication Process',
+    description: 'From site review to finishing and installation, each stage follows a clear working process.',
     Icon: Handshake,
   },
 ];
@@ -2177,14 +2150,8 @@ export function LandingPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const bookingTarget = user ? '/appointments/book' : '/login';
-  const [activeGallery, setActiveGallery] = useState<GalleryGroup>('all');
   const [selectedService, setSelectedService] = useState<LandingService | null>(null);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
-
-  const galleryItems = useMemo(() => {
-    if (activeGallery === 'all') return COMPLETED_WORKS;
-    return COMPLETED_WORKS.filter((item) => item.group === activeGallery);
-  }, [activeGallery]);
 
   const goToBooking = () => navigate(bookingTarget);
   const selectedServiceDetail = selectedService ? SERVICE_DETAIL_METADATA[selectedService.type] : undefined;
@@ -2236,101 +2203,90 @@ export function LandingPage() {
   );
 
   return (
-    <div className="min-h-screen overflow-x-hidden bg-[#030405] text-white selection:bg-[#FFD700]/30 selection:text-white">
-      <PublicNavbar />
+    <div className="min-h-screen overflow-x-clip bg-[#030405] text-white selection:bg-[#FFD700]/30 selection:text-white">
+      <LandingNavbar />
 
       <main>
-        <section id="hero" className="relative min-h-[520px] overflow-hidden border-b border-white/10 bg-black pt-16 sm:min-h-[620px] lg:min-h-[720px]">
+        <section id="hero" className="relative flex min-h-[720px] scroll-mt-16 items-end overflow-hidden border-b border-white/10 bg-[#090B0D] pt-16 lg:h-svh lg:min-h-[640px] lg:max-h-[900px] lg:pt-[72px]">
           <img
             src="/landing/hero/hero-stainless-railing-bg.png"
-            alt="RMV stainless steel railing fabrication"
-            className="absolute inset-0 h-full w-full object-cover object-center opacity-90 lg:object-right"
+            alt="Architectural stainless steel railing installation"
+            className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:object-center"
           />
-          <div className="absolute inset-0 bg-black/34" />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,#030405_0%,rgba(3,4,5,0.98)_25%,rgba(3,4,5,0.76)_43%,rgba(3,4,5,0.24)_72%,rgba(3,4,5,0.08)_100%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-40 bg-gradient-to-t from-[#030405] via-[#030405]/72 to-transparent" />
+          <div className="absolute inset-0 bg-black/28" />
+          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,11,13,0.99)_0%,rgba(9,11,13,0.94)_28%,rgba(9,11,13,0.72)_48%,rgba(9,11,13,0.18)_82%)]" />
+          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#090B0D] via-[#090B0D]/70 to-transparent" />
 
-          <div className="relative mx-auto flex min-h-[calc(520px-4rem)] max-w-7xl flex-col justify-center px-5 py-8 sm:min-h-[calc(620px-4rem)] sm:px-8 sm:py-10 lg:min-h-[656px] lg:px-12">
-            <div className="max-w-[58rem]">
-              <p className="label-font text-[9px] font-bold uppercase tracking-[0.28em] text-[#FFD700] sm:text-[11px] sm:tracking-[0.32em]">
-                PRECISION STAINLESS STEEL FABRICATION
+          <div className="relative mx-auto flex w-[min(calc(100%_-_32px),1480px)] flex-col justify-end pb-8 pt-16 sm:w-[min(calc(100%_-_48px),1480px)] sm:pb-10 lg:pb-6">
+            <div className="max-w-[760px] py-10 sm:py-14 lg:py-6">
+              <p className="font-['Inter',sans-serif] text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#F5B400] sm:text-xs">
+                RMV Stainless Steel Fabrication
               </p>
-              <div className="mt-3 h-0.5 w-11 bg-[#FFD700]" />
 
-              <h1 className="mt-4 max-w-[54rem] font-['Sora','Space_Grotesk',system-ui,sans-serif] text-[2.35rem] font-extrabold leading-[1.04] tracking-[-0.04em] text-white min-[390px]:text-[2.55rem] sm:text-5xl lg:text-[76px]">
-                <span className="block">Stainless and</span>
-                <span className="block">custom metal works</span>
-                <span className="block text-[#FFD700]">built to fit.</span>
+              <h1 className="mt-5 font-['Sora',sans-serif] text-[clamp(3rem,6vw,5.5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-white">
+                <span className="block">Built With</span>
+                <span className="block text-[#F5B400]">Precision.</span>
+                <span className="block">Made to Last.</span>
               </h1>
 
-              <p className="mt-4 max-w-2xl font-['Inter',system-ui,sans-serif] text-sm leading-7 text-white/72 sm:mt-5 sm:text-lg sm:leading-8">
-                Railings, gates, counters, cabinets, canopies, signage, and custom stainless projects for homes and businesses.
+              <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-white/78 sm:text-lg sm:leading-8">
+                Premium stainless steel fabrication for residential, commercial, and industrial projects.
               </p>
 
-              <div className="mt-6 flex flex-col gap-3 sm:mt-7 sm:flex-row">
-                <button
-                  type="button"
-                  onClick={goToBooking}
-                  style={{ backgroundColor: '#FFD700', backgroundImage: 'none' }}
-                  className="label-font inline-flex h-[52px] cursor-pointer items-center justify-center gap-2 rounded-md border border-[#FFD700] px-8 text-[11px] font-black uppercase tracking-[0.2em] text-black shadow-[0_16px_42px_rgba(255,215,0,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffe766] hover:brightness-110 hover:shadow-[0_20px_58px_rgba(255,215,0,0.42)] active:translate-y-0 active:scale-[0.98] sm:min-w-52"
+              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                <a
+                  href="#services"
+                  className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-[#F5B400] bg-[#F5B400] px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-[#090B0D] shadow-[0_16px_40px_rgba(245,180,0,0.2)] transition duration-200 hover:-translate-y-0.5 hover:border-[#FFD047] hover:bg-[#FFD047] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400] sm:min-w-48"
                 >
-                  REQUEST QUOTE
-                  <ArrowRight className="ml-5 h-5 w-5" />
-                </button>
+                  Our Services
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                </a>
                 <a
                   href="#projects"
-                  style={{ backgroundImage: 'none' }}
-                  className="label-font inline-flex h-[52px] cursor-pointer items-center justify-center gap-2 rounded-md border border-white/45 bg-black/35 px-8 text-[11px] font-black uppercase tracking-[0.2em] text-white shadow-[0_14px_36px_rgba(0,0,0,0.24)] backdrop-blur-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-[#FFD700]/75 hover:bg-white/10 hover:text-[#FFD700] hover:shadow-[0_18px_48px_rgba(0,0,0,0.36)] active:translate-y-0 active:scale-[0.98] sm:min-w-52"
+                  className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-white/35 bg-black/30 px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-white backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#F5B400] hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400] sm:min-w-48"
                 >
-                  VIEW PROJECTS
-                  <ArrowRight className="ml-5 h-5 w-5" />
+                  View Projects
+                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
                 </a>
               </div>
+            </div>
 
-              <div className="mt-7 hidden max-w-4xl flex-wrap gap-3 sm:flex">
-                {HERO_CHIPS.map((service) => {
-                  const Icon = service.Icon;
-                  return (
-                    <div
-                      key={service.type}
-                      className="inline-flex min-h-11 items-center gap-2.5 rounded-md border border-white/18 bg-black/35 px-4 py-2 text-left text-[9px] font-black uppercase leading-tight tracking-[0.08em] text-white/90 shadow-[0_14px_40px_rgba(0,0,0,0.28)] backdrop-blur-md"
-                    >
-                      <Icon className="h-4 w-4 shrink-0 text-[#FFD700]" />
-                      <span>{service.label}</span>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="grid border-t border-white/12 pt-5 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4">
+              {HERO_TRUST_ITEMS.map(({ title, Icon }) => (
+                <div key={title} className="flex min-h-14 items-center gap-3 border-b border-white/[0.08] py-3 sm:border-b-0 lg:px-3 lg:first:pl-0">
+                  <Icon className="h-5 w-5 shrink-0 text-[#F5B400]" strokeWidth={1.8} aria-hidden="true" />
+                  <span className="max-w-[12rem] text-[0.66rem] font-bold uppercase leading-4 tracking-[0.08em] text-white/86">
+                    {title}
+                  </span>
+                </div>
+              ))}
             </div>
           </div>
         </section>
 
         <section
           id="services"
-          className="relative overflow-hidden border-b border-white/10 bg-[#050708] py-8 sm:py-10"
+          className="scroll-mt-16 border-b border-[#E4E6E8] bg-[#F7F7F5] py-16 text-[#111417] sm:py-20 lg:scroll-mt-[72px] lg:py-28"
         >
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-white/[0.025] to-transparent" />
-
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mx-auto mb-6 max-w-3xl text-center">
-              <div className="flex items-center justify-center gap-4">
-                <span className="h-px w-8 bg-[#FFD700]/70 sm:w-12" />
-                <p className="label-font text-[11px] font-black uppercase tracking-[0.32em] text-[#FFD700]">
-                  What We Fabricate
-                </p>
-                <span className="h-px w-8 bg-[#FFD700]/70 sm:w-12" />
-              </div>
-
-              <h2 className="headline-font mt-3 text-2xl font-black uppercase tracking-[0.16em] text-white sm:text-3xl lg:text-4xl">
-                RMV Services
+          <div className="mx-auto grid w-[min(calc(100%_-_32px),1440px)] gap-10 sm:w-[min(calc(100%_-_48px),1440px)] lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-12 xl:grid-cols-[290px_minmax(0,1fr)] xl:gap-16">
+            <div className="lg:pt-3">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Our</p>
+              <h2 className="mt-2 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
+                Services
               </h2>
-
-              <p className="mt-2 text-sm leading-6 text-white/68">
-                Precision craftsmanship. Premium stainless steel. Built to last.
+              <p className="mt-5 max-w-sm font-['Inter',sans-serif] text-base leading-7 text-[#5D646B]">
+                High-quality stainless and metal fabrication tailored to residential, commercial, and industrial project needs.
               </p>
+              <a
+                href="#service-grid"
+                className="mt-7 inline-flex min-h-12 items-center justify-center gap-3 rounded-md border border-[#111417] px-5 text-[0.68rem] font-extrabold uppercase tracking-[0.11em] text-[#111417] transition duration-200 hover:-translate-y-0.5 hover:bg-[#111417] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400]"
+              >
+                View All Services
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </a>
             </div>
 
-            <div className="-mx-4 flex snap-x snap-mandatory gap-3 overflow-x-auto px-4 pb-3 sm:mx-0 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 xl:grid-cols-6">
+            <div id="service-grid" className="grid scroll-mt-24 gap-4 min-[430px]:grid-cols-2 lg:grid-cols-4">
               {FEATURED_SERVICES.map((service) => {
                 const Icon = service.Icon;
 
@@ -2342,31 +2298,23 @@ export function LandingPage() {
                       setSelectedVariantIndex(0);
                       setSelectedService(service);
                     }}
-                    className="group relative w-[82vw] max-w-[330px] shrink-0 snap-start overflow-hidden rounded-xl border border-white/12 bg-[#0b1014] text-left shadow-[0_8px_22px_rgba(0,0,0,0.24)] transition duration-200 hover:-translate-y-0.5 hover:border-[#FFD700]/45 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700]/70 focus-visible:ring-offset-2 focus-visible:ring-offset-[#050708] sm:w-auto sm:max-w-none"
+                    className="group relative min-h-[220px] overflow-hidden rounded-lg border border-black/10 bg-[#12161A] text-left shadow-[0_18px_50px_rgba(12,16,20,0.1)] transition duration-200 hover:-translate-y-1 hover:border-[#F5B400] hover:shadow-[0_24px_58px_rgba(12,16,20,0.16)] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400] lg:min-h-[238px]"
                     aria-label={`View details for ${service.label}`}
                   >
-                    <div className="relative h-32 overflow-hidden bg-white/5 sm:h-36 xl:h-32">
-                      <img
-                        src={service.imageUrl}
-                        alt={service.label}
-                        className="h-full w-full object-cover"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-x-0 bottom-0 h-14 bg-gradient-to-t from-[#0b1014] to-transparent" />
-                    </div>
-
-                    <div className="relative min-h-[128px] px-3 pb-4 pt-9 text-center">
-                      <div className="absolute left-1/2 top-0 flex h-11 w-11 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full border border-[#FFD700]/65 bg-[#0a0e11] text-[#FFD700] shadow-[0_6px_18px_rgba(0,0,0,0.32)]">
-                        <Icon className="h-5 w-5" strokeWidth={1.8} />
-                      </div>
-
-                      <h3 className="text-sm font-black leading-tight text-white">
+                    <img
+                      src={service.imageUrl}
+                      alt=""
+                      className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                      loading="lazy"
+                    />
+                    <div className="absolute inset-0 bg-black/30" />
+                    <div className="absolute inset-0 bg-gradient-to-t from-[#090B0D] via-[#090B0D]/72 to-transparent" />
+                    <div className="relative flex min-h-[220px] flex-col justify-end p-5 lg:min-h-[238px]">
+                      <Icon className="mb-auto h-6 w-6 text-[#F5B400]" strokeWidth={1.7} aria-hidden="true" />
+                      <h3 className="font-['Sora',sans-serif] text-base font-extrabold uppercase leading-tight text-white">
                         {service.label}
                       </h3>
-
-                      <div className="mx-auto mt-2 h-px w-8 bg-[#FFD700]" />
-
-                      <p className="mx-auto mt-2 line-clamp-3 max-w-[12rem] text-[11px] leading-5 text-white/64">
+                      <p className="mt-2 line-clamp-2 text-sm leading-5 text-white/72">
                         {service.description}
                       </p>
                     </div>
@@ -2374,227 +2322,251 @@ export function LandingPage() {
                 );
               })}
             </div>
-
-            <div className="mt-4 overflow-hidden rounded-xl border border-white/12 bg-[#070b0e]/90 shadow-[0_8px_24px_rgba(0,0,0,0.22)]">
-              <div className="grid gap-0 sm:grid-cols-2 lg:grid-cols-4">
-                {SERVICE_BENEFITS.map((benefit, index) => {
-                  const Icon = benefit.Icon;
-
-                  return (
-                    <div
-                      key={benefit.title}
-                      className={cn(
-                        'flex items-center gap-3 p-3 sm:p-4',
-                        index > 0 && 'lg:border-l lg:border-white/10',
-                        index > 1 && 'sm:border-t sm:border-white/10 lg:border-t-0',
-                      )}
-                    >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-[#FFD700]">
-                        <Icon className="h-5 w-5" strokeWidth={1.7} />
-                      </div>
-
-                      <div>
-                        <h3 className="text-xs font-black text-white">
-                          {benefit.title}
-                        </h3>
-                        <p className="mt-0.5 text-xs leading-5 text-white/58">
-                          {benefit.description}
-                        </p>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
           </div>
         </section>
 
-        <section id="projects" className="border-b border-white/10 bg-[#030405] py-10 sm:py-12">
-          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div className="mb-12 border-b border-white/10 pb-10 sm:mb-14 sm:pb-12">
-              <div>
-                <div>
-                  <p className="label-font text-[11px] font-black uppercase tracking-[0.32em] text-[#FFD700]">
-                    How Booking Works
-                  </p>
-                  <h2 className="headline-font mt-4 max-w-2xl text-2xl font-black leading-tight tracking-[-0.025em] text-white sm:text-3xl lg:text-4xl">
-                    From service choice to installation.
-                  </h2>
-                </div>
-              </div>
-
-              <div className="-mx-4 mt-8 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 sm:mx-0 sm:mt-10 sm:grid sm:snap-none sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 lg:grid-cols-3 xl:grid-cols-6">
-                {BOOKING_STEPS.map((step, index) => {
-                  const Icon = step.Icon;
-
-                  return (
-                    <article
-                      key={step.title}
-                      className="relative w-[72vw] max-w-[260px] shrink-0 snap-start rounded-2xl border border-white/10 bg-[#080a0b] p-5 shadow-[0_14px_42px_rgba(0,0,0,0.22)] sm:w-auto sm:max-w-none"
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#FFD700] text-black shadow-[0_14px_34px_rgba(255,215,0,0.2)]">
-                          <Icon className="h-5 w-5" strokeWidth={2.2} />
-                        </div>
-                        <span className="text-xs font-black tracking-[0.18em] text-white/24">
-                          {String(index + 1).padStart(2, '0')}
-                        </span>
-                      </div>
-                      <h3 className="mt-7 text-base font-black leading-6 text-white">
-                        {step.title}
-                      </h3>
-                      <p className="mt-4 text-sm font-semibold leading-7 text-white/48">
-                        {step.description}
-                      </p>
-                    </article>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="mb-6 text-center">
-              <p className="label-font text-[11px] font-black uppercase tracking-[0.3em] text-[#FFD700]">Completed Works</p>
-              <h2 className="headline-font mt-2 text-2xl font-black uppercase tracking-[0.14em] text-white sm:text-3xl">
-                Project Gallery
+        <section id="projects" className="scroll-mt-16 border-b border-white/10 bg-[#090B0D] py-16 sm:py-20 lg:scroll-mt-[72px] lg:py-28">
+          <div className="mx-auto grid w-[min(calc(100%_-_32px),1440px)] gap-10 sm:w-[min(calc(100%_-_48px),1440px)] lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-12 xl:grid-cols-[290px_minmax(0,1fr)] xl:gap-16">
+            <div className="lg:sticky lg:top-28 lg:self-start lg:pt-3">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Featured</p>
+              <h2 className="mt-2 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em] text-white">
+                Projects
               </h2>
+              <p className="mt-5 max-w-sm font-['Inter',sans-serif] text-base leading-7 text-[#8F969D]">
+                A selection of stainless fabrication work showing practical layouts, clean finishes, and custom project execution.
+              </p>
+              <button
+                type="button"
+                onClick={goToBooking}
+                className="mt-7 inline-flex min-h-12 items-center justify-center gap-3 rounded-md border border-white/35 px-5 text-[0.68rem] font-extrabold uppercase tracking-[0.11em] text-white transition duration-200 hover:-translate-y-0.5 hover:border-[#F5B400] hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400]"
+              >
+                Start a Project
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </button>
             </div>
 
-            <div className="mb-6 flex flex-wrap justify-center gap-3">
-              {GALLERY_FILTERS.map((filter) => (
-                <button
-                  key={filter.key}
-                  type="button"
-                  onClick={() => setActiveGallery(filter.key)}
-                  className={cn(
-                    'rounded-md border px-5 py-2 text-[11px] font-black uppercase tracking-[0.18em] transition',
-                    activeGallery === filter.key
-                      ? 'border-[#FFD700] bg-[#FFD700] text-black'
-                      : 'border-white/15 bg-white/[0.03] text-white/70 hover:border-[#FFD700]/50 hover:text-[#FFD700]',
-                  )}
+            <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-4 sm:mx-0 sm:grid sm:grid-cols-2 sm:overflow-visible sm:px-0 sm:pb-0 xl:grid-cols-4">
+              {FEATURED_PROJECTS.map((project) => (
+                <article
+                  key={project.title}
+                  className="group w-[82vw] max-w-[340px] shrink-0 snap-start overflow-hidden rounded-lg border border-white/10 bg-[#12161A] shadow-[0_20px_50px_rgba(0,0,0,0.28)] sm:w-auto sm:max-w-none"
                 >
-                  {filter.label}
-                </button>
-              ))}
-            </div>
-
-            <div className="-mx-4 flex snap-x snap-mandatory gap-4 overflow-x-auto px-4 pb-3 md:mx-0 md:grid md:snap-none md:grid-cols-2 md:overflow-visible md:px-0 md:pb-0 xl:grid-cols-5">
-              {galleryItems.map((item) => (
-                <article key={item.title} className="w-[82vw] max-w-[330px] shrink-0 snap-start overflow-hidden rounded-lg border border-white/12 bg-[#0b0e10] md:w-auto md:max-w-none">
-                  <img src={item.image} alt={item.title} className="h-44 w-full object-cover" loading="lazy" />
-                  <div className="p-4">
-                    <h3 className="text-sm font-bold text-white">{item.title}</h3>
-                    <p className="mt-1 text-xs text-white/55">{item.groupLabel}</p>
+                  <div className="aspect-[4/5] overflow-hidden">
+                    <img
+                      src={project.image}
+                      alt={project.title}
+                      className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-[1.04]"
+                      loading="lazy"
+                    />
+                  </div>
+                  <div className="border-t border-white/10 p-5">
+                    <p className="text-[0.68rem] font-extrabold uppercase tracking-[0.15em] text-[#F5B400]">{project.category}</p>
+                    <h3 className="mt-2 font-['Sora',sans-serif] text-base font-bold leading-6 text-white">{project.title}</h3>
                   </div>
                 </article>
               ))}
             </div>
-
-            <div className="mt-6 flex justify-center">
-              <button
-                type="button"
-                onClick={goToBooking}
-                style={{ backgroundColor: '#FFD700', backgroundImage: 'none' }}
-                className="label-font inline-flex h-[52px] cursor-pointer items-center justify-center gap-2 rounded-md border border-[#FFD700] px-8 text-[11px] font-black uppercase tracking-[0.2em] text-black shadow-[0_16px_42px_rgba(255,215,0,0.28)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffe766] hover:brightness-110 hover:shadow-[0_20px_58px_rgba(255,215,0,0.42)] active:translate-y-0 active:scale-[0.98]"
-              >
-                Request a Similar Project
-                <ArrowRight className="ml-3 h-4 w-4" />
-              </button>
-            </div>
           </div>
         </section>
 
-        <section id="materials" className="border-b border-white/10 bg-[#050607] py-10 sm:py-12">
-          <div className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+        <section id="about-rmv" className="border-b border-[#E4E6E8] bg-[#F7F7F5] py-16 text-[#111417] sm:py-20 lg:py-28">
+          <div className="mx-auto grid w-[min(calc(100%_-_32px),1240px)] items-center gap-10 sm:w-[min(calc(100%_-_48px),1240px)] lg:grid-cols-2 lg:gap-16">
+            <div className="overflow-hidden rounded-lg bg-[#12161A] shadow-[0_18px_50px_rgba(12,16,20,0.12)]">
+              <img
+                src="/landing/completed-works/project-1.jpg"
+                alt="RMV stainless fabrication work in progress"
+                className="aspect-[4/3] h-full w-full object-cover"
+                loading="lazy"
+              />
+            </div>
+
             <div>
-              <p className="label-font text-[11px] font-black uppercase tracking-[0.3em] text-[#FFD700]">Materials & Finishes</p>
-              <h2 className="headline-font mt-2 text-2xl font-black uppercase tracking-[0.14em] text-white sm:text-3xl">
-                Stainless Options
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">About RMV</p>
+              <h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
+                Quality Fabrication.<br />Trusted Service.
               </h2>
-              <div className="mt-5 grid grid-cols-2 gap-4 lg:grid-cols-4">
-                {MATERIALS.map((material) => (
-                  <article key={material.name} className="overflow-hidden rounded-lg border border-white/12 bg-[#0b0e10]">
-                    <div className={cn('h-28', material.texture)} />
-                    <div className="p-4">
-                      <h3 className="text-sm font-bold text-white">{material.name}</h3>
-                      <p className="mt-1 text-xs text-white/55">{material.detail}</p>
-                    </div>
-                  </article>
+              <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-[#5D646B]">
+                RMV Stainless Steel Fabrication specializes in custom stainless and metal works for homes, businesses, and industrial project requirements. Each job is shaped around practical use, accurate measurements, and a finish built for its environment.
+              </p>
+
+              <div className="mt-8 grid gap-4 sm:grid-cols-3">
+                {ABOUT_BENEFITS.map(({ title, Icon }) => (
+                  <div key={title} className="flex items-center gap-3 sm:block">
+                    <span className="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full border border-[#F5B400] bg-[#F5B400] text-[#090B0D]">
+                      <Icon className="h-5 w-5" strokeWidth={1.9} aria-hidden="true" />
+                    </span>
+                    <h3 className="text-sm font-extrabold uppercase leading-5 tracking-[-0.01em] sm:mt-3">{title}</h3>
+                  </div>
                 ))}
               </div>
-
-              <div className="mt-8 overflow-hidden rounded-2xl border border-white/10 bg-[#080b0d] shadow-[0_18px_54px_rgba(0,0,0,0.32)]">
-                <div className="flex flex-col gap-4 p-4 sm:p-5">
-                  <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-                    <div>
-                      <p className="label-font text-[10px] font-black uppercase tracking-[0.24em] text-[#FFD700]">
-                        Visit Our Office
-                      </p>
-                      <h3 className="headline-font mt-2 text-xl font-black uppercase tracking-[0.08em] text-white sm:text-2xl">
-                        Find RMV Fabrication
-                      </h3>
-                      <p className="mt-2 flex gap-2 text-sm leading-6 text-white/58">
-                        <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#FFD700]" />
-                        <span>{OFFICE_LOCATION.address}</span>
-                      </p>
-                    </div>
-                    <a
-                      href={OFFICE_LOCATION.directionsUrl}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="label-font inline-flex h-11 w-full cursor-pointer items-center justify-center gap-3 rounded-md border border-[#FFD700] bg-[#FFD700] px-5 text-[10px] font-black uppercase tracking-[0.18em] text-black shadow-[0_10px_26px_rgba(255,215,0,0.2)] transition-all duration-200 hover:-translate-y-0.5 hover:brightness-110 active:translate-y-0 sm:w-fit"
-                    >
-                      Open Google Maps
-                      <Navigation className="h-4 w-4" />
-                    </a>
-                  </div>
-
-                  <div className="relative min-h-[300px] bg-black/30">
-                    <iframe
-                      title={`${OFFICE_LOCATION.label} map`}
-                      src={OFFICE_LOCATION.embedUrl}
-                      className="h-[300px] w-full rounded-xl border-0 sm:h-[390px]"
-                      loading="lazy"
-                      referrerPolicy="no-referrer-when-downgrade"
-                      allowFullScreen
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         </section>
 
-        <footer id="contact" className="bg-[#050607]">
-          <div className="mx-auto grid max-w-7xl gap-8 px-4 py-10 sm:px-6 md:grid-cols-2 lg:grid-cols-4 lg:px-8">
+        <section className="relative overflow-hidden border-b border-white/10 bg-[#12161A]">
+          <img src="/landing/completed-works/cover.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-[0.08]" />
+          <div className="absolute inset-0 bg-[#090B0D]/85" />
+          <div className="relative mx-auto grid w-[min(calc(100%_-_32px),1440px)] grid-cols-2 sm:w-[min(calc(100%_-_48px),1440px)] lg:grid-cols-4">
+            {PROCESS_TRUST_ITEMS.map(({ title, description, Icon }, index) => (
+              <article
+                key={title}
+                className={cn(
+                  'min-h-[190px] px-4 py-8 text-center sm:px-6 lg:py-10',
+                  index % 2 === 1 && 'border-l border-white/10',
+                  index > 1 && 'border-t border-white/10 lg:border-t-0',
+                  index > 0 && 'lg:border-l lg:border-white/10',
+                )}
+              >
+                <Icon className="mx-auto h-7 w-7 text-[#F5B400]" strokeWidth={1.7} aria-hidden="true" />
+                <h3 className="mt-4 font-['Sora',sans-serif] text-base font-extrabold uppercase text-[#F5B400]">{title}</h3>
+                <p className="mx-auto mt-2 max-w-[15rem] text-sm leading-6 text-white/62">{description}</p>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        <section id="materials" className="scroll-mt-16 border-b border-[#E4E6E8] bg-[#F7F7F5] py-16 text-[#111417] sm:py-20 lg:scroll-mt-[72px] lg:py-28">
+          <div className="mx-auto grid w-[min(calc(100%_-_32px),1320px)] items-center gap-12 sm:w-[min(calc(100%_-_48px),1320px)] lg:grid-cols-[0.78fr_1.22fr] lg:gap-16">
             <div>
-              <p className="headline-font text-xl font-black uppercase tracking-tight text-[#FFD700]">RMV Fabrication</p>
-              <p className="label-font mt-1 text-[9px] font-black uppercase tracking-[0.32em] text-white/70">
-                Stainless Steel Fabrication
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Materials &amp; Process</p>
+              <h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
+                Built on Quality.<br />Focused on Precision.
+              </h2>
+              <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-[#5D646B]">
+                RMV works with stainless material options and a fabrication process built around accurate measurements, practical detailing, clean welding, and professional finishing.
               </p>
-              <p className="mt-4 max-w-xs text-sm leading-6 text-white/58">
-                Precision stainless and custom metal works for residential, commercial, and industrial projects.
-              </p>
+
+              <ul className="mt-7 grid gap-3">
+                {MATERIAL_CHECKLIST.map((item) => (
+                  <li key={item} className="flex items-center gap-3 text-sm font-semibold text-[#30363B] sm:text-base">
+                    <BadgeCheck className="h-5 w-5 shrink-0 text-[#F5B400]" strokeWidth={2} aria-hidden="true" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+
+              <a
+                href="/about"
+                className="mt-8 inline-flex min-h-12 items-center justify-center gap-3 rounded-md border border-[#111417] px-5 text-[0.68rem] font-extrabold uppercase tracking-[0.11em] text-[#111417] transition duration-200 hover:-translate-y-0.5 hover:bg-[#111417] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400]"
+              >
+                Learn More
+                <ArrowRight className="h-4 w-4" aria-hidden="true" />
+              </a>
             </div>
 
-            <div>
-              <h3 className="text-xs font-black uppercase tracking-[0.22em] text-white">Quick Links</h3>
-              <div className="mt-4 grid gap-2 text-sm text-white/58">
-                <a href="#services" className="hover:text-[#FFD700]">Services</a>
-                <a href="#projects" className="hover:text-[#FFD700]">Projects</a>
-                <a href="#materials" className="hover:text-[#FFD700]">Materials</a>
-                <a href="#contact" className="hover:text-[#FFD700]">Contact</a>
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+              <img
+                src="/landing/commercial-kitchens/project-1.jpg"
+                alt="Stainless steel profiles and commercial kitchen fabrication"
+                className="col-span-2 aspect-[2/1] w-full rounded-lg object-cover"
+                loading="lazy"
+              />
+              <div className="aspect-[4/3] overflow-hidden rounded-lg bg-[#12161A]">
+                <img
+                  src="/landing/custom-metalworks/project-1.png"
+                  alt="Custom stainless fabrication installation"
+                  className="h-full w-full object-cover"
+                  loading="lazy"
+                />
               </div>
+              <img
+                src="/landing/services/railings/01-commercial-stainless-guardrail.png"
+                alt="Finished stainless steel guardrail"
+                className="aspect-[4/3] h-full w-full rounded-lg object-cover"
+                loading="lazy"
+              />
+              <img
+                src="/landing/services/kitchen-counter/01-kitchen-counter-corner-open-shelf.png"
+                alt="Brushed stainless steel kitchen counter finish"
+                className="col-span-2 aspect-[2/0.72] h-full w-full rounded-lg object-cover"
+                loading="lazy"
+              />
+            </div>
+          </div>
+        </section>
+
+        <section className="border-b border-white/10 bg-[#090B0D] py-16 sm:py-20 lg:py-24">
+          <div className="mx-auto w-[min(calc(100%_-_32px),1220px)] sm:w-[min(calc(100%_-_48px),1220px)]">
+            <div className="mx-auto max-w-3xl text-center">
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Why Clients Choose RMV</p>
+              <h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em] text-white">
+                Built Around Your Project.
+              </h2>
+            </div>
+
+            <div className="mt-10 grid gap-5 md:grid-cols-3">
+              {TRUST_REASONS.map(({ title, description, Icon }) => (
+                <article key={title} className="rounded-lg border border-white/10 bg-[#191E23] p-6 shadow-[0_20px_50px_rgba(0,0,0,0.28)] sm:p-7">
+                  <span className="inline-flex h-11 w-11 items-center justify-center rounded-md border border-[#F5B400]/55 text-[#F5B400]">
+                    <Icon className="h-5 w-5" strokeWidth={1.8} aria-hidden="true" />
+                  </span>
+                  <h3 className="mt-6 font-['Sora',sans-serif] text-lg font-extrabold leading-6 text-white">{title}</h3>
+                  <p className="mt-3 text-sm leading-7 text-[#D4D7DA]/72">{description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="relative overflow-hidden bg-[#F5B400] py-10 text-[#090B0D] sm:py-12">
+          <img src="/landing/completed-works/cover.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-[0.08] mix-blend-multiply" />
+          <div className="relative mx-auto grid w-[min(calc(100%_-_32px),1320px)] items-center gap-7 sm:w-[min(calc(100%_-_48px),1320px)] lg:grid-cols-[1.1fr_1fr_auto] lg:gap-12">
+            <h2 className="font-['Sora',sans-serif] text-[clamp(2rem,4vw,4rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">
+              Ready to Start<br />Your Project?
+            </h2>
+            <p className="max-w-md font-['Inter',sans-serif] text-base font-medium leading-7 text-black/72">
+              Let&apos;s bring your ideas to life with precision fabrication and premium quality.
+            </p>
+            <button
+              type="button"
+              onClick={goToBooking}
+              className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-[#090B0D] bg-[#090B0D] px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-white transition duration-200 hover:-translate-y-0.5 hover:bg-[#191E23] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#090B0D]"
+            >
+              Request a Quote
+              <ArrowRight className="h-4 w-4" aria-hidden="true" />
+            </button>
+          </div>
+        </section>
+
+        <div className="hidden" aria-hidden="true">
+          <div className="mx-auto grid w-[min(calc(100%_-_32px),1440px)] gap-10 py-14 sm:w-[min(calc(100%_-_48px),1440px)] sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_1fr_1.35fr_0.9fr] lg:gap-8 lg:py-16">
+            <div>
+              <div className="flex items-center gap-3">
+                <img src="/RMV_circle_true_transparent_v2.png" alt="" className="h-12 w-12 object-contain" />
+                <div>
+                  <p className="font-['Sora',sans-serif] text-lg font-extrabold text-white">RMV</p>
+                  <p className="text-[0.55rem] font-bold uppercase tracking-[0.18em] text-white/55">Stainless Fabrication</p>
+                </div>
+              </div>
+              <p className="mt-5 max-w-xs text-sm leading-6 text-white/58">
+                Custom stainless and metal fabrication for residential, commercial, and industrial project requirements.
+              </p>
             </div>
 
             <div>
-              <h3 className="text-xs font-black uppercase tracking-[0.22em] text-white">Services</h3>
-              <div className="mt-4 grid gap-2 text-sm text-white/58">
-                {REAL_SERVICES.slice(0, 6).map((service) => (
+              <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-white">Quick Links</h3>
+              <nav className="mt-5 grid gap-3 text-sm text-white/58" aria-label="Footer navigation">
+                <a href="#hero" className="hover:text-[#F5B400]">Home</a>
+                <a href="#services" className="hover:text-[#F5B400]">Services</a>
+                <a href="#projects" className="hover:text-[#F5B400]">Projects</a>
+                <a href="/about" className="hover:text-[#F5B400]">About Us</a>
+                <a href="#materials" className="hover:text-[#F5B400]">Materials</a>
+                <a href="#contact" className="hover:text-[#F5B400]">Contact</a>
+              </nav>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-white">Our Services</h3>
+              <div className="mt-5 grid gap-3 text-sm text-white/58">
+                {FEATURED_SERVICES.slice(0, 6).map((service) => (
                   <button
                     key={service.type}
                     type="button"
-                    onClick={() => document.getElementById('services')?.scrollIntoView({ behavior: 'smooth' })}
-                    className="text-left hover:text-[#FFD700]"
+                    onClick={() => {
+                      setSelectedVariantIndex(0);
+                      setSelectedService(service);
+                    }}
+                    className="min-h-6 text-left hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#F5B400]"
                   >
                     {service.label}
                   </button>
@@ -2603,20 +2575,48 @@ export function LandingPage() {
             </div>
 
             <div>
-              <h3 className="text-xs font-black uppercase tracking-[0.22em] text-white">Contact Us</h3>
-              <div className="mt-4 grid gap-3 text-sm text-white/58">
-                <p>0917 123 4567</p>
-                <p>info@rmvfabrication.app</p>
-                <p>Quezon City, Metro Manila</p>
-                <p>Mon - Sat: 8:00 AM - 6:00 PM</p>
+              <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-white">Contact Us</h3>
+              <div className="mt-5 grid gap-4 text-sm leading-6 text-white/58">
+                <a href="tel:029506187" className="flex items-start gap-3 hover:text-[#F5B400]">
+                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" aria-hidden="true" />
+                  {OFFICE_LOCATION.tel} / {OFFICE_LOCATION.mobile}
+                </a>
+                <a href={`mailto:${OFFICE_LOCATION.email}`} className="flex items-start gap-3 hover:text-[#F5B400]">
+                  <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" aria-hidden="true" />
+                  {OFFICE_LOCATION.email}
+                </a>
+                <a href={OFFICE_LOCATION.directionsUrl} target="_blank" rel="noreferrer" className="flex items-start gap-3 hover:text-[#F5B400]">
+                  <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" aria-hidden="true" />
+                  {OFFICE_LOCATION.address}
+                </a>
+                <p className="flex items-start gap-3">
+                  <Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" aria-hidden="true" />
+                  {OFFICE_LOCATION.hours}
+                </p>
+              </div>
+            </div>
+
+            <div>
+              <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-white">Service Areas</h3>
+              <div className="mt-5 grid gap-3 text-sm leading-6 text-white/58">
+                <p>Quezon City</p>
+                <p>Metro Manila</p>
+                <p>Project coverage confirmed during consultation.</p>
               </div>
             </div>
           </div>
 
-          <div className="border-t border-white/10 px-4 py-5 text-center text-xs text-white/40">
-            © 2026 RMV Fabrication. All rights reserved.
+          <div className="border-t border-white/10">
+            <div className="mx-auto flex w-[min(calc(100%_-_32px),1440px)] flex-col gap-3 py-5 text-xs text-white/42 sm:w-[min(calc(100%_-_48px),1440px)] sm:flex-row sm:items-center sm:justify-between">
+              <p>© 2026 RMV Stainless Steel Fabrication. All rights reserved.</p>
+              <div className="flex gap-5">
+                <a href="/privacy" className="hover:text-[#F5B400]">Privacy Policy</a>
+                <a href="/terms" className="hover:text-[#F5B400]">Terms of Service</a>
+              </div>
+            </div>
           </div>
-        </footer>
+        </div>
+        <PublicFooter />
       </main>
 
       <Dialog

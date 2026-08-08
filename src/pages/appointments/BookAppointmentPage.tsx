@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -50,6 +50,7 @@ export function BookAppointmentPage() {
   const [searchParams] = useSearchParams();
   const rescheduleId = searchParams.get('reschedule');
   const selectedServiceTypeParam = searchParams.get('serviceType');
+  const requestedDesignParam = searchParams.get('design');
 
   const {
     register,
@@ -102,6 +103,11 @@ export function BookAppointmentPage() {
       setServiceTypeCustom('Custom fabrication');
     }
   }, [selectedServiceTypeParam, serviceTypes]);
+
+  useEffect(() => {
+    if (!requestedDesignParam || notes) return;
+    setNotes(`Interested in the ${requestedDesignParam} design shown in the service gallery.`);
+  }, [notes, requestedDesignParam]);
 
   const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(
     selectedDate,
@@ -412,7 +418,7 @@ export function BookAppointmentPage() {
                       if (day) setValue('date', format(day, 'yyyy-MM-dd'));
                     }}
                     disabled={isDateDisabled}
-                    fromMonth={new Date()}
+                    startMonth={new Date()}
                     className="rounded-xl border border-[#c8c8cd]/50 dark:border-white/10 dark:bg-white/[0.02]"
                   />
                 </div>

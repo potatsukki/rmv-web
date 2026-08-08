@@ -36,32 +36,13 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap" rel="stylesheet">
     <script>
-      (function () {
-        try {
-          var root = document.documentElement;
-          var storedResolved = localStorage.getItem('rmv_theme_resolved');
-          var storedGuest = localStorage.getItem('rmv_theme_preference:guest');
-          var preference = storedResolved || storedGuest;
-          var resolved = preference === 'dark' || preference === 'light'
-            ? preference
-            : preference === 'system'
-              ? (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
-              : null;
-
-          if (resolved) {
-            root.dataset.theme = resolved;
-            root.style.colorScheme = resolved;
-            if (resolved === 'dark') {
-              document.body.style.backgroundColor = '#090e13';
-            }
-          }
-        } catch (error) {
-          // Ignore storage or matchMedia failures and let React bootstrap theme normally.
-        }
-      })();
+      document.documentElement.dataset.theme = 'dark';
+      document.documentElement.dataset.themePreference = 'dark';
+      document.documentElement.style.colorScheme = 'dark';
+      document.documentElement.style.backgroundColor = '#090b0d';
     </script>
   </head>
-  <body>
+  <body style="background:#090b0d">
     <noscript>
       <a href="/privacy">Privacy Policy</a>
       <a href="/terms">Terms of Service</a>

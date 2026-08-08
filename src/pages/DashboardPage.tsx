@@ -1,4 +1,4 @@
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import {
   CalendarDays,
   Clock,
@@ -34,9 +34,12 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { PageError } from '@/components/shared/PageError';
 import { useDashboardSummary, useAuditLogs } from '@/hooks/useReports';
 import { useNotifications } from '@/hooks/useNotifications';
+import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role } from '@/lib/constants';
 import type { AuditLog } from '@/lib/types';
+import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
+import { StatusBadge } from '@/components/shared/StatusBadge';
 
 function formatCurrencyCompact(v: number) {
   const abs = Math.abs(v);
@@ -392,6 +395,7 @@ export function DashboardPage() {
   // Fetch activity: audit logs for admin, notifications for everyone else
   const auditQuery = useAuditLogs({ limit: 5 }, !!isAdmin);
   const notifQuery = useNotifications({ limit: '5' }, !isAdmin);
+  const activeProjectQuery = useProjects({ status: 'active', limit: '1' });
 
   // Decide which data source to use
   const activityLoading = isAdmin ? auditQuery.isLoading : notifQuery.isLoading;
@@ -417,6 +421,19 @@ export function DashboardPage() {
     if (hour < 17) return 'Good afternoon';
     return 'Good evening';
   };
+
+  if (primaryRole === Role.CUSTOMER) {
+    return (
+      <CustomerDashboard
+        firstName={user?.firstName || 'there'}
+        summary={data as Record<string, number> | undefined}
+        isLoading={isLoading}
+        notifications={notifQuery.data?.items ?? []}
+        notificationsLoading={notifQuery.isLoading}
+        activeProject={activeProjectQuery.data?.items?.[0]}
+      />
+    );
+  }
 
   return (
     <div className="space-y-6">
@@ -695,6 +712,86 @@ export function DashboardPage() {
           )}
         </CardContent>
       </Card>
+    </div>
+  );
+}
+
+function CustomerDashboard({
+  firstName,
+  summary,
+  isLoading,
+  notifications,
+  notificationsLoading,
+  activeProject,
+}: {
+  firstName: string;
+  summary?: Record<string, number>;
+  isLoading: boolean;
+  notifications: Array<{ _id: string; title: string; message: string; createdAt: string; link?: string; category: string; isRead: boolean }>;
+  notificationsLoading: boolean;
+  activeProject?: { _id: string; title: string; projectNumber?: string; serviceType?: string; status: string; updatedAt: string };
+}) {
+  const metrics = [
+    { label: 'Active projects', value: summary?.activeProjects ?? 0, detail: 'Projects currently moving forward', icon: FolderOpen, to: '/projects' },
+    { label: 'Pending visits', value: summary?.pendingAppointments ?? 0, detail: 'Appointments awaiting confirmation', icon: CalendarDays, to: '/appointments' },
+    { label: 'Pending payments', value: summary?.pendingPayments ?? 0, detail: 'Items that may need your action', icon: CreditCard, to: '/payments' },
+    { label: 'In fabrication', value: summary?.fabricationInProgress ?? 0, detail: 'Projects being built in the workshop', icon: Hammer, to: '/projects' },
+  ];
+
+  return (
+    <div className="space-y-6">
+      <WorkspacePageHeader
+        eyebrow="Customer workspace"
+        title={<><span>Good to see you, </span><em>{firstName}.</em></>}
+        description="Track your project, review important updates, and take the next step whenever you are ready."
+        image="/landing/hero/hero-stainless-railing-bg.png"
+        actions={<Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]"><CalendarPlus className="h-4 w-4" /> Request a quote <ArrowRight className="h-4 w-4" /></Link>}
+      />
+
+      <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Project overview">
+        {metrics.map((metric) => (
+          <Link key={metric.label} to={metric.to} className="workspace-panel workspace-focus group p-5 transition-transform hover:-translate-y-0.5">
+            <div className="flex items-start justify-between gap-4">
+              <span className="workspace-icon"><metric.icon className="h-5 w-5" /></span>
+              <ArrowRight className="mt-1 h-4 w-4 text-slate-500 transition-transform group-hover:translate-x-1 group-hover:text-[#f5b400]" />
+            </div>
+            <p className="mt-6 text-3xl font-bold tracking-tight text-[#f7f7f5]">{isLoading ? '—' : metric.value}</p>
+            <p className="mt-2 text-sm font-semibold text-slate-200">{metric.label}</p>
+            <p className="mt-1 text-xs leading-5 text-slate-400">{metric.detail}</p>
+          </Link>
+        ))}
+      </section>
+
+      <section className="grid gap-6 xl:grid-cols-[1.1fr_.9fr]">
+        <div className="workspace-panel overflow-hidden">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6">
+            <div><p className="workspace-eyebrow">Project overview</p><h2 className="mt-1 text-lg font-bold text-[#f7f7f5]">Your current work</h2></div>
+            <Link to="/projects" className="workspace-focus text-sm font-semibold text-[#f5b400] hover:text-[#ffd047]">View projects</Link>
+          </div>
+          {activeProject ? (
+            <div className="p-5 sm:p-6">
+              <div className="flex items-start gap-4">
+                <div className="workspace-icon shrink-0"><FolderOpen className="h-5 w-5" /></div>
+                <div className="min-w-0 flex-1"><p className="truncate text-lg font-bold text-[#f7f7f5]">{activeProject.title}</p><p className="mt-1 text-sm text-slate-400">{activeProject.projectNumber || activeProject.serviceType || 'RMV project'}</p><div className="mt-4"><StatusBadge status={activeProject.status} /></div></div>
+              </div>
+              <Link to={`/projects/${activeProject._id}`} className="workspace-focus mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#f5b400] hover:text-[#ffd047]">Open project <ArrowRight className="h-4 w-4" /></Link>
+            </div>
+          ) : (
+            <div className="p-6"><p className="text-sm font-semibold text-slate-200">No active project yet</p><p className="mt-2 max-w-md text-sm leading-6 text-slate-400">When a project starts, its current status and next steps will appear here.</p><Link to="/appointments/book" className="workspace-focus mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#f5b400] hover:text-[#ffd047]">Request a quote <ArrowRight className="h-4 w-4" /></Link></div>
+          )}
+        </div>
+        <div className="workspace-panel overflow-hidden">
+          <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6"><div><p className="workspace-eyebrow">Recent activity</p><h2 className="mt-1 text-lg font-bold text-[#f7f7f5]">Latest updates</h2></div><Link to="/notifications" className="workspace-focus text-sm font-semibold text-[#f5b400] hover:text-[#ffd047]">View all</Link></div>
+          <div className="divide-y divide-white/8">
+            {notificationsLoading ? <div className="p-6 text-sm text-slate-400">Loading updates…</div> : notifications.length ? notifications.slice(0, 4).map((notification) => <Link key={notification._id} to={notification.link || '/notifications'} className="workspace-focus block px-5 py-4 hover:bg-white/[.035] sm:px-6"><p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-400">{notification.message}</p><p className="mt-2 text-xs text-slate-500">{formatDistanceToNowStrict(new Date(notification.createdAt), { addSuffix: true })}</p></Link>) : <div className="p-6 text-sm text-slate-400">Updates about your appointments, projects, and payments will appear here.</div>}
+          </div>
+        </div>
+      </section>
+
+      <section className="workspace-panel flex flex-col gap-5 overflow-hidden px-6 py-6 md:flex-row md:items-center md:justify-between" style={{ backgroundImage: "linear-gradient(90deg, rgba(9,11,13,.96), rgba(9,11,13,.7)), url('/landing/about-legacy-welder.png')", backgroundSize: 'cover', backgroundPosition: 'right center' }}>
+        <div><p className="workspace-eyebrow">Ready when you are</p><h2 className="mt-2 text-xl font-bold text-[#f7f7f5]">Have a new fabrication project in mind?</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">Tell us what you need and the RMV team will guide you through the existing consultation and site-review process.</p></div>
+        <Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]">Request a quote <ArrowRight className="h-4 w-4" /></Link>
+      </section>
     </div>
   );
 }

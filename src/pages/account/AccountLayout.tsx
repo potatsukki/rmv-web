@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
-import { User as UserIcon, Shield, Bell, Info, Mail, Phone, LogOut, Moon, LifeBuoy } from 'lucide-react';
+import { User as UserIcon, Shield, Bell, Info, Mail, Phone, LogOut, LifeBuoy } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -16,7 +16,6 @@ import { cn } from '@/lib/utils';
 
 const tabs = [
   { label: 'Profile', path: '/account/profile', icon: UserIcon },
-  { label: 'Appearance', path: '/account/appearance', icon: Moon },
   { label: 'Security', path: '/account/security', icon: Shield },
   { label: 'Notifications', path: '/account/notifications', icon: Bell },
   { label: 'Account', path: '/account/info', icon: Info },

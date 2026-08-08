@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays } from 'date-fns';
 import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck } from 'lucide-react';
-import { Link, useLocation, useSearchParams, useNavigate } from 'react-router-dom';
+import { Link, useLocation, useSearchParams, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import { MAX_PAYMENT_AMOUNT } from '@/lib/money';
 
@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { BlockedActionPrompt } from '@/components/shared/BlockedActionPrompt';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { SignaturePad } from '@/components/shared/SignaturePad';
+import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { useSignature } from '@/hooks/useUsers';
 import { useThemeStore } from '@/stores/theme.store';
 import { useProjects } from '@/hooks/useProjects';
@@ -558,6 +559,15 @@ export function PaymentsPage() {
           reason={blockedAction.reason}
           actionLabel={blockedAction.actionLabel}
           actionPath={blockedAction.actionPath}
+        />
+      )}
+
+      {isCustomer && !selectedProjectId && (
+        <WorkspacePageHeader
+          eyebrow="Payments"
+          title={<>Track <em>payments</em> with confidence.</>}
+          description="Review project payment stages, receipts, and actions that may be needed to keep work moving."
+          image="/landing/hero/hero-stainless-railing-bg.png"
         />
       )}
 

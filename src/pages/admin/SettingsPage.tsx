@@ -342,13 +342,13 @@ export function SettingsPage() {
                           <DialogContent className="max-w-md metal-panel rounded-2xl">
                             <DialogHeader>
                               <DialogTitle>Schedule System Suspension</DialogTitle>
-                              <DialogDescription className="text-sm">
+                              <DialogDescription className="text-sm text-[#616a74] dark:text-slate-100">
                                 To protect your users, you must provide at least <span className="font-bold">3 days notice</span> before the system goes offline.
                               </DialogDescription>
                             </DialogHeader>
                             <div className="space-y-5 py-4">
                               <div className="space-y-2">
-                                <Label className="text-xs font-semibold uppercase text-gray-400">Select Date & Time</Label>
+                                <Label className="text-xs font-semibold uppercase text-gray-400 dark:text-slate-300">Select Date & Time</Label>
                                 <div className="flex gap-2">
                                   <Popover>
                                     <PopoverTrigger asChild>
@@ -363,7 +363,7 @@ export function SettingsPage() {
                                         selected={selectedDate}
                                         onSelect={setSelectedDate}
                                         disabled={(date) => isBefore(date, addDays(new Date(), 3))}
-                                        initialFocus
+                                        autoFocus
                                       />
                                     </PopoverContent>
                                   </Popover>
@@ -376,14 +376,14 @@ export function SettingsPage() {
                                 </div>
                               </div>
                               <div className="space-y-2">
-                                <Label className="text-xs font-semibold uppercase text-gray-400">Reason for downtime (optional)</Label>
+                                <Label className="text-xs font-semibold uppercase text-gray-400 dark:text-slate-300">Reason for downtime (optional)</Label>
                                 <Textarea 
                                   placeholder="e.g. Server maintanance, Database upgrade..." 
                                   value={scheduleReason}
                                   onChange={(e) => setScheduleReason(e.target.value)}
                                   className="min-h-[80px] rounded-xl bg-slate-50/50"
                                 />
-                                <p className="text-[10px] text-gray-500 italic">This will be included in the notification sent to all users.</p>
+                                <p className="text-[10px] text-gray-500 dark:text-slate-300 italic">This will be included in the notification sent to all users.</p>
                               </div>
                             </div>
                             <DialogFooter>
@@ -466,7 +466,7 @@ export function SettingsPage() {
                       <span className={`text-[11px] font-bold ${Math.abs(splitValues.map(Number).reduce((a, b) => a + (isNaN(b) ? 0 : b), 0) - 100) < 0.01 ? 'text-emerald-500' : 'text-red-500'}`}>
                         Total calculates to {splitValues.map(Number).reduce((a, b) => a + (isNaN(b) ? 0 : b), 0)}%
                       </span>
-                      <Button onClick={handleSavePaymentSettings} size="sm" disabled={updateConfig.isPending} className="h-8 rounded-lg shadow-sm">
+                      <Button onClick={handleSavePaymentSettings} size="sm" disabled={updateConfig.isPending} className="rounded-lg text-white dark:text-white h-8 shadow-sm">
                         {updateConfig.isPending ? <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin"/> : <Save className="mr-2 h-3.5 w-3.5"/> }
                         Update Policy
                       </Button>

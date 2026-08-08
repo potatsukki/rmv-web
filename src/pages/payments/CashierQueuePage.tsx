@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { format } from 'date-fns';
 import { CreditCard, CheckCircle, XCircle, AlertTriangle, QrCode, ShieldCheck } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Link } from 'react-router-dom';
+import { Link } from 'react-router';
 
 import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { resolveBlockedAction, type BlockedActionInfo } from '@/lib/blocked-actions';

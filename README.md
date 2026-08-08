@@ -208,3 +208,35 @@ Routing shows unauthorized:
 6. `src/hooks/useAppointments.ts`
 7. `src/hooks/useProjects.ts`
 8. `src/hooks/usePayments.ts`
+
+## Project Screenshot
+
+![RMV role-based dashboard](https://raw.githubusercontent.com/sean-camara/sean-camara-portfolio/main/public/assets/rmv-screenshot.png)
+
+## Project Context and Architecture
+
+This frontend is part of an academic capstone modeled on a local fabrication business workflow. It is not presented as paid client work or confirmed daily-use production software. React pages and role guards consume the `/api/v1` Express API; Axios interceptors coordinate cookies, CSRF tokens, access-token refresh, and errors. Typed hooks connect customer, staff, engineer, cashier, fabrication, and administrator views to shared backend workflows.
+
+## Testing Strategy
+
+Vitest tests cover address helpers, authentication routing, configuration safety, role/project access, engineer and report workflows, theme state, and dark-mode contrast regressions. Run `npm run test`, `npm run test:contrast`, and `npm run build`. No coverage percentage is published. Full browser workflows, assistive-technology checks, and live payment/file-provider paths need additional testing.
+
+## Deployment
+
+The production build is generated with `npm run build`. The frontend is deployed as part of the RMV Docker/Nginx environment documented in the backend operations guide. The public capstone demo is available at <https://www.rmvfabrication.app>.
+
+## Known Limitations
+
+- The capstone remains under development and is not claimed to be in daily business use.
+- Firebase configuration and the `/api/v1` base path are currently embedded in source rather than a sanitized environment template.
+- Provider-backed workflows require compatible backend sandbox or deployment configuration.
+
+## Future Improvements
+
+- Move environment-dependent public configuration behind a documented Vite environment schema.
+- Expand browser coverage across every authenticated role and workflow transition.
+- Add automated accessibility checks to the regular quality gate.
+
+## License
+
+No license file is currently included. All rights are reserved unless a license is added later.

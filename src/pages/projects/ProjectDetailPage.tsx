@@ -1,5 +1,5 @@
 import { Suspense, lazy, useState, useCallback, useMemo, useEffect, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { format } from 'date-fns';
 import {
   ArrowLeft, FileText, CreditCard, Hammer, Image, ScrollText,

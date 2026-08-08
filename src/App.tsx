@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router';
 import { Suspense, lazy, useEffect } from 'react';
 import { useAuthStore } from '@/stores/auth.store';
 import { api, fetchCsrfToken } from '@/lib/api';
@@ -64,11 +64,6 @@ const AccountLayout = lazy(() =>
 const AccountProfilePage = lazy(() =>
   import('@/pages/account/AccountProfilePage').then((module) => ({
     default: module.AccountProfilePage,
-  })),
-);
-const AccountAppearancePage = lazy(() =>
-  import('@/pages/account/AccountAppearancePage').then((module) => ({
-    default: module.AccountAppearancePage,
   })),
 );
 const AccountSecurityPage = lazy(() =>
@@ -281,7 +276,7 @@ export default function App() {
               <Route path="/account" element={<AccountLayout />}>
                 <Route index element={<Navigate to="/account/profile" replace />} />
                 <Route path="profile" element={<AccountProfilePage />} />
-                <Route path="appearance" element={<AccountAppearancePage />} />
+                <Route path="appearance" element={<Navigate to="/account/profile" replace />} />
                 <Route path="security" element={<AccountSecurityPage />} />
                 <Route path="notifications" element={<AccountNotificationsPage />} />
                 <Route path="info" element={<AccountInfoPage />} />

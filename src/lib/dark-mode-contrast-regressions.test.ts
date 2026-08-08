@@ -15,9 +15,9 @@ const expectations: FileExpectation[] = [
   {
     filePath: '../components/layout/AppLayout.tsx',
     snippets: [
-      'text-[11px] font-semibold uppercase tracking-[0.12em] text-[#78818c] dark:text-slate-300',
-      'truncate text-[#4d5560] dark:text-slate-400',
-      'text-[11px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
+      'bg-[#090b0d]/95 backdrop-blur-xl',
+      'focus:ring-[#f5b400]/30',
+      'text-[10px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]',
     ],
   },
   {
@@ -32,18 +32,18 @@ const expectations: FileExpectation[] = [
   {
     filePath: '../components/shared/CollectionToolbar.tsx',
     snippets: [
-      'text-[#15191f] dark:text-slate-50',
-      'text-xs leading-relaxed text-[#616a74] dark:text-slate-300',
-      'metal-pill text-[#59626d] dark:text-slate-200 hover:-translate-y-0.5 hover:text-[#14181d] dark:hover:text-white',
+      'rounded-xl border border-white/10 bg-[linear-gradient(180deg,#12171b_0%,#0e1215_100%)]',
+      'text-xl font-bold tracking-tight text-[#f7f7f5]',
+      'focus-visible:ring-[#f5b400]',
     ],
   },
   {
     filePath: '../pages/admin/SettingsPage.tsx',
     snippets: [
-      'className="rounded-lg text-white dark:text-white"',
-      'DialogDescription className="text-[#616a74] dark:text-slate-100"',
-      'text-xs font-mono text-gray-500 dark:text-slate-300 uppercase',
-      'text-xs text-gray-400 dark:text-slate-300',
+      'className="rounded-lg text-white dark:text-white h-8 shadow-sm"',
+      'DialogDescription className="text-sm text-[#616a74] dark:text-slate-100"',
+      'text-xs font-semibold uppercase text-gray-400 dark:text-slate-300',
+      'text-[10px] text-gray-500 dark:text-slate-300 italic',
     ],
   },
   {
@@ -57,10 +57,10 @@ const expectations: FileExpectation[] = [
   {
     filePath: '../pages/projects/ProjectDetailPage.tsx',
     snippets: [
-      "text-[var(--color-border)] dark:text-slate-300",
-      "text-[var(--text-metal-muted-color)] dark:text-slate-300",
-      'dark:border-slate-700 bg-[#f5f5f7] dark:bg-slate-800 text-left',
-      'text-sm text-[#6e6e73] dark:text-slate-400',
+      'text-xs font-semibold uppercase tracking-[0.18em] text-[var(--text-metal-muted-color)] dark:text-slate-400',
+      "isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'",
+      'border border-[#d2d2d7] dark:border-slate-700 bg-[#f5f5f7] dark:bg-slate-800',
+      'text-sm leading-relaxed text-slate-600 dark:text-slate-300',
     ],
   },
   {
@@ -75,7 +75,7 @@ const expectations: FileExpectation[] = [
   {
     filePath: '../pages/projects/tabs/FabricationTab.tsx',
     snippets: [
-      'dark:border-indigo-500/35 dark:bg-indigo-500/10',
+      'border-sky-400/50 bg-sky-500/10',
       'metal-panel-strong dark:bg-slate-950/85',
       'metal-panel dark:bg-slate-900/85',
       'bg-slate-900/50 dark:bg-slate-800',
@@ -84,17 +84,17 @@ const expectations: FileExpectation[] = [
   {
     filePath: '../pages/appointments/AppointmentDetailPage.tsx',
     snippets: [
-      'text-xs text-blue-600 dark:text-blue-300 hover:underline',
-      "text-xs text-[#86868b] dark:text-slate-400 mt-0.5",
+      'text-xs text-blue-600 hover:underline dark:text-blue-300',
+      'text-[11px] text-[#8e8e93] dark:text-slate-400',
       'text-sm text-[#6e6e73] dark:text-slate-300',
     ],
   },
   {
     filePath: '../pages/appointments/AppointmentsPage.tsx',
     snippets: [
-      'text-2xl font-bold tracking-tight text-[#171b21] dark:text-slate-100',
-      'text-[11px] font-semibold text-[#5f6872] dark:text-slate-300',
-      'text-sm font-medium text-[#171b21] dark:text-slate-100',
+      'dark:border-slate-500/80 dark:bg-slate-800/90 dark:text-slate-100',
+      'text-[11px] font-semibold uppercase tracking-wider text-[#6d7782] dark:text-slate-400',
+      'text-sm text-[#1d1d1f] dark:text-slate-100 font-medium',
       'text-[11px] text-[#68727d] dark:text-slate-400',
       'dark:group-hover:text-slate-200',
     ],
@@ -105,7 +105,7 @@ const expectations: FileExpectation[] = [
       'text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100',
       'text-[#6e6e73] dark:text-slate-400 mt-1 text-sm',
       'text-[#171b21] dark:text-slate-100',
-      'text-[11px] text-[#86868b] dark:text-slate-400',
+      'text-[11px] font-medium text-[#6e6e73] dark:text-slate-400',
       'dark:group-hover:text-sky-300',
     ],
   },

@@ -37,8 +37,8 @@ if (!config.email || !config.password) {
 
 async function ensureLoggedIn(page) {
   await page.goto(`${config.baseUrl}/login`, { waitUntil: 'domcontentloaded', timeout: 30000 });
-  await page.locator('input[placeholder="Enter your email"]').fill(config.email);
-  await page.locator('input[placeholder="Enter your password"]').fill(config.password);
+  await page.getByLabel('Email Address').fill(config.email);
+  await page.locator('input[name="password"]').fill(config.password);
   await Promise.all([
     page.waitForURL((url) => !url.pathname.endsWith('/login'), { timeout: 30000 }),
     page.getByRole('button', { name: 'Sign In' }).click(),

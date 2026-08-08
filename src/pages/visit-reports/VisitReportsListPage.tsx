@@ -1,5 +1,5 @@
 import { Fragment, useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 

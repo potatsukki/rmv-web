@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router';
 import { FolderOpen, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -23,6 +23,7 @@ import { formatPersonName } from '@/lib/address';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import type { Project } from '@/lib/types';
+import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
@@ -176,11 +177,19 @@ export function ProjectsPage() {
   return (
     <div className="space-y-6">
       <>
+      {isCustomer && (
+        <WorkspacePageHeader
+          eyebrow="Projects"
+          title={<>Follow every project <em>clearly.</em></>}
+          description="See the latest stage, service details, and next action for your RMV fabrication work."
+          image="/landing/services/gates/01-gates-double-swing-stainless-gate.png"
+        />
+      )}
 
       {/* Controls */}
       <CollectionToolbar
-        title="Find a project faster"
-        description="Search by project name or ID, then narrow the list by stage."
+        title={isCustomer ? 'Track your projects' : 'Find a project faster'}
+        description={isCustomer ? 'Review each project’s current stage, service details, and next action.' : 'Search by project name or ID, then narrow the list by stage.'}
         searchPlaceholder="Search by project name or ID"
         searchValue={search}
         onSearchChange={setSearch}

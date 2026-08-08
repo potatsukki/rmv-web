@@ -350,7 +350,7 @@ export function InternalAvailabilityDialog({
                         mode="single"
                         selected={startDate}
                         onSelect={setStartDate}
-                        initialFocus
+                        autoFocus
                         className="rounded-2xl"
                       />
                     </PopoverContent>
@@ -418,7 +418,7 @@ export function InternalAvailabilityDialog({
                         mode="single"
                         selected={endDate}
                         onSelect={setEndDate}
-                        initialFocus
+                        autoFocus
                         className="rounded-2xl"
                       />
                     </PopoverContent>

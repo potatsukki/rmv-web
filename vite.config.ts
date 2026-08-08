@@ -1,79 +1,29 @@
-import { defineConfig } from 'vite';
-import react from '@vitejs/plugin-react';
+import path from 'node:path';
+
 import tailwindcss from '@tailwindcss/vite';
-import path from 'path';
+import react from '@vitejs/plugin-react';
+import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src'),
+      '@': path.resolve(import.meta.dirname, './src'),
     },
   },
   build: {
-    rollupOptions: {
+    rolldownOptions: {
       output: {
-        manualChunks(id) {
-          if (!id.includes('node_modules')) return undefined;
-
-          if (
-            id.includes('/react/') ||
-            id.includes('\\react\\') ||
-            id.includes('react-dom') ||
-            id.includes('react-router-dom')
-          ) {
-            return 'vendor-react';
-          }
-
-          if (
-            id.includes('@tanstack/react-query') ||
-            id.includes('/axios/') ||
-            id.includes('\\axios\\') ||
-            id.includes('/zustand/') ||
-            id.includes('\\zustand\\')
-          ) {
-            return 'vendor-data';
-          }
-
-          if (
-            id.includes('/react-hook-form/') ||
-            id.includes('\\react-hook-form\\') ||
-            id.includes('@hookform/resolvers') ||
-            id.includes('/zod/') ||
-            id.includes('\\zod\\')
-          ) {
-            return 'vendor-forms';
-          }
-
-          if (id.includes('/recharts/') || id.includes('\\recharts\\')) {
-            return 'vendor-charts';
-          }
-
-          if (id.includes('framer-motion')) {
-            return 'vendor-motion';
-          }
-
-          if (
-            id.includes('/leaflet/') ||
-            id.includes('\\leaflet\\') ||
-            id.includes('react-leaflet')
-          ) {
-            return 'vendor-maps';
-          }
-
-          if (
-            id.includes('@radix-ui') ||
-            id.includes('lucide-react') ||
-            id.includes('react-hot-toast') ||
-            id.includes('class-variance-authority') ||
-            id.includes('/clsx/') ||
-            id.includes('\\clsx\\') ||
-            id.includes('tailwind-merge')
-          ) {
-            return 'vendor-ui';
-          }
-
-          return undefined;
+        codeSplitting: {
+          groups: [
+            { name: 'vendor-react', test: /node_modules[\\/](?:react|react-dom|react-router)[\\/]/ },
+            { name: 'vendor-data', test: /node_modules[\\/](?:@tanstack[\\/]react-query|axios|zustand)[\\/]/ },
+            { name: 'vendor-forms', test: /node_modules[\\/](?:react-hook-form|@hookform[\\/]resolvers|zod)[\\/]/ },
+            { name: 'vendor-charts', test: /node_modules[\\/]recharts[\\/]/ },
+            { name: 'vendor-motion', test: /node_modules[\\/]framer-motion[\\/]/ },
+            { name: 'vendor-maps', test: /node_modules[\\/](?:leaflet|react-leaflet)[\\/]/ },
+            { name: 'vendor-ui', test: /node_modules[\\/](?:@radix-ui|lucide-react|react-hot-toast|class-variance-authority|clsx|tailwind-merge)[\\/]/ },
+          ],
         },
       },
     },

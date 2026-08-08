@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { useParams, useNavigate, useLocation } from 'react-router-dom';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import { format, addDays, getDay, startOfDay } from 'date-fns';
 import {
   ArrowLeft,
@@ -1959,7 +1959,7 @@ export function VisitReportPage() {
                           if (holidayDates.has(dateStr)) return true;
                           return false;
                         }}
-                        fromMonth={addDays(new Date(), 3)}
+                        startMonth={addDays(new Date(), 3)}
                         className="rounded-xl"
                       />
                     </PopoverContent>

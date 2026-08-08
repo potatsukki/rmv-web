@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Plus, Calendar, FileText, ChevronRight, MapPin, RefreshCw } from 'lucide-react';
 import { format, formatDistanceToNow } from 'date-fns';
 
@@ -24,6 +24,7 @@ import { useThemeStore } from '@/stores/theme.store';
 import { Role, AppointmentStatus, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
 import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
+import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
@@ -388,6 +389,14 @@ export function AppointmentsPage() {
 
   return (
     <div className="space-y-5">
+      {isCustomer && (
+        <WorkspacePageHeader
+          eyebrow="Appointments"
+          title={<>Your visits, <em>organized.</em></>}
+          description="Book a consultation, review confirmations, and keep every project visit in one place."
+          image="/landing/services/railings/01-commercial-stainless-guardrail.png"
+        />
+      )}
       {canSeeVisitReports && (
         <div className="flex items-center gap-1 overflow-x-auto rounded-xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-muted)]/40 p-1">
           {[
@@ -423,8 +432,8 @@ export function AppointmentsPage() {
       <>
       {/* Filters */}
       <CollectionToolbar
-        title="Find the right appointment fast"
-        description="Search customers, then narrow the list by lifecycle stage."
+        title={isCustomer ? 'Manage your appointments' : 'Find the right appointment fast'}
+        description={isCustomer ? 'Review visit requests, confirmations, and project-related appointments in one place.' : 'Search customers, then narrow the list by lifecycle stage.'}
         searchPlaceholder={searchPlaceholder}
         searchValue={search}
         onSearchChange={setSearch}

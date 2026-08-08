@@ -1,9 +1,9 @@
-﻿FROM node:22-alpine AS builder
+FROM node:24.18.0-alpine AS builder
 
 WORKDIR /app
 
 COPY package*.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
 COPY tsconfig*.json ./
 COPY vite.config.ts ./
@@ -13,7 +13,7 @@ COPY src ./src
 
 RUN npm run build
 
-FROM nginx:1.27-alpine
+FROM nginx:1.30.4-alpine
 
 COPY nginx/default.conf /etc/nginx/conf.d/default.conf
 COPY --from=builder /app/dist /usr/share/nginx/html

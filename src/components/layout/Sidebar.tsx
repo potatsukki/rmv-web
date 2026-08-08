@@ -1,4 +1,4 @@
-import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useAuthStore } from '@/stores/auth.store';
@@ -110,19 +110,19 @@ export function Sidebar() {
   };
 
   return (
-    <aside className="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col md:flex">
-      <div className="absolute inset-0 border-r border-white/[0.06] bg-[linear-gradient(180deg,rgba(15,20,27,0.98)_0%,rgba(8,11,16,0.985)_100%)]" />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(235,240,245,0.14)_0%,rgba(255,255,255,0)_34%),linear-gradient(180deg,rgba(255,255,255,0.04)_0%,rgba(255,255,255,0)_22%)]" />
+    <aside className="fixed inset-y-0 left-0 z-50 hidden w-[280px] flex-col md:flex">
+      <div className="absolute inset-0 border-r border-white/[0.08] bg-[linear-gradient(180deg,#0d1114_0%,#090b0d_100%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_top_left,rgba(245,180,0,0.08)_0%,rgba(255,255,255,0)_30%)]" />
       <div className="absolute inset-0 shadow-[inset_-1px_0_0_rgba(255,255,255,0.03),inset_0_1px_0_rgba(255,255,255,0.04)]" />
 
       <div className="relative flex flex-col h-full">
-        <Link to="/" className="flex h-16 items-center gap-3 border-b border-white/[0.08] px-5 transition-colors hover:bg-white/[0.035]">
-          <BrandLogo className="h-9 w-9 ring-2 ring-[#d8e0e8]/28 shadow-[0_10px_24px_rgba(0,0,0,0.12)]" />
+        <Link to="/" className="flex h-20 items-center gap-3 border-b border-white/[0.08] px-6 transition-colors hover:bg-white/[0.035]">
+          <BrandLogo className="h-10 w-10 ring-1 ring-white/10" />
           <div className="flex flex-col">
             <span className="text-[13px] font-bold leading-tight tracking-tight text-[#f5f7fa]">
               RMV Stainless Steel<br/>Fabrication
             </span>
-            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#8f9aa6]">
+            <span className="text-[10px] font-semibold uppercase tracking-[0.15em] text-[#9aa3ac]">
               Management System
             </span>
           </div>
@@ -152,12 +152,12 @@ export function Sidebar() {
                         className={cn(
                           'group relative flex items-center justify-between rounded-xl px-3 py-2 text-[13px] font-medium transition-all duration-200',
                           isActive
-                            ? 'bg-[linear-gradient(180deg,rgba(247,249,251,0.17)_0%,rgba(198,206,215,0.09)_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_22px_rgba(0,0,0,0.18)]'
+                            ? 'bg-[#f5b400]/[0.11] text-[#ffd36b] shadow-[inset_0_1px_0_rgba(245,180,0,0.18)]'
                             : 'text-[#9aa4af] hover:bg-white/[0.05] hover:text-[#eef2f6]',
                         )}
                       >
                         {isActive && (
-                          <div className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[linear-gradient(180deg,#f8fbff_0%,#a9b4bf_100%)]" />
+                          <div className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-[#f5b400]" />
                         )}
 
                         <div className="flex items-center gap-3">
@@ -165,7 +165,7 @@ export function Sidebar() {
                             className={cn(
                               'h-[18px] w-[18px] transition-colors',
                               isActive
-                                ? 'text-[#f6f8fb]'
+                                ? 'text-[#f5b400]'
                                 : 'text-[#75808c] group-hover:text-[#cfd6dd]',
                             )}
                           />

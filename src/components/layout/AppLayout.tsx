@@ -1,4 +1,4 @@
-import { Outlet, useLocation, Link, useNavigate } from 'react-router-dom';
+import { Outlet, useLocation, Link, useNavigate } from 'react-router';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
@@ -668,27 +668,27 @@ export function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-[#090b0d]">
       <Sidebar />
       <MobileNav />
 
-      <main className="metal-shell transition-all duration-300 md:pl-64">
-        <header className="metal-panel sticky top-0 z-30 hidden border-b md:block">
-          <div className="flex h-16 items-center justify-between px-6 lg:px-8">
+      <main className="min-h-screen bg-[#090b0d] transition-all duration-300 md:pl-[280px]">
+        <header className="sticky top-0 z-30 hidden border-b border-white/[.08] bg-[#090b0d]/95 backdrop-blur-xl md:block">
+          <div className="flex h-[76px] items-center justify-between px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
                 aria-label="Workspace switcher"
-                className="metal-pill flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-[#6b7480] dark:text-slate-300"
+                className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-white/[.03] text-[#f5b400]"
               >
                 <LayoutDashboard className="h-4 w-4" />
               </button>
-              <div className="h-7 w-px bg-[color:var(--color-border)]/70" />
+              <div className="h-8 w-px bg-white/10" />
               <div className="flex min-w-0 flex-col justify-center">
-                <div className="mb-0.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-[#78818c] dark:text-slate-300">
+                <div className="mb-0.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                   <span>Workspace</span>
                   {breadcrumbs.length > 0 && <span className="h-1 w-1 rounded-full bg-[#b3bcc6]" />}
-                  <span className="truncate text-[#4d5560] dark:text-slate-400">{meta.title}</span>
+                  <span className="truncate text-slate-400">{meta.title}</span>
                 </div>
                 {breadcrumbs.length > 1 ? (
                   <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -706,7 +706,7 @@ export function AppLayout() {
                     ))}
                   </nav>
                 ) : (
-                  <p className="text-xs text-[#8b8b94]">{meta.description}</p>
+                  <p className="text-xs text-slate-400">{meta.description}</p>
                 )}
               </div>
             </div>
@@ -727,15 +727,15 @@ export function AppLayout() {
                     onKeyDown={onSearchKeyDown}
                     placeholder="Search anything..."
                     aria-label="Search"
-                    className="metal-input h-10 w-[240px] rounded-xl pl-10 pr-16 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-[#c2cad3] xl:w-[300px]"
+                    className="h-11 w-[240px] rounded-lg border border-white/10 bg-white/[.035] pl-10 pr-16 text-sm text-slate-100 placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-[#f5b400]/30 xl:w-[300px]"
                   />
-                  <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md border border-[#c7cfd7] bg-white/55 px-2 py-0.5 font-mono text-[10px] text-muted-foreground dark:border-slate-600 dark:bg-slate-800/90 dark:text-slate-300">
+                  <kbd className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 rounded-md border border-white/10 bg-white/[.05] px-2 py-0.5 font-mono text-[10px] text-slate-400">
                     Ctrl+K
                   </kbd>
                 </div>
 
                 {isSearchOpen && (
-                  <div className="metal-panel absolute right-0 z-40 mt-2 w-[400px] overflow-hidden rounded-[1.25rem]">
+                  <div className="workspace-panel absolute right-0 z-40 mt-2 w-[400px] overflow-hidden rounded-xl">
                     {!searchQuery.trim() ? (
                       /* Empty state: recently visited */
                       recentItems.length === 0 ? (
@@ -894,7 +894,7 @@ export function AppLayout() {
 
               <Link
                 to="/notifications"
-                className="metal-pill relative flex h-10 w-10 items-center justify-center rounded-xl text-muted-foreground transition-colors hover:text-foreground"
+                className="relative flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/[.03] text-slate-300 transition-colors hover:bg-white/[.08] hover:text-[#f5b400]"
                 aria-label="Open notifications"
               >
                 <Bell className="h-4 w-4" />
@@ -924,7 +924,7 @@ export function AppLayout() {
               {user && (
                 <Link
                   to="/account/profile"
-                  className="metal-pill flex h-10 items-center gap-2.5 rounded-xl px-3 transition-colors hover:text-[#11151a]"
+                  className="flex h-10 items-center gap-2.5 rounded-lg border border-white/10 bg-white/[.03] px-3 transition-colors hover:bg-white/[.08]"
                 >
                   <div className="flex h-7 w-7 items-center justify-center rounded-full bg-[linear-gradient(180deg,#24282f_0%,#15191f_100%)] text-[10px] font-bold text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
                     {user.firstName[0]}
@@ -942,8 +942,8 @@ export function AppLayout() {
           </div>
         </header>
 
-        <div className="animate-page px-3 pt-[4.5rem] pb-[calc(6.75rem+env(safe-area-inset-bottom))] sm:px-4 md:px-8 md:pt-6 md:pb-8">
-          <Outlet />
+        <div className="animate-page px-3 pt-[4.5rem] pb-[calc(6.75rem+env(safe-area-inset-bottom))] sm:px-4 md:px-8 md:pt-7 md:pb-10">
+          <div className="mx-auto w-full max-w-[1500px]"><Outlet /></div>
         </div>
 
         <Dialog open={isProfileModalOpen} onOpenChange={setIsProfileModalOpen}>

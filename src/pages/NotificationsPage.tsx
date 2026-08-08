@@ -16,7 +16,7 @@ import {
   Filter,
 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -32,6 +32,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { Notification } from '@/lib/types';
 import { extractItems } from '@/lib/utils';
+import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
 const CATEGORY_TABS = [
   { label: 'All', value: 'all', icon: LayoutGrid },
@@ -95,19 +96,26 @@ export function NotificationsPage() {
   if (isError) return <PageError onRetry={refetch} />;
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
-      <div className="overflow-hidden rounded-[2rem] border border-[#cfd6df]/80 bg-[radial-gradient(circle_at_16%_0%,rgba(96,165,250,0.18),transparent_34%),linear-gradient(180deg,rgba(255,255,255,0.98)_0%,rgba(244,247,251,0.98)_48%,rgba(229,235,243,0.96)_100%)] p-6 shadow-[0_24px_60px_rgba(71,85,105,0.14)] dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(7,10,15,0.98)_0%,rgba(17,23,33,0.98)_45%,rgba(41,51,68,0.96)_100%)] dark:shadow-[0_24px_60px_rgba(0,0,0,0.28)] sm:p-7">
+    <div className="space-y-6">
+      <WorkspacePageHeader
+        eyebrow="Notifications"
+        title={<>Stay <em>updated</em> on what matters.</>}
+        description="View appointment, project, payment, and fabrication updates in one place."
+        image="/landing/about-legacy-welder.png"
+        actions={(unreadCount > 0 || notifications.length > 0) ? <Button variant="outline" onClick={() => markAllAsRead.mutate()} disabled={markAllAsRead.isPending || unreadCount === 0} className="min-h-11 rounded-lg border-white/20 bg-black/30 text-white hover:bg-white/10 hover:text-white"><CheckCheck className="mr-2 h-4 w-4" />Mark all read</Button> : undefined}
+      />
+      <div className="workspace-panel p-5 sm:p-6">
         <div className="flex flex-col gap-5">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-start gap-4">
-              <div className="silver-sheen flex h-14 w-14 shrink-0 items-center justify-center rounded-full text-[#2b3138] shadow-[inset_0_1px_0_rgba(255,255,255,0.72),0_10px_24px_rgba(0,0,0,0.18)]">
+              <div className="workspace-icon h-12 w-12 shrink-0">
                 <Filter className="h-6 w-6" />
               </div>
               <div className="space-y-2">
-                <h1 className="text-[26px] font-semibold tracking-tight text-[#171b21] dark:text-[#f4f7fb] sm:text-[28px]">
+                <h2 className="text-xl font-bold tracking-tight text-[#f7f7f5] sm:text-2xl">
                   Find the right update fast
-                </h1>
-                <p className="max-w-xl text-sm leading-6 text-[#53606d] dark:text-[#b8c1cc] sm:text-[14px]">
+                </h2>
+                <p className="max-w-xl text-sm leading-6 text-slate-400 sm:text-[14px]">
                   Search message copy, then narrow the stream by notification category.
                 </p>
               </div>
@@ -139,12 +147,12 @@ export function NotificationsPage() {
           ) : null}
 
           <div className="relative">
-            <Search className="pointer-events-none absolute left-5 top-1/2 h-5 w-5 -translate-y-1/2 text-[#586173]" />
+            <Search className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-slate-500" />
             <input
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search notifications"
-              className="h-14 w-full rounded-2xl border border-[#cbd5e1] bg-white pl-14 pr-5 text-[15px] font-medium text-[#1b2230] outline-none transition-shadow placeholder:text-[#7b8796] focus:border-blue-300 focus:shadow-[0_0_0_3px_rgba(132,168,255,0.16)] dark:border-slate-700 dark:bg-slate-100 dark:text-slate-900 dark:placeholder:text-slate-500"
+              className="h-12 w-full rounded-lg border border-white/12 bg-black/20 pl-12 pr-4 text-sm font-medium text-slate-100 outline-none placeholder:text-slate-500 focus:border-[#f5b400]/70 focus:ring-2 focus:ring-[#f5b400]/15"
             />
           </div>
 
@@ -157,10 +165,10 @@ export function NotificationsPage() {
                   key={tab.value}
                   type="button"
                   onClick={() => setActiveFilter(tab.value)}
-                  className={`inline-flex h-14 cursor-pointer items-center gap-3 rounded-2xl border px-4 text-sm font-medium transition-all ${
+                  className={`inline-flex h-11 cursor-pointer items-center gap-3 rounded-lg border px-4 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#f5b400] ${
                     active
-                      ? 'border-[#dbe8ff] bg-[#f4f7ff] text-[#17315d] shadow-[inset_0_-2px_0_rgba(84,128,219,0.35)] dark:border-slate-500 dark:bg-slate-100 dark:text-slate-900'
-                      : 'border-[#cfd6df] bg-white/60 text-[#4c5968] hover:border-blue-300 hover:bg-white hover:text-[#172033] dark:border-white/10 dark:bg-white/5 dark:text-[#d8e0ea] dark:hover:border-white/20 dark:hover:bg-white/10 dark:hover:text-white'
+                      ? 'border-[#f5b400]/75 bg-[#f5b400]/10 text-[#ffd36b]'
+                      : 'border-white/10 bg-white/[.035] text-slate-300 hover:border-white/20 hover:bg-white/[.07] hover:text-white'
                   }`}
                 >
                   <Icon className="h-4 w-4" />

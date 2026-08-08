@@ -6,22 +6,13 @@ type StorageMap = Record<string, string>;
 
 function createLocalStorageMock(seed: StorageMap = {}) {
   let store = { ...seed };
-
   return {
-    clear: () => {
-      store = {};
-    },
+    clear: () => { store = {}; },
     getItem: (key: string) => store[key] ?? null,
     key: (index: number) => Object.keys(store)[index] ?? null,
-    removeItem: (key: string) => {
-      delete store[key];
-    },
-    setItem: (key: string, value: string) => {
-      store[key] = String(value);
-    },
-    get length() {
-      return Object.keys(store).length;
-    },
+    removeItem: (key: string) => { delete store[key]; },
+    setItem: (key: string, value: string) => { store[key] = String(value); },
+    get length() { return Object.keys(store).length; },
   };
 }
 
@@ -33,64 +24,40 @@ const documentElement = {
     if (name === 'data-theme-preference') delete documentElement.dataset.themePreference;
   },
 };
-
 const localStorageMock = createLocalStorageMock();
 
-Object.defineProperty(globalThis, 'window', {
-  value: {
-    localStorage: localStorageMock,
-    matchMedia: () => ({
-      matches: false,
-      addEventListener: () => {},
-    }),
-  },
-  configurable: true,
-});
+Object.defineProperty(globalThis, 'window', { value: { localStorage: localStorageMock }, configurable: true });
+Object.defineProperty(globalThis, 'document', { value: { documentElement }, configurable: true });
 
-Object.defineProperty(globalThis, 'document', {
-  value: {
-    documentElement,
-  },
-  configurable: true,
-});
-
-describe('theme store scoping', () => {
+describe('workspace theme foundation', () => {
   beforeEach(() => {
     window.localStorage.clear();
     document.documentElement.removeAttribute('data-theme');
     document.documentElement.removeAttribute('data-theme-preference');
     document.documentElement.style.colorScheme = '';
-    useThemeStore.setState({
-      storageScope: 'guest',
-      themePreference: 'light',
-      resolvedTheme: 'light',
-    });
+    useThemeStore.setState({ storageScope: 'workspace', themePreference: 'dark', resolvedTheme: 'dark' });
   });
 
-  it('keeps theme preferences isolated per account scope', () => {
+  it('locks the workspace to dark and clears obsolete per-account preferences', () => {
+    window.localStorage.setItem('rmv_theme_preference:customer-1', 'light');
+    window.localStorage.setItem('rmv_theme_resolved', 'light');
     bootstrapThemePreference();
 
-    useThemeStore.getState().syncThemePreference('dark', 'customer-1');
-    expect(window.localStorage.getItem('rmv_theme_preference:customer-1')).toBe('dark');
+    useThemeStore.getState().syncThemePreference('light', 'customer-1');
+    expect(window.localStorage.getItem('rmv_theme_preference:customer-1')).toBeNull();
+    expect(window.localStorage.getItem('rmv_theme_resolved')).toBeNull();
     expect(document.documentElement.dataset.theme).toBe('dark');
-
-    useThemeStore.getState().syncThemePreference('light', 'agent-1');
-    expect(window.localStorage.getItem('rmv_theme_preference:agent-1')).toBe('light');
-    expect(window.localStorage.getItem('rmv_theme_preference:customer-1')).toBe('dark');
-    expect(document.documentElement.dataset.theme).toBe('light');
-
-    useThemeStore.getState().syncThemePreference(undefined, 'customer-1');
     expect(useThemeStore.getState().themePreference).toBe('dark');
-    expect(document.documentElement.dataset.theme).toBe('dark');
+    expect(useThemeStore.getState().resolvedTheme).toBe('dark');
   });
 
-  it('restores guest theme scope after logout-like sync', () => {
+  it('ignores legacy light or system preferences during session changes', () => {
     window.localStorage.setItem('rmv_theme_preference:guest', 'system');
-
-    useThemeStore.getState().syncThemePreference('dark', 'customer-1');
+    useThemeStore.getState().syncThemePreference('light', 'customer-1');
     useThemeStore.getState().syncThemePreference(undefined, 'guest');
 
     expect(useThemeStore.getState().storageScope).toBe('guest');
-    expect(useThemeStore.getState().themePreference).toBe('system');
+    expect(useThemeStore.getState().themePreference).toBe('dark');
+    expect(document.documentElement.style.colorScheme).toBe('dark');
   });
 });

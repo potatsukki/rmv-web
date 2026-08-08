@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { ElementType } from 'react';
-import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Link, Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router';
 import {
   ArrowDown,
   ArrowUp,
