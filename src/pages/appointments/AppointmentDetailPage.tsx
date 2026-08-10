@@ -1349,26 +1349,10 @@ export function AppointmentDetailPage() {
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">
-              {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED ? 'Assign Sales Staff & Accept Reschedule' : 'Assign Sales Staff & Confirm'}
+              Assign Sales Staff & Confirm
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
-            {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED && (
-              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
-                <p className="font-semibold">Customer requested a new schedule</p>
-                <p className="mt-1">
-                  Requested date: <span className="font-medium">{appt.requestedRescheduleDate ? format(new Date(`${appt.requestedRescheduleDate}T00:00:00`), 'MMMM d, yyyy') : format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}</span>
-                </p>
-                <p>
-                  Requested time: <span className="font-medium">{formatSlotTime(appt.requestedRescheduleSlotCode || appt.slotCode)}</span>
-                </p>
-                {appt.rescheduleReason && (
-                  <p className="mt-1">
-                    Reason: <span className="font-medium">{appt.rescheduleReason}</span>
-                  </p>
-                )}
-              </div>
-            )}
             {salesStaffList.length === 0 ? (
               <div className="flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700 dark:bg-amber-500/5 dark:border-amber-500/10 dark:text-amber-400">
                 <Users className="h-4 w-4 shrink-0" />
@@ -1458,21 +1442,8 @@ export function AppointmentDetailPage() {
               }
               className="h-10 w-full rounded-xl [background-image:none] bg-emerald-600 text-sm text-white hover:bg-emerald-700 disabled:opacity-50 dark:border dark:border-emerald-700/40 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667] dark:hover:border-emerald-500/40 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none"
             >
-              {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED
-                ? (completeRescheduleMutation.isPending ? 'Accepting...' : 'Accept Reschedule & Assign')
-                : (confirmMutation.isPending ? 'Confirming...' : 'Confirm & Assign')}
+              {confirmMutation.isPending ? 'Confirming...' : 'Confirm & Assign'}
             </Button>
-            {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED && (
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleRejectReschedule}
-                disabled={rejectRescheduleMutation.isPending}
-                className="h-10 w-full rounded-xl border-[#d0d5dd] bg-white text-sm text-[#344054] hover:bg-[#f9fafb] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-200 dark:hover:bg-white/[0.06]"
-              >
-                {rejectRescheduleMutation.isPending ? 'Rejecting...' : 'Reject Reschedule'}
-              </Button>
-            )}
           </CardContent>
         </Card>
       )}
