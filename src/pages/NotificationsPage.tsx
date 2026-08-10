@@ -8,6 +8,7 @@ import {
   Search,
   LayoutGrid,
   CalendarDays,
+  CalendarClock,
   FolderOpen,
   CreditCard,
   FileText,
@@ -37,12 +38,18 @@ import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader'
 const CATEGORY_TABS = [
   { label: 'All', value: 'all', icon: LayoutGrid },
   { label: 'Appointments', value: 'appointment', icon: CalendarDays },
+  { label: 'Reschedule', value: 'reschedule', icon: CalendarClock },
   { label: 'Projects', value: 'project', icon: FolderOpen },
   { label: 'Payments', value: 'payment', icon: CreditCard },
   { label: 'Blueprints', value: 'blueprint', icon: FileText },
   { label: 'Fabrication', value: 'fabrication', icon: Wrench },
   { label: 'System', value: 'system', icon: Settings },
 ] as const;
+
+function isRescheduleNotification(notification: Notification): boolean {
+  const haystack = `${notification.title} ${notification.message}`.toLowerCase();
+  return notification.category === 'appointment' && haystack.includes('reschedule');
+}
 
 export function NotificationsPage() {
   const navigate = useNavigate();
@@ -61,7 +68,9 @@ export function NotificationsPage() {
 
       return notifications.filter((notification) => {
         const matchesCategory =
-          activeFilter === 'all' || notification.category === activeFilter;
+          activeFilter === 'all'
+          || (activeFilter === 'reschedule' && isRescheduleNotification(notification))
+          || notification.category === activeFilter;
 
         const matchesSearch =
           normalizedQuery.length === 0 ||
