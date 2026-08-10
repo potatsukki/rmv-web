@@ -534,9 +534,13 @@ export function VisitReportPage() {
     && sharedRecommendedOcularDate
     && sharedRecommendedOcularSlot,
   );
+  // A draft may already contain the customer address even when it no longer
+  // appears in the customer's current saved-address list. Keep using that
+  // valid snapshot so the ocular action is not incorrectly disabled.
   const selectedOcularAddress = customerSavedAddresses.find((address) => addressSelectionKey(address) === selectedOcularAddressId)
     || customerSavedAddresses.find((address) => address.isDefault)
-    || customerSavedAddresses[0];
+    || customerSavedAddresses[0]
+    || report?.recommendedOcularAddress;
   const hasSelectableOcularAddress = Boolean(selectedOcularAddress);
   const reportMatchesRoute = Boolean(report && rawId(report._id) === id);
 
@@ -1872,7 +1876,7 @@ export function VisitReportPage() {
               : 'This will create the internal draft project from the consultation details. You will be redirected to upload the signed contract before engineering can claim or progress the job.'
             : `Choose whether this consultation needs an ocular visit for ${appointmentItemsText}.`
         }
-        confirmLabel={effectiveVisitType === 'consultation' && !isProjectCreationMode ? (consultationOutcome === 'schedule_ocular' ? 'Schedule Ocular Visit' : 'Proceed Without Ocular') : 'Create Project'}
+        confirmLabel={effectiveVisitType === 'consultation' && !isProjectCreationMode ? (consultationOutcome === 'schedule_ocular' ? 'Proceed With Ocular' : 'Proceed Without Ocular') : 'Create Project'}
         confirmClassName="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
         isLoading={submitMutation.isPending || updateMutation.isPending}
         confirmDisabled={
