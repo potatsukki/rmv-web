@@ -1,4 +1,4 @@
-import type { Role, StaffAvailabilityStatus } from './constants';
+import type { Role, StaffAvailabilityStatus, AppointmentStatus } from './constants';
 
 // ── Auth ──
 export interface User {
@@ -215,6 +215,7 @@ export interface Appointment {
   paymongoCheckoutSessionId?: string;
   paymongoCheckoutUrl?: string;
   rescheduleReason?: string;
+  previousStatusBeforeReschedule?: AppointmentStatus;
   rescheduleCount: number;
   maxReschedules: number;
   requestedRescheduleDate?: string;
