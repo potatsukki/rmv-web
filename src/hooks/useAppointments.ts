@@ -285,6 +285,48 @@ export function useRequestReschedule() {
   });
 }
 
+export function useCompleteReschedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      ...body
+    }: {
+      id: string;
+      date: string;
+      slotCode: string;
+      salesStaffId?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/reschedule-complete`,
+        body,
+      );
+      return data.data;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['visit-reports'] });
+    },
+  });
+}
+
+export function useRejectReschedule() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason?: string }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/reschedule-reject`,
+        { reason },
+      );
+      return data.data;
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['visit-reports'] });
+    },
+  });
+}
+
 export function useRecordOcularFee() {
   const qc = useQueryClient();
   return useMutation({

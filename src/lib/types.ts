@@ -216,6 +216,8 @@ export interface Appointment {
   paymongoCheckoutUrl?: string;
   rescheduleCount: number;
   maxReschedules: number;
+  requestedRescheduleDate?: string;
+  requestedRescheduleSlotCode?: string;
   projectNumber?: string;
   cancelReason?: string;
   internalNotes?: string;

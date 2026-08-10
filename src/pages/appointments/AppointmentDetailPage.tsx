@@ -21,6 +21,8 @@ import {
   useAppointment,
   useConfirmAppointment,
   useCancelAppointment,
+  useCompleteReschedule,
+  useRejectReschedule,
   useUpdateVisitStatus,
   useUpdateConsultationAttendance,
   useAgentFinalizeOcular,
@@ -53,6 +55,8 @@ export function AppointmentDetailPage() {
   const savedProfileFormattedAddress = user?.addressData?.formattedAddress || '';
 
   const confirmMutation = useConfirmAppointment();
+  const completeRescheduleMutation = useCompleteReschedule();
+  const rejectRescheduleMutation = useRejectReschedule();
   const cancelMutation = useCancelAppointment();
   const visitStatusMutation = useUpdateVisitStatus();
   const attendanceMutation = useUpdateConsultationAttendance();
@@ -146,10 +150,17 @@ export function AppointmentDetailPage() {
 
   // Fetch sales staff list for consultation assignment
   useEffect(() => {
-    if (canConfirmAppointment && appt?.date && appt?.slotCode) {
+    const scheduleDate = appt?.status === AppointmentStatus.RESCHEDULE_REQUESTED
+      ? (appt.requestedRescheduleDate || appt.date)
+      : appt?.date;
+    const scheduleSlotCode = appt?.status === AppointmentStatus.RESCHEDULE_REQUESTED
+      ? (appt.requestedRescheduleSlotCode || appt.slotCode)
+      : appt?.slotCode;
+
+    if (canConfirmAppointment && scheduleDate && scheduleSlotCode) {
       const params = new URLSearchParams({
-        date: appt.date,
-        slotCode: appt.slotCode,
+        date: scheduleDate,
+        slotCode: scheduleSlotCode,
         appointmentId: id!,
       });
       
@@ -165,7 +176,7 @@ export function AppointmentDetailPage() {
         .then(res => setSalesStaffList(res.data.data))
         .catch(() => {});
     }
-  }, [canConfirmAppointment, appt?.date, appt?.slotCode, id]);
+  }, [canConfirmAppointment, appt?.date, appt?.slotCode, appt?.requestedRescheduleDate, appt?.requestedRescheduleSlotCode, appt?.status, id]);
 
   useEffect(() => {
     if (
@@ -229,15 +240,39 @@ export function AppointmentDetailPage() {
       return;
     }
     try {
-      await confirmMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
+      if (appt.status === AppointmentStatus.RESCHEDULE_REQUESTED) {
+        await completeRescheduleMutation.mutateAsync({
+          id: id!,
+          date: appt.requestedRescheduleDate || appt.date,
+          slotCode: appt.requestedRescheduleSlotCode || appt.slotCode,
+          salesStaffId: selectedSalesStaff,
+        });
+      } else {
+        await confirmMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
+      }
       toast.success(
-        isOcularAppointment
-          ? 'Appointment confirmed! The assigned sales staff has been notified and can proceed with the scheduled visit flow.'
-          : 'Consultation confirmed! The assigned sales staff has been notified and can prepare for the office consultation.',
+        appt.status === AppointmentStatus.RESCHEDULE_REQUESTED
+          ? 'Reschedule accepted. The appointment has been updated and the assigned sales staff has been notified.'
+          : isOcularAppointment
+            ? 'Appointment confirmed! The assigned sales staff has been notified and can proceed with the scheduled visit flow.'
+            : 'Consultation confirmed! The assigned sales staff has been notified and can prepare for the office consultation.',
         { duration: 5000 },
       );
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to confirm'));
+    }
+  };
+
+  const handleRejectReschedule = async () => {
+    if (!window.confirm('Reject this reschedule request and keep the current appointment schedule?')) {
+      return;
+    }
+
+    try {
+      await rejectRescheduleMutation.mutateAsync({ id: id! });
+      toast.success('Reschedule request rejected');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to reject reschedule'));
     }
   };
 
@@ -1275,12 +1310,30 @@ export function AppointmentDetailPage() {
       )}
 
       {/* Agent: Assign Sales Staff & Confirm */}
-      {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && appt.type !== 'ocular' && (
+      {canConfirmAppointment && [AppointmentStatus.REQUESTED, AppointmentStatus.RESCHEDULE_REQUESTED].includes(appt.status as AppointmentStatus) && (
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] lg:col-span-2">
           <CardHeader>
-            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Assign Sales Staff & Confirm</CardTitle>
+            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">
+              {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED ? 'Assign Sales Staff & Accept Reschedule' : 'Assign Sales Staff & Confirm'}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
+            {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED && (
+              <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
+                <p className="font-semibold">Customer requested a new schedule</p>
+                <p className="mt-1">
+                  Requested date: <span className="font-medium">{appt.requestedRescheduleDate ? format(new Date(`${appt.requestedRescheduleDate}T00:00:00`), 'MMMM d, yyyy') : format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}</span>
+                </p>
+                <p>
+                  Requested time: <span className="font-medium">{formatSlotTime(appt.requestedRescheduleSlotCode || appt.slotCode)}</span>
+                </p>
+                {appt.rescheduleReason && (
+                  <p className="mt-1">
+                    Reason: <span className="font-medium">{appt.rescheduleReason}</span>
+                  </p>
+                )}
+              </div>
+            )}
             {salesStaffList.length === 0 ? (
               <div className="flex items-center gap-2.5 rounded-lg bg-amber-50 border border-amber-100 px-4 py-3 text-sm text-amber-700 dark:bg-amber-500/5 dark:border-amber-500/10 dark:text-amber-400">
                 <Users className="h-4 w-4 shrink-0" />
@@ -1363,14 +1416,28 @@ export function AppointmentDetailPage() {
             <Button
               onClick={handleConfirm}
               disabled={
-                confirmMutation.isPending || 
+                confirmMutation.isPending ||
+                completeRescheduleMutation.isPending ||
                 !selectedSalesStaff || 
                 salesStaffList.find(s => s._id === selectedSalesStaff)?.assignmentEligible === false
               }
               className="h-10 w-full rounded-xl [background-image:none] bg-emerald-600 text-sm text-white hover:bg-emerald-700 disabled:opacity-50 dark:border dark:border-emerald-700/40 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667] dark:hover:border-emerald-500/40 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none"
             >
-              {confirmMutation.isPending ? 'Confirming...' : 'Confirm & Assign'}
+              {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED
+                ? (completeRescheduleMutation.isPending ? 'Accepting...' : 'Accept Reschedule & Assign')
+                : (confirmMutation.isPending ? 'Confirming...' : 'Confirm & Assign')}
             </Button>
+            {appt.status === AppointmentStatus.RESCHEDULE_REQUESTED && (
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRejectReschedule}
+                disabled={rejectRescheduleMutation.isPending}
+                className="h-10 w-full rounded-xl border-[#d0d5dd] bg-white text-sm text-[#344054] hover:bg-[#f9fafb] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-200 dark:hover:bg-white/[0.06]"
+              >
+                {rejectRescheduleMutation.isPending ? 'Rejecting...' : 'Reject Reschedule'}
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
