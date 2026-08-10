@@ -214,6 +214,7 @@ export interface Appointment {
   ocularFeeDeclineReason?: string;
   paymongoCheckoutSessionId?: string;
   paymongoCheckoutUrl?: string;
+  rescheduleReason?: string;
   rescheduleCount: number;
   maxReschedules: number;
   requestedRescheduleDate?: string;
