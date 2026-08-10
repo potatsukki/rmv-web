@@ -232,7 +232,8 @@ export function AppointmentDetailPage() {
 
   const handleConfirm = async () => {
     const staff = salesStaffList.find(s => s._id === selectedSalesStaff);
-    if (!selectedSalesStaff || staff?.assignmentEligible === false) {
+    const needsStaffAssignment = appt.status !== AppointmentStatus.RESCHEDULE_REQUESTED;
+    if ((needsStaffAssignment && !selectedSalesStaff) || staff?.assignmentEligible === false) {
       toast.error(staff?.assignmentEligible === false 
         ? `Staff ineligible: ${staff.assignmentBlockedReason}` 
         : 'Please select a sales staff member to assign'
@@ -245,7 +246,7 @@ export function AppointmentDetailPage() {
           id: id!,
           date: appt.requestedRescheduleDate || appt.date,
           slotCode: appt.requestedRescheduleSlotCode || appt.slotCode,
-          salesStaffId: selectedSalesStaff,
+          salesStaffId: selectedSalesStaff || undefined,
         });
       } else {
         await confirmMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
@@ -491,6 +492,40 @@ export function AppointmentDetailPage() {
                     : 'Your appointment request has been received. An agent will review and confirm it shortly.'
                   : 'Review this appointment request and assign a sales staff member to confirm it.'}
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {canConfirmAppointment && appt.status === AppointmentStatus.RESCHEDULE_REQUESTED && (
+        <Card className="rounded-xl border border-amber-300 bg-amber-50 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10">
+          <CardContent className="space-y-4 p-4">
+            <div>
+              <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Customer reschedule request</p>
+              <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">
+                Requested schedule: <span className="font-semibold">{format(new Date(`${appt.requestedRescheduleDate || appt.date}T00:00:00`), 'EEEE, MMMM d, yyyy')} at {formatSlotTime(appt.requestedRescheduleSlotCode || appt.slotCode)}</span>
+              </p>
+              {appt.rescheduleReason && (
+                <p className="mt-1 text-sm text-amber-900 dark:text-amber-200">Reason: {appt.rescheduleReason}</p>
+              )}
+              <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">Accept updates the appointment to this date and time. Reject keeps the current date and time unchanged.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button
+                type="button"
+                onClick={handleConfirm}
+                disabled={completeRescheduleMutation.isPending || salesStaffList.find((s) => s._id === selectedSalesStaff)?.assignmentEligible === false}
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                {completeRescheduleMutation.isPending ? 'Accepting...' : 'Accept Reschedule'}
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={handleRejectReschedule}
+                disabled={rejectRescheduleMutation.isPending}
+              >
+                {rejectRescheduleMutation.isPending ? 'Rejecting...' : 'Reject Reschedule'}
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1310,7 +1345,7 @@ export function AppointmentDetailPage() {
       )}
 
       {/* Agent: Assign Sales Staff & Confirm */}
-      {canConfirmAppointment && [AppointmentStatus.REQUESTED, AppointmentStatus.RESCHEDULE_REQUESTED].includes(appt.status as AppointmentStatus) && (
+      {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && (
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">
