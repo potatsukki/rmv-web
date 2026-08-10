@@ -42,6 +42,12 @@ const LazyLocationView = lazy(() =>
   import('@/components/maps/LocationView').then((module) => ({ default: module.LocationView })),
 );
 
+function hasRole(roles: readonly string[] | undefined, expectedRole: Role) {
+  return roles?.some((role) => (
+    String(role).trim().toLowerCase().replace(/[\s-]+/g, '_') === expectedRole
+  )) ?? false;
+}
+
 export function AppointmentDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
@@ -73,13 +79,13 @@ export function AppointmentDetailPage() {
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
 
-  const isCustomer = user?.roles.includes(Role.CUSTOMER);
-  const isAgent = user?.roles.includes(Role.APPOINTMENT_AGENT);
-  const isSalesStaff = user?.roles.includes(Role.SALES_STAFF);
-  const isAdmin = user?.roles.includes(Role.ADMIN);
+  const isCustomer = hasRole(user?.roles, Role.CUSTOMER);
+  const isAgent = hasRole(user?.roles, Role.APPOINTMENT_AGENT);
+  const isSalesStaff = hasRole(user?.roles, Role.SALES_STAFF);
+  const isAdmin = hasRole(user?.roles, Role.ADMIN);
 
   // Fetch visit reports — only for roles that have access (not customers)
-  const canSeeVisitReports = isSalesStaff || isAdmin || user?.roles.includes(Role.ENGINEER) || isAgent;
+  const canSeeVisitReports = isSalesStaff || isAdmin || hasRole(user?.roles, Role.ENGINEER) || isAgent;
   const { data: visitReports } = useVisitReportsByAppointment(canSeeVisitReports ? id! : '');
 
   // Sales staff assignment state (for agents/admins)
@@ -101,9 +107,11 @@ export function AppointmentDetailPage() {
 
   const canConfirmAppointment = !!(isAgent || isAdmin);
   const canFinalizeOcular = !!isSalesStaff;
-  const canCompleteAppointment = !!user?.roles.includes(Role.SALES_STAFF);
-  const isStaff = user?.roles.some((r) =>
-    [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(r),
+  const canCompleteAppointment = isSalesStaff;
+  const isStaff = user?.roles.some((role) =>
+    [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(
+      String(role).trim().toLowerCase().replace(/[\s-]+/g, '_') as Role,
+    ),
   );
   // Philippines bounding box (rough)
   const PH_BOUNDS = { latMin: 4.5, latMax: 21.5, lngMin: 116.0, lngMax: 127.0 };
