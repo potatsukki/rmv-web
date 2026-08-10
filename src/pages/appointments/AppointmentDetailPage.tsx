@@ -569,36 +569,6 @@ export function AppointmentDetailPage() {
           </CardContent>
         </Card>
       )}
-      {canConfirmAppointment && appt.status === AppointmentStatus.CONFIRMED && (
-        <Card className="rounded-xl border border-blue-200 bg-blue-50/70 shadow-sm dark:border-blue-500/25 dark:bg-blue-500/10">
-          <CardContent className="space-y-3 p-4">
-            <div>
-              <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">Assign sales staff</p>
-              <p className="mt-1 text-xs text-blue-800 dark:text-blue-200">The rescheduled date and time are confirmed. Select an available sales staff member for this appointment.</p>
-            </div>
-            <select
-              value={selectedSalesStaff}
-              onChange={(event) => setSelectedSalesStaff(event.target.value)}
-              className="h-10 w-full rounded-lg border border-blue-200 bg-white px-3 text-sm text-slate-900 dark:border-blue-500/30 dark:bg-slate-900 dark:text-slate-100"
-            >
-              <option value="">Select a sales staff member</option>
-              {salesStaffList.map((staff) => (
-                <option key={staff._id} value={staff._id} disabled={staff.assignmentEligible === false}>
-                  {staff.firstName} {staff.lastName}{staff.assignmentEligible === false ? ' (Unavailable)' : ''}
-                </option>
-              ))}
-            </select>
-            <Button
-              type="button"
-              onClick={handleAssignSalesStaff}
-              disabled={reassignSalesMutation.isPending || !selectedSalesStaff || salesStaffList.find((staff) => staff._id === selectedSalesStaff)?.assignmentEligible === false}
-              className="bg-blue-600 text-white hover:bg-blue-700"
-            >
-              {reassignSalesMutation.isPending ? 'Assigning...' : 'Assign Sales Staff'}
-            </Button>
-          </CardContent>
-        </Card>
-      )}
       {canCustomerSubmitOcularLocation && ![AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(appt.status as AppointmentStatus) && (
         <Card className="rounded-xl border-blue-200 bg-blue-50/50 dark:border-blue-900/60 dark:bg-blue-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
@@ -1391,11 +1361,11 @@ export function AppointmentDetailPage() {
       )}
 
       {/* Agent: Assign Sales Staff & Confirm */}
-      {canConfirmAppointment && appt.status === AppointmentStatus.REQUESTED && (
+      {canConfirmAppointment && [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(appt.status as AppointmentStatus) && (
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">
-              Assign Sales Staff & Confirm
+              {appt.status === AppointmentStatus.CONFIRMED ? 'Assign Sales Staff' : 'Assign Sales Staff & Confirm'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -1479,16 +1449,19 @@ export function AppointmentDetailPage() {
               </div>
             )}
             <Button
-              onClick={handleConfirm}
+              onClick={appt.status === AppointmentStatus.CONFIRMED ? handleAssignSalesStaff : handleConfirm}
               disabled={
-                confirmMutation.isPending ||
-                completeRescheduleMutation.isPending ||
+                appt.status === AppointmentStatus.CONFIRMED
+                  ? reassignSalesMutation.isPending
+                  : confirmMutation.isPending || completeRescheduleMutation.isPending ||
                 !selectedSalesStaff || 
                 salesStaffList.find(s => s._id === selectedSalesStaff)?.assignmentEligible === false
               }
               className="h-10 w-full rounded-xl [background-image:none] bg-emerald-600 text-sm text-white hover:bg-emerald-700 disabled:opacity-50 dark:border dark:border-emerald-700/40 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667] dark:hover:border-emerald-500/40 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none"
             >
-              {confirmMutation.isPending ? 'Confirming...' : 'Confirm & Assign'}
+              {appt.status === AppointmentStatus.CONFIRMED
+                ? (reassignSalesMutation.isPending ? 'Assigning...' : 'Assign Sales Staff')
+                : (confirmMutation.isPending ? 'Confirming...' : 'Confirm & Assign')}
             </Button>
           </CardContent>
         </Card>
