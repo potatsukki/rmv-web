@@ -21,6 +21,7 @@ import {
   useAppointment,
   useConfirmAppointment,
   useReassignAppointmentSales,
+  useReviewAssignedAppointment,
   useCancelAppointment,
   useCompleteReschedule,
   useRejectReschedule,
@@ -63,6 +64,7 @@ export function AppointmentDetailPage() {
 
   const confirmMutation = useConfirmAppointment();
   const reassignSalesMutation = useReassignAppointmentSales();
+  const salesDecisionMutation = useReviewAssignedAppointment();
   const completeRescheduleMutation = useCompleteReschedule();
   const rejectRescheduleMutation = useRejectReschedule();
   const cancelMutation = useCancelAppointment();
@@ -263,7 +265,7 @@ export function AppointmentDetailPage() {
       }
       toast.success(
         appt.status === AppointmentStatus.RESCHEDULE_REQUESTED
-          ? 'Reschedule accepted. The appointment has been updated and the assigned sales staff has been notified.'
+          ? 'Reschedule accepted. Assign an available sales staff member for review.'
           : isOcularAppointment
             ? 'Appointment confirmed! The assigned sales staff has been notified and can proceed with the scheduled visit flow.'
             : 'Consultation confirmed! The assigned sales staff has been notified and can prepare for the office consultation.',
@@ -295,9 +297,27 @@ export function AppointmentDetailPage() {
 
     try {
       await reassignSalesMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
-      toast.success('Sales staff assigned to the rescheduled appointment');
+      toast.success('Sales staff assigned. They will review and confirm the appointment.');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to assign sales staff'));
+    }
+  };
+
+  const handleSalesDecision = async (decision: 'accept' | 'decline') => {
+    const reason = decision === 'decline'
+      ? window.prompt('Why can you not take this appointment?') || undefined
+      : undefined;
+    if (decision === 'decline' && !reason) return;
+
+    try {
+      await salesDecisionMutation.mutateAsync({ id: id!, decision, reason });
+      toast.success(
+        decision === 'accept'
+          ? 'Appointment confirmed. The customer and appointment agent have been notified.'
+          : 'Assignment declined. The appointment agent will assign another available staff member.',
+      );
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to update appointment review'));
     }
   };
 
@@ -359,6 +379,12 @@ export function AppointmentDetailPage() {
   const assignedSalesStaffId = typeof appt.salesStaffId === 'string'
     ? appt.salesStaffId
     : appt.salesStaffId?._id;
+  const isAssignedSalesPendingReview = Boolean(
+    isSalesStaff
+    && appt.type === 'office'
+    && appt.status === AppointmentStatus.REQUESTED
+    && assignedSalesStaffId === user?._id,
+  );
   const canUpdateAttendance = Boolean(
     isOfficeConsultation &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
@@ -513,9 +539,31 @@ export function AppointmentDetailPage() {
                     ? 'Please submit your site location below so your assigned sales staff can finalize your appointment.'
                     : isOcularAppointment && !appt.ocularFeePaid
                     ? 'Please pay the ocular visit fee to proceed. Your assigned sales staff will finalize your appointment once payment is received.'
-                    : 'Your appointment request has been received. An agent will review and confirm it shortly.'
-                  : 'Review this appointment request and assign a sales staff member to confirm it.'}
+                    : appt.salesStaffId
+                      ? 'A sales staff member is reviewing your appointment. We will notify you once it is confirmed.'
+                      : 'Your appointment request has been received. An agent is checking sales staff availability.'
+                  : appt.salesStaffId
+                    ? 'The assigned sales staff is reviewing this appointment.'
+                    : 'Assign an available sales staff member for review.'}
               </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {isAssignedSalesPendingReview && (
+        <Card className="rounded-xl border border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10">
+          <CardContent className="space-y-4 p-4">
+            <div>
+              <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">Review assigned appointment</p>
+              <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-200">Confirm that you are available for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')} at {formatSlotTime(appt.slotCode)}.</p>
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Button type="button" onClick={() => handleSalesDecision('accept')} disabled={salesDecisionMutation.isPending} className="bg-emerald-600 text-white hover:bg-emerald-700">
+                {salesDecisionMutation.isPending ? 'Saving...' : 'Confirm Appointment'}
+              </Button>
+              <Button type="button" variant="outline" onClick={() => handleSalesDecision('decline')} disabled={salesDecisionMutation.isPending}>
+                Decline Assignment
+              </Button>
             </div>
           </CardContent>
         </Card>
@@ -1369,11 +1417,14 @@ export function AppointmentDetailPage() {
       )}
 
       {/* Agent: Assign Sales Staff & Confirm */}
-      {canConfirmAppointment && [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(appt.status as AppointmentStatus) && (
+      {canConfirmAppointment && (
+        (appt.status === AppointmentStatus.REQUESTED && !assignedSalesStaffId)
+        || (appt.status === AppointmentStatus.CONFIRMED && !assignedSalesStaffId)
+      ) && (
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">
-              {appt.status === AppointmentStatus.CONFIRMED ? 'Assign Sales Staff' : 'Assign Sales Staff & Confirm'}
+              {appt.status === AppointmentStatus.CONFIRMED ? 'Assign Sales Staff' : 'Assign Sales Staff for Review'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -1388,8 +1439,8 @@ export function AppointmentDetailPage() {
                 <div className="max-h-[320px] overflow-y-auto space-y-2 pr-1">
                   {salesStaffList.map((s) => {
                     const isSelected = selectedSalesStaff === s._id;
-                    const isAvailable = s.availabilityStatus === StaffAvailabilityStatus.AVAILABLE;
                     const isBlocked = s.assignmentEligible === false;
+                    const isAvailable = s.availabilityStatus === StaffAvailabilityStatus.AVAILABLE && !isBlocked;
                     
                     return (
                       <button
@@ -1457,19 +1508,19 @@ export function AppointmentDetailPage() {
               </div>
             )}
             <Button
-              onClick={appt.status === AppointmentStatus.CONFIRMED ? handleAssignSalesStaff : handleConfirm}
+              onClick={handleAssignSalesStaff}
               disabled={
-                appt.status === AppointmentStatus.CONFIRMED
-                  ? reassignSalesMutation.isPending
-                  : confirmMutation.isPending || completeRescheduleMutation.isPending ||
+                reassignSalesMutation.isPending ||
                 !selectedSalesStaff || 
                 salesStaffList.find(s => s._id === selectedSalesStaff)?.assignmentEligible === false
               }
               className="h-10 w-full rounded-xl [background-image:none] bg-emerald-600 text-sm text-white hover:bg-emerald-700 disabled:opacity-50 dark:border dark:border-emerald-700/40 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667] dark:hover:border-emerald-500/40 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none"
             >
-              {appt.status === AppointmentStatus.CONFIRMED
-                ? (reassignSalesMutation.isPending ? 'Assigning...' : 'Assign Sales Staff')
-                : (confirmMutation.isPending ? 'Confirming...' : 'Confirm & Assign')}
+              {reassignSalesMutation.isPending
+                ? 'Assigning...'
+                : appt.status === AppointmentStatus.CONFIRMED
+                  ? 'Assign Sales Staff'
+                  : 'Assign & Send for Review'}
             </Button>
           </CardContent>
         </Card>
