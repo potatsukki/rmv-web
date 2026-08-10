@@ -451,6 +451,7 @@ export function BookAppointmentPage() {
                       const slotInfo = slotsData?.slots.find((entry) => entry.slotCode === slot);
                       const available = slotInfo?.available ?? false;
                       const blocked = (slotInfo as { blocked?: boolean })?.blocked ?? false;
+                      const remaining = slotInfo?.remaining ?? 0;
 
                       return (
                         <button
@@ -468,9 +469,13 @@ export function BookAppointmentPage() {
                           )}
                         >
                           <p className="text-sm font-medium">{formatSlotTime(slot)}</p>
-                          {!available && (
+                          {available ? (
+                            <p className="mt-0.5 text-xs text-emerald-600 dark:text-emerald-400">
+                              {remaining} staff available
+                            </p>
+                          ) : (
                             <p className="mt-0.5 text-xs text-red-400">
-                              {blocked ? 'Blocked' : 'Unavailable'}
+                              {blocked ? 'Blocked' : 'No staff available'}
                             </p>
                           )}
                         </button>

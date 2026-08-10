@@ -172,6 +172,33 @@ export function useReassignAppointmentSales() {
     },
     onSuccess: (appointment) => {
       syncAppointmentCaches(qc, appointment);
+      qc.invalidateQueries({ queryKey: KEYS.detail(appointment._id) });
+    },
+  });
+}
+
+export function useReviewAssignedAppointment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      decision,
+      reason,
+    }: {
+      id: string;
+      decision: 'accept' | 'decline';
+      reason?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<Appointment>>(
+        `/appointments/${id}/sales-decision`,
+        { decision, reason },
+      );
+      return data.data;
+    },
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
+      qc.invalidateQueries({ queryKey: KEYS.detail(appointment._id) });
+      qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
 }
