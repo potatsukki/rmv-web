@@ -20,6 +20,7 @@ import { PageError } from '@/components/shared/PageError';
 import {
   useAppointment,
   useConfirmAppointment,
+  useReassignAppointmentSales,
   useCancelAppointment,
   useCompleteReschedule,
   useRejectReschedule,
@@ -55,6 +56,7 @@ export function AppointmentDetailPage() {
   const savedProfileFormattedAddress = user?.addressData?.formattedAddress || '';
 
   const confirmMutation = useConfirmAppointment();
+  const reassignSalesMutation = useReassignAppointmentSales();
   const completeRescheduleMutation = useCompleteReschedule();
   const rejectRescheduleMutation = useRejectReschedule();
   const cancelMutation = useCancelAppointment();
@@ -232,7 +234,8 @@ export function AppointmentDetailPage() {
 
   const handleConfirm = async () => {
     const staff = salesStaffList.find(s => s._id === selectedSalesStaff);
-    if (!selectedSalesStaff || staff?.assignmentEligible === false) {
+    const isRescheduleAcceptance = appt.status === AppointmentStatus.RESCHEDULE_REQUESTED;
+    if ((!isRescheduleAcceptance && !selectedSalesStaff) || staff?.assignmentEligible === false) {
       toast.error(staff?.assignmentEligible === false 
         ? `Staff ineligible: ${staff.assignmentBlockedReason}` 
         : 'Please select a sales staff member to assign'
@@ -245,7 +248,7 @@ export function AppointmentDetailPage() {
           id: id!,
           date: appt.requestedRescheduleDate || appt.date,
           slotCode: appt.requestedRescheduleSlotCode || appt.slotCode,
-          salesStaffId: selectedSalesStaff,
+          salesStaffId: isRescheduleAcceptance ? undefined : selectedSalesStaff,
         });
       } else {
         await confirmMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
@@ -273,6 +276,20 @@ export function AppointmentDetailPage() {
       toast.success('Reschedule request rejected');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to reject reschedule'));
+    }
+  };
+
+  const handleAssignSalesStaff = async () => {
+    if (!selectedSalesStaff) {
+      toast.error('Please select a sales staff member');
+      return;
+    }
+
+    try {
+      await reassignSalesMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
+      toast.success('Sales staff assigned to the rescheduled appointment');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to assign sales staff'));
     }
   };
 
@@ -509,29 +526,10 @@ export function AppointmentDetailPage() {
               <p className="mt-2 text-xs text-amber-800 dark:text-amber-300">Accept updates the appointment to this date and time. Reject keeps the current date and time unchanged.</p>
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Label htmlFor="reschedule-sales-staff" className="text-amber-950 dark:text-amber-100">Assign sales staff</Label>
-                <select
-                  id="reschedule-sales-staff"
-                  value={selectedSalesStaff}
-                  onChange={(event) => setSelectedSalesStaff(event.target.value)}
-                  className="mt-1.5 h-10 w-full rounded-lg border border-amber-300 bg-white px-3 text-sm text-slate-900 dark:border-amber-500/30 dark:bg-slate-900 dark:text-slate-100"
-                >
-                  <option value="">Select a sales staff member</option>
-                  {salesStaffList.map((staff) => (
-                    <option key={staff._id} value={staff._id} disabled={staff.assignmentEligible === false}>
-                      {staff.firstName} {staff.lastName}{staff.assignmentEligible === false ? ' (Unavailable)' : ''}
-                    </option>
-                  ))}
-                </select>
-                {salesStaffList.length === 0 && (
-                  <p className="mt-1 text-xs text-amber-800 dark:text-amber-300">No eligible sales staff is available for the requested schedule.</p>
-                )}
-              </div>
               <Button
                 type="button"
                 onClick={handleConfirm}
-                disabled={completeRescheduleMutation.isPending || !selectedSalesStaff || salesStaffList.find((s) => s._id === selectedSalesStaff)?.assignmentEligible === false}
+                disabled={completeRescheduleMutation.isPending}
                 className="bg-emerald-600 text-white hover:bg-emerald-700"
               >
                 {completeRescheduleMutation.isPending ? 'Accepting...' : 'Accept Reschedule'}
@@ -568,6 +566,36 @@ export function AppointmentDetailPage() {
                     : 'This consultation is scheduled at the RMV office. Review the customer details and prepare for the appointment.'}
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+      {canConfirmAppointment && appt.status === AppointmentStatus.CONFIRMED && (
+        <Card className="rounded-xl border border-blue-200 bg-blue-50/70 shadow-sm dark:border-blue-500/25 dark:bg-blue-500/10">
+          <CardContent className="space-y-3 p-4">
+            <div>
+              <p className="text-sm font-semibold text-blue-950 dark:text-blue-100">Assign sales staff</p>
+              <p className="mt-1 text-xs text-blue-800 dark:text-blue-200">The rescheduled date and time are confirmed. Select an available sales staff member for this appointment.</p>
+            </div>
+            <select
+              value={selectedSalesStaff}
+              onChange={(event) => setSelectedSalesStaff(event.target.value)}
+              className="h-10 w-full rounded-lg border border-blue-200 bg-white px-3 text-sm text-slate-900 dark:border-blue-500/30 dark:bg-slate-900 dark:text-slate-100"
+            >
+              <option value="">Select a sales staff member</option>
+              {salesStaffList.map((staff) => (
+                <option key={staff._id} value={staff._id} disabled={staff.assignmentEligible === false}>
+                  {staff.firstName} {staff.lastName}{staff.assignmentEligible === false ? ' (Unavailable)' : ''}
+                </option>
+              ))}
+            </select>
+            <Button
+              type="button"
+              onClick={handleAssignSalesStaff}
+              disabled={reassignSalesMutation.isPending || !selectedSalesStaff || salesStaffList.find((staff) => staff._id === selectedSalesStaff)?.assignmentEligible === false}
+              className="bg-blue-600 text-white hover:bg-blue-700"
+            >
+              {reassignSalesMutation.isPending ? 'Assigning...' : 'Assign Sales Staff'}
+            </Button>
           </CardContent>
         </Card>
       )}
