@@ -541,7 +541,6 @@ export function VisitReportPage() {
     || customerSavedAddresses.find((address) => address.isDefault)
     || customerSavedAddresses[0]
     || report?.recommendedOcularAddress;
-  const hasSelectableOcularAddress = Boolean(selectedOcularAddress);
   const reportMatchesRoute = Boolean(report && rawId(report._id) === id);
 
   useEffect(() => {
@@ -964,10 +963,6 @@ export function VisitReportPage() {
       }
       if (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot)) {
         toast.error('Select an ocular visit date and time slot before scheduling.');
-        return;
-      }
-      if (consultationOutcome === 'schedule_ocular' && !hasSelectableOcularAddress) {
-        toast.error('Select a saved customer address before scheduling the ocular visit.');
         return;
       }
       if (consultationOutcome === 'no_ocular' && !noOcularReason.trim()) {
@@ -1883,7 +1878,7 @@ export function VisitReportPage() {
           effectiveVisitType === 'consultation'
           && !isProjectCreationMode
           && (
-            (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot || !hasSelectableOcularAddress))
+            (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot))
             || (consultationOutcome === 'no_ocular' && !noOcularReason.trim())
           )
         }
