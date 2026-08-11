@@ -220,7 +220,18 @@ export function AppointmentDetailPage() {
       appt.status === AppointmentStatus.READY_FOR_OCULAR
       || (appt.status === AppointmentStatus.COMPLETED && appt.consultationReportSubmitted)
     );
-  const hasCustomerSiteLocation = Boolean(appt.customerLocation);
+  const hasCustomerMapPin = Boolean(
+    appt.customerLocation
+    && Number.isFinite(appt.customerLocation.lat)
+    && Number.isFinite(appt.customerLocation.lng),
+  );
+  const hasCustomerSiteAddress = Boolean(
+    appt.formattedAddress?.trim()
+    || appt.customerAddress?.trim()
+    || appt.address?.trim()
+    || appt.addressStructured?.city?.trim(),
+  );
+  const hasCustomerSiteLocation = hasCustomerMapPin && hasCustomerSiteAddress;
   const canCustomerSubmitOcularLocation = Boolean(
     isCustomer
     && !hasCustomerSiteLocation
@@ -233,7 +244,7 @@ export function AppointmentDetailPage() {
     ),
   );
   const canStartOcularProgress = !isOcularAppointment || hasCustomerSiteLocation;
-  const customerSiteLocationRequiredMessage = 'Customer site location is required before starting the ocular visit.';
+  const customerSiteLocationRequiredMessage = 'Customer map pin and complete site address are required before starting the ocular visit.';
   const customerCanManageAppointment =
     isCustomer &&
     [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
@@ -1252,7 +1263,7 @@ export function AppointmentDetailPage() {
         </Card>
       )}
 
-      {isSalesStaff && appt.type === 'ocular' && !appt.customerLocation && (
+      {isSalesStaff && appt.type === 'ocular' && !hasCustomerSiteLocation && (
         <Card className="rounded-xl border-amber-200 bg-amber-50/50 shadow-sm dark:border-amber-500/30 dark:bg-amber-500/10 lg:col-span-2">
           <CardContent className="flex items-start gap-3 py-5">
             <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
@@ -1527,7 +1538,7 @@ export function AppointmentDetailPage() {
       )}
 
       {/* Sales Staff: Finalize Ocular (for REQUESTED oculars where customer has submitted location) */}
-      {canFinalizeOcular && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && appt.customerLocation && (
+      {canFinalizeOcular && appt.type === 'ocular' && appt.status === AppointmentStatus.REQUESTED && hasCustomerSiteLocation && (
         <Card className="rounded-xl border-emerald-200 bg-emerald-50 shadow-sm dark:border-[#295447] dark:bg-[linear-gradient(180deg,rgba(10,28,24,0.96)_0%,rgba(8,19,19,0.98)_100%)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-emerald-900 dark:text-emerald-200">Finalize Ocular Visit</CardTitle>
