@@ -11,6 +11,7 @@ import {
   StickyNote,
   Camera,
   Calendar as CalendarIcon,
+  Clock,
   MapPin,
   Layers,
   FolderOpen,
@@ -689,11 +690,18 @@ export function VisitReportPage() {
     : `the item (${appointmentItemNames[0] || serviceLabel})`;
   const relatedOcularAppointment = report.relatedOcularAppointment;
   const appointmentNavigationId = relatedOcularAppointment?._id || rawId(report.appointmentId);
-  const relatedOcularHasLocation = Boolean(
+  const relatedOcularHasMapPin = Boolean(
     relatedOcularAppointment?.customerLocation
-    || relatedOcularAppointment?.formattedAddress
-    || relatedOcularAppointment?.customerAddress,
+    && Number.isFinite(relatedOcularAppointment.customerLocation.lat)
+    && Number.isFinite(relatedOcularAppointment.customerLocation.lng),
   );
+  const relatedOcularHasAddress = Boolean(
+    relatedOcularAppointment?.formattedAddress?.trim()
+    || relatedOcularAppointment?.customerAddress?.trim()
+    || relatedOcularAppointment?.address?.trim()
+    || relatedOcularAppointment?.addressStructured?.city?.trim(),
+  );
+  const relatedOcularHasLocation = relatedOcularHasMapPin && relatedOcularHasAddress;
   const relatedOcularFeeRequired = Boolean((relatedOcularAppointment?.ocularFee || 0) > 0);
   const relatedOcularFeeConfirmed = Boolean(
     relatedOcularAppointment?.ocularFeePaid
@@ -1338,7 +1346,7 @@ export function VisitReportPage() {
                       )}
                       {report.recommendedOcularSlot && (
                         <div className="flex items-center gap-2">
-                          <div className="h-4 w-4 flex items-center justify-center text-[10px] font-bold border border-blue-500/50 rounded-full text-blue-500/70">T</div>
+                          <Clock className="h-4 w-4 text-blue-500/70" />
                           <span>Time: <strong>{(() => {
                             const hour = parseInt(report.recommendedOcularSlot.split(':')[0] ?? '0');
                             const ampm = hour >= 12 ? 'PM' : 'AM';
