@@ -35,12 +35,15 @@ import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, AppointmentStatus, AppointmentAttendanceStatus, StaffAvailabilityStatus } from '@/lib/constants';
 import { SERVICE_TYPE_LABELS } from '@/lib/constants';
-import { Suspense, lazy, useState, useEffect } from 'react';
+import { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import type { ApiResponse } from '@/lib/types';
 
 const LazyLocationView = lazy(() =>
   import('@/components/maps/LocationView').then((module) => ({ default: module.LocationView })),
+);
+const LazyLocationPicker = lazy(() =>
+  import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
 );
 
 function hasRole(roles: readonly string[] | undefined, expectedRole: Role) {
@@ -77,6 +80,7 @@ export function AppointmentDetailPage() {
   // Customer location submission state
   const [customerLocationPin, setCustomerLocationPin] = useState<MapPoint | null>(savedProfileLocation);
   const [customerAddress, setCustomerAddress] = useState(savedProfileFormattedAddress);
+  const customerChangedSiteRef = useRef(false);
   const [feePreview, setFeePreview] = useState<OcularFeePreview | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
@@ -119,11 +123,11 @@ export function AppointmentDetailPage() {
   const PH_BOUNDS = { latMin: 4.5, latMax: 21.5, lngMin: 116.0, lngMax: 127.0 };
 
   useEffect(() => {
-    if (!customerLocationPin && savedProfileLocation) {
+    if (!customerChangedSiteRef.current && !customerLocationPin && savedProfileLocation) {
       setCustomerLocationPin(savedProfileLocation);
     }
 
-    if (!customerAddress && savedProfileFormattedAddress) {
+    if (!customerChangedSiteRef.current && !customerAddress && savedProfileFormattedAddress) {
       setCustomerAddress(savedProfileFormattedAddress);
     }
   }, [customerAddress, customerLocationPin, savedProfileFormattedAddress, savedProfileLocation]);
@@ -1108,12 +1112,12 @@ export function AppointmentDetailPage() {
           <CardContent className="space-y-4">
             <p className="text-sm text-blue-800 dark:text-blue-200/90">
               {isReadyForOcularConsultation ? (
-                'Your consultation is ready for an ocular visit. We will use your saved profile address to calculate the visit fee and continue scheduling.'
+                'Your consultation is ready for an ocular visit. Select the exact project site below so we can calculate the visit fee and continue scheduling.'
               ) : (
                 <>
                   An ocular visit has been scheduled for{' '}
                   <strong>{formattedOcularVisitDate}</strong>.
-                  We will use your saved profile address to calculate the visit fee and finalize your appointment.
+                  Select the exact project site below to calculate the visit fee and finalize your appointment.
                 </>
               )}
             </p>
@@ -1131,18 +1135,31 @@ export function AppointmentDetailPage() {
                 </p>
               </div>
             </div>
-            {customerAddress ? (
-              <div className="rounded-lg border border-blue-200 bg-white p-3 dark:border-[#35557d] dark:bg-[#0d1724]">
-                <p className="text-xs font-medium text-blue-700 dark:text-[#8dbcf2]">Using profile address</p>
-                <p className="mt-0.5 break-words text-sm text-[#3a3a3e] dark:text-slate-200">{customerAddress}</p>
-              </div>
-            ) : (
-              <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-500/35 dark:bg-amber-500/10">
-                <p className="text-sm text-amber-900 dark:text-amber-100">
-                  No saved pinned address found in your profile. Please add one in Account Profile before submitting ocular location.
+            <div className="space-y-3 rounded-xl border border-blue-200 bg-white p-3 dark:border-[#35557d] dark:bg-[#0d1724]">
+              <div>
+                <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Project Site Map Pin</p>
+                <p className="mt-1 text-xs text-blue-700 dark:text-blue-200/80">
+                  Search, use your current location, or move the pin. Your saved profile location is only the starting point and can be changed.
                 </p>
               </div>
-            )}
+              <Suspense fallback={<div className="flex min-h-56 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin text-blue-600" /></div>}>
+                <LazyLocationPicker
+                  value={customerLocationPin}
+                  address={customerAddress}
+                  onChange={(nextLocation, nextAddress) => {
+                    customerChangedSiteRef.current = true;
+                    setCustomerLocationPin(nextLocation);
+                    setCustomerAddress(nextAddress || '');
+                  }}
+                />
+              </Suspense>
+              {customerAddress && (
+                <div className="rounded-lg border border-blue-200 bg-blue-50 p-3 dark:border-blue-500/30 dark:bg-blue-500/10">
+                  <p className="text-xs font-medium text-blue-700 dark:text-blue-200">Selected project site address</p>
+                  <p className="mt-1 break-words text-sm text-[#3a3a3e] dark:text-slate-100">{customerAddress}</p>
+                </div>
+              )}
+            </div>
 
             {/* Live fee preview */}
             {feeLoading && (
@@ -1192,25 +1209,17 @@ export function AppointmentDetailPage() {
             {/* Submit / Pay button */}
             {feePreview && !feeLoading && !feeError && (
               (() => {
-                const addressStructured = {
-                  street: user?.addressData?.street?.trim() || '',
-                  barangay: user?.addressData?.barangay?.trim() || '',
-                  city: user?.addressData?.city?.trim() || '',
-                  province: user?.addressData?.province?.trim() || '',
-                  zip: user?.addressData?.zip?.trim() || '',
-                };
                 const handleSubmit = async (redirect?: boolean) => {
                   if (!customerLocationPin) return;
-                  if (!addressStructured.city) {
-                    toast.error('Please set your profile address first before submitting ocular location');
+                  if (!customerAddress.trim()) {
+                    toast.error('Please select a map pin with a resolved project site address');
                     return;
                   }
                   try {
                     const updatedAppointment = await submitLocationMutation.mutateAsync({
                       id: id!,
                       customerLocation: customerLocationPin,
-                      formattedAddress: customerAddress || undefined,
-                      addressStructured,
+                      formattedAddress: customerAddress.trim(),
                     });
                     if (redirect) {
                       navigate(`/appointments/${updatedAppointment._id}/pay-ocular-fee`);
@@ -1228,7 +1237,7 @@ export function AppointmentDetailPage() {
                   <Button
                     variant="prominent"
                     onClick={() => handleSubmit(false)}
-                    disabled={submitLocationMutation.isPending}
+                    disabled={submitLocationMutation.isPending || !customerAddress.trim()}
                     className="h-11 w-full rounded-xl font-semibold sm:w-auto"
                   >
                     {submitLocationMutation.isPending ? (
@@ -1244,7 +1253,7 @@ export function AppointmentDetailPage() {
                   <Button
                     variant="prominent"
                     onClick={() => handleSubmit(true)}
-                    disabled={submitLocationMutation.isPending}
+                    disabled={submitLocationMutation.isPending || !customerAddress.trim()}
                     className="h-11 w-full rounded-xl font-semibold sm:w-auto"
                   >
                     {submitLocationMutation.isPending ? (
