@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router';
-import { ChevronDown, Menu, Phone, X } from 'lucide-react';
+import { ChevronDown, Menu, X } from 'lucide-react';
 
 import { useAuthStore } from '@/stores/auth.store';
 import { SERVICE_CATALOG } from '@/lib/service-catalog';
@@ -152,13 +152,6 @@ export function LandingNavbar() {
         </nav>
 
         <div className="flex items-center gap-2 lg:gap-4">
-          <a
-            href="tel:029506187"
-            className="hidden min-h-11 items-center gap-2 text-[0.69rem] font-bold text-white/82 transition-colors hover:text-[#F5B400] xl:flex"
-          >
-            <Phone className="h-4 w-4 text-[#F5B400]" aria-hidden="true" />
-            02-9506187
-          </a>
           <Link
             to={quoteTarget}
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#F5B400] bg-[#F5B400] px-3 text-[0.61rem] font-extrabold uppercase tracking-[0.08em] text-[#090B0D] transition duration-200 hover:-translate-y-0.5 hover:border-[#FFD047] hover:bg-[#FFD047] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400] min-[430px]:px-4 lg:px-5"
@@ -226,13 +219,6 @@ export function LandingNavbar() {
                 {item.label}
               </a>
             ))}
-            <a
-              href="tel:029506187"
-              className="mt-4 flex min-h-12 items-center gap-3 rounded-md border border-white/12 px-4 text-sm font-semibold text-white/78"
-            >
-              <Phone className="h-4 w-4 text-[#F5B400]" aria-hidden="true" />
-              02-9506187
-            </a>
           </nav>
         </div>
       )}

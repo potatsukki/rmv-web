@@ -5,7 +5,6 @@ import { SERVICE_CATALOG } from '@/lib/service-catalog';
 
 const OFFICE = {
   address: 'BIR Village, Novaliches, Quezon City, Metro Manila 1118',
-  tel: '02-9506187',
   mobile: '0945 285 2974',
   email: 'rmvstainless@gmail.com',
   hours: 'Mon - Sat: 8:00 AM - 6:00 PM',
@@ -49,7 +48,7 @@ export function PublicFooter() {
         <div>
           <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-white">Contact Us</h3>
           <div className="mt-5 grid gap-4 text-sm leading-6 text-white/58">
-            <a href="tel:029506187" className="flex items-start gap-3 hover:text-[#F5B400]"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" />{OFFICE.tel} / {OFFICE.mobile}</a>
+            <a href="tel:09452852974" className="flex items-start gap-3 hover:text-[#F5B400]"><Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" />{OFFICE.mobile}</a>
             <a href={`mailto:${OFFICE.email}`} className="flex items-start gap-3 hover:text-[#F5B400]"><Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" />{OFFICE.email}</a>
             <a href={OFFICE.directionsUrl} target="_blank" rel="noreferrer" className="flex items-start gap-3 hover:text-[#F5B400]"><MapPin className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" />{OFFICE.address}</a>
             <p className="flex items-start gap-3"><Clock3 className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" />{OFFICE.hours}</p>
