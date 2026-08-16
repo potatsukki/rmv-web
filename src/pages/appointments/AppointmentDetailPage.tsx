@@ -1490,7 +1490,7 @@ export function AppointmentDetailPage() {
                     const isSelected = selectedSalesStaff === s._id;
                     const isBlocked = s.assignmentEligible === false;
                     const isCurrent = assignedSalesStaffId === s._id;
-                    const isAvailable = s.availabilityStatus === StaffAvailabilityStatus.AVAILABLE && !isBlocked;
+                    const isAvailable = s.availabilityStatus === StaffAvailabilityStatus.AVAILABLE && !isBlocked && !isCurrent;
                     
                     return (
                       <button
@@ -1531,9 +1531,11 @@ export function AppointmentDetailPage() {
                           </div>
                           <div className="flex flex-col gap-0.5 mt-0.5">
                             <span className="text-[11px] font-medium text-[#6e6e73] dark:text-slate-500 uppercase tracking-wider">
-                              {(isBlocked
-                                ? s.assignmentBlockedReason || 'Ineligible'
-                                : s.availabilityStatus || 'setup_required').replace(/_/g, ' ')}
+                              {(isCurrent
+                                ? 'Already assigned'
+                                : isBlocked
+                                  ? s.assignmentBlockedReason || 'Ineligible'
+                                  : s.availabilityStatus || 'setup_required').replace(/_/g, ' ')}
                             </span>
                             {s.activeShift && (
                               <span className="text-[11px] text-[#8e8e93] dark:text-slate-400">
