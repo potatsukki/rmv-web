@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link, useLocation } from 'react-router';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, AlertCircle, CalendarIcon, CalendarX } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, CalendarIcon, CalendarX } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
@@ -1511,12 +1511,6 @@ export function AppointmentDetailPage() {
                             Current staff
                           </div>
                         )}
-                        {isBlocked && !isCurrent && (
-                          <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-50 border border-rose-100 text-[10px] font-bold text-rose-600 uppercase dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400">
-                            <AlertCircle className="h-3 w-3" />
-                            {s.assignmentBlockedReason || 'Ineligible'}
-                          </div>
-                        )}
                         <div className={cn(
                           "flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-sm font-bold transition-colors",
                           isSelected
@@ -1537,7 +1531,9 @@ export function AppointmentDetailPage() {
                           </div>
                           <div className="flex flex-col gap-0.5 mt-0.5">
                             <span className="text-[11px] font-medium text-[#6e6e73] dark:text-slate-500 uppercase tracking-wider">
-                              {(s.availabilityStatus || 'setup_required').replace(/_/g, ' ')}
+                              {(isBlocked
+                                ? s.assignmentBlockedReason || 'Ineligible'
+                                : s.availabilityStatus || 'setup_required').replace(/_/g, ' ')}
                             </span>
                             {s.activeShift && (
                               <span className="text-[11px] text-[#8e8e93] dark:text-slate-400">

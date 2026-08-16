@@ -1,8 +1,27 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+/** API timestamps are UTC. Older responses may omit the trailing timezone marker. */
+export function parseApiTimestamp(value: string | Date): Date {
+  if (value instanceof Date) return value;
+
+  const timestamp = value.trim();
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(timestamp);
+  return new Date(hasTimezone ? timestamp : `${timestamp}Z`);
+}
+
+export function formatApiTimeAgo(value: string | Date, strict = false): string {
+  const timestamp = parseApiTimestamp(value);
+  if (Number.isNaN(timestamp.getTime())) return 'recently';
+
+  return strict
+    ? formatDistanceToNowStrict(timestamp, { addSuffix: true })
+    : formatDistanceToNow(timestamp, { addSuffix: true });
 }
 
 /**

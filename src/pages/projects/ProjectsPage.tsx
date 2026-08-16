@@ -1,7 +1,7 @@
 import { useState, Fragment } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { FolderOpen, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -16,6 +16,7 @@ import {
 import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
+import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, BlueprintStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
@@ -347,7 +348,7 @@ export function ProjectsPage() {
                           </div>
                           {project.updatedAt && (
                             <p className="mt-1 text-[10px] font-medium italic text-[var(--text-metal-muted-color)]">
-                              Updated {format(new Date(String(project.updatedAt)), 'MMM d, h:mm a')} ({formatDistanceToNow(new Date(String(project.updatedAt)), { addSuffix: true })})
+                              Updated {format(parseApiTimestamp(String(project.updatedAt)), 'MMM d, h:mm a')} ({formatApiTimeAgo(String(project.updatedAt))})
                             </p>
                           )}
                         </div>
@@ -440,7 +441,7 @@ export function ProjectsPage() {
                     )}
                     {project.updatedAt && (
                       <div className="text-[10px] text-[var(--text-metal-muted-color)]">
-                        Last updated {formatDistanceToNow(new Date(String(project.updatedAt)), { addSuffix: true })}
+                        Last updated {formatApiTimeAgo(String(project.updatedAt))}
                       </div>
                     )}
                   </div>
@@ -461,4 +462,3 @@ export function ProjectsPage() {
     </div>
   );
 }
-

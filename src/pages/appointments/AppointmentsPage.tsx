@@ -1,7 +1,7 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { Plus, Calendar, FileText, ChevronRight, MapPin, RefreshCw } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -17,6 +17,7 @@ import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
 import { useAppointmentQueue, useAppointments } from '@/hooks/useAppointments';
 import type { Appointment } from '@/lib/types';
 import { useAuthStore } from '@/stores/auth.store';
@@ -547,7 +548,7 @@ export function AppointmentsPage() {
                           </span>
                         </div>
                         <div className="mt-1 ml-[18px] text-[10px] text-[#8b95a0] dark:text-slate-500">
-                          Last updated {formatDistanceToNow(new Date(appt.updatedAt), { addSuffix: true })}
+                          Last updated {formatApiTimeAgo(appt.updatedAt)}
                         </div>
 
                         {/* Row 3 (optional): Site details badge */}
@@ -723,7 +724,7 @@ export function AppointmentsPage() {
                                 {formatSlotTime(appt.slotCode)}
                               </p>
                               <p className="mt-1 text-[10px] font-medium text-[#8b95a0] dark:text-slate-500 italic">
-                                Updated {format(new Date(appt.updatedAt), 'MMM d, h:mm a')} ({formatDistanceToNow(new Date(appt.updatedAt), { addSuffix: true })})
+                                Updated {format(parseApiTimestamp(appt.updatedAt), 'MMM d, h:mm a')} ({formatApiTimeAgo(appt.updatedAt)})
                               </p>
                             </div>
                           </TableCell>
