@@ -29,10 +29,9 @@ import {
   useMarkAsRead,
   useMarkAllAsRead,
 } from '@/hooks/useNotifications';
-import { formatDistanceToNow } from 'date-fns';
 import { useNotificationStore } from '@/stores/notification.store';
 import type { Notification } from '@/lib/types';
-import { extractItems } from '@/lib/utils';
+import { extractItems, formatApiTimeAgo } from '@/lib/utils';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
 const CATEGORY_TABS = [
@@ -256,9 +255,7 @@ export function NotificationsPage() {
                     <span className="flex items-center gap-1 whitespace-nowrap text-xs text-[#75808b] dark:text-slate-300">
                       <Clock className="h-3 w-3" />
                       {n.createdAt
-                        ? String(formatDistanceToNow(new Date(String(n.createdAt)), {
-                            addSuffix: true,
-                          }))
+                        ? formatApiTimeAgo(String(n.createdAt))
                         : null}
                     </span>
                   </div>

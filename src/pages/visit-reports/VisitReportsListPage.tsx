@@ -1,7 +1,7 @@
 import { Fragment, useState, useMemo } from 'react';
 import { Link, useNavigate } from 'react-router';
 import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
-import { format, formatDistanceToNow } from 'date-fns';
+import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -21,6 +21,7 @@ import { useVisitReports } from '@/hooks/useVisitReports';
 import { useAuthStore } from '@/stores/auth.store';
 import { VisitReportStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import type { VisitReport } from '@/lib/types';
+import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
 
 /* ── Helpers ── */
 
@@ -67,15 +68,15 @@ function serviceLabel(report: VisitReport): string {
 }
 
 function updatedLabel(value: string): string {
-  const date = new Date(value);
+  const date = parseApiTimestamp(value);
   if (Number.isNaN(date.getTime())) return 'Updated recently';
-  return `Updated ${format(date, 'MMM d, h:mm a')} (${formatDistanceToNow(date, { addSuffix: true })})`;
+  return `Updated ${format(date, 'MMM d, h:mm a')} (${formatApiTimeAgo(date)})`;
 }
 
 function updatedRelativeLabel(value: string): string {
-  const date = new Date(value);
+  const date = parseApiTimestamp(value);
   if (Number.isNaN(date.getTime())) return 'Last updated recently';
-  return `Last updated ${formatDistanceToNow(date, { addSuffix: true })}`;
+  return `Last updated ${formatApiTimeAgo(date)}`;
 }
 
 /** Group structure for one appointment's worth of reports. */

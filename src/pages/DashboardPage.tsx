@@ -27,7 +27,6 @@ import {
   Eye,
   ShieldCheck,
 } from 'lucide-react';
-import { formatDistanceToNowStrict } from 'date-fns';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -40,6 +39,7 @@ import { Role } from '@/lib/constants';
 import type { AuditLog } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { formatApiTimeAgo } from '@/lib/utils';
 
 function formatCurrencyCompact(v: number) {
   const abs = Math.abs(v);
@@ -644,7 +644,7 @@ export function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-[11px] text-[#7b8592] dark:text-slate-300">
-                          {formatDistanceToNowStrict(new Date(log.createdAt), { addSuffix: true })}
+                          {formatApiTimeAgo(log.createdAt, true)}
                         </span>
                         {navPath && (
                           <Eye className="h-3.5 w-3.5 text-[#8a94a3] dark:text-slate-400" />
@@ -693,7 +693,7 @@ export function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-[11px] text-[#7b8592] dark:text-slate-300">
-                          {formatDistanceToNowStrict(new Date(notif.createdAt), { addSuffix: true })}
+                          {formatApiTimeAgo(notif.createdAt, true)}
                         </span>
                         {!notif.isRead && (
                           <span className="h-2 w-2 rounded-full bg-[#4f6679]" />
@@ -715,6 +715,33 @@ export function DashboardPage() {
     </div>
   );
 }
+
+const CUSTOMER_SAMPLE_PROJECTS = [
+  {
+    title: 'Commercial Kitchen Fit-Out',
+    category: 'Commercial Kitchen',
+    image: '/landing/commercial-kitchens/cover.png',
+    to: '/services/kitchen-counter',
+  },
+  {
+    title: 'Stainless Kitchen System',
+    category: 'Kitchen Cabinet',
+    image: '/landing/hotel-kitchens/cover.png',
+    to: '/services/kitchen-cabinet',
+  },
+  {
+    title: 'Food Stall Fabrication',
+    category: 'Custom Fabrication',
+    image: '/landing/food-stall-works/cover.png',
+    to: '/services/custom',
+  },
+  {
+    title: 'Custom Stainless Metalwork',
+    category: 'Railings & Metalwork',
+    image: '/landing/custom-metalworks/project-1.png',
+    to: '/services/railings',
+  },
+] as const;
 
 function CustomerDashboard({
   firstName,
@@ -747,6 +774,45 @@ function CustomerDashboard({
         image="/landing/hero/hero-stainless-railing-bg.png"
         actions={<Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]"><CalendarPlus className="h-4 w-4" /> Request a quote <ArrowRight className="h-4 w-4" /></Link>}
       />
+
+      <section aria-labelledby="customer-sample-projects-heading">
+        <div className="mb-4 flex items-end justify-between gap-4">
+          <div>
+            <p className="workspace-eyebrow">Explore our work</p>
+            <h2 id="customer-sample-projects-heading" className="mt-1 text-xl font-bold text-[#f7f7f5]">
+              Sample projects
+            </h2>
+            <p className="mt-1 text-sm text-slate-400">Browse fabrication ideas before requesting your quotation.</p>
+          </div>
+          <Link to="/services/railings" className="workspace-focus hidden text-sm font-semibold text-[#f5b400] hover:text-[#ffd047] sm:inline-flex sm:items-center sm:gap-1">
+            Explore services <ArrowRight className="h-4 w-4" />
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+          {CUSTOMER_SAMPLE_PROJECTS.map((project) => (
+            <Link
+              key={project.title}
+              to={project.to}
+              className="workspace-focus group relative min-h-48 overflow-hidden rounded-xl border border-white/10 bg-[#11161c] sm:min-h-56"
+            >
+              <img
+                src={project.image}
+                alt={project.title}
+                className="absolute inset-0 h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
+                loading="eager"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-[#080a0d] via-[#080a0d]/55 to-transparent" />
+              <div className="relative flex h-full min-h-48 flex-col justify-end p-4 sm:min-h-56 sm:p-5">
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f5b400]">{project.category}</p>
+                <h3 className="mt-1 text-sm font-bold leading-5 text-white sm:text-base">{project.title}</h3>
+                <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-white/75 group-hover:text-[#f5b400]">
+                  View sample <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
+                </span>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Project overview">
         {metrics.map((metric) => (
@@ -783,7 +849,7 @@ function CustomerDashboard({
         <div className="workspace-panel overflow-hidden">
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6"><div><p className="workspace-eyebrow">Recent activity</p><h2 className="mt-1 text-lg font-bold text-[#f7f7f5]">Latest updates</h2></div><Link to="/notifications" className="workspace-focus text-sm font-semibold text-[#f5b400] hover:text-[#ffd047]">View all</Link></div>
           <div className="divide-y divide-white/8">
-            {notificationsLoading ? <div className="p-6 text-sm text-slate-400">Loading updates…</div> : notifications.length ? notifications.slice(0, 4).map((notification) => <Link key={notification._id} to={notification.link || '/notifications'} className="workspace-focus block px-5 py-4 hover:bg-white/[.035] sm:px-6"><p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-400">{notification.message}</p><p className="mt-2 text-xs text-slate-500">{formatDistanceToNowStrict(new Date(notification.createdAt), { addSuffix: true })}</p></Link>) : <div className="p-6 text-sm text-slate-400">Updates about your appointments, projects, and payments will appear here.</div>}
+            {notificationsLoading ? <div className="p-6 text-sm text-slate-400">Loading updates…</div> : notifications.length ? notifications.slice(0, 4).map((notification) => <Link key={notification._id} to={notification.link || '/notifications'} className="workspace-focus block px-5 py-4 hover:bg-white/[.035] sm:px-6"><p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-400">{notification.message}</p><p className="mt-2 text-xs text-slate-500">{formatApiTimeAgo(notification.createdAt, true)}</p></Link>) : <div className="p-6 text-sm text-slate-400">Updates about your appointments, projects, and payments will appear here.</div>}
           </div>
         </div>
       </section>
