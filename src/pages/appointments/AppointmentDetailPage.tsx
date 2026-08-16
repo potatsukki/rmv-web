@@ -105,6 +105,7 @@ export function AppointmentDetailPage() {
     assignmentBlockedReason?: string;
   }[]>([]);
   const [selectedSalesStaff, setSelectedSalesStaff] = useState<string>('');
+  const [reassignmentReason, setReassignmentReason] = useState('');
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
@@ -310,11 +311,33 @@ export function AppointmentDetailPage() {
       return;
     }
 
+    const currentSalesStaffId = typeof appt.salesStaffId === 'string'
+      ? appt.salesStaffId
+      : appt.salesStaffId?._id;
+    if (currentSalesStaffId === selectedSalesStaff) {
+      toast.error('Please select a different sales staff member');
+      return;
+    }
+    if (currentSalesStaffId && !reassignmentReason.trim()) {
+      toast.error('Please enter the reason for reassignment');
+      return;
+    }
+
     try {
-      await reassignSalesMutation.mutateAsync({ id: id!, salesStaffId: selectedSalesStaff });
-      toast.success('Sales staff assigned. They will review and confirm the appointment.');
+      await reassignSalesMutation.mutateAsync({
+        id: id!,
+        salesStaffId: selectedSalesStaff,
+        reason: reassignmentReason.trim() || undefined,
+      });
+      toast.success(
+        currentSalesStaffId
+          ? 'Customer appointment transferred to the selected sales staff.'
+          : 'Sales staff assigned. They will review and confirm the appointment.',
+      );
+      setSelectedSalesStaff('');
+      setReassignmentReason('');
     } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to assign sales staff'));
+      toast.error(extractErrorMessage(err, 'Failed to assign or transfer sales staff'));
     }
   };
 
@@ -394,6 +417,15 @@ export function AppointmentDetailPage() {
   const assignedSalesStaffId = typeof appt.salesStaffId === 'string'
     ? appt.salesStaffId
     : appt.salesStaffId?._id;
+  const canAssignOrReassignSales = canConfirmAppointment && [
+    AppointmentStatus.REQUESTED,
+    AppointmentStatus.CONFIRMED,
+    AppointmentStatus.PREPARING,
+    AppointmentStatus.ON_THE_WAY,
+    AppointmentStatus.ARRIVED_AT_SITE,
+    AppointmentStatus.IN_PROGRESS,
+    AppointmentStatus.RESCHEDULE_REQUESTED,
+  ].includes(appt.status as AppointmentStatus);
   const isAssignedSalesPendingReview = Boolean(
     isSalesStaff
     && appt.type === 'office'
@@ -1437,14 +1469,11 @@ export function AppointmentDetailPage() {
       )}
 
       {/* Agent: Assign Sales Staff & Confirm */}
-      {canConfirmAppointment && (
-        (appt.status === AppointmentStatus.REQUESTED && !assignedSalesStaffId)
-        || (appt.status === AppointmentStatus.CONFIRMED && !assignedSalesStaffId)
-      ) && (
+      {canAssignOrReassignSales && (
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">
-              {appt.status === AppointmentStatus.CONFIRMED ? 'Assign Sales Staff' : 'Assign Sales Staff for Review'}
+              {assignedSalesStaffId ? 'Transfer Customer to Another Sales Staff' : 'Assign Sales Staff for Review'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -1460,23 +1489,29 @@ export function AppointmentDetailPage() {
                   {salesStaffList.map((s) => {
                     const isSelected = selectedSalesStaff === s._id;
                     const isBlocked = s.assignmentEligible === false;
+                    const isCurrent = assignedSalesStaffId === s._id;
                     const isAvailable = s.availabilityStatus === StaffAvailabilityStatus.AVAILABLE && !isBlocked;
                     
                     return (
                       <button
                         key={s._id}
                         type="button"
-                        onClick={() => !isBlocked && setSelectedSalesStaff(s._id)}
-                        aria-disabled={isBlocked}
+                        onClick={() => !isBlocked && !isCurrent && setSelectedSalesStaff(s._id)}
+                        aria-disabled={isBlocked || isCurrent}
                         className={cn(
                           "w-full flex items-center gap-4 rounded-xl px-4 py-4 text-left transition-all duration-200 border relative group",
                           isSelected
                             ? "border-blue-500/50 bg-blue-500/10 ring-1 ring-blue-500/20 dark:border-blue-400/40 dark:bg-blue-500/10"
                             : "border-transparent bg-[#f5f5f7] hover:bg-[#ebebed] dark:bg-white/[0.04] dark:hover:bg-white/[0.07]",
-                          isBlocked && !isSelected && "opacity-60 pointer-events-none"
+                          (isBlocked || isCurrent) && !isSelected && "opacity-60 pointer-events-none"
                         )}
                       >
-                        {isBlocked && (
+                        {isCurrent && (
+                          <div className="absolute top-2 right-2 rounded-md border border-blue-100 bg-blue-50 px-1.5 py-0.5 text-[10px] font-bold uppercase text-blue-600 dark:border-blue-500/20 dark:bg-blue-500/10 dark:text-blue-400">
+                            Current staff
+                          </div>
+                        )}
+                        {isBlocked && !isCurrent && (
                           <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 rounded-md bg-rose-50 border border-rose-100 text-[10px] font-bold text-rose-600 uppercase dark:bg-rose-500/10 dark:border-rose-500/20 dark:text-rose-400">
                             <AlertCircle className="h-3 w-3" />
                             {s.assignmentBlockedReason || 'Ineligible'}
@@ -1523,23 +1558,36 @@ export function AppointmentDetailPage() {
                   })}
                 </div>
                 <p className="text-xs text-[#6e6e73] dark:text-slate-500">
-                  Only eligible staff members can be assigned to this appointment.
+                  Availability and schedule conflicts are checked for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}.
                 </p>
+              </div>
+            )}
+            {assignedSalesStaffId && (
+              <div className="space-y-2">
+                <Label htmlFor="reassignment-reason">Reason for transfer</Label>
+                <Textarea
+                  id="reassignment-reason"
+                  value={reassignmentReason}
+                  onChange={(event) => setReassignmentReason(event.target.value)}
+                  maxLength={500}
+                  placeholder="Example: Assigned sales staff is absent on this date"
+                />
               </div>
             )}
             <Button
               onClick={handleAssignSalesStaff}
               disabled={
                 reassignSalesMutation.isPending ||
-                !selectedSalesStaff || 
+                !selectedSalesStaff ||
+                (Boolean(assignedSalesStaffId) && !reassignmentReason.trim()) ||
                 salesStaffList.find(s => s._id === selectedSalesStaff)?.assignmentEligible === false
               }
               className="h-10 w-full rounded-xl [background-image:none] bg-emerald-600 text-sm text-white hover:bg-emerald-700 disabled:opacity-50 dark:border dark:border-emerald-700/40 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#248667] dark:hover:border-emerald-500/40 dark:disabled:border-white/10 dark:disabled:bg-[#1b2432] dark:disabled:text-slate-500 dark:disabled:shadow-none"
             >
               {reassignSalesMutation.isPending
-                ? 'Assigning...'
-                : appt.status === AppointmentStatus.CONFIRMED
-                  ? 'Assign Sales Staff'
+                ? (assignedSalesStaffId ? 'Transferring...' : 'Assigning...')
+                : assignedSalesStaffId
+                  ? 'Transfer Customer Appointment'
                   : 'Assign & Send for Review'}
             </Button>
           </CardContent>
