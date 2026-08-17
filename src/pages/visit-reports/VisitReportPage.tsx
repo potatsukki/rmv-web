@@ -914,7 +914,7 @@ export function VisitReportPage() {
             : 'Consultation completed.',
       );
     } catch (error) {
-      toast.error(extractErrorMessage(error));
+      toast.error(extractErrorMessage(error, 'Unable to update consultation attendance.'));
     }
   };
 
