@@ -23,7 +23,6 @@ import {
   PenTool,
   Ruler,
   ShieldCheck,
-  Phone,
   Truck,
   Umbrella,
   Utensils,
@@ -2138,7 +2137,6 @@ const OFFICE_LOCATION = {
   plusCode: 'M3X3+RF4, Dahlia Ext, Quezon City, Metro Manila',
   lat: 14.6995125,
   lng: 121.053703125,
-  mobile: '0945 285 2974',
   email: 'rmvstainless@gmail.com',
   hours: 'Mon - Sat: 8:00 AM - 6:00 PM',
   directionsUrl: 'https://www.google.com/maps?q=14.6995125,121.053703125',
@@ -2576,10 +2574,6 @@ export function LandingPage() {
             <div>
               <h3 className="text-xs font-extrabold uppercase tracking-[0.14em] text-white">Contact Us</h3>
               <div className="mt-5 grid gap-4 text-sm leading-6 text-white/58">
-                <a href="tel:09452852974" className="flex items-start gap-3 hover:text-[#F5B400]">
-                  <Phone className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" aria-hidden="true" />
-                  {OFFICE_LOCATION.mobile}
-                </a>
                 <a href={`mailto:${OFFICE_LOCATION.email}`} className="flex items-start gap-3 hover:text-[#F5B400]">
                   <Mail className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" aria-hidden="true" />
                   {OFFICE_LOCATION.email}
