@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   Wrench,
   Loader2,
+  CheckCircle2,
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -57,6 +58,7 @@ import {
 } from '@/hooks/useVisitReports';
 import { useProjectByVisitReport } from '@/hooks/useProjects';
 import { useHolidays } from '@/hooks/useConfig';
+import { useUpdateConsultationAttendance } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   Role,
@@ -324,6 +326,7 @@ export function VisitReportPage() {
   const submitMutation = useSubmitVisitReport();
   const returnMutation = useReturnVisitReport();
   const reopenMutation = useReopenVisitReportForRepair();
+  const attendanceMutation = useUpdateConsultationAttendance();
 
   // Fetch the linked project (only when report is submitted/completed)
   const { data: linkedProject } = useProjectByVisitReport(
@@ -502,6 +505,11 @@ export function VisitReportPage() {
     isSalesStaff && appointmentRecord && (appointmentRecord as any).salesStaffId && rawId((appointmentRecord as any).salesStaffId) === String(user?._id),
   );
   const attendanceStatus = appointmentRecord?.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
+  const canUpdateConsultationAttendance = Boolean(
+    effectiveVisitType === 'consultation'
+    && appointmentId
+    && (isAdmin || isAssignedSalesStaff),
+  );
   const contactPersonLabel = [
     appointmentRecord?.customerName || report?.customerName,
     appointmentRecord?.customerPhone,
@@ -891,6 +899,23 @@ export function VisitReportPage() {
 
   const handleSave = async () => {
     await saveDraft({ showSuccessToast: true, showErrorToast: true });
+  };
+
+  const updateConsultationAttendance = async (action: 'check_in' | 'start' | 'complete') => {
+    if (!appointmentId) return;
+    try {
+      await attendanceMutation.mutateAsync({ id: appointmentId, action });
+      await refetch();
+      toast.success(
+        action === 'check_in'
+          ? 'Customer checked in.'
+          : action === 'start'
+            ? 'Consultation started.'
+            : 'Consultation completed.',
+      );
+    } catch (error) {
+      toast.error(extractErrorMessage(error));
+    }
   };
 
   const handlePrimarySubmitClick = () => {
@@ -1573,6 +1598,81 @@ export function VisitReportPage() {
             )}
 
           </div>
+
+          {effectiveVisitType === 'consultation' && (
+            <Card className={editSectionClassName}>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
+                  <Clock className="h-5 w-5 text-gray-500 dark:text-slate-300" />
+                  Consultation Attendance
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50/70 p-4 dark:border-white/10 dark:bg-white/[0.04]">
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wider text-gray-500 dark:text-slate-400">
+                      Current status
+                    </p>
+                    <div className="mt-2">
+                      <StatusBadge status={attendanceStatus} />
+                    </div>
+                  </div>
+                  <div className="text-right text-xs text-gray-500 dark:text-slate-400">
+                    {appointmentRecord?.actualArrivalAt && (
+                      <p>Checked in: {format(new Date(appointmentRecord.actualArrivalAt), 'MMM d, yyyy h:mm a')}</p>
+                    )}
+                    {appointmentRecord?.consultationCompletedAt && (
+                      <p>Completed: {format(new Date(appointmentRecord.consultationCompletedAt), 'MMM d, yyyy h:mm a')}</p>
+                    )}
+                  </div>
+                </div>
+
+                {canUpdateConsultationAttendance && (
+                  <div className="flex flex-wrap gap-3">
+                    {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
+                      <Button
+                        type="button"
+                        onClick={() => updateConsultationAttendance('check_in')}
+                        disabled={attendanceMutation.isPending}
+                        className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Check In Customer
+                      </Button>
+                    )}
+                    {[AppointmentAttendanceStatus.ON_TIME, AppointmentAttendanceStatus.LATE_ARRIVAL]
+                      .includes(attendanceStatus as AppointmentAttendanceStatus) && (
+                      <Button
+                        type="button"
+                        onClick={() => updateConsultationAttendance('start')}
+                        disabled={attendanceMutation.isPending}
+                        className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Start Consultation
+                      </Button>
+                    )}
+                    {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
+                      <Button
+                        type="button"
+                        onClick={() => updateConsultationAttendance('complete')}
+                        disabled={attendanceMutation.isPending}
+                        className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-500"
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Complete Consultation
+                      </Button>
+                    )}
+                  </div>
+                )}
+
+                <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
+                  Check in the customer and start the consultation here. When the status is In Progress,
+                  submitting the final report will automatically mark the consultation as completed.
+                </p>
+              </CardContent>
+            </Card>
+          )}
 
           {/* Consultation Summary (only for consultation visit type) */}
           {visitType === 'consultation' && !isProjectCreationMode && (
