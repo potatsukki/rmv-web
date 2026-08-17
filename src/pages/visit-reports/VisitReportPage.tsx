@@ -965,8 +965,9 @@ export function VisitReportPage() {
         toast.error('Consultation report cannot be submitted because the customer declined to proceed. Save notes only.');
         return;
       }
-      if (attendanceStatus !== AppointmentAttendanceStatus.COMPLETED) {
-        toast.error('Complete the consultation attendance before submitting the consultation report.');
+      if (![AppointmentAttendanceStatus.IN_PROGRESS, AppointmentAttendanceStatus.COMPLETED]
+        .includes(attendanceStatus as AppointmentAttendanceStatus)) {
+        toast.error('Check in and start the consultation before submitting the consultation report.');
         return;
       }
       if (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot)) {
