@@ -74,6 +74,7 @@ import {
   SLOT_CODES,
 } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications, SiteConditions, UserAddress, VisitReport } from '@/lib/types';
+import { isRetryableSubmittedOcularReport } from '@/lib/visit-report-cache';
 import { getDesignTemplatePlaceholderImage, type DesignTemplate } from '@/lib/design-templates';
 import { getMissingRequiredSpecificationFields, getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 
@@ -700,6 +701,11 @@ export function VisitReportPage() {
     ? `both items (${appointmentItemNames.join(' and ')})`
     : `the item (${appointmentItemNames[0] || serviceLabel})`;
   const relatedOcularAppointment = report.relatedOcularAppointment;
+  const canRetrySubmittedOcularHandoff = Boolean(
+    isSalesStaff
+    && isRetryableSubmittedOcularReport(report)
+    && !relatedOcularAppointment,
+  );
   const appointmentNavigationId = relatedOcularAppointment?._id || rawId(report.appointmentId);
   const relatedOcularHasMapPin = Boolean(
     relatedOcularAppointment?.customerLocation
@@ -756,10 +762,12 @@ export function VisitReportPage() {
     showSuccessToast = false,
     showErrorToast = true,
     syncSiblingReports = true,
+    allowSubmittedOcularRetry = false,
   }: {
     showSuccessToast?: boolean;
     showErrorToast?: boolean;
     syncSiblingReports?: boolean;
+    allowSubmittedOcularRetry?: boolean;
   } = {}): Promise<VisitReport | null> => {
     if (saveDraftInFlightRef.current) {
       return saveDraftInFlightRef.current;
@@ -887,7 +895,15 @@ export function VisitReportPage() {
       if (showSuccessToast) toast.success('Report saved');
       return savedReport;
     } catch (err) {
-      if (showErrorToast) toast.error(extractErrorMessage(err, 'Failed to save report'));
+      const message = extractErrorMessage(err, 'Failed to save report');
+      if (allowSubmittedOcularRetry && message.toLowerCase().includes('draft or returned')) {
+        const refreshed = await refetch();
+        const latest = refreshed.data;
+        if (isRetryableSubmittedOcularReport(latest)) {
+          return latest;
+        }
+      }
+      if (showErrorToast) toast.error(message);
       return null;
     }
     })();
@@ -993,9 +1009,10 @@ export function VisitReportPage() {
         toast.error('Consultation report cannot be submitted because the customer declined to proceed. Save notes only.');
         return;
       }
-      // Do not treat a missing populated appointment as "scheduled" here.
-      // The submit API remains the authority when the cache has only an ID.
-      if (recordedAttendanceStatus
+      // Temporary bypass: the server completes attendance while processing an
+      // ocular handoff. Other consultation outcomes keep the normal gate.
+      if (consultationOutcome !== 'schedule_ocular'
+        && recordedAttendanceStatus
         && ![AppointmentAttendanceStatus.IN_PROGRESS, AppointmentAttendanceStatus.COMPLETED]
           .includes(recordedAttendanceStatus as AppointmentAttendanceStatus)) {
         toast.error('Check in and start the consultation before submitting the consultation report.');
@@ -1023,7 +1040,20 @@ export function VisitReportPage() {
     }
 
     try {
-      const saved = await saveDraft({ showSuccessToast: false, showErrorToast: true });
+      let saved: VisitReport | null;
+      if (canRetrySubmittedOcularHandoff) {
+        const refreshed = await refetch();
+        saved = isRetryableSubmittedOcularReport(refreshed.data) ? refreshed.data : null;
+        if (!saved) {
+          toast.error('Unable to resume the ocular handoff. Refresh the report and try again.');
+        }
+      } else {
+        saved = await saveDraft({
+          showSuccessToast: false,
+          showErrorToast: true,
+          allowSubmittedOcularRetry: isConsultation && consultationOutcome === 'schedule_ocular',
+        });
+      }
       if (!saved) {
         setSubmitOpen(false);
         return;
@@ -1886,7 +1916,7 @@ export function VisitReportPage() {
           </Button>
         )}
 
-        {(canEdit || linkedProjectId) && (
+        {(canEdit || linkedProjectId || canRetrySubmittedOcularHandoff) && (
           <div className="w-full space-y-3">
             {linkedProject?.contractStatus !== ContractStatus.UPLOADED && (
               <div className={cn(
@@ -1955,6 +1985,17 @@ export function VisitReportPage() {
                       : effectiveVisitType === 'consultation' && !isProjectCreationMode ? 'Submit Consultation Outcome' : 'Create Project'}
                   </Button>
                 </div>
+              )}
+
+              {canRetrySubmittedOcularHandoff && (
+                <Button
+                  onClick={handlePrimarySubmitClick}
+                  disabled={submitMutation.isPending || updateMutation.isPending}
+                  className="order-1 rounded-xl bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:bg-[#1f7a5b]"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  Proceed to Ocular Visit
+                </Button>
               )}
 
               {isConsultationDraftProject && (isSalesStaff || isAdmin) && (
