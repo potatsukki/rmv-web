@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { VisitReport } from './types';
-import { mergeVisitReportCacheEntry } from './visit-report-cache';
+import { isRetryableSubmittedOcularReport, mergeVisitReportCacheEntry } from './visit-report-cache';
 
 function report(overrides: Partial<VisitReport> = {}): VisitReport {
   return {
@@ -56,5 +56,21 @@ describe('mergeVisitReportCacheEntry', () => {
       _id: 'appointment-1',
       attendanceStatus: 'completed',
     });
+  });
+});
+
+describe('isRetryableSubmittedOcularReport', () => {
+  it('accepts only a submitted consultation with a persisted ocular schedule', () => {
+    const retryable = report({
+      status: 'submitted',
+      consultationOutcome: 'schedule_ocular',
+      recommendedOcularDate: '2026-08-24',
+      recommendedOcularSlot: '09:00',
+    });
+
+    expect(isRetryableSubmittedOcularReport(retryable)).toBe(true);
+    expect(isRetryableSubmittedOcularReport({ ...retryable, status: 'draft' })).toBe(false);
+    expect(isRetryableSubmittedOcularReport({ ...retryable, consultationOutcome: 'no_ocular' })).toBe(false);
+    expect(isRetryableSubmittedOcularReport({ ...retryable, recommendedOcularSlot: undefined })).toBe(false);
   });
 });

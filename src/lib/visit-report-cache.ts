@@ -1,5 +1,18 @@
 import type { VisitReport } from './types';
 
+export function isRetryableSubmittedOcularReport(
+  report: VisitReport | null | undefined,
+): report is VisitReport {
+  return Boolean(
+    report
+    && report.visitType === 'consultation'
+    && report.status === 'submitted'
+    && report.consultationOutcome === 'schedule_ocular'
+    && report.recommendedOcularDate
+    && report.recommendedOcularSlot,
+  );
+}
+
 export function getVisitReportReferenceId(value: unknown): string | null {
   if (typeof value === 'string') return value;
   if (value && typeof value === 'object' && '_id' in value) {
