@@ -148,7 +148,7 @@ export function ServiceDetailsPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#F5B400]">{service.eyebrow}</p>
               <h1 className="mt-4 font-['Sora',sans-serif] text-[clamp(2.7rem,7vw,6.5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.05em]">{service.label}</h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-white/78 sm:text-lg">{service.shortDescription}</p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row"><Link to={quoteTarget} className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md bg-[#F5B400] px-7 text-xs font-extrabold uppercase tracking-[0.12em] text-[#090B0D] transition hover:-translate-y-0.5 hover:bg-[#FFD047]">Request a Quote<ArrowRight className="h-4 w-4" /></Link><a href="tel:029506187" className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md border border-white/35 bg-black/25 px-7 text-xs font-extrabold uppercase tracking-[0.12em] transition hover:border-[#F5B400] hover:text-[#F5B400]"><Phone className="h-4 w-4" />Call RMV</a></div>
+              <div className="mt-8 flex"><Link to={quoteTarget} className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md bg-[#F5B400] px-7 text-xs font-extrabold uppercase tracking-[0.12em] text-[#090B0D] transition hover:-translate-y-0.5 hover:bg-[#FFD047]">Request a Quote<ArrowRight className="h-4 w-4" /></Link></div>
             </div>
           </div>
         </section>
