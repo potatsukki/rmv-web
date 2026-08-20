@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type { ApiResponse, PaginatedResponse, VisitReport, LineItem, SiteConditions, ServiceSpecifications, UserAddress } from '@/lib/types';
+import { getVisitReportReferenceId, mergeVisitReportCacheEntry } from '@/lib/visit-report-cache';
 
 const KEYS = {
   all: ['visit-reports'] as const,
@@ -9,22 +10,20 @@ const KEYS = {
   byAppointment: (appointmentId: string) => [...KEYS.all, 'appointment', appointmentId] as const,
 };
 
-function rawId(field: unknown): string | null {
-  if (typeof field === 'string') return field;
-  if (field && typeof field === 'object' && '_id' in (field as Record<string, unknown>)) {
-    return String((field as Record<string, unknown>)._id);
-  }
-  return null;
-}
-
 function syncVisitReportCaches(qc: ReturnType<typeof useQueryClient>, report: VisitReport) {
-  qc.setQueryData(KEYS.detail(String(report._id)), report);
+  qc.setQueryData<VisitReport>(KEYS.detail(String(report._id)), (existing) => (
+    mergeVisitReportCacheEntry(existing, report)
+  ));
 
-  const appointmentId = rawId(report.appointmentId);
+  const appointmentId = getVisitReportReferenceId(report.appointmentId);
   if (appointmentId) {
     qc.setQueryData(KEYS.byAppointment(appointmentId), (existing: VisitReport[] | undefined) => {
       if (!existing) return existing;
-      const next = existing.map((item) => (String(item._id) === String(report._id) ? report : item));
+      const next = existing.map((item) => (
+        String(item._id) === String(report._id)
+          ? mergeVisitReportCacheEntry(item, report)
+          : item
+      ));
       return next.some((item) => String(item._id) === String(report._id)) ? next : [report, ...next];
     });
   }
@@ -172,7 +171,7 @@ export function useSubmitVisitReport() {
     onSuccess: (report) => {
       syncVisitReportCaches(qc, report);
       qc.invalidateQueries({ queryKey: KEYS.list() });
-      const appointmentId = rawId(report.appointmentId);
+      const appointmentId = getVisitReportReferenceId(report.appointmentId);
       if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
       qc.invalidateQueries({ queryKey: ['projects'] });
     },
@@ -193,7 +192,7 @@ export function useReturnVisitReport() {
       syncVisitReportCaches(qc, report);
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
-      const appointmentId = rawId(report.appointmentId);
+      const appointmentId = getVisitReportReferenceId(report.appointmentId);
       if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
     },
   });
@@ -213,7 +212,7 @@ export function useReopenVisitReportForRepair() {
       syncVisitReportCaches(qc, report);
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
-      const appointmentId = rawId(report.appointmentId);
+      const appointmentId = getVisitReportReferenceId(report.appointmentId);
       if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
       qc.invalidateQueries({ queryKey: ['projects'] });
     },

@@ -499,12 +499,15 @@ export function VisitReportPage() {
       consultationStartedAt?: string;
       consultationCompletedAt?: string;
       attendanceNotes?: string;
+      salesStaffId?: unknown;
     }
     : null;
+  const assignedSalesStaffId = rawId(appointmentRecord?.salesStaffId) || rawId(report?.salesStaffId);
   const isAssignedSalesStaff = Boolean(
-    isSalesStaff && appointmentRecord && (appointmentRecord as any).salesStaffId && rawId((appointmentRecord as any).salesStaffId) === String(user?._id),
+    isSalesStaff && assignedSalesStaffId === String(user?._id),
   );
-  const attendanceStatus = appointmentRecord?.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
+  const recordedAttendanceStatus = appointmentRecord?.attendanceStatus;
+  const attendanceStatus = recordedAttendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const canUpdateConsultationAttendance = Boolean(
     effectiveVisitType === 'consultation'
     && appointmentId
@@ -990,8 +993,11 @@ export function VisitReportPage() {
         toast.error('Consultation report cannot be submitted because the customer declined to proceed. Save notes only.');
         return;
       }
-      if (![AppointmentAttendanceStatus.IN_PROGRESS, AppointmentAttendanceStatus.COMPLETED]
-        .includes(attendanceStatus as AppointmentAttendanceStatus)) {
+      // Do not treat a missing populated appointment as "scheduled" here.
+      // The submit API remains the authority when the cache has only an ID.
+      if (recordedAttendanceStatus
+        && ![AppointmentAttendanceStatus.IN_PROGRESS, AppointmentAttendanceStatus.COMPLETED]
+          .includes(recordedAttendanceStatus as AppointmentAttendanceStatus)) {
         toast.error('Check in and start the consultation before submitting the consultation report.');
         return;
       }
