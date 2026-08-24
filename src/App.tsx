@@ -115,6 +115,11 @@ const BookAppointmentPage = lazy(() =>
     default: module.BookAppointmentPage,
   })),
 );
+const CustomerSiteDetailsPage = lazy(() =>
+  import('@/pages/appointments/CustomerSiteDetailsPage').then((module) => ({
+    default: module.CustomerSiteDetailsPage,
+  })),
+);
 const AgentBookAppointmentPage = lazy(() =>
   import('@/pages/appointments/AgentBookAppointmentPage').then((module) => ({
     default: module.AgentBookAppointmentPage,
@@ -209,8 +214,10 @@ export default function App() {
         '/complete-profile',
       ];
       const isPublicPath = publicPaths.includes(window.location.pathname);
+      const storedRefreshToken = getStoredRefreshToken();
+      const storedAccessToken = useAuthStore.getState().accessToken;
 
-      if (isPublicPath) {
+      if (isPublicPath && !storedAccessToken && !storedRefreshToken) {
         useAuthStore.setState({ isLoading: false });
         return;
       }
@@ -223,15 +230,15 @@ export default function App() {
       }
 
       // If no access token in sessionStorage, try to restore from the per-tab refresh token.
-      if (!getStoredRefreshToken()) {
+      if (!storedAccessToken && !storedRefreshToken) {
         useAuthStore.setState({ isLoading: false });
         return;
       }
 
-      if (!useAuthStore.getState().accessToken) {
+      if (!storedAccessToken && storedRefreshToken) {
         try {
           const { data } = await api.post('/auth/refresh-token', {
-            refreshToken: getStoredRefreshToken(),
+            refreshToken: storedRefreshToken,
           });
           const newToken = data?.data?.accessToken;
           if (newToken) {
@@ -303,6 +310,7 @@ export default function App() {
                 }
               >
                 <Route path="/appointments/book" element={<BookAppointmentPage />} />
+                <Route path="/appointments/:id/site-details" element={<CustomerSiteDetailsPage />} />
               </Route>
               <Route
                 element={

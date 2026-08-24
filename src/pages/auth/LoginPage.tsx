@@ -13,7 +13,13 @@ import { Button } from '@/components/ui/button';
 import { api, fetchCsrfToken } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { auth, googleProvider } from '@/lib/firebase';
-import { consumeAuthRedirectReason } from '@/lib/auth-session';
+import {
+  clearStoredAuthContinuationPath,
+  consumeAuthRedirectReason,
+  getStoredAuthContinuationPath,
+  normalizeAuthContinuationPath,
+  setStoredAuthContinuationPath,
+} from '@/lib/auth-session';
 import { resolvePostLoginPath } from '@/lib/auth-routing';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 
@@ -69,11 +75,16 @@ export function LoginPage() {
   const location = useLocation();
   const { fetchMe, setCsrfToken, setAccessToken, setRefreshToken } = useAuthStore();
   const locationState = (location.state as {
-    from?: { pathname: string };
+    from?: unknown;
     registeredEmail?: string;
     registrationComplete?: boolean;
   } | null) ?? null;
-  const from = locationState?.from?.pathname || '/dashboard';
+  const locationFrom = normalizeAuthContinuationPath(locationState?.from);
+  const from = locationFrom || getStoredAuthContinuationPath() || '/dashboard';
+
+  useEffect(() => {
+    if (locationFrom) setStoredAuthContinuationPath(locationFrom);
+  }, [locationFrom]);
 
   const finishGoogleSignIn = useCallback(async (result: UserCredential) => {
     const idToken = await result.user.getIdToken();
@@ -85,7 +96,7 @@ export function LoginPage() {
 
     if (responseData.needsProfile) {
       navigate('/complete-profile', {
-        state: { email: responseData.email, googleName: responseData.googleName, googlePhoto: responseData.googlePhoto, idToken },
+        state: { email: responseData.email, googleName: responseData.googleName, googlePhoto: responseData.googlePhoto, idToken, from },
         replace: true,
       });
       return;
@@ -107,6 +118,7 @@ export function LoginPage() {
 
     const destination = resolvePostLoginPath(from, responseData.user.roles);
     if (destination.redirectReason) toast(destination.redirectReason, { icon: 'ℹ️' });
+    clearStoredAuthContinuationPath();
     navigate(destination.path, { replace: true });
   }, [fetchMe, from, navigate, setAccessToken, setCsrfToken, setRefreshToken]);
 
@@ -185,12 +197,13 @@ export function LoginPage() {
       toast.success('Welcome back!');
 
       if (responseData.user?.mustChangePassword) {
-        navigate('/change-password', { replace: true });
+        navigate('/change-password', { replace: true, state: { from } });
         return;
       }
 
       const destination = resolvePostLoginPath(from, responseData.user.roles);
       if (destination.redirectReason) toast(destination.redirectReason, { icon: 'ℹ️' });
+      clearStoredAuthContinuationPath();
       navigate(destination.path, { replace: true });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string; code?: string } } } };
@@ -198,7 +211,7 @@ export function LoginPage() {
 
       if (code === 'EMAIL_NOT_VERIFIED') {
         toast.error('Please verify your email first.');
-        navigate('/verify-otp', { state: { email: data.email, purpose: 'email_verification' } });
+        navigate('/verify-otp', { state: { email: data.email, purpose: 'email_verification', from } });
         return;
       }
 
@@ -250,7 +263,7 @@ export function LoginPage() {
         </Button>
         <div className="auth-divider" aria-hidden="true">or</div>
         <GoogleAuthButton label="Continue with Google" loading={googleLoading} disabled={isSubmitting} onClick={handleGoogleSignIn} />
-        <p className="auth-form-switch">Don&apos;t have an account? <Link to="/register">Create account</Link></p>
+        <p className="auth-form-switch">Don&apos;t have an account? <Link to="/register" state={{ from }}>Create account</Link></p>
       </form>
     </AuthLayout>
   );

@@ -98,6 +98,9 @@ export function useRequestAppointment() {
       serviceTypes?: string[];
       serviceType?: string;
       serviceTypeCustom?: string;
+      selectedDesignTemplateId?: string;
+      selectedDesignTemplateName?: string;
+      selectedDesignTemplateImageUrl?: string;
       formattedAddress?: string;
       customerLocation?: { lat: number; lng: number };
       lockId?: string;

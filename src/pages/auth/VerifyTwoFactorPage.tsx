@@ -8,13 +8,18 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { resolvePostLoginPath } from '@/lib/auth-routing';
+import {
+  clearStoredAuthContinuationPath,
+  getStoredAuthContinuationPath,
+  normalizeAuthContinuationPath,
+} from '@/lib/auth-session';
 import { useAuthStore } from '@/stores/auth.store';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 
 const OTP_LENGTH = 6;
 const RESEND_COOLDOWN = 60;
 
-interface VerifyTwoFactorState { tempToken: string; email: string; firstName?: string; from?: string; }
+interface VerifyTwoFactorState { tempToken: string; email: string; firstName?: string; from?: unknown; }
 
 export function VerifyTwoFactorPage() {
   const location = useLocation();
@@ -24,13 +29,14 @@ export function VerifyTwoFactorPage() {
   const state = location.state as VerifyTwoFactorState | null;
   const tempToken = state?.tempToken || '';
   const email = state?.email || '';
+  const from = normalizeAuthContinuationPath(state?.from) || getStoredAuthContinuationPath() || '/dashboard';
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => { if (!tempToken || !email) navigate('/login', { replace: true }); }, [email, navigate, tempToken]);
+  useEffect(() => { if (!tempToken || !email) navigate('/login', { replace: true, state: { from } }); }, [email, from, navigate, tempToken]);
   useEffect(() => { if (cooldown <= 0) return; const timer = window.setInterval(() => setCooldown((value) => value - 1), 1000); return () => window.clearInterval(timer); }, [cooldown]);
   useEffect(() => { inputRefs.current[0]?.focus(); }, []);
   const handleChange = (index: number, value: string) => { if (!/^\d*$/.test(value)) return; const next = [...otp]; next[index] = value.slice(-1); setOtp(next); if (value && index < OTP_LENGTH - 1) inputRefs.current[index + 1]?.focus(); };
@@ -49,23 +55,24 @@ export function VerifyTwoFactorPage() {
       if (data.refreshToken) setRefreshToken(data.refreshToken);
       await fetchMe();
       toast.success('Welcome back!');
-      if (data.user?.mustChangePassword) { navigate('/change-password', { replace: true }); return; }
-      const destination = resolvePostLoginPath(state?.from, data.user.roles);
+      if (data.user?.mustChangePassword) { navigate('/change-password', { replace: true, state: { from } }); return; }
+      const destination = resolvePostLoginPath(from, data.user.roles);
       if (destination.redirectReason) toast(destination.redirectReason, { icon: 'ℹ️' });
+      clearStoredAuthContinuationPath();
       navigate(destination.path, { replace: true });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string; code?: string } } } };
-      if (error.response?.data?.error?.code === 'TOKEN_EXPIRED') { toast.error('Verification session expired. Please log in again.'); navigate('/login', { replace: true }); return; }
+      if (error.response?.data?.error?.code === 'TOKEN_EXPIRED') { toast.error('Verification session expired. Please log in again.'); navigate('/login', { replace: true, state: { from } }); return; }
       toast.error(error.response?.data?.error?.message || 'Verification failed'); setOtp(Array(OTP_LENGTH).fill('')); inputRefs.current[0]?.focus();
     } finally { setIsSubmitting(false); }
-  }, [fetchMe, navigate, otp, setAccessToken, setCsrfToken, setRefreshToken, state?.from, tempToken]);
+  }, [fetchMe, from, navigate, otp, setAccessToken, setCsrfToken, setRefreshToken, tempToken]);
   useEffect(() => { if (otp.every(Boolean)) void handleSubmit(); }, [handleSubmit, otp]);
-  const handleResend = async () => { setIsResending(true); try { await api.post('/auth/resend-2fa', { tempToken }); toast.success('New verification code sent to your email'); setCooldown(RESEND_COOLDOWN); setOtp(Array(OTP_LENGTH).fill('')); inputRefs.current[0]?.focus(); } catch (err: unknown) { const error = err as { response?: { data?: { error?: { message?: string; code?: string } } } }; if (error.response?.data?.error?.code === 'TOKEN_EXPIRED') { navigate('/login', { replace: true }); return; } toast.error(error.response?.data?.error?.message || 'Failed to resend code'); } finally { setIsResending(false); } };
+  const handleResend = async () => { setIsResending(true); try { await api.post('/auth/resend-2fa', { tempToken }); toast.success('New verification code sent to your email'); setCooldown(RESEND_COOLDOWN); setOtp(Array(OTP_LENGTH).fill('')); inputRefs.current[0]?.focus(); } catch (err: unknown) { const error = err as { response?: { data?: { error?: { message?: string; code?: string } } } }; if (error.response?.data?.error?.code === 'TOKEN_EXPIRED') { navigate('/login', { replace: true, state: { from } }); return; } toast.error(error.response?.data?.error?.message || 'Failed to resend code'); } finally { setIsResending(false); } };
   if (!tempToken || !email) return null;
 
   return (
     <AuthLayout variant="login">
-      <Link to="/login" className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Sign In</Link>
+      <Link to="/login" state={{ from }} className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Sign In</Link>
       <p className="auth-form-eyebrow">Secure Access</p>
       <h1 className="auth-form-title">Verification required</h1>
       <p className="auth-form-copy">{state?.firstName ? `Hi ${state.firstName}, ` : ''}we sent a six-digit code to <strong>{email}</strong>.</p>

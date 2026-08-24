@@ -1,4 +1,5 @@
 import { Role } from '@/lib/constants';
+import { normalizeAuthContinuationPath } from '@/lib/auth-session';
 
 interface RouteRule {
   pattern: RegExp;
@@ -15,6 +16,7 @@ const PROTECTED_ROUTE_RULES: RouteRule[] = [
   { pattern: /^\/appointments\/create-for-customer\/?$/i, allowedRoles: [Role.APPOINTMENT_AGENT, Role.SALES_STAFF] },
   { pattern: /^\/appointments\/book\/?$/i, allowedRoles: [Role.CUSTOMER] },
   { pattern: /^\/appointments\/[^/]+\/pay-ocular-fee\/?$/i, allowedRoles: [Role.CUSTOMER] },
+  { pattern: /^\/appointments\/[^/]+\/site-details\/?$/i, allowedRoles: [Role.CUSTOMER] },
   { pattern: /^\/appointments\/[^/]+\/?$/i, allowedRoles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
   { pattern: /^\/appointments\/?$/i, allowedRoles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
   { pattern: /^\/ocular-fee-queue\/?$/i, allowedRoles: [Role.CASHIER, Role.ADMIN] },
@@ -53,7 +55,10 @@ export function getDefaultAuthenticatedPath(): string {
 }
 
 export function canAccessPath(pathname: string, roles: Role[]): boolean {
-  const normalizedPath = (pathname || '/dashboard').split(/[?#]/)[0] || '/dashboard';
+  const safePath = normalizeAuthContinuationPath(pathname);
+  if (!safePath) return false;
+
+  const normalizedPath = safePath.split(/[?#]/)[0] || '/dashboard';
   const matchingRule = PROTECTED_ROUTE_RULES.find((rule) => rule.pattern.test(normalizedPath));
 
   if (!matchingRule) {
@@ -72,12 +77,18 @@ export function resolvePostLoginPath(pathname: string | null | undefined, roles:
     return { path: getDefaultAuthenticatedPath(), redirectReason: null as string | null };
   }
 
-  if (LOGIN_EXCLUDED_PATHS.has(pathname)) {
+  const safePath = normalizeAuthContinuationPath(pathname);
+  if (!safePath) {
     return { path: getDefaultAuthenticatedPath(), redirectReason: null as string | null };
   }
 
-  if (canAccessPath(pathname, roles)) {
-    return { path: pathname, redirectReason: null as string | null };
+  const normalizedPath = safePath.split(/[?#]/)[0] || '/';
+  if (LOGIN_EXCLUDED_PATHS.has(normalizedPath)) {
+    return { path: getDefaultAuthenticatedPath(), redirectReason: null as string | null };
+  }
+
+  if (canAccessPath(safePath, roles)) {
+    return { path: safePath, redirectReason: null as string | null };
   }
 
   return {

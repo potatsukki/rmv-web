@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useParams } from 'react-router';
-import { ArrowLeft, CheckCircle2, Download, FileSignature, Loader2, Upload } from 'lucide-react';
+import { AlertTriangle, ArrowLeft, Calculator, CheckCircle2, Download, FileSignature, Loader2, Upload } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,10 @@ import { ContractStatus, ProjectStatus, Role } from '@/lib/constants';
 import { cn, extractErrorMessage } from '@/lib/utils';
 
 const getFileName = (fileKey: string) => fileKey.split('/').pop() || fileKey;
+const formatCurrency = (value: number) => new Intl.NumberFormat('en-PH', {
+  style: 'currency',
+  currency: 'PHP',
+}).format(value);
 
 export function ProjectContractUploadPage() {
   const { id } = useParams<{ id: string }>();
@@ -81,6 +85,10 @@ export function ProjectContractUploadPage() {
   if (isError || !project) return <PageError onRetry={refetch} />;
 
   const isUploaded = project.contractStatus === ContractStatus.UPLOADED;
+  const rawProjectCost = Number(project.totalCost);
+  const approvedProjectCost = Number.isFinite(rawProjectCost) && rawProjectCost > 0
+    ? rawProjectCost
+    : undefined;
 
   return (
     <div className="mx-auto w-full max-w-4xl space-y-6 px-4 py-6 sm:px-6 lg:px-8">
@@ -142,6 +150,43 @@ export function ProjectContractUploadPage() {
                   {isUploaded
                     ? project.contractFileName || getFileName(project.contractFileKey || '')
                     : 'Accepted files: PDF, JPG, JPEG, PNG.'}
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <div className={cn(
+            'rounded-2xl border p-4',
+            approvedProjectCost !== undefined
+              ? 'border-emerald-500/30 bg-emerald-500/[0.07]'
+              : 'border-amber-500/35 bg-amber-500/10',
+          )}>
+            <div className="flex items-start gap-3">
+              <span className={cn(
+                'mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl',
+                approvedProjectCost !== undefined
+                  ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                  : 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+              )}>
+                {approvedProjectCost !== undefined
+                  ? <Calculator className="h-5 w-5" />
+                  : <AlertTriangle className="h-5 w-5" />}
+              </span>
+              <div>
+                <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
+                  {approvedProjectCost !== undefined ? 'Approved project cost' : 'Finalized contract amount not available'}
+                </p>
+                {approvedProjectCost !== undefined ? (
+                  <p className="mt-1 text-xl font-semibold text-emerald-700 dark:text-emerald-300">
+                    {formatCurrency(approvedProjectCost)}
+                  </p>
+                ) : (
+                  <p className="mt-1 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                    This project response does not provide a positive approved project cost. Confirm the agreed amount directly from the manually signed document before uploading it.
+                  </p>
+                )}
+                <p className="mt-2 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                  This page does not read or verify the amount printed in the file. The uploaded signed contract remains the authoritative contract record.
                 </p>
               </div>
             </div>

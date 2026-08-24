@@ -10,6 +10,7 @@ import { AuthField } from '@/components/auth/AuthFields';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { api, fetchCsrfToken } from '@/lib/api';
+import { getStoredAuthContinuationPath, normalizeAuthContinuationPath } from '@/lib/auth-session';
 import { useAuthStore } from '@/stores/auth.store';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 const schema = z.object({
@@ -25,8 +26,9 @@ export function CompleteProfilePage() {
   useAuthPageScrollbar();
   const { setCsrfToken } = useAuthStore();
   const [submitting, setSubmitting] = useState(false);
-  const state = location.state as { email?: string; googleName?: string; googlePhoto?: string; idToken?: string } | null;
-  if (!state?.idToken) return <Navigate to="/register" replace />;
+  const state = location.state as { email?: string; googleName?: string; googlePhoto?: string; idToken?: string; from?: unknown } | null;
+  const from = normalizeAuthContinuationPath(state?.from) || getStoredAuthContinuationPath() || '/dashboard';
+  if (!state?.idToken) return <Navigate to="/register" state={{ from }} replace />;
   const names = (state.googleName || '').split(' ');
   const defaultFirstName = names[0] || '';
   const defaultLastName = names.slice(1).join(' ') || '';
@@ -37,14 +39,14 @@ export function CompleteProfilePage() {
     try {
       const csrfToken = await fetchCsrfToken(); setCsrfToken(csrfToken);
       const response = await api.post('/auth/google/complete', { idToken: state.idToken, firstName: data.firstName, lastName: data.lastName, phone: data.phone.startsWith('09') ? `+63${data.phone.slice(1)}` : data.phone });
-      setCsrfToken(response.data.data.csrfToken); toast.success('Account created! Please sign in to continue.'); navigate('/login', { replace: true });
+      setCsrfToken(response.data.data.csrfToken); toast.success('Account created! Please sign in to continue.'); navigate('/login', { replace: true, state: { from } });
     } catch (err: unknown) { const error = err as { response?: { data?: { error?: { message?: string } } } }; toast.error(error.response?.data?.error?.message || 'Failed to complete registration.'); }
     finally { setSubmitting(false); }
   };
 
   return (
     <AuthLayout variant="register">
-      <button type="button" onClick={() => navigate('/register')} className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Register</button>
+      <button type="button" onClick={() => navigate('/register', { state: { from } })} className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Register</button>
       <p className="auth-form-eyebrow">Google Registration</p>
       <h1 className="auth-form-title">Complete your profile</h1>
       <p className="auth-form-copy">Confirm your name and mobile number to finish creating your account.</p>

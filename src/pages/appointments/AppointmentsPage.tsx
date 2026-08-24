@@ -540,7 +540,12 @@ export function AppointmentsPage() {
                         </div>
 
                         {/* Row 3 (optional): Site details badge */}
-                        {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
+                        {appt.siteDetailsStatus === 'pending'
+                          && appt.status === 'requested'
+                          && !appt.consultationStartedAt
+                          && !['in_progress', 'completed'].includes(appt.attendanceStatus || '')
+                          && !appt.selectedDesignTemplateId
+                          && !appt.selectedDesignTemplateName && (
                           <div className="ml-[18px] mt-1.5">
                             <span className="inline-flex items-center gap-1 text-[10px] font-medium text-[#4f6679]">
                               <FileText className="h-3 w-3" />
@@ -634,7 +639,12 @@ export function AppointmentsPage() {
                                     </span>
                                   )}
                                 </p>
-                                {appt.siteDetailsStatus === 'pending' && appt.status === 'requested' && (
+                                {appt.siteDetailsStatus === 'pending'
+                                  && appt.status === 'requested'
+                                  && !appt.consultationStartedAt
+                                  && !['in_progress', 'completed'].includes(appt.attendanceStatus || '')
+                                  && !appt.selectedDesignTemplateId
+                                  && !appt.selectedDesignTemplateName && (
                                   <span className="mt-1 inline-flex items-center gap-1 text-[10px] font-medium text-[#4f6679]">
                                     <FileText className="h-3 w-3" />
                                     {appt.type === 'office' ? 'Consultation Details Required' : 'Site Details Optional'}

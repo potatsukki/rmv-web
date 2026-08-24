@@ -16,7 +16,7 @@ function Calendar({
   return (
     <DayPicker
       showOutsideDays={showOutsideDays}
-      className={cn("p-3", className)}
+      className={cn("relative p-3", className)}
       classNames={{
         months:
           "flex flex-col sm:flex-row gap-y-4 sm:gap-x-4 sm:gap-y-0",
@@ -27,11 +27,11 @@ function Calendar({
         nav: "flex items-center gap-x-1",
         button_previous: cn(
           buttonVariants({ variant: "outline" }),
-          "absolute left-1 h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 border-gray-200 text-gray-700 hover:text-gray-950 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white"
+          "absolute left-3 top-3 h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 border-gray-200 text-gray-700 hover:text-gray-950 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white"
         ),
         button_next: cn(
           buttonVariants({ variant: "outline" }),
-          "absolute right-1 h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 border-gray-200 text-gray-700 hover:text-gray-950 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white"
+          "absolute right-3 top-3 h-7 w-7 bg-transparent p-0 opacity-70 hover:opacity-100 border-gray-200 text-gray-700 hover:text-gray-950 dark:border-white/10 dark:text-slate-200 dark:hover:bg-white/[0.08] dark:hover:text-white"
         ),
         month_grid: "w-full [&]:block [&>thead]:block [&>tbody]:block",
         weekdays: "grid grid-cols-7",

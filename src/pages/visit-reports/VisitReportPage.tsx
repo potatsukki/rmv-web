@@ -215,6 +215,62 @@ function getServiceTypeLabel(serviceType?: string, customLabel?: string) {
   return serviceType ? SERVICE_TYPE_LABELS[serviceType] || serviceType : 'Custom';
 }
 
+function SelectedDesignReferenceCard({
+  designName,
+  imageUrl,
+  serviceType,
+  serviceLabel,
+  isCustomerSelected,
+  onRemove,
+}: {
+  designName: string;
+  imageUrl?: string;
+  serviceType?: string;
+  serviceLabel: string;
+  isCustomerSelected: boolean;
+  onRemove?: () => void;
+}) {
+  return (
+    <div className="overflow-hidden rounded-2xl border border-sky-200/70 bg-white shadow-sm dark:border-sky-500/25 dark:bg-slate-950/55">
+      <div className="grid sm:grid-cols-[minmax(220px,280px)_1fr]">
+        <img
+          src={imageUrl || getDesignTemplatePlaceholderImage(serviceType, designName)}
+          alt={designName}
+          className="h-48 w-full bg-slate-100 object-cover dark:bg-slate-900 sm:h-full sm:min-h-48"
+        />
+        <div className="flex flex-col justify-center p-4 sm:p-5">
+          <div className="flex items-start justify-between gap-3">
+            <span className="w-fit rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200">
+              {isCustomerSelected ? 'Customer-selected design' : 'Selected design reference'}
+            </span>
+            {onRemove && (
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-9 w-9 shrink-0 rounded-xl text-slate-500 hover:bg-red-50 hover:text-red-600 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-200"
+                onClick={onRemove}
+                aria-label={`Remove ${designName}`}
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+          <p className="mt-3 text-lg font-semibold text-slate-950 dark:text-slate-100">{designName}</p>
+          <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+            Service: <span className="font-semibold text-slate-800 dark:text-slate-100">{serviceLabel}</span>
+          </p>
+          {isCustomerSelected && (
+            <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+              This is the sample design selected during booking. Keep it as the customer reference throughout the visit report.
+            </p>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function getAppointmentServiceLabels(appointment: unknown) {
   if (!appointment || typeof appointment !== 'object') return [];
 
@@ -501,8 +557,27 @@ export function VisitReportPage() {
       consultationCompletedAt?: string;
       attendanceNotes?: string;
       salesStaffId?: unknown;
+      serviceTypes?: string[];
+      selectedDesignTemplateId?: string;
+      selectedDesignTemplateName?: string;
+      selectedDesignTemplateImageUrl?: string;
     }
     : null;
+  const customerSelectedDesignId = appointmentRecord?.selectedDesignTemplateId || '';
+  const customerSelectedDesignName = appointmentRecord?.selectedDesignTemplateName || '';
+  const customerSelectedDesignImageUrl = appointmentRecord?.selectedDesignTemplateImageUrl || '';
+  const customerSelectedDesignServiceType = appointmentRecord?.serviceTypes?.[0];
+  const hasCustomerSelectedDesign = Boolean(
+    customerSelectedDesignId || customerSelectedDesignName || customerSelectedDesignImageUrl,
+  ) && (
+    !customerSelectedDesignServiceType
+    || customerSelectedDesignServiceType === report?.serviceType
+  );
+  const customerSelectedDesignIdForReport = hasCustomerSelectedDesign ? customerSelectedDesignId : '';
+  const customerSelectedDesignNameForReport = hasCustomerSelectedDesign ? customerSelectedDesignName : '';
+  const customerSelectedDesignImageUrlForReport = hasCustomerSelectedDesign
+    ? customerSelectedDesignImageUrl
+    : '';
   const assignedSalesStaffId = rawId(appointmentRecord?.salesStaffId) || rawId(report?.salesStaffId);
   const isAssignedSalesStaff = Boolean(
     isSalesStaff && assignedSalesStaffId === String(user?._id),
@@ -596,9 +671,9 @@ export function VisitReportPage() {
     setNoOcularReason(report.noOcularReason || '');
     setInitialDesignKeys(report.initialDesignKeys || []);
     setInitialDesignNotes(report.initialDesignNotes || '');
-    setSelectedDesignTemplateId(report.selectedDesignTemplateId || '');
-    setSelectedDesignTemplateName(report.selectedDesignTemplateName || '');
-    setSelectedDesignTemplateImageUrl(report.selectedDesignTemplateImageUrl || '');
+    setSelectedDesignTemplateId(report.selectedDesignTemplateId || customerSelectedDesignIdForReport);
+    setSelectedDesignTemplateName(report.selectedDesignTemplateName || customerSelectedDesignNameForReport);
+    setSelectedDesignTemplateImageUrl(report.selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport);
     setRecommendedOcularDate(sharedRecommendedOcularDate ? extractLocalDateValue(sharedRecommendedOcularDate) : '');
     setRecommendedOcularSlot(sharedRecommendedOcularSlot || '');
     setSelectedOcularAddressId(report.recommendedOcularAddressId || report.recommendedOcularAddress?.id || '');
@@ -685,6 +760,8 @@ export function VisitReportPage() {
 
   const serviceLabel =
     getServiceTypeLabel(serviceType, serviceTypeCustom);
+  const displayedSelectedDesignName = report.selectedDesignTemplateName || customerSelectedDesignNameForReport;
+  const displayedSelectedDesignImageUrl = report.selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport;
   const headerServiceLabels = getAppointmentServiceLabels(report.appointmentId);
   const siblingServiceLabels = (siblingReports || [])
     .map((sibling) => getServiceTypeLabel(sibling.serviceType, sibling.serviceTypeCustom));
@@ -748,7 +825,9 @@ export function VisitReportPage() {
   const handleDesignTemplateSelect = (template: DesignTemplate) => {
     setSelectedDesignTemplateId(template.id);
     setSelectedDesignTemplateName(template.title);
-    setSelectedDesignTemplateImageUrl('');
+    // Generated data-URI placeholders can exceed the API's image URL limit.
+    // Persist real catalog paths while continuing to derive placeholders locally.
+    setSelectedDesignTemplateImageUrl(template.imageUrl.startsWith('data:') ? '' : template.imageUrl);
     setMaterials(template.material);
     setFinishes(template.finish);
     setPreferredDesign(template.preferredDesign);
@@ -835,9 +914,9 @@ export function VisitReportPage() {
           referenceImageKeys,
           initialDesignKeys,
           initialDesignNotes: initialDesignNotes || undefined,
-          selectedDesignTemplateId: selectedDesignTemplateId || undefined,
-          selectedDesignTemplateName: selectedDesignTemplateName || undefined,
-          selectedDesignTemplateImageUrl: undefined,
+          selectedDesignTemplateId,
+          selectedDesignTemplateName,
+          selectedDesignTemplateImageUrl: selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport,
         }),
         // Consultation-specific fields
         ...(visitType === 'consultation' && {
@@ -1363,6 +1442,16 @@ export function VisitReportPage() {
             </CardContent>
           </Card>
 
+          {displayedSelectedDesignName && (
+            <SelectedDesignReferenceCard
+              designName={displayedSelectedDesignName}
+              imageUrl={displayedSelectedDesignImageUrl}
+              serviceType={report.serviceType}
+              serviceLabel={serviceLabel}
+              isCustomerSelected={hasCustomerSelectedDesign}
+            />
+          )}
+
           {/* Consultation Summary (read-only) */}
           {effectiveVisitType === 'consultation' && (
             <Card className="rounded-xl border-blue-100 dark:border-blue-900/60 dark:bg-slate-900/90 shadow-sm">
@@ -1373,20 +1462,6 @@ export function VisitReportPage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {report.selectedDesignTemplateName && (
-                  <div className="overflow-hidden rounded-xl border border-[#d8dee6] bg-[#f8fafc] shadow-[0_6px_18px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800/80">
-                    <img
-                      src={getDesignTemplatePlaceholderImage(report.serviceType, report.selectedDesignTemplateName)}
-                      alt={report.selectedDesignTemplateName}
-                      className="h-48 w-full object-cover"
-                    />
-                    <div className="p-4">
-                      <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Selected Design Reference</p>
-                      <p className="mt-1 text-sm text-[#647080] dark:text-slate-400">{report.selectedDesignTemplateName}</p>
-                    </div>
-                  </div>
-                )}
-
                 <div className="rounded-xl border border-[#d8dee6] bg-[#f8fafc] p-4 shadow-[0_6px_18px_rgba(15,23,42,0.04)] dark:border-slate-700 dark:bg-slate-800/80">
                   <p className="text-sm font-semibold text-gray-900 dark:text-slate-100 mb-2 flex items-center gap-2">
                     <StickyNote className="h-4 w-4" /> Discussion Notes for {serviceLabel}
@@ -1735,7 +1810,22 @@ export function VisitReportPage() {
             </Card>
           )}
 
-          {canEditProjectDetailsInReport && (
+          {selectedDesignTemplateName && (
+            <SelectedDesignReferenceCard
+              designName={selectedDesignTemplateName}
+              imageUrl={selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport}
+              serviceType={serviceType}
+              serviceLabel={serviceLabel}
+              isCustomerSelected={hasCustomerSelectedDesign}
+              onRemove={!hasCustomerSelectedDesign ? () => {
+                setSelectedDesignTemplateId('');
+                setSelectedDesignTemplateName('');
+                setSelectedDesignTemplateImageUrl('');
+              } : undefined}
+            />
+          )}
+
+          {canEditProjectDetailsInReport && !hasCustomerSelectedDesign && (
             <Card className={editCardClassName}>
               <CardContent className="pt-6">
                 <DesignTemplateSelector
@@ -1811,39 +1901,6 @@ export function VisitReportPage() {
                 onUploadComplete={setInitialDesignKeys}
                 onUploadingChange={setInitialDesignUploading}
               />
-              {selectedDesignTemplateName && (
-                <div className="flex items-center gap-3 rounded-2xl border border-[color:var(--color-border)]/60 bg-white/80 p-3 shadow-sm dark:bg-slate-950/45 dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]">
-                  <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-xl border border-sky-200/70 bg-slate-100 dark:border-sky-700/70 dark:bg-slate-900">
-                    <img
-                      src={getDesignTemplatePlaceholderImage(serviceType, selectedDesignTemplateName)}
-                      alt={selectedDesignTemplateName}
-                      className="h-full w-full object-cover"
-                    />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-semibold text-slate-950 dark:text-slate-100">
-                      {selectedDesignTemplateName}
-                    </p>
-                    <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                      Template reference
-                    </p>
-                  </div>
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon"
-                    className="h-10 w-10 shrink-0 rounded-xl border border-[color:var(--color-border)]/60 bg-white/70 text-slate-500 hover:bg-red-50 hover:text-red-600 dark:bg-slate-900/70 dark:text-slate-300 dark:hover:bg-red-950/30 dark:hover:text-red-200"
-                    onClick={() => {
-                      setSelectedDesignTemplateId('');
-                      setSelectedDesignTemplateName('');
-                      setSelectedDesignTemplateImageUrl('');
-                    }}
-                    aria-label={`Remove ${selectedDesignTemplateName}`}
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              )}
               <div className="space-y-1.5">
                 <Label className="text-[13px] font-medium text-gray-700">
                   Initial Design Notes
