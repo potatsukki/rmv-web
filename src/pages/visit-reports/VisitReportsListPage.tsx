@@ -1,5 +1,5 @@
 import { Fragment, useState, useMemo } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -99,6 +99,7 @@ interface ReportSection {
 
 const STATUS_FILTERS = [
   { label: 'All Reports', value: '' },
+  { label: 'Pending', value: 'pending' },
   { label: 'Draft', value: VisitReportStatus.DRAFT },
   { label: 'Submitted', value: VisitReportStatus.SUBMITTED },
   { label: 'Returned', value: VisitReportStatus.RETURNED },
@@ -131,7 +132,8 @@ const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]' };
 export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = {}) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const statusFilter = searchParams.get('reportStatus') || '';
   const [search, setSearch] = useState('');
 
   const params: Record<string, string> = {};
@@ -139,6 +141,13 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
   if (search) params.search = search;
 
   const { data, isLoading, isError, refetch } = useVisitReports(params);
+
+  const handleStatusFilterChange = (value: string) => {
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('reportStatus', value);
+    else next.delete('reportStatus');
+    setSearchParams(next, { replace: true });
+  };
 
   if (isError) return <PageError onRetry={refetch} />;
 
@@ -208,7 +217,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
         onSearchChange={setSearch}
         filters={STATUS_FILTERS}
         activeFilter={statusFilter}
-        onFilterChange={setStatusFilter}
+        onFilterChange={handleStatusFilterChange}
       />
 
       {/* Content */}
@@ -260,7 +269,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
               className="text-[#171b21] dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
               onClick={() => {
                 setSearch('');
-                setStatusFilter('');
+                handleStatusFilterChange('');
               }}
             >
               Clear Filters
