@@ -257,8 +257,7 @@ export function AppointmentsPage() {
     ? dedupeCustomerOcularFollowUps(appointments)
     : appointments;
 
-  const recentWindowDays = queueQuery.data?.recentWindowDays || 14;
-  let sections: Array<{ key: string; label: string; items: Appointment[] }> = [];
+  let sections: Array<{ key: string; items: Appointment[] }> = [];
 
   if (isQueueRole) {
     const sortUpcomingQueueItems = !statusFilter && !search
@@ -268,7 +267,6 @@ export function AppointmentsPage() {
     sections = [
       {
         key: 'upcoming',
-        label: 'Upcoming and Actionable',
         items: queueItems
           .filter((item) => item.segment === 'upcoming')
           .map((item) => item.appointment)
@@ -276,7 +274,6 @@ export function AppointmentsPage() {
       },
       {
         key: 'recent',
-        label: (statusFilter !== null || search) ? 'Recent and History' : `Recent (${recentWindowDays} days)`,
         items: queueItems
           .filter((item) => item.segment === 'recent')
           .map((item) => item.appointment)
@@ -294,12 +291,10 @@ export function AppointmentsPage() {
     sections = [
       {
         key: 'upcoming',
-        label: 'Upcoming and Actionable',
         items: upcomingItems,
       },
       {
         key: 'recent',
-        label: (statusFilter !== null || search) ? 'Recent and History' : 'Recent and History',
         items: recentItems,
       },
     ].filter((section) => section.items.length > 0);
@@ -499,13 +494,6 @@ export function AppointmentsPage() {
           <div className="md:hidden space-y-2">
             {sections.map((section) => (
               <div key={section.key} className="space-y-2">
-                <Fragment>
-                  <div className="px-1 py-1">
-                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6d7782] dark:text-slate-400">
-                      {section.label}
-                    </p>
-                  </div>
-                </Fragment>
                 {section.items.map((appt) => {
                   const workflowStatus = resolveAppointmentWorkflowStatus({
                     ...appt,
@@ -608,15 +596,6 @@ export function AppointmentsPage() {
               <TableBody>
                 {sections.map((section) => (
                   <Fragment key={section.key}>
-                    <Fragment>
-                      <TableRow key={`${section.key}-heading`} className="hover:bg-transparent">
-                        <TableCell colSpan={6} className="px-5 py-3">
-                          <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6d7782] dark:text-slate-400">
-                            {section.label}
-                          </p>
-                        </TableCell>
-                      </TableRow>
-                    </Fragment>
                     {section.items.map((appt) => {
                       const workflowStatus = resolveAppointmentWorkflowStatus({
                         ...appt,
