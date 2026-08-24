@@ -104,6 +104,11 @@ const ALL_TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
+const getPositiveAmount = (value: unknown): number | undefined => {
+  const amount = Number(value);
+  return Number.isFinite(amount) && amount > 0 ? amount : undefined;
+};
+
 const IMAGE_FILE_EXTENSIONS = new Set(['jpg', 'jpeg', 'png', 'gif', 'webp', 'bmp', 'svg', 'avif']);
 
 const getFileName = (fileKey: string) => fileKey.split('/').pop() || fileKey;
@@ -682,6 +687,7 @@ export function ProjectDetailPage() {
   const activeDesignReviewNotes = activeProjectItemRecord?.designReviewNotes ?? project?.designReviewNotes;
   const hasInitialDesign = Boolean(activeInitialDesignKeys.length || activeInitialDesignNotes);
   const activeSelectedDesignTemplateName = activeProjectItemRecord?.selectedDesignTemplateName;
+  const activeSelectedDesignTemplateImageUrl = activeProjectItemRecord?.selectedDesignTemplateImageUrl;
   const activeSelectedDesignTemplateServiceType = activeProjectItemRecord?.serviceType;
   const initialDesignBackfill = project?.initialDesignBackfill;
   const hasBackfilledInitialDesign = Boolean(initialDesignBackfill?.backfilledAt);
@@ -1140,6 +1146,18 @@ export function ProjectDetailPage() {
   const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
   const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
   const headerTitle = activeProjectServiceLabel || projectServiceTitle;
+  const approvedProjectCost = getPositiveAmount(project.totalCost);
+  const approvedItemQuotationTotal = blueprint?.status === 'approved'
+    ? getPositiveAmount(blueprint.quotation?.total)
+    : undefined;
+  const approvedCostAmount = approvedProjectCost ?? approvedItemQuotationTotal;
+  const approvedCostLabel = approvedProjectCost !== undefined
+    ? 'Approved Project Cost'
+    : projectServiceItems.length > 1
+      ? 'Approved Quotation — Selected Item'
+      : 'Approved Quotation';
+  const selectedPaymentPlanTotal = getPositiveAmount(paymentPlan?.totalAmount);
+  const hasStructuredPricingReference = approvedCostAmount !== undefined || selectedPaymentPlanTotal !== undefined;
 
   return (
     <div className="space-y-4 sm:space-y-5">
@@ -1530,8 +1548,52 @@ export function ProjectDetailPage() {
               {project.projectNumber && (
                 <DetailField label="Project Number" value={project.projectNumber} />
               )}
+              {!shouldHideAmount && approvedCostAmount !== undefined && (
+                <DetailField label={approvedCostLabel}>
+                  <p>{formatCurrency(approvedCostAmount)}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    Base amount from the approved project quotation.
+                  </p>
+                </DetailField>
+              )}
+              {!shouldHideAmount && selectedPaymentPlanTotal !== undefined && (
+                <DetailField label={projectServiceItems.length > 1 ? 'Selected Payment Plan — Selected Item' : 'Selected Payment Plan Total'}>
+                  <p>{formatCurrency(selectedPaymentPlanTotal)}</p>
+                  <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
+                    This payable total may differ from the base quotation when an installment plan applies.
+                  </p>
+                </DetailField>
+              )}
             </div>
           </DetailSectionCard>
+
+          {activeSelectedDesignTemplateName && (
+            <DetailSectionCard title="Selected Design" icon={Image} className="lg:col-span-2">
+              <div className="overflow-hidden rounded-2xl border border-sky-200/70 bg-slate-50/80 dark:border-sky-500/25 dark:bg-white/[0.035]">
+                <div className="grid sm:grid-cols-[minmax(240px,320px)_1fr]">
+                  <img
+                    src={activeSelectedDesignTemplateImageUrl || getDesignTemplatePlaceholderImage(activeSelectedDesignTemplateServiceType, activeSelectedDesignTemplateName)}
+                    alt={activeSelectedDesignTemplateName}
+                    className="h-52 w-full bg-slate-100 object-cover dark:bg-slate-900 sm:h-full sm:min-h-52"
+                  />
+                  <div className="flex flex-col justify-center p-4 sm:p-5">
+                    <span className="w-fit rounded-full border border-sky-200 bg-sky-50 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200">
+                      Selected design reference
+                    </span>
+                    <p className="mt-3 text-xl font-semibold text-slate-950 dark:text-slate-100">
+                      {activeSelectedDesignTemplateName}
+                    </p>
+                    <p className="mt-1 text-sm text-slate-600 dark:text-slate-300">
+                      Service: <span className="font-semibold text-slate-800 dark:text-slate-100">{activeProjectServiceLabel || formatServiceTypeLabel(activeSelectedDesignTemplateServiceType)}</span>
+                    </p>
+                    <p className="mt-3 text-xs leading-5 text-slate-500 dark:text-slate-400">
+                      This design stays attached to the selected project item as its booking and visit-report reference.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </DetailSectionCard>
+          )}
 
           {activeProjectItemHasSpecifications && activeProjectItemRecord?.specifications && (
             <DetailSectionCard
@@ -1900,7 +1962,7 @@ export function ProjectDetailPage() {
                 {!canManageInitialDesign && activeSelectedDesignTemplateName && (
                   <div className="overflow-hidden rounded-2xl border border-[color:var(--color-border)]/55 bg-slate-50/80 dark:bg-white/[0.035]">
                     <img
-                      src={getDesignTemplatePlaceholderImage(activeSelectedDesignTemplateServiceType, activeSelectedDesignTemplateName)}
+                      src={activeSelectedDesignTemplateImageUrl || getDesignTemplatePlaceholderImage(activeSelectedDesignTemplateServiceType, activeSelectedDesignTemplateName)}
                       alt={activeSelectedDesignTemplateName}
                       className="h-44 w-full object-cover"
                     />
@@ -2261,6 +2323,56 @@ export function ProjectDetailPage() {
                 </div>
               </div>
 
+              <div className={cn(
+                'rounded-2xl border p-4',
+                hasStructuredPricingReference
+                  ? 'border-emerald-500/30 bg-emerald-500/[0.07]'
+                  : 'border-amber-500/35 bg-amber-500/10',
+              )}>
+                <div className="flex items-start gap-3">
+                  <span className={cn(
+                    'mt-0.5 flex h-11 w-11 shrink-0 items-center justify-center rounded-xl',
+                    hasStructuredPricingReference
+                      ? 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-300'
+                      : 'bg-amber-500/15 text-amber-700 dark:text-amber-300',
+                  )}>
+                    {hasStructuredPricingReference ? <Calculator className="h-5 w-5" /> : <AlertTriangle className="h-5 w-5" />}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-semibold text-slate-950 dark:text-slate-100">
+                      {hasStructuredPricingReference ? 'Structured pricing reference' : 'Contract amount not finalized in the system'}
+                    </p>
+                    {hasStructuredPricingReference && !shouldHideAmount ? (
+                      <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                        {approvedCostAmount !== undefined && (
+                          <div className="rounded-xl border border-emerald-500/20 bg-white/65 px-3 py-2.5 dark:bg-slate-950/35">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">{approvedCostLabel}</p>
+                            <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-100">{formatCurrency(approvedCostAmount)}</p>
+                          </div>
+                        )}
+                        {selectedPaymentPlanTotal !== undefined && (
+                          <div className="rounded-xl border border-emerald-500/20 bg-white/65 px-3 py-2.5 dark:bg-slate-950/35">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">Selected Payment Plan Total</p>
+                            <p className="mt-1 text-lg font-semibold text-slate-950 dark:text-slate-100">{formatCurrency(selectedPaymentPlanTotal)}</p>
+                          </div>
+                        )}
+                      </div>
+                    ) : hasStructuredPricingReference ? (
+                      <p className="mt-2 text-sm text-slate-600 dark:text-slate-300">
+                        Pricing amounts are hidden for your role.
+                      </p>
+                    ) : (
+                      <p className="mt-2 text-sm leading-relaxed text-slate-700 dark:text-slate-300">
+                        No positive approved quotation/project cost or selected payment plan is recorded yet. Confirm the agreed amount from the manually signed document.
+                      </p>
+                    )}
+                    <p className="mt-3 text-xs leading-5 text-slate-600 dark:text-slate-400">
+                      The system does not extract or verify the amount printed in the uploaded contract. The signed document remains the authoritative contract record; a payment-plan total may include installment adjustments.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
               {project.contractStatus === ContractStatus.UPLOADED && project.contractFileKey ? (
                 <>
                   <div className="grid gap-4 xl:grid-cols-[minmax(0,1.18fr)_minmax(290px,0.82fr)]">
@@ -2524,6 +2636,11 @@ export function ProjectDetailPage() {
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
                   <div>
                     <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Payment Plan</CardTitle>
+                    {selectedPaymentPlanTotal !== undefined && (
+                      <p className={`mt-1 text-sm font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                        Selected payment plan total: {shouldHideAmount ? 'Hidden for your role' : formatCurrency(selectedPaymentPlanTotal)}
+                      </p>
+                    )}
                     {hasPayablePaymentStage && isCustomer && (
                       <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
                         Payment is ready. Continue to the Payments page to pay by QR or request cash payment.

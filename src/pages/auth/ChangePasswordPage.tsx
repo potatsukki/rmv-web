@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { AlertTriangle, ArrowLeft, ArrowRight, Check, Loader2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -10,6 +10,12 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { PasswordField } from '@/components/auth/AuthFields';
 import { Button } from '@/components/ui/button';
 import { api } from '@/lib/api';
+import { resolvePostLoginPath } from '@/lib/auth-routing';
+import {
+  clearStoredAuthContinuationPath,
+  getStoredAuthContinuationPath,
+  normalizeAuthContinuationPath,
+} from '@/lib/auth-session';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -42,7 +48,10 @@ const passwordRules = [
 
 export function ChangePasswordPage() {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, fetchMe } = useAuthStore();
+  const locationState = location.state as { from?: unknown } | null;
+  const from = normalizeAuthContinuationPath(locationState?.from) || getStoredAuthContinuationPath() || '/dashboard';
   const [serverError, setServerError] = useState<string | null>(null);
   useAuthPageScrollbar();
 
@@ -64,7 +73,10 @@ export function ChangePasswordPage() {
       });
       toast.success('Password changed successfully.');
       await fetchMe();
-      navigate('/dashboard', { replace: true });
+      const roles = useAuthStore.getState().user?.roles ?? user?.roles ?? [];
+      const destination = resolvePostLoginPath(from, roles);
+      clearStoredAuthContinuationPath();
+      navigate(destination.path, { replace: true });
     } catch (error: unknown) {
       const message = (error as { response?: { data?: { error?: { message?: string } } } }).response?.data?.error?.message
         ?? 'We could not change your password. Please check your current password and try again.';

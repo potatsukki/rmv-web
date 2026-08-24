@@ -178,6 +178,9 @@ export interface Appointment {
   serviceTypes?: string[];
   serviceType?: string;
   serviceTypeCustom?: string;
+  selectedDesignTemplateId?: string;
+  selectedDesignTemplateName?: string;
+  selectedDesignTemplateImageUrl?: string;
   address?: string;
   customerAddress?: string;
   formattedAddress?: string;
@@ -273,6 +276,7 @@ export interface Project {
   salesStaffName?: string;
   projectNumber?: string;
   title: string;
+  totalCost?: number;
   serviceType?: string;
   serviceTypes?: string[];
   description?: string;

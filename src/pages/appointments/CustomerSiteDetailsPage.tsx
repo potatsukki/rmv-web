@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useNavigate } from 'react-router';
 import {
   ArrowLeft,
@@ -39,6 +39,7 @@ import {
 } from '@/hooks/useAppointments';
 import {
   AppointmentType,
+  AppointmentAttendanceStatus,
   ServiceType,
   MeasurementUnit,
   Environment,
@@ -105,6 +106,34 @@ export function CustomerSiteDetailsPage() {
   const [videoKeys, setVideoKeys] = useState<string[]>([]);
   const [sketchKeys, setSketchKeys] = useState<string[]>([]);
   const [referenceImageKeys, setReferenceImageKeys] = useState<string[]>([]);
+  const consultationHasStarted = Boolean(
+    appt?.consultationStartedAt
+    || [
+      AppointmentAttendanceStatus.IN_PROGRESS,
+      AppointmentAttendanceStatus.COMPLETED,
+    ].includes(appt?.attendanceStatus as AppointmentAttendanceStatus),
+  );
+
+  const initializedFromAppointment = useRef(false);
+  useEffect(() => {
+    if (!appt || initializedFromAppointment.current) return;
+    initializedFromAppointment.current = true;
+    setServiceTypes(appt.serviceTypes || (appt.serviceType ? [appt.serviceType] : []));
+    setServiceTypeCustom(appt.serviceTypeCustom || '');
+    setCustomerRequirements(appt.purpose || '');
+  }, [appt]);
+
+  useEffect(() => {
+    if (!appt) return;
+    if (
+      appt.siteDetailsStatus === 'submitted'
+      || appt.siteDetailsStatus === 'skipped'
+      || consultationHasStarted
+      || !['requested', 'confirmed'].includes(appt.status)
+    ) {
+      navigate(`/appointments/${appt._id}`, { replace: true });
+    }
+  }, [appt, consultationHasStarted, navigate]);
 
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
@@ -112,15 +141,12 @@ export function CustomerSiteDetailsPage() {
   const isOffice = appt.type === AppointmentType.OFFICE;
   const isOcular = appt.type === AppointmentType.OCULAR;
 
-  // If already submitted, redirect to detail page
-  if (appt.siteDetailsStatus === 'submitted' || appt.siteDetailsStatus === 'skipped') {
-    navigate(`/appointments/${appt._id}`, { replace: true });
-    return null;
-  }
-
-  // If appointment is not in 'requested' status, redirect
-  if (appt.status !== 'requested') {
-    navigate(`/appointments/${appt._id}`, { replace: true });
+  if (
+    appt.siteDetailsStatus === 'submitted'
+    || appt.siteDetailsStatus === 'skipped'
+    || consultationHasStarted
+    || !['requested', 'confirmed'].includes(appt.status)
+  ) {
     return null;
   }
 
@@ -143,20 +169,6 @@ export function CustomerSiteDetailsPage() {
   });
 
   const handleSubmit = async () => {
-    // Validate mandatory fields for office appointments
-    if (isOffice) {
-      if (photoKeys.length === 0) {
-        toast.error('At least one site photo is required for office appointments.');
-        setSubmitOpen(false);
-        return;
-      }
-      if (referenceImageKeys.length === 0) {
-        toast.error('At least one reference image is required for office appointments.');
-        setSubmitOpen(false);
-        return;
-      }
-    }
-
     try {
       await submitMutation.mutateAsync(buildPayload());
       toast.success('Site details submitted successfully!');
@@ -178,8 +190,7 @@ export function CustomerSiteDetailsPage() {
     setSkipOpen(false);
   };
 
-  const hasRequiredPhotos = photoKeys.length > 0 && referenceImageKeys.length > 0;
-  const submitDisabled = submitMutation.isPending || (isOffice && !hasRequiredPhotos);
+  const submitDisabled = submitMutation.isPending;
 
   return (
     <div className="mx-auto max-w-3xl space-y-6">
@@ -199,7 +210,7 @@ export function CustomerSiteDetailsPage() {
             Provide Site Details
           </h1>
           <p className="text-[#6e6e73] text-sm">
-            Help our sales team prepare by describing your site. Photos & reference images are required.
+            Help our sales team prepare by describing your site. Add photos or reference images when available.
           </p>
         </div>
       </div>
@@ -209,9 +220,9 @@ export function CustomerSiteDetailsPage() {
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 flex items-start gap-3">
           <AlertCircle className="h-5 w-5 text-amber-600 mt-0.5 flex-shrink-0" />
           <div>
-            <p className="text-sm font-semibold text-amber-800">Required for Office Appointments</p>
+            <p className="text-sm font-semibold text-amber-800">Helpful for Office Consultations</p>
             <p className="text-xs text-amber-700 mt-1">
-              Since our sales staff won&apos;t visit your site, please upload <strong>site photos</strong> and <strong>reference images</strong> so they can prepare for your consultation. Your appointment cannot be confirmed without these details.
+              Since the first appointment is an office consultation, site photos and reference images can help the sales team prepare. Upload whichever materials you already have.
             </p>
           </div>
         </div>
@@ -394,20 +405,10 @@ export function CustomerSiteDetailsPage() {
               Photos & Attachments
             </CardTitle>
             <CardDescription className="text-[#6e6e73]">
-              Site photos and reference images are required. Videos and sketches help the sales staff prepare.
+              Site photos, reference images, videos, and sketches are optional but help the sales staff prepare.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            {isOffice && (
-              <div className="mb-4 rounded-lg border border-[#d2d2d7] bg-[#f5f5f7]/50 p-3">
-                <div className="flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-[#6e6e73]" />
-                  <p className="text-xs font-medium text-[#3a3a3e]">
-                    <span className="text-red-600">*</span> Site Photos and Reference Images are required
-                  </p>
-                </div>
-              </div>
-            )}
             <PhotoUploadGrid
               photoKeys={photoKeys}
               videoKeys={videoKeys}

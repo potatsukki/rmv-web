@@ -44,6 +44,8 @@ import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { PublicFooter } from '@/components/landing/PublicFooter';
 import { useAuthStore } from '@/stores/auth.store';
 import { ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import { buildBookingIntentPath } from '@/lib/booking-intent';
+import { setStoredAuthContinuationPath } from '@/lib/auth-session';
 import { cn } from '@/lib/utils';
 
 type LandingService = {
@@ -83,6 +85,11 @@ type ServiceDetailMetadata = {
   estimatedPrice: string;
   priceNote: string;
 };
+
+export function toCustomerFacingServiceNote(note?: string): string | undefined {
+  const customerNote = note?.replace(/^Maps to\s+[^.]+(?:\.\s*|$)/i, '').trim();
+  return customerNote || undefined;
+}
 
 const SERVICE_IMAGE_PATHS: Record<ServiceType, string> = {
   [ServiceType.RAILINGS]: '/landing/services/railings.png',
@@ -2146,11 +2153,19 @@ const OFFICE_LOCATION = {
 export function LandingPage() {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const bookingTarget = user ? '/appointments/book' : '/login';
   const [selectedService, setSelectedService] = useState<LandingService | null>(null);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
-  const goToBooking = () => navigate(bookingTarget);
+  const goToBooking = () => {
+    const bookingTarget = '/appointments/book';
+    if (user) {
+      navigate(bookingTarget);
+      return;
+    }
+
+    setStoredAuthContinuationPath(bookingTarget);
+    navigate('/login', { state: { from: bookingTarget } });
+  };
   const selectedServiceDetail = selectedService ? SERVICE_DETAIL_METADATA[selectedService.type] : undefined;
   const selectedVariant = selectedService?.variants?.[selectedVariantIndex] ?? null;
   const activeSpecGroups = selectedVariant?.confirmationGroups ?? selectedServiceDetail?.specGroups ?? [];
@@ -2162,12 +2177,21 @@ export function LandingPage() {
   const displayPrice = selectedVariant?.estimatedPrice ?? selectedServiceDetail?.estimatedPrice;
   const displayPriceNote = selectedVariant?.priceNote ?? selectedServiceDetail?.priceNote;
   const bookService = (service: LandingService) => {
+    const bookingTarget = buildBookingIntentPath({
+      serviceType: service.type,
+      serviceId: service.type.replace(/_/g, '-'),
+      designId: selectedVariant?.id,
+      design: selectedVariant?.title,
+      designImage: selectedVariant?.image,
+    });
+
     if (user) {
-      navigate('/appointments/book?serviceType=' + encodeURIComponent(service.type));
+      navigate(bookingTarget);
       return;
     }
 
-    navigate('/login');
+    setStoredAuthContinuationPath(bookingTarget);
+    navigate('/login', { state: { from: bookingTarget } });
   };
 
   const renderSpecGroup = (group: ServiceSpecGroup) => (
@@ -2181,20 +2205,24 @@ export function LandingPage() {
       </div>
 
       <div className="divide-y divide-white/10">
-        {group.items.map((item) => (
-          <div key={item.label} className="py-3 first:pt-1 last:pb-0">
-            <div className="flex flex-wrap items-start justify-between gap-2">
-              <p className="text-sm font-bold text-white">{item.label}</p>
-              {item.required && (
-                <span className="rounded-full border border-[#FFD700]/30 bg-[#FFD700]/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[#FFD700]">
-                  Required
-                </span>
-              )}
+        {group.items.map((item) => {
+          const customerNote = toCustomerFacingServiceNote(item.note);
+
+          return (
+            <div key={item.label} className="py-3 first:pt-1 last:pb-0">
+              <div className="flex flex-wrap items-start justify-between gap-2">
+                <p className="text-sm font-bold text-white">{item.label}</p>
+                {item.required && (
+                  <span className="rounded-full border border-[#FFD700]/30 bg-[#FFD700]/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[#FFD700]">
+                    Required
+                  </span>
+                )}
+              </div>
+              <p className="mt-1 text-sm font-semibold leading-6 text-[#FFD700]/90">{item.value}</p>
+              {customerNote && <p className="mt-1 text-xs leading-5 text-white/56">{customerNote}</p>}
             </div>
-            <p className="mt-1 text-sm font-semibold leading-6 text-[#FFD700]/90">{item.value}</p>
-            {item.note && <p className="mt-1 text-xs leading-5 text-white/56">{item.note}</p>}
-          </div>
-        ))}
+          );
+        })}
       </div>
     </section>
   );
@@ -2519,7 +2547,7 @@ export function LandingPage() {
               onClick={goToBooking}
               className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-[#090B0D] bg-[#090B0D] px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-white transition duration-200 hover:-translate-y-0.5 hover:bg-[#191E23] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#090B0D]"
             >
-              Request a Quote
+              Avail Service
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
@@ -2686,7 +2714,7 @@ export function LandingPage() {
                       {selectedVariant && (
                         <div className="pt-2">
                           <p className="label-font text-[10px] font-black uppercase tracking-[0.22em] text-[#FFD700]">
-                            Selected Variant
+                            Selected Design
                           </p>
                           <h3 className="mt-2 text-lg font-black leading-tight text-white sm:text-2xl">{selectedVariant.title}</h3>
                         </div>
@@ -2700,7 +2728,7 @@ export function LandingPage() {
                       <div className="flex flex-wrap items-center justify-between gap-3">
                         <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#FFD700]">Estimated Price Range</h3>
                         <span className="rounded-full border border-[#FFD700]/25 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-[#FFD700]">
-                          Quote-based
+                          Estimate only
                         </span>
                       </div>
                       <p className="mt-3 text-2xl font-black leading-tight text-white sm:text-3xl">{displayPrice}</p>
@@ -2712,10 +2740,10 @@ export function LandingPage() {
                 <section className="min-w-0 space-y-5 border-t border-white/10 p-4 sm:p-5 lg:p-6">
                   <div>
                     <p className="label-font text-[10px] font-black uppercase tracking-[0.28em] text-[#FFD700]">
-                      Project Specification Guide
+                      Project Details Guide
                     </p>
                     <h3 className="headline-font mt-2 text-xl font-black uppercase tracking-[0.1em] text-white sm:text-2xl">
-                      What Sales Staff Will Confirm
+                      What We&apos;ll Confirm With You
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-white/52">
                       These details help RMV prepare an accurate quote for the selected service.
@@ -2748,7 +2776,7 @@ export function LandingPage() {
                   style={{ backgroundColor: '#FFD700', backgroundImage: 'none' }}
                   className="inline-flex h-11 w-full min-w-0 cursor-pointer items-center justify-center rounded-md border border-[#FFD700] px-5 text-[10px] font-black uppercase tracking-[0.12em] text-black shadow-[0_14px_38px_rgba(255,215,0,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffe766] hover:brightness-110 hover:shadow-[0_18px_46px_rgba(255,215,0,0.36)] active:translate-y-0 active:scale-[0.98] sm:w-auto sm:px-6 sm:text-[11px] sm:tracking-[0.16em]"
                 >
-                  Book This Service
+                  {selectedVariant ? 'Avail This Design' : 'Avail Service'}
                   <ArrowRight className="ml-2 h-4 w-4 text-black" />
                 </button>
               </DialogFooter>

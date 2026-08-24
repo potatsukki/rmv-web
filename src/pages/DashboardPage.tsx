@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link, useNavigate } from 'react-router';
 import {
   CalendarDays,
@@ -26,6 +27,7 @@ import {
   Bell,
   Eye,
   ShieldCheck,
+  CheckCircle2,
 } from 'lucide-react';
 
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -40,6 +42,13 @@ import type { AuditLog } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatApiTimeAgo } from '@/lib/utils';
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import {
+  getServiceById,
+  getServiceProjectReferences,
+  type ServiceProjectReference,
+} from '@/lib/service-catalog';
+import { buildBookingIntentPath } from '@/lib/booking-intent';
 
 function formatCurrencyCompact(v: number) {
   const abs = Math.abs(v);
@@ -716,32 +725,19 @@ export function DashboardPage() {
   );
 }
 
-const CUSTOMER_SAMPLE_PROJECTS = [
-  {
-    title: 'Commercial Kitchen Fit-Out',
-    category: 'Commercial Kitchen',
-    image: '/landing/commercial-kitchens/cover.png',
-    to: '/services/kitchen-counter',
-  },
-  {
-    title: 'Stainless Kitchen System',
-    category: 'Kitchen Cabinet',
-    image: '/landing/hotel-kitchens/cover.png',
-    to: '/services/kitchen-cabinet',
-  },
-  {
-    title: 'Food Stall Fabrication',
-    category: 'Custom Fabrication',
-    image: '/landing/food-stall-works/cover.png',
-    to: '/services/custom',
-  },
-  {
-    title: 'Custom Stainless Metalwork',
-    category: 'Railings & Metalwork',
-    image: '/landing/custom-metalworks/project-1.png',
-    to: '/services/railings',
-  },
+const CUSTOMER_SAMPLE_PROJECT_REFS = [
+  { serviceId: 'kitchen-counter', projectIndex: 0 },
+  { serviceId: 'kitchen-cabinet', projectIndex: 0 },
+  { serviceId: 'custom', projectIndex: 0 },
+  { serviceId: 'railings', projectIndex: 0 },
 ] as const;
+
+const CUSTOMER_SAMPLE_PROJECTS = CUSTOMER_SAMPLE_PROJECT_REFS.flatMap(({ serviceId, projectIndex }) => {
+  const service = getServiceById(serviceId);
+  if (!service) return [];
+  const project = getServiceProjectReferences(service)[projectIndex];
+  return project ? [project] : [];
+});
 
 function CustomerDashboard({
   firstName,
@@ -758,6 +754,7 @@ function CustomerDashboard({
   notificationsLoading: boolean;
   activeProject?: { _id: string; title: string; projectNumber?: string; serviceType?: string; status: string; updatedAt: string };
 }) {
+  const [selectedSample, setSelectedSample] = useState<ServiceProjectReference | null>(null);
   const metrics = [
     { label: 'Active projects', value: summary?.activeProjects ?? 0, detail: 'Projects currently moving forward', icon: FolderOpen, to: '/projects' },
     { label: 'Pending visits', value: summary?.pendingAppointments ?? 0, detail: 'Appointments awaiting confirmation', icon: CalendarDays, to: '/appointments' },
@@ -784,15 +781,16 @@ function CustomerDashboard({
             </h2>
             <p className="mt-1 text-sm text-slate-400">Browse fabrication ideas before requesting your quotation.</p>
           </div>
-          <Link to="/services/railings" className="workspace-focus hidden text-sm font-semibold text-[#f5b400] hover:text-[#ffd047] sm:inline-flex sm:items-center sm:gap-1">
-            Explore services <ArrowRight className="h-4 w-4" />
+          <Link to="/appointments/book" className="workspace-focus hidden text-sm font-semibold text-[#f5b400] hover:text-[#ffd047] sm:inline-flex sm:items-center sm:gap-1">
+            View all designs <ArrowRight className="h-4 w-4" />
           </Link>
         </div>
         <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
           {CUSTOMER_SAMPLE_PROJECTS.map((project) => (
-            <Link
-              key={project.title}
-              to={project.to}
+            <button
+              key={project.id}
+              type="button"
+              onClick={() => setSelectedSample(project)}
               className="workspace-focus group relative min-h-48 overflow-hidden rounded-xl border border-white/10 bg-[#11161c] sm:min-h-56"
             >
               <img
@@ -803,16 +801,77 @@ function CustomerDashboard({
               />
               <div className="absolute inset-0 bg-gradient-to-t from-[#080a0d] via-[#080a0d]/55 to-transparent" />
               <div className="relative flex h-full min-h-48 flex-col justify-end p-4 sm:min-h-56 sm:p-5">
-                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f5b400]">{project.category}</p>
+                <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#f5b400]">{project.serviceLabel}</p>
                 <h3 className="mt-1 text-sm font-bold leading-5 text-white sm:text-base">{project.title}</h3>
                 <span className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-white/75 group-hover:text-[#f5b400]">
                   View sample <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-1" />
                 </span>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
       </section>
+
+      <Dialog open={Boolean(selectedSample)} onOpenChange={(open) => !open && setSelectedSample(null)}>
+        <DialogContent className="max-h-[92dvh] max-w-4xl overflow-y-auto border-white/10 bg-[#0b0f13] p-0 text-white">
+          {selectedSample && (
+            <>
+              <div className="grid md:grid-cols-[minmax(0,1.08fr)_minmax(300px,0.92fr)]">
+                <img
+                  src={selectedSample.image}
+                  alt={selectedSample.alt}
+                  className="h-72 w-full object-cover md:h-full md:min-h-[420px]"
+                />
+                <div className="p-6 sm:p-7">
+                  <DialogHeader className="text-left">
+                    <p className="text-[10px] font-bold uppercase tracking-[0.16em] text-[#f5b400]">{selectedSample.serviceLabel}</p>
+                    <DialogTitle className="text-2xl font-bold text-white">{selectedSample.title}</DialogTitle>
+                    <DialogDescription className="text-sm leading-7 text-slate-300">
+                      {selectedSample.description || 'Use this completed project as the starting reference for your RMV fabrication request.'}
+                    </DialogDescription>
+                  </DialogHeader>
+
+                  {selectedSample.estimatedPrice && (
+                    <div className="mt-5 rounded-xl border border-[#f5b400]/25 bg-[#f5b400]/10 p-4">
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#f5b400]">Estimated Price</p>
+                      <p className="mt-2 text-lg font-bold text-white">{selectedSample.estimatedPrice}</p>
+                      {selectedSample.priceNote && <p className="mt-2 text-xs leading-5 text-slate-300">{selectedSample.priceNote}</p>}
+                    </div>
+                  )}
+
+                  {(selectedSample.measurements?.length || selectedSample.detailGroups?.length) ? (
+                    <div className="mt-5 space-y-3">
+                      <p className="text-xs font-bold uppercase tracking-[0.14em] text-slate-400">Details to Confirm</p>
+                      <ul className="space-y-2 text-sm leading-6 text-slate-300">
+                        {(selectedSample.measurements || selectedSample.detailGroups?.flatMap((group) => group.items) || []).slice(0, 6).map((item) => (
+                          <li key={item} className="flex gap-2.5">
+                            <CheckCircle2 className="mt-1 h-4 w-4 shrink-0 text-[#f5b400]" />
+                            <span>{item}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+              <DialogFooter className="border-t border-white/10 bg-[#080b0e] p-4 sm:justify-end">
+                <Link
+                  to={buildBookingIntentPath({
+                    serviceType: selectedSample.serviceType,
+                    serviceId: selectedSample.serviceId,
+                    designId: selectedSample.id,
+                    design: selectedSample.title,
+                    designImage: selectedSample.image,
+                  })}
+                  className="workspace-focus inline-flex min-h-11 w-full items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047] sm:w-auto"
+                >
+                  Avail Service <ArrowRight className="h-4 w-4" />
+                </Link>
+              </DialogFooter>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
 
       <section className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Project overview">
         {metrics.map((metric) => (

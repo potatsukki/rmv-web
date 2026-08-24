@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router';
+import { Link, useLocation, useNavigate } from 'react-router';
 import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Mail, Phone, ShieldAlert, UserRound } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { signInWithPopup } from 'firebase/auth';
@@ -13,6 +13,13 @@ import { Button } from '@/components/ui/button';
 import { api, fetchCsrfToken } from '@/lib/api';
 import { useAuthStore } from '@/stores/auth.store';
 import { auth, googleProvider } from '@/lib/firebase';
+import { resolvePostLoginPath } from '@/lib/auth-routing';
+import {
+  clearStoredAuthContinuationPath,
+  getStoredAuthContinuationPath,
+  normalizeAuthContinuationPath,
+  setStoredAuthContinuationPath,
+} from '@/lib/auth-session';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 
 const MAX_ATTEMPTS = 5;
@@ -69,7 +76,15 @@ export function RegisterPage() {
   const [serverError, setServerError] = useState<string | null>(null);
   useAuthPageScrollbar();
   const navigate = useNavigate();
+  const location = useLocation();
   const { setCsrfToken, setAccessToken, setRefreshToken, fetchMe } = useAuthStore();
+  const locationState = location.state as { from?: unknown } | null;
+  const locationFrom = normalizeAuthContinuationPath(locationState?.from);
+  const from = locationFrom || getStoredAuthContinuationPath() || '/dashboard';
+
+  useEffect(() => {
+    if (locationFrom) setStoredAuthContinuationPath(locationFrom);
+  }, [locationFrom]);
 
   useEffect(() => {
     const data = getAttemptData();
@@ -137,11 +152,11 @@ export function RegisterPage() {
       const responseData = response.data.data;
 
       if (responseData.needsProfile) {
-        navigate('/complete-profile', { state: { email: responseData.email, googleName: responseData.googleName, googlePhoto: responseData.googlePhoto, idToken }, replace: true });
+        navigate('/complete-profile', { state: { email: responseData.email, googleName: responseData.googleName, googlePhoto: responseData.googlePhoto, idToken, from }, replace: true });
         return;
       }
       if (responseData.requires2FA) {
-        navigate('/verify-2fa', { state: { tempToken: responseData.tempToken, email: responseData.user.email, firstName: responseData.user.firstName }, replace: true });
+        navigate('/verify-2fa', { state: { tempToken: responseData.tempToken, email: responseData.user.email, firstName: responseData.user.firstName, from }, replace: true });
         return;
       }
 
@@ -150,7 +165,14 @@ export function RegisterPage() {
       if (responseData.refreshToken) setRefreshToken(responseData.refreshToken);
       await fetchMe();
       toast.success('Welcome back!');
-      navigate('/dashboard', { replace: true });
+      if (responseData.user?.mustChangePassword) {
+        navigate('/change-password', { replace: true, state: { from } });
+        return;
+      }
+      const destination = resolvePostLoginPath(from, responseData.user.roles);
+      if (destination.redirectReason) toast(destination.redirectReason, { icon: 'ℹ️' });
+      clearStoredAuthContinuationPath();
+      navigate(destination.path, { replace: true });
     } catch (err: unknown) {
       const error = err as { code?: string; message?: string; response?: { data?: { error?: { message?: string } } } };
       if (error.code !== 'auth/popup-closed-by-user') {
@@ -176,7 +198,7 @@ export function RegisterPage() {
       });
       setAttemptData(0, null);
       setAttempts(0);
-      navigate('/login', { replace: true, state: { registeredEmail: data.email, registrationComplete: true } });
+      navigate('/login', { replace: true, state: { registeredEmail: data.email, registrationComplete: true, from } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string } } } };
       recordFailedAttempt(error.response?.data?.error?.message || 'Registration failed. Please review your details and try again.');
@@ -187,7 +209,7 @@ export function RegisterPage() {
     <AuthLayout variant="register">
       <Link to="/" className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Home</Link>
       <h1 className="auth-form-title">Create <em>Account</em></h1>
-      <p className="auth-form-switch">Already have an account? <Link to="/login">Sign in</Link></p>
+      <p className="auth-form-switch">Already have an account? <Link to="/login" state={{ from }}>Sign in</Link></p>
       {isLocked ? (
         <div className="auth-lockout" role="alert"><ShieldAlert aria-hidden="true" /><p><strong>Account locked</strong>Too many failed attempts. Try again in {lockCountdown}.</p></div>
       ) : null}

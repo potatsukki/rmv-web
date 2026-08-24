@@ -970,6 +970,30 @@ export function AppointmentDetailPage() {
         </Card>
       )}
 
+      {isCustomer
+        && appt.type === 'office'
+        && [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(appt.status as AppointmentStatus)
+        && appt.siteDetailsStatus === 'pending'
+        && !appt.consultationStartedAt
+        && ![
+          AppointmentAttendanceStatus.IN_PROGRESS,
+          AppointmentAttendanceStatus.COMPLETED,
+        ].includes(attendanceStatus as AppointmentAttendanceStatus)
+        && !appt.selectedDesignTemplateId
+        && !appt.selectedDesignTemplateName && (
+          <Card className="rounded-xl border border-[#f5b400]/40 bg-[#fffaf0] shadow-sm dark:border-[#f5b400]/25 dark:bg-[#f5b400]/[0.07]">
+            <CardContent className="flex flex-col gap-4 p-5 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Complete your custom request</p>
+                <p className="mt-1 text-sm leading-6 text-[#6e6e73] dark:text-slate-400">Add measurements, site photos, materials, and design references before the consultation.</p>
+              </div>
+              <Button asChild className="shrink-0 bg-[#1d1d1f] text-white hover:bg-[#3a3a3e] dark:bg-[#f5b400] dark:text-[#090b0d] dark:hover:bg-[#ffd047]">
+                <Link to={`/appointments/${appt._id}/site-details`}>Continue Custom Request</Link>
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
       <div className="grid gap-6">
         {/* Info */}
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm lg:col-span-2">
@@ -995,6 +1019,23 @@ export function AppointmentDetailPage() {
                 label={getServiceItemLabel(appt.serviceTypes, appt.serviceType, appt.serviceTypeCustom)}
                 value={formatServiceTypeList(appt.serviceTypes, appt.serviceType, appt.serviceTypeCustom)}
               />
+            )}
+
+            {appt.selectedDesignTemplateName && (
+              <div className="overflow-hidden rounded-2xl border border-[#d8dee6] bg-[#f8fafc] dark:border-white/10 dark:bg-white/[0.03] sm:flex">
+                {appt.selectedDesignTemplateImageUrl && (
+                  <img
+                    src={appt.selectedDesignTemplateImageUrl}
+                    alt={appt.selectedDesignTemplateName}
+                    className="h-44 w-full object-cover sm:h-32 sm:w-44"
+                  />
+                )}
+                <div className="p-4">
+                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#b77900] dark:text-[#f5b400]">Customer-Selected Design</p>
+                  <p className="mt-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{appt.selectedDesignTemplateName}</p>
+                  <p className="mt-1 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">This sample design stays linked to the appointment for the sales consultation and project record.</p>
+                </div>
+              </div>
             )}
 
             {appt.purpose && (

@@ -7,6 +7,7 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
+import { getStoredAuthContinuationPath, normalizeAuthContinuationPath } from '@/lib/auth-session';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 
 const OTP_LENGTH = 6;
@@ -16,16 +17,17 @@ export function VerifyOTPPage() {
   const location = useLocation();
   const navigate = useNavigate();
   useAuthPageScrollbar();
-  const state = location.state as { email?: string; purpose?: string } | null;
+  const state = location.state as { email?: string; purpose?: string; from?: unknown } | null;
   const email = state?.email || '';
   const purpose = state?.purpose || 'email_verification';
+  const from = normalizeAuthContinuationPath(state?.from) || getStoredAuthContinuationPath() || '/dashboard';
   const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(''));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [cooldown, setCooldown] = useState(RESEND_COOLDOWN);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  useEffect(() => { if (!email) navigate('/login', { replace: true }); }, [email, navigate]);
+  useEffect(() => { if (!email) navigate('/login', { replace: true, state: { from } }); }, [email, from, navigate]);
   useEffect(() => { if (cooldown <= 0) return; const timer = window.setInterval(() => setCooldown((value) => value - 1), 1000); return () => window.clearInterval(timer); }, [cooldown]);
   useEffect(() => { inputRefs.current[0]?.focus(); }, []);
 
@@ -44,13 +46,13 @@ export function VerifyOTPPage() {
     if (code.length !== OTP_LENGTH) { toast.error('Please enter the complete code'); return; }
     setIsSubmitting(true);
     try {
-      if (purpose === 'email_verification') { await api.post('/auth/verify-email', { email, otp: code }); toast.success('Email verified! Please sign in to continue.'); navigate('/login', { replace: true }); }
+      if (purpose === 'email_verification') { await api.post('/auth/verify-email', { email, otp: code }); toast.success('Email verified! Please sign in to continue.'); navigate('/login', { replace: true, state: { from } }); }
       else if (purpose === 'password_reset') navigate('/reset-password', { state: { email, otp: code } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string } } } };
       toast.error(error.response?.data?.error?.message || 'Verification failed'); setOtp(Array(OTP_LENGTH).fill('')); inputRefs.current[0]?.focus();
     } finally { setIsSubmitting(false); }
-  }, [email, navigate, otp, purpose]);
+  }, [email, from, navigate, otp, purpose]);
   useEffect(() => { if (otp.every(Boolean)) void handleSubmit(); }, [handleSubmit, otp]);
   const handleResend = async () => {
     setIsResending(true);
@@ -62,7 +64,7 @@ export function VerifyOTPPage() {
 
   return (
     <AuthLayout variant="login">
-      <Link to="/login" className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Sign In</Link>
+      <Link to="/login" state={{ from }} className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Sign In</Link>
       <p className="auth-form-eyebrow">Email Verification</p>
       <h1 className="auth-form-title">Confirm your code</h1>
       <p className="auth-form-copy">We sent a six-digit verification code to <strong>{email}</strong>.</p>

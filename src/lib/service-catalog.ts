@@ -17,6 +17,13 @@ export interface ServiceProject {
   }>;
 }
 
+export interface ServiceProjectReference extends ServiceProject {
+  id: string;
+  serviceId: string;
+  serviceLabel: string;
+  serviceType: ServiceType;
+}
+
 export interface ServiceCollection {
   id: string;
   label: string;
@@ -66,12 +73,16 @@ export const SERVICE_CATALOG: ServiceCollection[] = [
     { title: 'Modern metal gate', image: '/landing/services/gates/02-gates-modern-mixed-metal-gate.png', alt: 'Modern mixed metal gate', description: 'A custom modern gate with a painted steel frame and stainless accent strips or panels. The layout can be adapted for privacy, airflow, and the intended frontage.', measurements: ['Typical opening width: 6 ft – 16 ft+', 'Typical height: 4 ft – 7 ft+', 'Horizontal slat layout and gap spacing are custom'] },
     { title: 'Commercial security gate', image: '/landing/services/gates/03-gates-commercial-security-gate.png', alt: 'Commercial security gate', description: 'A reinforced gate approach for storefronts, service entrances, and commercial properties where practical access control is needed.', measurements: ['Typical opening width: 4 ft – 16 ft+', 'Typical height: 6 ft – 9 ft+', 'Bar spacing and panel configuration are confirmed on site'] },
     { title: 'Pedestrian gate', image: '/landing/services/gates/04-gates-pedestrian-stainless-gate.png', alt: 'Stainless pedestrian gate', description: 'A compact single gate for side entrances, walkways, utility access, and home entry points, with a custom hinge and latch arrangement.', measurements: ['Typical opening width: 2.5 ft – 4 ft+', 'Typical height: 4 ft – 7 ft+', 'Confirm hinge side and opening direction'] },
+    { title: 'Sliding Stainless Gate', image: '/landing/services/gates/05-gates-sliding-stainless-gate.png', alt: 'Sliding stainless steel gate', description: 'A stainless sliding gate for residential driveways and property entrances, with a fabricated frame, sliding track, rollers, guide post, and lock provision.', estimatedPrice: '₱45,000 – ₱180,000+' },
+    { title: 'Decorative Stainless Gate', image: '/landing/services/gates/06-gates-decorative-stainless-gate.png', alt: 'Decorative stainless steel gate', description: 'A stainless residential gate with decorative bar patterns, balanced rails, clean welds, hinges, latch hardware, and durable stainless finishing.', estimatedPrice: '₱35,000 – ₱140,000+' },
   ], ['Final dimensions are confirmed from the clear site opening.', 'Opening style, privacy level, and hardware are selected during consultation.']),
   service('kitchen-counter', 'Kitchen Counter', 'Stainless Kitchen Counters', 'Custom stainless counters and workstations for commercial and residential food preparation areas.', 'Counter layouts are shaped around workflow, storage, sink placement, and the actual dimensions of the site.', 'Commercial kitchens, food preparation areas, utility spaces, and residential kitchens.', 'Measurement, fabrication, fitting, finishing, and installation coordination.', '/landing/services/kitchen-counter.png', ['Custom workstation layouts', 'Storage and sink integration', 'Professional stainless finishing'], ['Prep counters', 'Sink counters', 'Island worktables', 'Storage workstations'], Utensils, ServiceType.KITCHEN_COUNTER, [
     { title: 'Corner counter with open shelf', image: '/landing/services/kitchen-counter/01-kitchen-counter-corner-open-shelf.png', alt: 'Stainless corner kitchen counter with open shelf' },
     { title: 'Sink and drainer workstation', image: '/landing/services/kitchen-counter/02-kitchen-counter-sink-drainer-drawers.png', alt: 'Stainless sink and drainer workstation' },
     { title: 'Island preparation table', image: '/landing/services/kitchen-counter/03-kitchen-counter-island-prep-table.png', alt: 'Stainless kitchen island preparation table' },
     { title: 'Drawer base workstation', image: '/landing/services/kitchen-counter/04-kitchen-counter-drawer-base-workstation.png', alt: 'Stainless drawer base workstation' },
+    { title: 'Sink Counter with Sliding Storage', image: '/landing/services/kitchen-counter/05-kitchen-counter-sink-sliding-storage.png', alt: 'Stainless sink counter with sliding-door storage', description: 'A straight stainless kitchen counter with a built-in sink, backsplash, and sliding-door base storage for compact commercial or home kitchen layouts.', estimatedPrice: '₱18,000 – ₱45,000+' },
+    { title: 'L-Type Commercial Kitchen Counter', image: '/landing/services/kitchen-counter/06-kitchen-counter-l-shape-commercial.png', alt: 'L-shaped stainless commercial kitchen counter', description: 'An L-shaped stainless counter layout for commercial kitchens, food stalls, prep rooms, and restaurants, planned around the site, appliances, plumbing, and storage needs.', estimatedPrice: '₱45,000 – ₱120,000+' },
   ]),
   service('canopy', 'Canopy', 'Metal Canopies', 'Protective canopy fabrication for entrances, walkways, carports, and storefronts.', 'Canopy systems are designed around site coverage, support requirements, drainage, and the intended finish.', 'Walkways, garage areas, entrances, storefronts, and covered outdoor spaces.', 'Site review, frame fabrication, finishing, and installation preparation.', '/landing/services/canopy.png', ['Custom coverage layouts', 'Metal support framing', 'Outdoor-ready fabrication'], ['Walkway canopies', 'Carport covers', 'Entrance canopies', 'Storefront canopies'], Umbrella, ServiceType.CANOPY, [
     { title: 'Walkway canopy', image: '/landing/services/canopy/01-canopy-walkway-stainless-canopy.png', alt: 'Stainless steel walkway canopy' },
@@ -93,6 +104,7 @@ export const SERVICE_CATALOG: ServiceCollection[] = [
     { title: 'Drawer and shelf cabinet', image: '/landing/services/kitchen-cabinet/02-kitchen-cabinet-drawers-open-shelves.png', alt: 'Stainless cabinet with drawers and open shelves' },
     { title: 'Overhead cabinet', image: '/landing/services/kitchen-cabinet/03-kitchen-cabinet-overhead-wall-mounted.png', alt: 'Wall mounted stainless kitchen cabinet' },
     { title: 'Full cabinet system', image: '/landing/services/kitchen-cabinet/04-kitchen-cabinet-full-system.png', alt: 'Full stainless kitchen cabinet system' },
+    { title: 'Base Stainless Kitchen Cabinet', image: '/landing/services/kitchen-cabinet/05-kitchen-cabinet-base-storage.png', alt: 'Stainless base kitchen cabinet', description: 'An under-counter stainless base cabinet with practical doors, handles, sturdy legs, and storage for compact kitchens, wash areas, and commercial workspaces.', estimatedPrice: '₱20,000 – ₱60,000+' },
   ]),
   service('fences', 'Fences', 'Custom Fences', 'Metal fence fabrication for defined boundaries, security, and a clean exterior finish.', 'Fence work is tailored to the property line, access needs, material choice, and the desired level of visibility.', 'Residential boundaries, commercial properties, gates, and perimeter improvements.', 'Site review, material planning, fabrication, finishing, and installation coordination.', '/landing/services/fences.png', ['Custom boundary layouts', 'Durable metal fabrication', 'Matched gate integration'], ['Perimeter fences', 'Metal panels', 'Property boundaries', 'Gate coordination'], ShieldCheck, ServiceType.FENCES, [
     { title: 'Custom metal fence', image: '/landing/services/fences.png', alt: 'Custom metal fence' },
@@ -105,6 +117,8 @@ export const SERVICE_CATALOG: ServiceCollection[] = [
     { title: 'Food cart kiosk frame', image: '/landing/services/custom/02-custom-food-cart-kiosk-frame.png', alt: 'Custom food cart kiosk frame' },
     { title: 'Utility frame', image: '/landing/services/custom/03-custom-metal-partition-utility-frame.png', alt: 'Custom metal partition utility frame' },
     { title: 'Stainless work table', image: '/landing/services/custom/04-custom-stainless-work-table.png', alt: 'Custom stainless work table' },
+    { title: 'Stainless Shelving & Storage Rack', image: '/landing/services/custom/05-custom-stainless-shelves-racks.png', alt: 'Custom stainless shelving and storage rack', description: 'Custom stainless shelves and commercial storage racks for kitchens, restaurants, clinics, stockrooms, warehouses, and utility rooms.', estimatedPrice: '₱8,000 – ₱60,000+' },
+    { title: 'Stainless Sink & Utility Station', image: '/landing/services/custom/06-custom-stainless-sink-utility-station.png', alt: 'Custom stainless sink and utility station', description: 'A custom stainless sink station with work surfaces, backsplash, shelving, and plumbing provisions for food preparation, wash areas, laboratories, or commercial kitchens.', estimatedPrice: '₱12,000 – ₱90,000+' },
   ]),
 ];
 
@@ -152,4 +166,54 @@ export const LEGACY_SERVICE_REDIRECTS: Record<string, string> = {
 
 export function getServiceById(id: string | undefined) {
   return SERVICE_CATALOG.find((item) => item.id === id);
+}
+
+function projectSlug(value: string) {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+}
+
+export function getServiceProjectId(serviceId: string, projectTitle: string) {
+  return `${serviceId}-${projectSlug(projectTitle)}`;
+}
+
+export function getServiceProjectReferences(service: ServiceCollection): ServiceProjectReference[] {
+  return service.projects.map((project) => ({
+    ...project,
+    id: getServiceProjectId(service.id, project.title),
+    serviceId: service.id,
+    serviceLabel: service.label,
+    serviceType: service.serviceType,
+  }));
+}
+
+export function findServiceProjectReference({
+  serviceId,
+  serviceType,
+  designId,
+  designName,
+  designImage,
+}: {
+  serviceId?: string;
+  serviceType?: string;
+  designId?: string;
+  designName?: string;
+  designImage?: string;
+}) {
+  const service = SERVICE_CATALOG.find((item) => (
+    (serviceId && item.id === serviceId)
+    || (!serviceId && serviceType && item.serviceType === serviceType)
+  ));
+  if (!service) return undefined;
+
+  const normalizedDesignName = designName?.trim().toLowerCase();
+
+  return getServiceProjectReferences(service).find((project) => (
+    (designId && project.id === designId)
+    || (normalizedDesignName && project.title.trim().toLowerCase() === normalizedDesignName)
+    || (designImage && project.image === designImage)
+  ));
 }

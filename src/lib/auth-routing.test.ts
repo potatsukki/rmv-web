@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { Role } from '@/lib/constants';
+import { normalizeAuthContinuationPath } from '@/lib/auth-session';
 import { canAccessPath, getDefaultAuthenticatedPath, resolvePostLoginPath } from '@/lib/auth-routing';
 
 describe('auth routing guards', () => {
@@ -35,6 +36,41 @@ describe('auth routing guards', () => {
     expect(canAccessPath('/appointments/book', [Role.CUSTOMER])).toBe(true);
     expect(canAccessPath('/appointments/book', [Role.SALES_STAFF])).toBe(false);
     expect(canAccessPath('/appointments/book', [Role.APPOINTMENT_AGENT])).toBe(false);
+  });
+
+  it('restricts customer site-detail follow-up pages to customers only', () => {
+    expect(canAccessPath('/appointments/appointment-123/site-details', [Role.CUSTOMER])).toBe(true);
+    expect(canAccessPath('/appointments/appointment-123/site-details', [Role.SALES_STAFF])).toBe(false);
+    expect(resolvePostLoginPath('/appointments/appointment-123/site-details?step=location', [Role.CUSTOMER])).toEqual({
+      path: '/appointments/appointment-123/site-details?step=location',
+      redirectReason: null,
+    });
+  });
+
+  it('preserves a complete safe booking URL for a customer', () => {
+    const bookingPath = '/appointments/book?serviceType=railings&designId=balcony-rail&design=Balcony+Rail#review';
+
+    expect(resolvePostLoginPath(bookingPath, [Role.CUSTOMER])).toEqual({
+      path: bookingPath,
+      redirectReason: null,
+    });
+    expect(canAccessPath(bookingPath, [Role.CUSTOMER])).toBe(true);
+  });
+
+  it('builds a continuation from a router location without losing search or hash', () => {
+    expect(normalizeAuthContinuationPath({
+      pathname: '/appointments/book',
+      search: '?serviceType=gates&design=Swing+Gate',
+      hash: '#schedule',
+    })).toBe('/appointments/book?serviceType=gates&design=Swing+Gate#schedule');
+  });
+
+  it('rejects external, scheme-relative, encoded-backslash, and malformed continuations', () => {
+    expect(normalizeAuthContinuationPath('https://example.com/appointments/book')).toBeNull();
+    expect(normalizeAuthContinuationPath('//example.com/appointments/book')).toBeNull();
+    expect(normalizeAuthContinuationPath('/%5C%5Cexample.com/appointments/book')).toBeNull();
+    expect(normalizeAuthContinuationPath('/appointments/book%ZZ')).toBeNull();
+    expect(resolvePostLoginPath('//example.com/appointments/book', [Role.CUSTOMER]).path).toBe('/dashboard');
   });
 
   it('keeps public or auth pages from being used as post-login redirects', () => {
