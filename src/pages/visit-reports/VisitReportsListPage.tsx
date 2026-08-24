@@ -91,7 +91,6 @@ interface AppointmentGroup {
 
 interface ReportSection {
   key: string;
-  label: string;
   groups: AppointmentGroup[];
 }
 
@@ -183,8 +182,8 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
     const history = groups.filter((group) => group.status === VisitReportStatus.COMPLETED);
 
     return [
-      { key: 'upcoming', label: 'Upcoming and Actionable', groups: actionable },
-      { key: 'recent', label: 'Recent and History', groups: history },
+      { key: 'upcoming', groups: actionable },
+      { key: 'recent', groups: history },
     ].filter((section) => section.groups.length > 0);
   }, [groups]);
 
@@ -282,11 +281,6 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
           <div className="md:hidden space-y-2">
             {sections.map((section) => (
               <div key={section.key} className="space-y-2">
-                <div className="px-1 pt-1">
-                  <p className="text-[11px] font-bold uppercase tracking-wider text-[#8da4b8] dark:text-slate-400">
-                    {section.label}
-                  </p>
-                </div>
             {section.groups.map((group) => {
               const { reports: reps, status, customerName: custName } = group;
               const firstReport = reps[0]!;
@@ -370,13 +364,6 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
               <TableBody>
                 {sections.map((section) => (
                   <Fragment key={section.key}>
-                    <TableRow key={`${section.key}-heading`} className="border-b border-[#e8e8ed] bg-[#f8fafc]/60 hover:bg-[#f8fafc]/60 dark:border-slate-700 dark:bg-slate-900/40 dark:hover:bg-slate-900/40">
-                      <TableCell colSpan={7} className="px-5 py-3">
-                        <span className="text-xs font-bold uppercase tracking-wider text-[#8da4b8] dark:text-slate-400">
-                          {section.label}
-                        </span>
-                      </TableCell>
-                    </TableRow>
                 {section.groups.map((group) => {
                   const { reports: reps, status, customerName: custName } = group;
                   const firstReport = reps[0]!;
