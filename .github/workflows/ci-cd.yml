@@ -85,7 +85,7 @@ jobs:
           username: ${{ secrets.VPS_USERNAME }}
           key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 15m
-          script_stop: false
+          script_stop: true
           script: |
             echo "========== FRONTEND BLUE-GREEN DEPLOY =========="
 
@@ -119,4 +119,3 @@ jobs:
             /opt/rmv/rmv-server/deploy/scripts/blue-green-deploy.sh web
 
             echo "========== FRONTEND DEPLOY DONE =========="
-            exit 0
