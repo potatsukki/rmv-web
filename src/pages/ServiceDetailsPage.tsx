@@ -5,7 +5,15 @@ import { ArrowLeft, ArrowRight, CheckCircle2, ChevronLeft, ChevronRight, Clock3,
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { PublicFooter } from '@/components/landing/PublicFooter';
-import { LANDING_SERVICE_VARIANTS, toCustomerFacingServiceNote } from '@/pages/LandingPage';
+import {
+  CUSTOMER_PRICE_NOTE,
+  CUSTOMER_TECHNICAL_NOTE,
+  getCustomerServiceDetails,
+  LANDING_SERVICE_VARIANTS,
+  toCustomerFacingServiceNote,
+  toShortCustomerDescription,
+  type CustomerServiceDetailItem,
+} from '@/pages/LandingPage';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   LEGACY_SERVICE_REDIRECTS,
@@ -66,17 +74,15 @@ const ADDITIONAL_PROJECT_PRICE_GUIDANCE: Record<string, string> = {
   'Modern mixed metal gate': '₱45,000 – ₱150,000+',
 };
 
-const STANDARD_PRICE_NOTE = 'Final quotation depends on actual measurements, material grade and thickness, finish, and installation requirements.';
-
-const SERVICE_DETAIL_NOTES: Record<string, string[]> = {
-  gates: ['Measurements: confirm clear opening width, height, swing or sliding clearance, and panel count', 'Material & finish: choose stainless, painted steel, or mixed metal frame; confirm panel style and lock hardware', 'Installation & quote: send opening photos, post-to-post size, ground slope, and preferred operation'],
-  'kitchen-counter': ['Measurements: confirm length, depth, height, backsplash, and all sink or appliance cutouts', 'Material & finish: SS304 food-grade typical; confirm gauge, brushed finish, and edge style', 'Installation & quote: send site photos, a rough sketch, sink specifications, plumbing points, and dimensions'],
-  canopy: ['Measurements: confirm width, projection, clearance height, and required support posts', 'Material & finish: select polycarbonate, metal, or glass roofing with the required structural frame and drainage', 'Installation & quote: send facade photos, wall material, drainage route, and mounting-point details'],
-  staircase: ['Measurements: confirm total rise, run, stair width, landing sizes, and access route', 'Material & finish: confirm structural frame, tread material, railing style, and finish', 'Installation & quote: send site photos, a rough layout, floor-to-floor height, and intended use'],
-  'kitchen-cabinet': ['Measurements: confirm cabinet length, depth, height, module count, and shelf spacing', 'Material & finish: choose SS201 or SS304, gauge, finish, door type, handles, and locks', 'Installation & quote: send module layout, photos, dimensions, door direction, shelf needs, and wall support details'],
-  fences: ['Measurements: confirm perimeter length, required height, post locations, gate connection, and ground condition', 'Material & finish: confirm frame type, panel or slat layout, coating, and visibility or privacy level', 'Installation & quote: send boundary photos, dimensions, desired layout, and mounting or footing conditions'],
-  custom: ['Measurements: confirm primary dimensions, quantity, component count, and load or use requirement', 'Material & finish: select stainless, steel, GI, aluminum, or mixed metal with the required gauge and finish', 'Installation & quote: send purpose, dimensions, material, finish, photos, and a sketch or reference design'],
-};
+const DEFAULT_CUSTOMER_PROJECT_DETAILS: CustomerServiceDetailItem[] = [
+  { label: 'Approximate Measurements', value: 'Rough length, width, and height' },
+  { label: 'Installation Location', value: 'Indoor or outdoor project area' },
+  { label: 'Preferred Style', value: 'Your selected design or a reference image' },
+  { label: 'Preferred Finish', value: 'Brushed, polished, painted, or powder-coated' },
+  { label: 'Mounting Surface', value: 'Concrete, tile, steel, wall, or freestanding' },
+  { label: 'Site Photos', value: 'Clear photos of the installation area and mounting surface' },
+  { label: 'Optional Add-ons', value: 'Any extra features you want included in the quotation' },
+];
 
 export function ServiceDetailsPage() {
   const { serviceId } = useParams();
@@ -148,16 +154,9 @@ export function ServiceDetailsPage() {
   };
   const priceGuidance = currentProject ? RAILING_PRICE_GUIDANCE[currentProject.title] : undefined;
   const priceEstimate = currentProject ? currentProject.estimatedPrice ?? priceGuidance?.estimate ?? ADDITIONAL_PROJECT_PRICE_GUIDANCE[currentProject.title] : undefined;
-  const serviceFallbackNotes = SERVICE_DETAIL_NOTES[service.id]
-    ?? service.measurementNotes
-    ?? ['Final dimensions are confirmed after site measurement and design review.'];
-  const projectNotes = currentProject?.detailGroups?.flatMap((group) => group.items.map((item) => `${group.title}: ${item}`))
-    ?? (currentProject?.measurements?.length
-      ? currentProject.measurements
-      : serviceFallbackNotes);
-  const measurementNotes = priceEstimate
-    ? [`Estimated price: ${priceEstimate}`, `Price factors: ${currentProject?.priceNote ?? priceGuidance?.note ?? STANDARD_PRICE_NOTE}`, ...projectNotes]
-    : projectNotes;
+  const customerDetails = currentVariant
+    ? getCustomerServiceDetails(currentVariant.confirmationGroups)
+    : DEFAULT_CUSTOMER_PROJECT_DETAILS;
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#090B0D] text-white selection:bg-[#F5B400]/30">
@@ -193,7 +192,54 @@ export function ServiceDetailsPage() {
       <PublicFooter />
 
       <Dialog open={selectedProject !== null} onOpenChange={(open) => !open && setSelectedProject(null)}>
-        <DialogContent className="max-w-6xl overflow-hidden border border-white/10 bg-[#090B0D] p-0 text-white"><DialogTitle className="sr-only">{currentProject?.title ?? 'Project image'}</DialogTitle>{currentProject && <div className="grid lg:grid-cols-[minmax(0,1fr)_360px]"><div className="relative bg-black"><img src={currentProject.image} alt={currentProject.alt} className="h-full max-h-[78dvh] w-full object-contain" /><button type="button" onClick={() => setSelectedProject((current) => current === null ? 0 : (current - 1 + projects.length) % projects.length)} aria-label="Previous project image" className="absolute left-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 transition hover:border-[#F5B400]"><ChevronLeft className="h-6 w-6" /></button><button type="button" onClick={() => setSelectedProject((current) => current === null ? 0 : (current + 1) % projects.length)} aria-label="Next project image" className="absolute right-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 transition hover:border-[#F5B400]"><ChevronRight className="h-6 w-6" /></button><button type="button" onClick={() => setSelectedProject(null)} aria-label="Close project image" className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/55 transition hover:border-[#F5B400]"><X className="h-5 w-5" /></button></div><div className="flex max-h-[78dvh] flex-col overflow-y-auto p-6 sm:p-7"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#F5B400]">{String((selectedProject ?? 0) + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')} · Design reference</p><h3 className="mt-3 font-['Sora',sans-serif] text-2xl font-extrabold">{currentProject.title}</h3><p className="mt-5 text-sm leading-7 text-white/68">{currentProject.description ?? service.capabilityDescription}</p><div className="mt-7 border-t border-white/10 pt-6"><p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#F5B400]">Measurements to confirm</p><ul className="mt-4 grid gap-3 text-sm leading-6 text-white/72">{measurementNotes.map((note) => <li key={note} className="flex gap-3"><CheckCircle2 className="mt-0.5 h-4 w-4 shrink-0 text-[#F5B400]" />{note}</li>)}</ul></div><Link to={designRequestTarget} state={user ? undefined : { from: designBookingTarget }} onClick={() => rememberGuestBooking(designBookingTarget)} className="mt-8 inline-flex min-h-12 items-center justify-center gap-3 rounded-md bg-[#F5B400] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#090B0D] transition hover:bg-[#FFD047]">Avail This Design<ArrowRight className="h-4 w-4" /></Link><p className="mt-3 text-xs leading-5 text-white/45">Final dimensions and pricing are confirmed after site measurement and design review.</p></div></div>}</DialogContent>
+        <DialogContent className="max-h-[92dvh] max-w-6xl overflow-y-auto border border-white/10 bg-[#090B0D] p-0 text-white lg:overflow-hidden">
+          <DialogTitle className="sr-only">{currentProject?.title ?? 'Project image'}</DialogTitle>
+          {currentProject && (
+            <div className="grid lg:max-h-[92dvh] lg:grid-cols-[minmax(0,1fr)_400px]">
+              <div className="relative min-h-[280px] bg-black">
+                <img src={currentProject.image} alt={currentProject.alt} className="h-full max-h-[92dvh] w-full object-contain" />
+                <button type="button" onClick={() => setSelectedProject((current) => current === null ? 0 : (current - 1 + projects.length) % projects.length)} aria-label="Previous project image" className="absolute left-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 transition hover:border-[#F5B400]"><ChevronLeft className="h-6 w-6" /></button>
+                <button type="button" onClick={() => setSelectedProject((current) => current === null ? 0 : (current + 1) % projects.length)} aria-label="Next project image" className="absolute right-3 top-1/2 inline-flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-white/20 bg-black/55 transition hover:border-[#F5B400]"><ChevronRight className="h-6 w-6" /></button>
+                <button type="button" onClick={() => setSelectedProject(null)} aria-label="Close project image" className="absolute right-3 top-3 inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-black/55 transition hover:border-[#F5B400]"><X className="h-5 w-5" /></button>
+              </div>
+
+              <div className="flex min-h-0 flex-col p-5 sm:p-6 lg:max-h-[92dvh] lg:overflow-y-auto">
+                <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#F5B400]">
+                  {String((selectedProject ?? 0) + 1).padStart(2, '0')} / {String(projects.length).padStart(2, '0')} · Selected design
+                </p>
+                <h3 className="mt-2 font-['Sora',sans-serif] text-2xl font-extrabold">{currentProject.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-white/68">
+                  {toShortCustomerDescription(currentProject.description ?? service.capabilityDescription)}
+                </p>
+
+                {priceEstimate && (
+                  <div className="mt-5 rounded-xl border border-[#F5B400]/25 bg-[#F5B400]/[0.07] p-4">
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#F5B400]">Estimated Price Range</p>
+                    <p className="mt-2 text-xl font-extrabold text-white">{priceEstimate}</p>
+                    <p className="mt-2 text-xs leading-5 text-white/58">{CUSTOMER_PRICE_NOTE}</p>
+                  </div>
+                )}
+
+                <div className="mt-5 border-t border-white/10 pt-5">
+                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#F5B400]">What We Need From You</p>
+                  <div className="mt-3 grid gap-2">
+                    {customerDetails.map((detail) => (
+                      <div key={detail.label} className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2.5">
+                        <p className="text-[9px] font-extrabold uppercase tracking-[0.13em] text-white/48">{detail.label}</p>
+                        <p className="mt-1 text-xs font-semibold leading-5 text-white/78">{detail.value}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="mt-4 rounded-lg border border-white/10 bg-black/25 px-3 py-2.5 text-[11px] leading-5 text-white/52">
+                  {CUSTOMER_TECHNICAL_NOTE}
+                </p>
+                <Link to={designRequestTarget} state={user ? undefined : { from: designBookingTarget }} onClick={() => rememberGuestBooking(designBookingTarget)} className="mt-5 inline-flex min-h-12 items-center justify-center gap-3 rounded-md bg-[#F5B400] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#090B0D] transition hover:bg-[#FFD047]">Avail This Design<ArrowRight className="h-4 w-4" /></Link>
+              </div>
+            </div>
+          )}
+        </DialogContent>
       </Dialog>
     </div>
   );

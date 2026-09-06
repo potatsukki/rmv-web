@@ -246,7 +246,7 @@ export function useUpdateConsultationAttendance() {
       ...body
     }: {
       id: string;
-      action: 'check_in' | 'start' | 'complete' | 'no_show' | 'reschedule' | 'customer_declined';
+      action: 'check_in' | 'no_show' | 'reschedule' | 'customer_declined';
       actualArrivalAt?: string;
       notes?: string;
       overrideReason?: string;

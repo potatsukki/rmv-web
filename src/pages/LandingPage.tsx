@@ -148,8 +148,188 @@ const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
   [ServiceType.CUSTOM]: 'Custom stainless and metal works built to your project specs.',
 };
 
-const SERVICE_QUOTE_DISCLAIMER =
-  'Final quotation depends on actual measurements, material grade/thickness, finish, and installation requirements.';
+export const CUSTOMER_TECHNICAL_NOTE =
+  'Technical specifications such as material thickness, post spacing, stainless grade, and anchoring method will be recommended by RMV based on the project requirements.';
+
+export const CUSTOMER_PRICE_NOTE =
+  'Final price depends on project measurements, preferred finish, installation conditions, and selected add-ons.';
+
+const CUSTOMER_DETAIL_LIMIT = 7;
+
+export type CustomerServiceDetailItem = Pick<ServiceSpecItem, 'label' | 'value'>;
+
+const findSpecItem = (items: ServiceSpecItem[], labels: string[]) => {
+  for (const label of labels) {
+    const match = items.find((item) => item.label.toLowerCase() === label.toLowerCase());
+    if (match) return match;
+  }
+
+  return undefined;
+};
+
+const getCustomerMaterialOption = (item?: ServiceSpecItem) => {
+  if (!item) return undefined;
+
+  const materialText = `${item.value} ${item.note ?? ''}`;
+  const options = ['Standard Stainless'];
+
+  if (/ss316|outdoor|corrosi|weather/i.test(materialText)) {
+    options.push('Outdoor / Corrosion Resistant');
+  }
+
+  return options.join(' or ');
+};
+
+export function toShortCustomerDescription(description?: string): string {
+  const normalized = description?.replace(/\s+/g, ' ').trim() ?? '';
+  if (!normalized) return '';
+
+  const firstSentence = normalized.match(/^.*?[.!?](?:\s|$)/)?.[0]?.trim() ?? normalized;
+  if (firstSentence.length <= 180) return firstSentence;
+
+  const shortened = firstSentence.slice(0, 177).replace(/\s+\S*$/, '').trim();
+  return `${shortened}...`;
+}
+
+export function getCustomerServiceDetails(groups: ServiceSpecGroup[]): CustomerServiceDetailItem[] {
+  const items = groups.flatMap((group) => group.items);
+  const details: CustomerServiceDetailItem[] = [];
+  const approximateSize = findSpecItem(items, [
+    'Total Run Length',
+    'Total Handrail Length',
+    'Total Perimeter Length',
+    'Total Counter Length',
+    'Total Cabinet Length',
+    'Counter Length',
+    'Cabinet Length',
+    'Canopy Length',
+    'Covered Length',
+    'Overall Length',
+    'Stair Run Length',
+    'Balcony Length',
+    'Length',
+    'Primary Dimension',
+    'Gate Width',
+    'Opening Width',
+    'Storefront Width',
+    'Entrance Width',
+    'Width',
+  ]) ?? items.find((item) => /(?:length|width|dimension|opening size)/i.test(item.label));
+  const preferredHeight = findSpecItem(items, [
+    'Rail Height',
+    'Handrail Height',
+    'Gate Height',
+    'Overall Height',
+    'Counter Height',
+    'Cabinet Height',
+    'Table Height',
+    'Rack Height',
+    'Clear Height',
+    'Height Clearance',
+    'Height',
+  ]);
+  const railCount = findSpecItem(items, ['Rail Count']);
+  const preferredStyle = findSpecItem(items, [
+    'Handrail Style',
+    'Baluster / Infill Style',
+    'Infill Style',
+    'Panel Style',
+    'Door Style',
+    'Decorative Style',
+    'Design Direction',
+    'Layout Type',
+    'Door Type',
+    'Motion Type',
+    'Roofing Material',
+    'Roof Material',
+    'Storage Layout',
+    'Storage Type',
+    'Cabinet Type',
+    'Shelf Type',
+    'Bar Type',
+    'Frame Layout',
+    'Panel Layout',
+    'Fixed or Mobile',
+  ]);
+  const finish = findSpecItem(items, [
+    'Finish',
+    'Finish Type',
+    'Finish Preference',
+    'Counter Finish',
+    'Cabinet Finish',
+    'Paint / Finish Type',
+    'Finish Coating',
+    'Coating Finish',
+  ]);
+  const stainlessGrade = findSpecItem(items, ['Stainless Grade', 'Tube Material']);
+  const installation = findSpecItem(items, [
+    'Installation Location',
+    'Mounting Surface',
+    'Mount Type',
+    'Placement Area',
+    'Placement',
+    'Wall Placement',
+    'Floor / Wall Condition',
+    'Existing Wall/Floor Condition',
+    'Floor Condition',
+    'Wall Material',
+    'Track Surface',
+    'Wall Support',
+    'Existing Wall Condition',
+    'Existing Structure',
+    'Existing Support Structure',
+    'Site Use',
+  ]);
+  const quoteRequirements = findSpecItem(items, ['Needed Before Quote']);
+  const addOns = findSpecItem(items, ['Optional Add-ons', 'Accessories']);
+  const materialOption = getCustomerMaterialOption(stainlessGrade);
+
+  if (approximateSize) {
+    details.push({
+      label: approximateSize.label === 'Primary Dimension'
+        ? 'Approximate Size'
+        : /width/i.test(approximateSize.label)
+          ? 'Approximate Width'
+          : 'Approximate Length',
+      value: approximateSize.value,
+    });
+  }
+
+  if (preferredHeight) {
+    details.push({ label: 'Preferred Height', value: preferredHeight.value });
+  }
+
+  if (railCount || preferredStyle) {
+    details.push({
+      label: railCount ? 'Rail Count / Style' : 'Preferred Style',
+      value: [railCount?.value, preferredStyle?.value].filter(Boolean).join(' / '),
+    });
+  }
+
+  if (materialOption || finish) {
+    details.push({
+      label: materialOption ? 'Material & Finish' : 'Preferred Finish',
+      value: [materialOption, finish?.value].filter(Boolean).join(' • '),
+    });
+  }
+
+  if (installation) {
+    details.push({
+      label: installation.label === 'Installation Location' ? 'Installation Location' : 'Installation Location / Surface',
+      value: installation.value,
+    });
+  }
+
+  if (quoteRequirements) {
+    details.push({ label: 'Site Photos', value: 'Clear photos of the installation area and mounting surface' });
+  }
+
+  if (addOns) {
+    details.push({ label: 'Optional Add-ons', value: addOns.value });
+  }
+
+  return details.slice(0, CUSTOMER_DETAIL_LIMIT);
+}
 
 const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata>> = {
   [ServiceType.KITCHEN_COUNTER]: {
@@ -2175,7 +2355,7 @@ export function LandingPage() {
   const displayDescription =
     selectedVariant?.description ?? selectedServiceDetail?.fullDescription ?? selectedService?.description;
   const displayPrice = selectedVariant?.estimatedPrice ?? selectedServiceDetail?.estimatedPrice;
-  const displayPriceNote = selectedVariant?.priceNote ?? selectedServiceDetail?.priceNote;
+  const customerDetailItems = getCustomerServiceDetails(activeSpecGroups);
   const bookService = (service: LandingService) => {
     const bookingTarget = buildBookingIntentPath({
       serviceType: service.type,
@@ -2193,39 +2373,6 @@ export function LandingPage() {
     setStoredAuthContinuationPath(bookingTarget);
     navigate('/login', { state: { from: bookingTarget } });
   };
-
-  const renderSpecGroup = (group: ServiceSpecGroup) => (
-    <section
-      key={group.title}
-      className="rounded-2xl border border-white/10 bg-white/[0.025] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
-    >
-      <div className="mb-2 flex items-center gap-3">
-        <span className="h-1.5 w-1.5 rounded-full bg-[#FFD700]" />
-        <h4 className="text-xs font-black uppercase tracking-[0.18em] text-white">{group.title}</h4>
-      </div>
-
-      <div className="divide-y divide-white/10">
-        {group.items.map((item) => {
-          const customerNote = toCustomerFacingServiceNote(item.note);
-
-          return (
-            <div key={item.label} className="py-3 first:pt-1 last:pb-0">
-              <div className="flex flex-wrap items-start justify-between gap-2">
-                <p className="text-sm font-bold text-white">{item.label}</p>
-                {item.required && (
-                  <span className="rounded-full border border-[#FFD700]/30 bg-[#FFD700]/10 px-2 py-0.5 text-[9px] font-black uppercase tracking-[0.14em] text-[#FFD700]">
-                    Required
-                  </span>
-                )}
-              </div>
-              <p className="mt-1 text-sm font-semibold leading-6 text-[#FFD700]/90">{item.value}</p>
-              {customerNote && <p className="mt-1 text-xs leading-5 text-white/56">{customerNote}</p>}
-            </div>
-          );
-        })}
-      </div>
-    </section>
-  );
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#030405] text-white selection:bg-[#FFD700]/30 selection:text-white">
@@ -2719,8 +2866,8 @@ export function LandingPage() {
                           <h3 className="mt-2 text-lg font-black leading-tight text-white sm:text-2xl">{selectedVariant.title}</h3>
                         </div>
                       )}
-                      <DialogDescription className="max-w-none text-sm leading-7 text-white/68 sm:text-base">
-                        {displayDescription}
+                      <DialogDescription className="max-w-none text-sm leading-6 text-white/68 sm:text-base">
+                        {toShortCustomerDescription(displayDescription)}
                       </DialogDescription>
                     </DialogHeader>
 
@@ -2732,30 +2879,38 @@ export function LandingPage() {
                         </span>
                       </div>
                       <p className="mt-3 text-2xl font-black leading-tight text-white sm:text-3xl">{displayPrice}</p>
-                      <p className="mt-3 text-sm leading-6 text-white/64">{displayPriceNote}</p>
+                      <p className="mt-3 text-sm leading-6 text-white/64">{CUSTOMER_PRICE_NOTE}</p>
                     </div>
                   </div>
                 </div>
 
-                <section className="min-w-0 space-y-5 border-t border-white/10 p-4 sm:p-5 lg:p-6">
+                <section className="min-w-0 space-y-4 border-t border-white/10 p-4 sm:p-5 lg:p-6">
                   <div>
                     <p className="label-font text-[10px] font-black uppercase tracking-[0.28em] text-[#FFD700]">
                       Project Details Guide
                     </p>
                     <h3 className="headline-font mt-2 text-xl font-black uppercase tracking-[0.1em] text-white sm:text-2xl">
-                      What We&apos;ll Confirm With You
+                      What We Need From You
                     </h3>
                     <p className="mt-2 text-sm leading-6 text-white/52">
-                      These details help RMV prepare an accurate quote for the selected service.
+                      Share these key details so RMV can prepare your quotation.
                     </p>
                   </div>
 
-                  <div className="grid gap-4 md:grid-cols-2">
-                    {activeSpecGroups.map(renderSpecGroup)}
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {customerDetailItems.map((item) => (
+                      <article
+                        key={item.label}
+                        className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
+                      >
+                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">{item.label}</p>
+                        <p className="mt-2 text-sm font-semibold leading-5 text-[#FFD700]/90">{item.value}</p>
+                      </article>
+                    ))}
                   </div>
 
-                  <div className="rounded-2xl border border-white/10 bg-black/35 p-4">
-                    <p className="text-sm leading-6 text-white/70">{SERVICE_QUOTE_DISCLAIMER}</p>
+                  <div className="rounded-xl border border-white/10 bg-black/35 px-4 py-3">
+                    <p className="text-xs leading-5 text-white/62">{CUSTOMER_TECHNICAL_NOTE}</p>
                   </div>
                 </section>
               </div>

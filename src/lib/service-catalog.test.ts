@@ -7,7 +7,11 @@ import {
   getServiceById,
   getServiceProjectReferences,
 } from '@/lib/service-catalog';
-import { LANDING_SERVICE_VARIANTS } from '@/pages/LandingPage';
+import {
+  getCustomerServiceDetails,
+  LANDING_SERVICE_VARIANTS,
+  toShortCustomerDescription,
+} from '@/pages/LandingPage';
 
 describe('service project references', () => {
   it('creates stable design references from the centralized catalog', () => {
@@ -74,5 +78,52 @@ describe('service project references', () => {
     }
 
     expect(unresolved).toEqual([]);
+  });
+});
+
+describe('customer-facing service details', () => {
+  it('shows only the seven useful quotation details for a railing design', () => {
+    const [railing] = LANDING_SERVICE_VARIANTS.railings ?? [];
+    if (!railing) throw new Error('Missing railing design fixture');
+    const details = getCustomerServiceDetails(railing.confirmationGroups);
+
+    expect(details).toHaveLength(7);
+    expect(details.map((item) => item.label)).toEqual([
+      'Approximate Length',
+      'Preferred Height',
+      'Rail Count / Style',
+      'Material & Finish',
+      'Installation Location / Surface',
+      'Site Photos',
+      'Optional Add-ons',
+    ]);
+    expect(details.find((item) => item.label === 'Material & Finish')?.value).toContain(
+      'Standard Stainless or Outdoor / Corrosion Resistant',
+    );
+    expect(details.find((item) => item.label === 'Installation Location / Surface')?.value).toBe(
+      'Concrete / tile / steel base',
+    );
+    expect(JSON.stringify(details)).not.toMatch(/SS304|SS316|Post Spacing|Tube Size|Thickness \/ Gauge|Anchor Type/);
+  });
+
+  it('keeps every design summary short and free of fabrication-only fields', () => {
+    for (const variants of Object.values(LANDING_SERVICE_VARIANTS)) {
+      for (const variant of variants || []) {
+        const details = getCustomerServiceDetails(variant.confirmationGroups);
+
+        expect(details.length, variant.title).toBeGreaterThanOrEqual(5);
+        expect(details.length, variant.title).toBeLessThanOrEqual(7);
+        expect(JSON.stringify(details), variant.title).not.toMatch(
+          /SS201|SS304|SS316|Post Spacing|Tube Size|Thickness \/ Gauge|Anchor Type|chemical anchors/i,
+        );
+      }
+    }
+  });
+
+  it('limits customer descriptions to one short sentence', () => {
+    expect(toShortCustomerDescription('First sentence. Second sentence with technical detail.')).toBe('First sentence.');
+    expect(toShortCustomerDescription('A short description without punctuation')).toBe(
+      'A short description without punctuation',
+    );
   });
 });
