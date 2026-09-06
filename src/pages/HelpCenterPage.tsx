@@ -263,7 +263,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: APPOINTMENT_HELP_ROLES,
         body: [
           'Appointments move through controlled states such as requested, confirmed, completed, cancelled, no-show, and reschedule requested.',
-          'Office consultation attendance also tracks scheduled, on time, late arrival, in progress, completed, rescheduled, no-show, and customer declined.',
+          'Office consultation attendance starts automatically at the scheduled time and completes automatically after the one-hour slot; arrival and exception statuses are still tracked.',
           'Each state affects what actions remain available to customer, agent, and assigned staff in the page UI.',
           'When troubleshooting, first confirm the current status before attempting follow-up actions like payments or report submission.',
         ],

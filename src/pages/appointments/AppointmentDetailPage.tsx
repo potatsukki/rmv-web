@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
+import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -214,6 +215,17 @@ export function AppointmentDetailPage() {
       }
     }
   }, [canConfirmAppointment, appt?.salesStaffId, appt?.status, salesStaffList, selectedSalesStaff]);
+
+  useEffect(() => {
+    const boundary = getNextConsultationAttendanceBoundary(appt);
+    if (!boundary) return;
+
+    const timer = window.setTimeout(() => {
+      void refetch();
+    }, Math.max(0, boundary.getTime() - Date.now()) + 100);
+
+    return () => window.clearTimeout(timer);
+  }, [appt, refetch]);
 
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
@@ -434,11 +446,12 @@ export function AppointmentDetailPage() {
   );
   const canUpdateAttendance = Boolean(
     isOfficeConsultation &&
+    appt.status === AppointmentStatus.CONFIRMED &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
   );
 
   const updateAttendance = async (
-    action: 'check_in' | 'start' | 'complete' | 'no_show' | 'reschedule' | 'customer_declined',
+    action: 'check_in' | 'no_show' | 'reschedule' | 'customer_declined',
   ) => {
     const notesRequired = action === 'no_show' || action === 'reschedule' || action === 'customer_declined';
     const notes = notesRequired
@@ -462,10 +475,8 @@ export function AppointmentDetailPage() {
         notes: notes?.trim(),
       });
       toast.success(
-        action === 'complete'
-          ? 'Consultation attendance completed. You can now submit the consultation report.'
-          : action === 'customer_declined'
-            ? 'Consultation marked as customer declined. The workflow has been stopped.'
+        action === 'customer_declined'
+          ? 'Consultation marked as customer declined. The workflow has been stopped.'
           : 'Consultation attendance updated',
       );
     } catch (err) {
@@ -764,7 +775,7 @@ export function AppointmentDetailPage() {
                   Consultation Attendance
                 </CardTitle>
                 <p className="mt-1 text-sm text-slate-500 dark:text-slate-400">
-                  Track and manage your consultation schedule
+                  Attendance updates automatically from the scheduled consultation time
                 </p>
               </div>
             </div>
@@ -781,7 +792,13 @@ export function AppointmentDetailPage() {
                   <div className="mt-2">
                     <StatusBadge status={attendanceStatus} />
                   </div>
-                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">Your appointment is confirmed</p>
+                  <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
+                    {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS
+                      ? 'Started automatically at the scheduled time'
+                      : attendanceStatus === AppointmentAttendanceStatus.COMPLETED
+                        ? 'Completed automatically at the end of the time slot'
+                        : 'Will start automatically at the scheduled time'}
+                  </p>
                 </div>
               </div>
 
@@ -803,7 +820,7 @@ export function AppointmentDetailPage() {
                 <div className="min-w-0">
                   <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Completed</p>
                   <p className="mt-1 text-[17px] font-semibold text-slate-950 dark:text-slate-100">{formatDateTime(appt.consultationCompletedAt)}</p>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Will be updated after completion</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Updates automatically after the one-hour slot</p>
                 </div>
               </div>
             </div>
@@ -866,16 +883,7 @@ export function AppointmentDetailPage() {
                   </div>
                 )}
                 {[AppointmentAttendanceStatus.ON_TIME, AppointmentAttendanceStatus.LATE_ARRIVAL].includes(attendanceStatus as AppointmentAttendanceStatus) && (
-                  <div className="grid gap-4 sm:grid-cols-3">
-                    <button
-                      type="button"
-                      onClick={() => updateAttendance('start')}
-                      disabled={attendanceMutation.isPending}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-[#4f77f2] bg-[#315bd8] px-6 text-sm font-semibold text-white transition-colors hover:border-[#5f86ff] hover:bg-[#3d68e8] disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      Start Consultation
-                    </button>
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => updateAttendance('reschedule')}
@@ -897,16 +905,7 @@ export function AppointmentDetailPage() {
                   </div>
                 )}
                 {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
-                  <div className="grid gap-4 pt-1 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => updateAttendance('complete')}
-                      disabled={attendanceMutation.isPending}
-                      className="inline-flex h-12 items-center justify-center gap-2 rounded-md border border-emerald-500 bg-emerald-600 px-6 text-sm font-semibold text-white transition-colors hover:border-emerald-400 hover:bg-emerald-500 disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      <CheckCircle2 className="h-4 w-4" />
-                      Complete Consultation
-                    </button>
+                  <div className="grid gap-4 pt-1">
                     <button
                       type="button"
                       onClick={() => updateAttendance('customer_declined')}

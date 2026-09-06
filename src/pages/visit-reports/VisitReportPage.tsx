@@ -18,7 +18,6 @@ import {
   AlertTriangle,
   Wrench,
   Loader2,
-  CheckCircle2,
   X,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -77,6 +76,7 @@ import type { ApiResponse, LineItem, ServiceSpecifications, SiteConditions, User
 import { isRetryableSubmittedOcularReport } from '@/lib/visit-report-cache';
 import { getDesignTemplatePlaceholderImage, type DesignTemplate } from '@/lib/design-templates';
 import { getMissingRequiredSpecificationFields, getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
+import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 
 
 const DEFAULT_SITE_CONDITIONS: SiteConditions = {
@@ -587,6 +587,7 @@ export function VisitReportPage() {
   const canUpdateConsultationAttendance = Boolean(
     effectiveVisitType === 'consultation'
     && appointmentId
+    && appointmentRecord?.status === 'confirmed'
     && (isAdmin || isAssignedSalesStaff),
   );
   const contactPersonLabel = [
@@ -641,6 +642,17 @@ export function VisitReportPage() {
     if (!isError || !id || !siblingReports?.length) return;
     navigate(`/visit-reports/${rawId(siblingReports[0]!._id)}`, { replace: true, state: location.state });
   }, [id, isError, location.state, navigate, siblingReports]);
+
+  useEffect(() => {
+    const boundary = getNextConsultationAttendanceBoundary(appointmentRecord);
+    if (!boundary) return;
+
+    const timer = window.setTimeout(() => {
+      void refetch();
+    }, Math.max(0, boundary.getTime() - Date.now()) + 100);
+
+    return () => window.clearTimeout(timer);
+  }, [appointmentRecord, refetch]);
 
   // Pre-fill form when data arrives
   if (report && reportMatchesRoute && !formLoaded) {
@@ -999,18 +1011,12 @@ export function VisitReportPage() {
     await saveDraft({ showSuccessToast: true, showErrorToast: true });
   };
 
-  const updateConsultationAttendance = async (action: 'check_in' | 'start' | 'complete') => {
+  const updateConsultationAttendance = async (action: 'check_in') => {
     if (!appointmentId) return;
     try {
       await attendanceMutation.mutateAsync({ id: appointmentId, action });
       await refetch();
-      toast.success(
-        action === 'check_in'
-          ? 'Customer checked in.'
-          : action === 'start'
-            ? 'Consultation started.'
-            : 'Consultation completed.',
-      );
+      toast.success('Customer checked in.');
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Unable to update consultation attendance.'));
     }
@@ -1088,13 +1094,9 @@ export function VisitReportPage() {
         toast.error('Consultation report cannot be submitted because the customer declined to proceed. Save notes only.');
         return;
       }
-      // Temporary bypass: the server completes attendance while processing an
-      // ocular handoff. Other consultation outcomes keep the normal gate.
-      if (consultationOutcome !== 'schedule_ocular'
-        && recordedAttendanceStatus
-        && ![AppointmentAttendanceStatus.IN_PROGRESS, AppointmentAttendanceStatus.COMPLETED]
-          .includes(recordedAttendanceStatus as AppointmentAttendanceStatus)) {
-        toast.error('Check in and start the consultation before submitting the consultation report.');
+      if (![AppointmentAttendanceStatus.IN_PROGRESS, AppointmentAttendanceStatus.COMPLETED]
+        .includes(attendanceStatus as AppointmentAttendanceStatus)) {
+        toast.error('Wait until the scheduled consultation begins before submitting the consultation report.');
         return;
       }
       if (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot)) {
@@ -1738,48 +1740,24 @@ export function VisitReportPage() {
                   </div>
                 </div>
 
-                {canUpdateConsultationAttendance && (
+                {canUpdateConsultationAttendance
+                  && attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
                   <div className="flex flex-wrap gap-3">
-                    {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
-                      <Button
-                        type="button"
-                        onClick={() => updateConsultationAttendance('check_in')}
-                        disabled={attendanceMutation.isPending}
-                        className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Check In Customer
-                      </Button>
-                    )}
-                    {[AppointmentAttendanceStatus.ON_TIME, AppointmentAttendanceStatus.LATE_ARRIVAL]
-                      .includes(attendanceStatus as AppointmentAttendanceStatus) && (
-                      <Button
-                        type="button"
-                        onClick={() => updateConsultationAttendance('start')}
-                        disabled={attendanceMutation.isPending}
-                        className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Start Consultation
-                      </Button>
-                    )}
-                    {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
-                      <Button
-                        type="button"
-                        onClick={() => updateConsultationAttendance('complete')}
-                        disabled={attendanceMutation.isPending}
-                        className="rounded-xl bg-emerald-600 text-white hover:bg-emerald-500"
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Complete Consultation
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      onClick={() => updateConsultationAttendance('check_in')}
+                      disabled={attendanceMutation.isPending}
+                      className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Check In Customer
+                    </Button>
                   </div>
                 )}
 
                 <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
-                  Check in the customer and start the consultation here. When the status is In Progress,
-                  submitting the final report will automatically mark the consultation as completed.
+                  Check-in records the customer's arrival. The status changes automatically to In Progress
+                  at the scheduled start and Completed after the one-hour consultation slot.
                 </p>
               </CardContent>
             </Card>
