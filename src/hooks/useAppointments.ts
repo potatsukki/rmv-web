@@ -83,6 +83,9 @@ export function useAvailableSlots(date: string, type: string) {
       return data.data;
     },
     enabled: !!date && !!type,
+    staleTime: 0,
+    refetchOnMount: 'always',
+    refetchOnWindowFocus: true,
   });
 }
 
