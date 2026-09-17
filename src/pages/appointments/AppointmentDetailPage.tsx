@@ -449,9 +449,6 @@ export function AppointmentDetailPage() {
     appt.status === AppointmentStatus.CONFIRMED &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
   );
-  const testingAttendanceBypassEnabled = import.meta.env.DEV
-    || import.meta.env.VITE_ENABLE_TEST_ATTENDANCE_BYPASS === 'true';
-
   const updateAttendance = async (
     action: 'check_in' | 'test_start' | 'no_show' | 'reschedule' | 'customer_declined',
   ) => {
@@ -855,7 +852,7 @@ export function AppointmentDetailPage() {
             )}
             {canUpdateAttendance && (
               <div className="pt-1">
-                {testingAttendanceBypassEnabled && [
+                {[
                   AppointmentAttendanceStatus.SCHEDULED,
                   AppointmentAttendanceStatus.ON_TIME,
                   AppointmentAttendanceStatus.LATE_ARRIVAL,
