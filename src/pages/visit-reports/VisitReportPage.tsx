@@ -1656,18 +1656,16 @@ export function VisitReportPage() {
                         Check In Customer
                       </Button>
                     )}
-                    {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_TEST_ATTENDANCE_BYPASS === 'true') && (
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => updateConsultationAttendance('test_start')}
-                        disabled={attendanceMutation.isPending}
-                        className="rounded-xl border-amber-400 bg-amber-50 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100"
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Start Now (Testing Only)
-                      </Button>
-                    )}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => updateConsultationAttendance('test_start')}
+                      disabled={attendanceMutation.isPending}
+                      className="rounded-xl border-amber-400 bg-amber-50 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100"
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Start Now (Testing Only)
+                    </Button>
                   </div>
                 )}
 
