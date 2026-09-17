@@ -8,6 +8,7 @@ import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Loader2, Calendar, Fi
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
+import { buildAppointmentPurpose } from '@/lib/booking-intent';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -173,6 +174,10 @@ export function BookAppointmentPage() {
   const activeSampleDesigns = activeCatalogService
     ? getServiceProjectReferences(activeCatalogService)
     : [];
+  const requestedDesignName = bookingMode === 'sample' ? selectedDesign?.name : undefined;
+  const requestedWork = buildAppointmentPurpose(requestedDesignName);
+  const appointmentPurpose = buildAppointmentPurpose(requestedDesignName, notes);
+  const maxNotesLength = 500 - (requestedWork ? requestedWork.length + 2 : 0);
 
   useEffect(() => {
     if (!selectedServiceTypeParam) return;
@@ -257,6 +262,7 @@ export function BookAppointmentPage() {
   const canProceed = useMemo(() => {
     const stepKey = steps[currentStep]?.key;
     if (stepKey === 'service') {
+      if (appointmentPurpose.length > 500) return false;
       if (bookingMode === 'sample') return Boolean(selectedDesign);
       if (bookingMode === 'custom') {
         const hasCustomLabel = !serviceTypes.includes(ServiceType.CUSTOM) || Boolean(serviceTypeCustom.trim());
@@ -278,6 +284,7 @@ export function BookAppointmentPage() {
     serviceTypes,
     serviceTypeCustom,
     notes,
+    appointmentPurpose,
   ]);
 
   const handleNext = () => {
@@ -304,11 +311,15 @@ export function BookAppointmentPage() {
         toast.success('Reschedule request submitted!');
         navigate('/appointments');
       } else {
+        if (appointmentPurpose.length > 500) {
+          toast.error('Shorten the additional notes so the appointment request stays within 500 characters.');
+          return;
+        }
         const result = await requestMutation.mutateAsync({
           type: 'office',
           date: selectedDate,
           slotCode: selectedSlot,
-          purpose: notes || undefined,
+          purpose: appointmentPurpose || undefined,
           serviceTypes: serviceTypes as import('@/lib/constants').ServiceType[],
           serviceTypeCustom: serviceTypeCustom || undefined,
           selectedDesignTemplateId: selectedDesign?.id,
@@ -567,6 +578,7 @@ export function BookAppointmentPage() {
                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">Selected Design</p>
                         <p className="mt-1 truncate text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{selectedDesign.name}</p>
                         <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">{selectedDesign.serviceLabel}</p>
+                        <p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">{requestedWork}</p>
                       </div>
                     </div>
                   </div>
@@ -587,11 +599,13 @@ export function BookAppointmentPage() {
 
                 {bookingMode && (
                   <div className="space-y-1.5">
-                    <label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">
+                    <label htmlFor="appointment-notes" className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">
                       {bookingMode === 'custom' ? 'Describe Your Custom Request' : 'Additional Notes'}{' '}
                       {bookingMode === 'sample' && <span className="text-[#86868b] dark:text-slate-500">(optional)</span>}
                     </label>
                     <Textarea
+                      id="appointment-notes"
+                      maxLength={maxNotesLength}
                       value={notes}
                       onChange={(e) => setNotes(e.target.value)}
                       placeholder={bookingMode === 'custom'
@@ -599,6 +613,7 @@ export function BookAppointmentPage() {
                         : 'Add any changes or site details our team should know about this design.'}
                       className="min-h-[100px] rounded-xl border-[#d2d2d7] focus:border-[#9aa3ad] focus:ring-[#9aa3ad]/40 dark:border-white/15 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#7f96b3] dark:focus:ring-[#7f96b3]/30"
                     />
+                    {notes.length > maxNotesLength && <p role="alert" className="text-sm text-destructive">Shorten your notes to {maxNotesLength} characters for this design.</p>}
                     <p className="text-xs text-[#86868b] dark:text-slate-500">
                       The first appointment is an office consultation. If a site visit is needed, RMV will schedule it after the consultation.
                     </p>
@@ -755,6 +770,7 @@ export function BookAppointmentPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#b77900] dark:text-[#f5b400]">Selected Sample Design</p>
                     <p className="mt-2 text-base font-semibold text-[#1d1d1f] dark:text-slate-100">{selectedDesign.name}</p>
                     <p className="mt-1 text-sm text-[#6e6e73] dark:text-slate-400">{selectedDesign.serviceLabel}</p>
+                    <p className="mt-3 text-sm font-medium text-[#1d1d1f] dark:text-slate-100">{requestedWork}</p>
                     {selectedDesign.description && <p className="mt-3 line-clamp-3 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">{selectedDesign.description}</p>}
                   </div>
                 </div>

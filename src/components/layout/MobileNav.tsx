@@ -22,6 +22,8 @@ import { LogoutConfirmModal } from '@/components/shared/LogoutConfirmModal';
 function isNavItemActive(pathname: string, itemPath: string): boolean {
   if (itemPath === '/dashboard') return pathname === '/dashboard';
 
+  if (itemPath === '/projects' && pathname === '/projects/create') return false;
+
   if (itemPath === '/appointments') {
     return (
       pathname === '/appointments' ||

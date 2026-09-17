@@ -159,6 +159,8 @@ export function LineItemsEditor({
               {/* Delete button */}
               {!disabled && (
                 <Button
+                  type="button"
+                  aria-label={`Remove component ${index + 1}`}
                   variant="ghost"
                   size="icon"
                   className="text-gray-400 hover:text-red-500 mt-6 shrink-0 dark:text-slate-500 dark:hover:text-red-300"

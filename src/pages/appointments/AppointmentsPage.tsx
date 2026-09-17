@@ -433,7 +433,7 @@ export function AppointmentsPage() {
         searchPlaceholder={searchPlaceholder}
         searchValue={search}
         onSearchChange={setSearch}
-        filters={STATUS_FILTERS}
+        filters={isSalesOnly ? STATUS_FILTERS.filter((filter) => filter.label !== 'Needs Action') : STATUS_FILTERS}
         activeFilter={statusFilter ?? ''}
         onFilterChange={setStatusFilter}
         action={toolbarActions}
@@ -556,7 +556,7 @@ export function AppointmentsPage() {
 
                         {isQueueRole && queueMeta?.sampleProjects?.[0] && (
                           <div className="ml-[18px] mt-1.5 text-[11px] text-[#5c6672] dark:text-slate-400">
-                            Sample project: {queueMeta.sampleProjects[0].title}
+                            Linked project: {queueMeta.sampleProjects[0].title}
                           </div>
                         )}
 
@@ -616,7 +616,7 @@ export function AppointmentsPage() {
                           ? { label: 'Open Project', path: queueMeta.actions.projectPath }
                           : null,
                         queueMeta?.actions.createProjectPath
-                          ? { label: appt.type === 'ocular' ? 'Submit Visit Report' : 'Add Specification', path: queueMeta.actions.createProjectPath }
+                          ? { label: 'Create Project', path: queueMeta.actions.createProjectPath }
                           : null,
                       ].filter((action): action is { label: string; path: string } => Boolean(action));
 
@@ -652,7 +652,7 @@ export function AppointmentsPage() {
                                 )}
                                 {isQueueRole && queueMeta?.sampleProjects?.[0] && (
                                   <p className="mt-1 text-[11px] text-[#5f6872] dark:text-slate-400 truncate">
-                                    Sample project: {queueMeta.sampleProjects[0].title}
+                                    Linked project: {queueMeta.sampleProjects[0].title}
                                   </p>
                                 )}
                                 {isQueueRole && typeof appt.salesStaffId === 'object' && appt.salesStaffId && (

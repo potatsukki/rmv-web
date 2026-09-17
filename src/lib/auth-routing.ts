@@ -20,6 +20,7 @@ const PROTECTED_ROUTE_RULES: RouteRule[] = [
   { pattern: /^\/appointments\/[^/]+\/?$/i, allowedRoles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
   { pattern: /^\/appointments\/?$/i, allowedRoles: [Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.CASHIER, Role.ADMIN] },
   { pattern: /^\/ocular-fee-queue\/?$/i, allowedRoles: [Role.CASHIER, Role.ADMIN] },
+  { pattern: /^\/projects\/create\/?$/i, allowedRoles: [Role.SALES_STAFF, Role.ADMIN] },
   {
     pattern: /^\/projects(?:\/[^/]+(?:\/(?:blueprint|payments|fabrication))?)?\/?$/i,
     allowedRoles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],

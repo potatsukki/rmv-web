@@ -1,6 +1,6 @@
 import { useState, Fragment } from 'react';
 import { Link, useNavigate } from 'react-router';
-import { FolderOpen, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
+import { FolderOpen, FolderPlus, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -144,6 +144,7 @@ export function ProjectsPage() {
   const { user } = useAuthStore();
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isStaff = !isCustomer;
+  const canCreateProject = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role as Role));
   const isSalesOnly = Boolean(
     user?.roles?.includes(Role.SALES_STAFF)
     && !user.roles.some((role) => [Role.ADMIN, Role.APPOINTMENT_AGENT].includes(role as Role)),
@@ -197,6 +198,11 @@ export function ProjectsPage() {
         filters={STATUS_FILTERS}
         activeFilter={statusFilter}
         onFilterChange={setStatusFilter}
+        action={canCreateProject ? (
+          <Button asChild className="shrink-0">
+            <Link to="/projects/create"><FolderPlus className="h-4 w-4" />Create Project</Link>
+          </Button>
+        ) : undefined}
       />
 
       {/* Loading skeleton */}
@@ -222,7 +228,7 @@ export function ProjectsPage() {
           title="No projects found"
           description={search || statusFilter
             ? 'Try adjusting your search terms or status filter.'
-            : 'New projects will appear here once appointments turn into active work.'}
+            : 'New projects will appear here after they are created.'}
           action={(search || statusFilter) ? (
             <Button
               variant="outline"

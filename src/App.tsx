@@ -133,6 +133,9 @@ const PayOcularFeePage = lazy(() =>
 const ProjectsPage = lazy(() =>
   import('@/pages/projects/ProjectsPage').then((module) => ({ default: module.ProjectsPage })),
 );
+const CreateProjectPage = lazy(() =>
+  import('@/pages/projects/CreateProjectPage').then((module) => ({ default: module.CreateProjectPage })),
+);
 const ProjectDetailPage = lazy(() =>
   import('@/pages/projects/ProjectDetailPage').then((module) => ({
     default: module.ProjectDetailPage,
@@ -345,6 +348,9 @@ export default function App() {
                   />
                 }
               >
+                <Route element={<ProtectedRoute allowedRoles={[Role.SALES_STAFF, Role.ADMIN]} />}>
+                  <Route path="/projects/create" element={<CreateProjectPage />} />
+                </Route>
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/projects/:id" element={<ProjectDetailPage />} />
                 <Route path="/projects/:id/contract" element={<ProjectContractUploadPage />} />

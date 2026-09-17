@@ -4,6 +4,17 @@ import { normalizeAuthContinuationPath } from '@/lib/auth-session';
 import { canAccessPath, getDefaultAuthenticatedPath, resolvePostLoginPath } from '@/lib/auth-routing';
 
 describe('auth routing guards', () => {
+  it('reserves project creation for sales staff and administrators while retaining project visibility', () => {
+    expect(canAccessPath('/projects/create', [Role.SALES_STAFF])).toBe(true);
+    expect(canAccessPath('/projects/create?customerId=customer-123', [Role.ADMIN])).toBe(true);
+    for (const role of [Role.CUSTOMER, Role.ENGINEER, Role.FABRICATION_STAFF]) {
+      expect(canAccessPath('/projects/project-123', [role])).toBe(true);
+      expect(canAccessPath('/projects/create', [role])).toBe(false);
+    }
+    expect(canAccessPath('/projects/create', [Role.APPOINTMENT_AGENT])).toBe(false);
+    expect(canAccessPath('/projects/create', [Role.CASHIER])).toBe(false);
+  });
+
   it('allows a role to keep an allowed protected route after login', () => {
     expect(resolvePostLoginPath('/appointments/create-for-customer', [Role.APPOINTMENT_AGENT])).toEqual({
       path: '/appointments/create-for-customer',

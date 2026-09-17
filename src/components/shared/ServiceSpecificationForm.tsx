@@ -16,6 +16,7 @@ interface ServiceSpecificationFormProps {
   value?: ServiceSpecifications;
   onChange: (next: ServiceSpecifications) => void;
   disabled?: boolean;
+  sections?: SpecificationSectionKey[];
 }
 
 function fieldValue(
@@ -159,12 +160,13 @@ export function ServiceSpecificationForm({
   value,
   onChange,
   disabled = false,
+  sections,
 }: ServiceSpecificationFormProps) {
   const schema = getServiceSpecificationSchema(serviceType);
 
   return (
     <div className="space-y-5">
-      {schema.sections.map((section) => (
+      {schema.sections.filter((section) => !sections || sections.includes(section.key)).map((section) => (
         <div key={section.key} className="space-y-3 rounded-xl border border-[#d8dee6] bg-[#f8fafc] p-4 dark:border-white/10 dark:bg-white/[0.03]">
           <div className="flex items-center justify-between gap-3">
             <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">{section.label}</p>
