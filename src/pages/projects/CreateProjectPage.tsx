@@ -51,6 +51,7 @@ export function CreateProjectPage() {
   const [selectedDesign, setSelectedDesign] = useState<DesignTemplate | null>(null);
   const [initialDesignKeys, setInitialDesignKeys] = useState<string[]>([]);
   const [initialDesignNotes, setInitialDesignNotes] = useState('');
+  const [contractFileKeys, setContractFileKeys] = useState<string[]>([]);
   const [attachments, setAttachments] = useState({ photoKeys: [] as string[], videoKeys: [] as string[], sketchKeys: [] as string[], referenceImageKeys: [] as string[] });
   const [uploads, setUploads] = useState<Record<string, boolean>>({});
   const isUploading = Object.values(uploads).some(Boolean);
@@ -95,6 +96,10 @@ export function CreateProjectPage() {
     }
     if (appointmentId && !completedAppointments.some((appointment) => appointment._id === appointmentId)) {
       toast.error('Choose a completed appointment for this customer, or select No appointment.');
+      return;
+    }
+    if (!contractFileKeys[0]) {
+      toast.error('Upload the signed contract before creating the project.');
       return;
     }
 
@@ -144,6 +149,7 @@ export function CreateProjectPage() {
         finishColor: value('finishColor') || undefined,
         quantity: value('quantity') ? Number(value('quantity')) : undefined,
         notes: value('notes') || undefined,
+        contractFileKey: contractFileKeys[0],
       });
       toast.success('Project created successfully.');
       navigate(`/projects/${project._id}`);
@@ -159,13 +165,32 @@ export function CreateProjectPage() {
       </Button>
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">Create Project</h1>
-        <p className="text-sm text-muted-foreground">Enter the customer’s project details. An appointment is optional.</p>
+        <p className="text-sm text-muted-foreground">Upload the signed contract, then enter the project details. An appointment is optional.</p>
       </div>
 
       <datalist id="project-material-options">{['Stainless 201', 'Stainless 304', 'Stainless 316', 'Mild Steel', 'Galvanized Iron (GI)', 'Aluminum', 'Wrought Iron', 'Glass', 'Wood'].map((label) => <option key={label} value={label} />)}</datalist>
       <datalist id="project-finish-options">{['Hairline / Brushed', 'Mirror / Polished', 'Matte', 'Powder Coated', 'Painted', 'Sandblasted', 'Rose Gold (PVD)', 'Gold (PVD)', 'Black (PVD)'].map((label) => <option key={label} value={label} />)}</datalist>
       <form onSubmit={handleSubmit} className="space-y-6">
         <fieldset disabled={createProject.isPending} className="min-w-0 space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Signed Contract *</CardTitle>
+              <CardDescription>A signed contract is required before the project can be created.</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <FileUpload
+                folder="contracts"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                maxSizeMB={10}
+                maxFiles={1}
+                label="Upload Signed Contract"
+                existingKeys={contractFileKeys}
+                onUploadComplete={setContractFileKeys}
+                onUploadingChange={(active) => setUploads((current) => current.contract === active ? current : { ...current, contract: active })}
+              />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Select Customer</CardTitle>
@@ -288,7 +313,7 @@ export function CreateProjectPage() {
 
           <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            <Button type="submit" disabled={!customer || isUploading || createProject.isPending || (!!appointmentId && appointments.isLoading)}>
+            <Button type="submit" disabled={!customer || !contractFileKeys[0] || isUploading || createProject.isPending || (!!appointmentId && appointments.isLoading)}>
               {createProject.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
               {createProject.isPending ? 'Creating…' : isUploading ? 'Uploading…' : 'Create Project'}
             </Button>

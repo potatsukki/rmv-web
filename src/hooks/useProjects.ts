@@ -103,6 +103,10 @@ export function useCreateProject() {
       finishColor?: string;
       quantity?: number;
       notes?: string;
+      contractFileKey: string;
+      contractFileName?: string;
+      contractContentType?: string;
+      contractFileSize?: number;
     }) => {
       const { data } = await api.post<ApiResponse<Project>>('/projects', body);
       return data.data;
