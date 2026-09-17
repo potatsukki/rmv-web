@@ -449,9 +449,11 @@ export function AppointmentDetailPage() {
     appt.status === AppointmentStatus.CONFIRMED &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
   );
+  const testingAttendanceBypassEnabled = import.meta.env.DEV
+    || import.meta.env.VITE_ENABLE_TEST_ATTENDANCE_BYPASS === 'true';
 
   const updateAttendance = async (
-    action: 'check_in' | 'no_show' | 'reschedule' | 'customer_declined',
+    action: 'check_in' | 'test_start' | 'no_show' | 'reschedule' | 'customer_declined',
   ) => {
     const notesRequired = action === 'no_show' || action === 'reschedule' || action === 'customer_declined';
     const notes = notesRequired
@@ -475,7 +477,9 @@ export function AppointmentDetailPage() {
         notes: notes?.trim(),
       });
       toast.success(
-        action === 'customer_declined'
+        action === 'test_start'
+          ? 'Testing bypass active. The consultation is now In Progress.'
+          : action === 'customer_declined'
           ? 'Consultation marked as customer declined. The workflow has been stopped.'
           : 'Consultation attendance updated',
       );
@@ -851,6 +855,27 @@ export function AppointmentDetailPage() {
             )}
             {canUpdateAttendance && (
               <div className="pt-1">
+                {testingAttendanceBypassEnabled && [
+                  AppointmentAttendanceStatus.SCHEDULED,
+                  AppointmentAttendanceStatus.ON_TIME,
+                  AppointmentAttendanceStatus.LATE_ARRIVAL,
+                ].includes(attendanceStatus as AppointmentAttendanceStatus) && (
+                  <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/35 dark:bg-amber-500/10">
+                    <p className="mb-3 text-xs leading-5 text-amber-900 dark:text-amber-100">
+                      Testing only: bypass the scheduled start time so the consultation report flow can be checked now.
+                    </p>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={() => updateAttendance('test_start')}
+                      disabled={attendanceMutation.isPending}
+                      className="border-amber-400 bg-amber-100 text-amber-950 hover:bg-amber-200 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100 dark:hover:bg-amber-400/25"
+                    >
+                      <Clock className="mr-2 h-4 w-4" />
+                      Start Now (Testing Only)
+                    </Button>
+                  </div>
+                )}
                 {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
                   <div className="grid gap-4 sm:grid-cols-3">
                     <button

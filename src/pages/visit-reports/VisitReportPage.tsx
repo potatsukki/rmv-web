@@ -950,12 +950,14 @@ export function VisitReportPage() {
     await saveDraft({ showSuccessToast: true, showErrorToast: true });
   };
 
-  const updateConsultationAttendance = async (action: 'check_in') => {
+  const updateConsultationAttendance = async (action: 'check_in' | 'test_start') => {
     if (!appointmentId) return;
     try {
       await attendanceMutation.mutateAsync({ id: appointmentId, action });
       await refetch();
-      toast.success('Customer checked in.');
+      toast.success(action === 'test_start'
+        ? 'Testing bypass active. The consultation is now In Progress.'
+        : 'Customer checked in.');
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Unable to update consultation attendance.'));
     }
@@ -1637,17 +1639,35 @@ export function VisitReportPage() {
                 </div>
 
                 {canUpdateConsultationAttendance
-                  && attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
+                  && [
+                    AppointmentAttendanceStatus.SCHEDULED,
+                    AppointmentAttendanceStatus.ON_TIME,
+                    AppointmentAttendanceStatus.LATE_ARRIVAL,
+                  ].includes(attendanceStatus as AppointmentAttendanceStatus) && (
                   <div className="flex flex-wrap gap-3">
-                    <Button
-                      type="button"
-                      onClick={() => updateConsultationAttendance('check_in')}
-                      disabled={attendanceMutation.isPending}
-                      className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      Check In Customer
-                    </Button>
+                    {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
+                      <Button
+                        type="button"
+                        onClick={() => updateConsultationAttendance('check_in')}
+                        disabled={attendanceMutation.isPending}
+                        className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Check In Customer
+                      </Button>
+                    )}
+                    {(import.meta.env.DEV || import.meta.env.VITE_ENABLE_TEST_ATTENDANCE_BYPASS === 'true') && (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => updateConsultationAttendance('test_start')}
+                        disabled={attendanceMutation.isPending}
+                        className="rounded-xl border-amber-400 bg-amber-50 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100"
+                      >
+                        <Clock className="mr-2 h-4 w-4" />
+                        Start Now (Testing Only)
+                      </Button>
+                    )}
                   </div>
                 )}
 
