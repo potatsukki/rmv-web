@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, Project, PaginatedResponse } from '@/lib/types';
+import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications } from '@/lib/types';
 
 const KEYS = {
   all: ['projects'] as const,
@@ -77,9 +77,25 @@ export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (body: {
-      appointmentId: string;
+      customerId?: string;
+      appointmentId?: string;
       title: string;
       serviceType: string;
+      serviceTypeCustom?: string;
+      measurementUnit?: string;
+      lineItems?: LineItem[];
+      specifications?: ServiceSpecifications;
+      preferredDesign?: string;
+      customerRequirements?: string;
+      initialDesignKeys?: string[];
+      initialDesignNotes?: string;
+      selectedDesignTemplateId?: string;
+      selectedDesignTemplateName?: string;
+      selectedDesignTemplateImageUrl?: string;
+      photoKeys?: string[];
+      videoKeys?: string[];
+      sketchKeys?: string[];
+      referenceImageKeys?: string[];
       description: string;
       siteAddress: string;
       measurements?: Record<string, unknown>;

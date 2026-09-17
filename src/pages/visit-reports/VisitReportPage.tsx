@@ -45,7 +45,6 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { ProjectNavigator } from '@/components/shared/ProjectNavigator';
-import { DesignTemplateSelector } from '@/components/shared/DesignTemplateSelector';
 import { ServiceSpecificationForm } from '@/components/shared/ServiceSpecificationForm';
 import {
   useVisitReport,
@@ -62,7 +61,6 @@ import { useAuthStore } from '@/stores/auth.store';
 import {
   Role,
   AppointmentAttendanceStatus,
-  ContractStatus,
   VisitReportStatus,
   ServiceType,
   MeasurementUnit,
@@ -74,8 +72,8 @@ import {
 } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications, SiteConditions, UserAddress, VisitReport } from '@/lib/types';
 import { isRetryableSubmittedOcularReport } from '@/lib/visit-report-cache';
-import { getDesignTemplatePlaceholderImage, type DesignTemplate } from '@/lib/design-templates';
-import { getMissingRequiredSpecificationFields, getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
+import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
+import { getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 
 
@@ -191,17 +189,7 @@ function getIncompleteOcularFields(report: {
     if (!isNonEmptyString(report.siteConditions?.obstaclesOrConstraints)) missing.push('obstacles or constraints');
   }
 
-  if (!hasMeaningfulSpecifications(report.specifications, 'materialsDesign')) {
-    if (!isNonEmptyString(report.materials)) missing.push('materials');
-    if (!isNonEmptyString(report.finishes)) missing.push('finishes');
-    if (!isNonEmptyString(report.preferredDesign)) missing.push('preferred design');
-  }
   if ((report.photoKeys?.length || 0) === 0) missing.push('site photos');
-  const hasInitialDesignReference = (report.initialDesignKeys?.length || 0) > 0
-    || isNonEmptyString(report.selectedDesignTemplateId)
-    || isNonEmptyString(report.selectedDesignTemplateName)
-    || isNonEmptyString(report.selectedDesignTemplateImageUrl);
-  if (!hasInitialDesignReference) missing.push('initial design files');
 
   return [...new Set(missing)];
 }
@@ -403,9 +391,6 @@ export function VisitReportPage() {
   const [actualVisitTime, setActualVisitTime] = useState('');   // slot code e.g. '09:00'
   const [serviceType, setServiceType] = useState(ServiceType.CUSTOM as string);
   const [serviceTypeCustom, setServiceTypeCustom] = useState('');
-  const [materials, setMaterials] = useState('');
-  const [finishes, setFinishes] = useState('');
-  const [preferredDesign, setPreferredDesign] = useState('');
   const [specifications, setSpecifications] = useState<ServiceSpecifications>({});
   const [customerRequirements, setCustomerRequirements] = useState('');
   const [notes, setNotes] = useState('');
@@ -413,12 +398,9 @@ export function VisitReportPage() {
   const [discussionNotes, setDiscussionNotes] = useState('');
   const [consultationOutcome, setConsultationOutcome] = useState<'schedule_ocular' | 'no_ocular'>('schedule_ocular');
   const [noOcularReason, setNoOcularReason] = useState('');
-  const [initialDesignKeys, setInitialDesignKeys] = useState<string[]>([]);
-  const [initialDesignNotes, setInitialDesignNotes] = useState('');
   const [selectedDesignTemplateId, setSelectedDesignTemplateId] = useState('');
   const [selectedDesignTemplateName, setSelectedDesignTemplateName] = useState('');
   const [selectedDesignTemplateImageUrl, setSelectedDesignTemplateImageUrl] = useState('');
-  const [initialDesignUploading, setInitialDesignUploading] = useState(false);
   const [recommendedOcularDate, setRecommendedOcularDate] = useState('');
   const [recommendedOcularSlot, setRecommendedOcularSlot] = useState('');
   const [selectedOcularAddressId, setSelectedOcularAddressId] = useState('');
@@ -446,7 +428,6 @@ export function VisitReportPage() {
   const [referenceImageKeys, setReferenceImageKeys] = useState<string[]>([]);
 
   const [formLoaded, setFormLoaded] = useState(false);
-  const [noOcularProjectEntryStarted, setNoOcularProjectEntryStarted] = useState(false);
   const [isSwitchingReport, setIsSwitchingReport] = useState(false);
   const saveDraftInFlightRef = useRef<Promise<VisitReport | null> | null>(null);
   const sourcePath = (location.state as { from?: string } | null)?.from;
@@ -454,15 +435,8 @@ export function VisitReportPage() {
   // Reset form when switching between reports (route :id changes)
   useEffect(() => {
     setFormLoaded(false);
-    setNoOcularProjectEntryStarted(false);
     setIsSwitchingReport(false);
   }, [id]);
-
-  useEffect(() => {
-    if (consultationOutcome !== 'no_ocular') {
-      setNoOcularProjectEntryStarted(false);
-    }
-  }, [consultationOutcome]);
 
   // Keep actualVisitDateTime in sync with separate date/time pickers
   useEffect(() => {
@@ -531,13 +505,7 @@ export function VisitReportPage() {
   const isEngineerOrAdmin =
     user?.roles.includes(Role.ENGINEER) || user?.roles.includes(Role.ADMIN);
   const linkedProjectId = linkedProject?._id || (report?.linkedProjectId ? rawId(report.linkedProjectId) : '');
-  const isNoOcularProjectEntry = effectiveVisitType === 'consultation' && consultationOutcome === 'no_ocular';
-  const isNoOcularProjectEntryPersisted = isNoOcularProjectEntry
-    && (report?.consultationOutcome === 'no_ocular' || noOcularProjectEntryStarted);
-  const isProjectCreationMode = effectiveVisitType === 'ocular' || isNoOcularProjectEntryPersisted;
-  const canEditProjectDetailsInReport = effectiveVisitType === 'consultation' || isProjectCreationMode;
-  const isConsultationDraftProject =
-    effectiveVisitType === 'consultation' && linkedProject?.status === 'draft';
+  const canEditSiteDetails = effectiveVisitType === 'ocular';
 
   // Calculation of payment dependency
   const appointment = report?.appointmentId;
@@ -670,9 +638,6 @@ export function VisitReportPage() {
     }
     setServiceType(report.serviceType || ServiceType.CUSTOM);
     setServiceTypeCustom(report.serviceTypeCustom || '');
-    setMaterials(report.materials || '');
-    setFinishes(report.finishes || '');
-    setPreferredDesign(report.preferredDesign || '');
     setSpecifications(mergeSpecificationsWithDefaults(report.serviceType, report.specifications));
     setCustomerRequirements(report.customerRequirements || '');
     setNotes(report.notes || '');
@@ -681,8 +646,6 @@ export function VisitReportPage() {
     setDiscussionNotes(report.discussionNotes || '');
     setConsultationOutcome(report.consultationOutcome || (sharedRecommendedOcularDate || sharedRecommendedOcularSlot ? 'schedule_ocular' : 'schedule_ocular'));
     setNoOcularReason(report.noOcularReason || '');
-    setInitialDesignKeys(report.initialDesignKeys || []);
-    setInitialDesignNotes(report.initialDesignNotes || '');
     setSelectedDesignTemplateId(report.selectedDesignTemplateId || customerSelectedDesignIdForReport);
     setSelectedDesignTemplateName(report.selectedDesignTemplateName || customerSelectedDesignNameForReport);
     setSelectedDesignTemplateImageUrl(report.selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport);
@@ -716,11 +679,6 @@ export function VisitReportPage() {
 
     setFormLoaded(true);
   }
-
-  const missingSpecificationWarnings = useMemo(
-    () => getMissingRequiredSpecificationFields(serviceType, specifications),
-    [serviceType, specifications],
-  );
 
   if (isLoading) return <PageLoader />;
   if (isError && isAppointmentReportLookupLoading) return <PageLoader />;
@@ -834,20 +792,6 @@ export function VisitReportPage() {
           : 'The customer submitted the site map pin/address. This Metro Manila ocular visit has no fee, so sales can proceed with the scheduled ocular visit.',
       };
 
-  const handleDesignTemplateSelect = (template: DesignTemplate) => {
-    setSelectedDesignTemplateId(template.id);
-    setSelectedDesignTemplateName(template.title);
-    // Generated data-URI placeholders can exceed the API's image URL limit.
-    // Persist real catalog paths while continuing to derive placeholders locally.
-    setSelectedDesignTemplateImageUrl(template.imageUrl.startsWith('data:') ? '' : template.imageUrl);
-    setMaterials(template.material);
-    setFinishes(template.finish);
-    setPreferredDesign(template.preferredDesign);
-    setSpecifications(mergeSpecificationsWithDefaults(serviceType, template.suggestedSpecifications || specifications));
-    setInitialDesignNotes(template.initialDesignNotes);
-    setLineItems(template.suggestedLineItems.map((item) => ({ ...item })));
-    toast.success(`${template.title} selected. You can still edit every populated field.`);
-  };
 
   const saveDraft = async ({
     showSuccessToast = false,
@@ -908,15 +852,12 @@ export function VisitReportPage() {
         serviceTypeCustom: serviceTypeCustom || undefined,
         customerRequirements: customerRequirements || undefined,
         notes: notes || undefined,
-        // Project detail fields can be captured during consultation and refined later.
-        ...(canEditProjectDetailsInReport && {
+        // Site measurements and evidence belong to the ocular visit report.
+        ...(canEditSiteDetails && {
           measurementUnit,
           lineItems: lineItemsForSave,
           measurements,
           siteConditions,
-          materials: materials || undefined,
-          finishes: finishes || undefined,
-          preferredDesign: preferredDesign || undefined,
           specifications: specificationsForSave,
           customerRequirements: customerRequirements || undefined,
           notes: notes || undefined,
@@ -924,8 +865,6 @@ export function VisitReportPage() {
           videoKeys,
           sketchKeys,
           referenceImageKeys,
-          initialDesignKeys,
-          initialDesignNotes: initialDesignNotes || undefined,
           selectedDesignTemplateId,
           selectedDesignTemplateName,
           selectedDesignTemplateImageUrl: selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport,
@@ -1023,11 +962,6 @@ export function VisitReportPage() {
   };
 
   const handlePrimarySubmitClick = () => {
-    if (linkedProjectId && isProjectCreationMode) {
-      navigate(`/projects/${linkedProjectId}/contract`);
-      return;
-    }
-
     setSubmitOpen(true);
   };
 
@@ -1048,9 +982,9 @@ export function VisitReportPage() {
     const isConsultation = effectiveVisitType === 'consultation';
     const ocularVisitDateTime = actualVisitDateTime || scheduledOcularVisitDateTime;
 
-    if (isOcular || isNoOcularProjectEntryPersisted) {
+    if (isOcular) {
       const missingFields = getIncompleteOcularFields({
-        actualVisitDateTime: isOcular ? ocularVisitDateTime : 'not-required-for-no-ocular',
+        actualVisitDateTime: ocularVisitDateTime,
         lineItems,
         measurements: isLegacyReport
           ? {
@@ -1062,13 +996,8 @@ export function VisitReportPage() {
           }
           : undefined,
         siteConditions,
-        materials,
-        finishes,
-        preferredDesign,
         specifications,
         photoKeys,
-        initialDesignKeys,
-        initialDesignNotes,
         selectedDesignTemplateId,
         selectedDesignTemplateName,
         selectedDesignTemplateImageUrl,
@@ -1081,7 +1010,7 @@ export function VisitReportPage() {
       }
     }
 
-    if (isConsultation && !isNoOcularProjectEntryPersisted) {
+    if (isConsultation) {
       if (attendanceStatus === AppointmentAttendanceStatus.NO_SHOW) {
         toast.error('Consultation report cannot be submitted because the consultation was marked as No Show. Save notes only.');
         return;
@@ -1107,17 +1036,6 @@ export function VisitReportPage() {
         toast.error('Explain why ocular is not needed before proceeding without ocular.');
         return;
       }
-      if (consultationOutcome === 'no_ocular') {
-        const saved = await saveDraft({ showSuccessToast: false, showErrorToast: true });
-        if (!saved) {
-          return;
-        }
-        setNoOcularProjectEntryStarted(true);
-        await refetch();
-        setSubmitOpen(false);
-        toast.success('Ocular skipped. Complete the project details, then click Create Project.', { duration: 5000 });
-        return;
-      }
     }
 
     try {
@@ -1140,19 +1058,14 @@ export function VisitReportPage() {
         return;
       }
 
-      if (isOcular || isNoOcularProjectEntryPersisted) {
+      if (isOcular) {
         const missingPersistedFields = getIncompleteOcularFields({
-          actualVisitDateTime: isOcular ? saved.actualVisitDateTime : 'not-required-for-no-ocular',
+          actualVisitDateTime: saved.actualVisitDateTime,
           lineItems: saved.lineItems,
           measurements: saved.measurements,
           siteConditions: saved.siteConditions,
-          materials: saved.materials,
-          finishes: saved.finishes,
-          preferredDesign: saved.preferredDesign,
           specifications: saved.specifications,
           photoKeys: saved.photoKeys,
-          initialDesignKeys: saved.initialDesignKeys,
-          initialDesignNotes: saved.initialDesignNotes,
           selectedDesignTemplateId: saved.selectedDesignTemplateId,
           selectedDesignTemplateName: saved.selectedDesignTemplateName,
           selectedDesignTemplateImageUrl: saved.selectedDesignTemplateImageUrl,
@@ -1180,20 +1093,14 @@ export function VisitReportPage() {
         return;
       }
 
-      if (isProjectCreationMode) {
-        let projectId = linkedProjectId;
-        if (!projectId) {
-          const { data } = await api.get(`/projects/by-visit-report/${savedReportId}`);
-          projectId = data?.data?._id;
-        }
-        toast.success('Project details saved. Upload the signed contract to submit it for engineering.', { duration: 5000 });
-        if (projectId) navigate(`/projects/${projectId}/contract`);
-      } else {
-        toast.success(
-          'Ocular visit scheduled. The consultation appointment has been completed and the customer can now submit the site location.',
-          { duration: 5000 },
-        );
-      }
+      toast.success(
+        isOcular
+          ? 'Ocular report submitted. The appointment is complete.'
+          : consultationOutcome === 'no_ocular'
+            ? 'Consultation completed without an ocular visit.'
+            : 'Ocular visit scheduled. The consultation appointment is complete.',
+        { duration: 5000 },
+      );
       setSubmitOpen(false);
     } catch (err) {
       setSubmitOpen(false);
@@ -1315,14 +1222,12 @@ export function VisitReportPage() {
           </Button>
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-slate-100 truncate">
-              {isProjectCreationMode
-                ? (canEdit ? 'Creating Project' : 'Project Details')
-                : (canEdit ? 'Edit Visit Report' : 'Visit Report Details')}
+              {canEdit ? 'Edit Visit Report' : 'Visit Report Details'}
             </h1>
             <p className="text-sm text-gray-500 dark:text-slate-300 mt-0.5 flex items-center gap-2">
               <span className="truncate">{appointmentServiceLabel}</span>
               <span className="hidden sm:inline">&middot;</span>
-              <span className="shrink-0">{effectiveVisitType === 'ocular' ? 'Ocular Visit' : isProjectCreationMode ? 'No Ocular' : 'Consultation'}</span>
+              <span className="shrink-0">{effectiveVisitType === 'ocular' ? 'Ocular Visit' : 'Consultation'}</span>
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
@@ -1339,14 +1244,14 @@ export function VisitReportPage() {
         )}
       </div>
 
-      {/* ── Project Navigator (multi-project strip) ── */}
+      {/* Service reports for this appointment */}
         <ProjectNavigator
           appointmentId={appointmentId}
           activeReportId={String(report._id)}
           defaultVisitType={effectiveVisitType}
           addServiceOptions={appointmentServiceChoices}
           canAdd={isAssignedSalesStaff && (isDraft || isReturned) && effectiveVisitType !== 'ocular'}
-          canEdit={!!(isSalesStaff || isAdmin) && effectiveVisitType !== 'ocular' && !isProjectCreationMode}
+          canEdit={!!(isSalesStaff || isAdmin) && effectiveVisitType !== 'ocular'}
           onBeforeNavigate={handleBeforeProjectSwitch}
           onBeforeAdd={async () => {
             if (!canEdit) return true;
@@ -1383,15 +1288,6 @@ export function VisitReportPage() {
         </div>
       )}
 
-      {isConsultationDraftProject && (
-        <div className="rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-blue-900/60 dark:bg-blue-950/40">
-          <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Ocular visit is still required</p>
-          <p className="mt-1 text-sm text-blue-700 dark:text-blue-200">
-            This consultation created a draft project, but engineering cannot start until the ocular visit is finalized and its report is submitted.
-          </p>
-        </div>
-      )}
-
       {/* Warning Banner: Unpaid Ocular Fee (outside NCR) */}
       {isOcularFeeUnpaidOutsideNcr && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-500/30 dark:bg-amber-500/10">
@@ -1402,7 +1298,7 @@ export function VisitReportPage() {
                 Ocular Fee Payment Required
               </p>
               <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
-                This customer address is outside Metro Manila. You cannot create the project from this report until the ocular fee is fully paid and verified.
+                This customer address is outside Metro Manila. You cannot submit this report until the ocular fee is fully paid and verified.
               </p>
               <Button
                 variant="outline"
@@ -1460,7 +1356,7 @@ export function VisitReportPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
                   <FolderOpen className="h-5 w-5 text-blue-500 dark:text-blue-300" />
-                  Project Discussed & Summary
+                  Consultation Summary
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -1512,7 +1408,7 @@ export function VisitReportPage() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
                   <Ruler className="h-5 w-5 text-gray-400 dark:text-slate-500" />
-                  Item Specifications
+                  Site Measurements & Conditions
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1764,12 +1660,12 @@ export function VisitReportPage() {
           )}
 
           {/* Consultation Summary (only for consultation visit type) */}
-          {visitType === 'consultation' && !isProjectCreationMode && (
+          {visitType === 'consultation' && (
             <Card className={editSectionClassName}>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
                   <FolderOpen className="h-5 w-5 text-gray-500 dark:text-slate-300" />
-                  Project Discussed & Summary
+                  Consultation Summary
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
@@ -1795,108 +1691,35 @@ export function VisitReportPage() {
               serviceType={serviceType}
               serviceLabel={serviceLabel}
               isCustomerSelected={hasCustomerSelectedDesign}
-              onRemove={!hasCustomerSelectedDesign ? () => {
-                setSelectedDesignTemplateId('');
-                setSelectedDesignTemplateName('');
-                setSelectedDesignTemplateImageUrl('');
-              } : undefined}
+
             />
           )}
 
-          {canEditProjectDetailsInReport && !hasCustomerSelectedDesign && (
-            <Card className={editCardClassName}>
-              <CardContent className="pt-6">
-                <DesignTemplateSelector
-                  serviceType={serviceType}
-                  selectedTemplateId={selectedDesignTemplateId}
-                  onSelect={handleDesignTemplateSelect}
-                  disabled={!canEdit}
-                />
-              </CardContent>
-            </Card>
-          )}
-
-          {visitType === 'consultation' && isProjectCreationMode && (
-            <Card className={editCardClassName}>
-              <CardContent className="pt-6">
-                <div>
-                  <p className="text-[13px] font-semibold text-slate-900 dark:text-slate-100">
-                    Consultation Notes for {serviceLabel}
-                  </p>
-                  <div className="mt-2 rounded-xl border border-slate-200 bg-slate-50/60 p-4 dark:border-slate-700/60 dark:bg-slate-900/50">
-                    <p className="whitespace-pre-wrap text-sm text-slate-700 dark:text-slate-200 leading-relaxed">
-                      {report.discussionNotes || 'No discussion notes recorded.'}
-                    </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Sections 2-4: Project details captured during consultation and refined during ocular/no-ocular flows */}
-          {canEditProjectDetailsInReport && (<>
+          {/* Site observations and supporting design references from the ocular visit */}
+          {canEditSiteDetails && (<>
 
           <Card className={editCardClassName}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
                 <Ruler className="h-5 w-5 text-gray-400 dark:text-slate-500" />
-                Item Specifications
+                Site Measurements & Conditions
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              {missingSpecificationWarnings.length > 0 && (
-                <div className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
-                  Missing recommended fields: {missingSpecificationWarnings.join(', ')}.
-                </div>
-              )}
               <ServiceSpecificationForm
                 serviceType={serviceType}
                 value={specifications}
                 onChange={setSpecifications}
+                sections={['measurements', 'siteConditions']}
                 disabled={!canEdit}
               />
             </CardContent>
           </Card>
 
-          <Card className={editCardClassName}>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
-                <Paintbrush className="h-5 w-5 text-gray-400 dark:text-slate-500" />
-                Initial Design
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-slate-400">
-                Attach the initial design references or sketch notes that engineering should review next.
-              </p>
-              <FileUpload
-                folder="visit-reports/initial-design"
-                accept="image/*,.pdf"
-                maxSizeMB={5}
-                maxFiles={10}
-                label="Upload initial design files"
-                existingKeys={initialDesignKeys}
-                onUploadComplete={setInitialDesignKeys}
-                onUploadingChange={setInitialDesignUploading}
-              />
-              <div className="space-y-1.5">
-                <Label className="text-[13px] font-medium text-gray-700">
-                  Initial Design Notes
-                </Label>
-                <Textarea
-                  value={initialDesignNotes}
-                  onChange={(e) => setInitialDesignNotes(e.target.value)}
-                  placeholder="Explain the design direction, references, or assumptions."
-                  className={cn('min-h-[80px]', editInputClassName)}
-                />
-              </div>
-            </CardContent>
-          </Card>
-
-          </>)}{/* end project-detail sections */}
+          </>)}{/* end site-detail sections */}
 
           {/* Section 5: File Uploads */}
-          {canEditProjectDetailsInReport && (
+          {canEditSiteDetails && (
           <Card className={editCardClassName}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
@@ -1953,41 +1776,12 @@ export function VisitReportPage() {
 
         {(canEdit || linkedProjectId || canRetrySubmittedOcularHandoff) && (
           <div className="w-full space-y-3">
-            {linkedProject?.contractStatus !== ContractStatus.UPLOADED && (
-              <div className={cn(
-                'rounded-xl border border-amber-300 bg-amber-50 px-3 py-2.5 text-amber-900 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-100',
-                !linkedProjectId && 'hidden',
-              )}>
-                <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-start gap-2">
-                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                    <div>
-                      <p className="text-sm font-semibold">Signed contract not uploaded yet</p>
-                      <p className="mt-0.5 text-xs">
-                        Upload the signed contract first before engineering can claim this project.
-                      </p>
-                    </div>
-                  </div>
-                  {(isSalesStaff || isAdmin) && (
-                    <Button
-                      type="button"
-                      size="sm"
-                      variant="outline"
-                      onClick={() => navigate(`/projects/${linkedProjectId}/contract`)}
-                      className="h-8 rounded-lg border-amber-400 bg-transparent text-amber-900 hover:bg-amber-100 dark:border-amber-300/50 dark:text-amber-100 dark:hover:bg-amber-500/20"
-                    >
-                      Upload Contract
-                    </Button>
-                  )}
-                </div>
-              </div>
-            )}
             <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-center">
               {canEdit && (
                 <div className="flex gap-3 order-1 sm:order-none">
                   <Button
                     onClick={handleSave}
-                    disabled={updateMutation.isPending || initialDesignUploading}
+                    disabled={updateMutation.isPending}
                     className="rounded-xl [background-image:none] bg-[#223246] text-white hover:bg-[#31577a] dark:border dark:border-white/12 dark:[background-image:none] dark:bg-[#223246] dark:text-slate-100 dark:hover:bg-[#365f86]"
                   >
                     <Save className="mr-2 h-4 w-4" />
@@ -1999,25 +1793,18 @@ export function VisitReportPage() {
                       className="rounded-xl [background-image:none] bg-[#223246] text-white hover:bg-[#31577a] dark:border dark:border-white/12 dark:[background-image:none] dark:bg-[#223246] dark:text-slate-100 dark:hover:bg-[#365f86]"
                     >
                       <FolderOpen className="mr-2 h-4 w-4" />
-                      {isConsultationDraftProject ? 'Go to Draft Project' : 'Go to Project'}
+                      Go to Project
                     </Button>
                   )}
                   <Button
                     onClick={handlePrimarySubmitClick}
                     disabled={
-                      initialDesignUploading
-                      || (!linkedProjectId && (submitMutation.isPending || !!isSubmissionBlocked))
+                      submitMutation.isPending || !!isSubmissionBlocked
                     }
                     className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
                   >
-                    {linkedProjectId && isProjectCreationMode
-                      ? <FolderOpen className="mr-2 h-4 w-4" />
-                      : effectiveVisitType === 'consultation' && !isProjectCreationMode
-                      ? <CalendarIcon className="mr-2 h-4 w-4" />
-                      : <Send className="mr-2 h-4 w-4" />}
-                    {linkedProjectId && isProjectCreationMode
-                      ? 'Upload Contract'
-                      : effectiveVisitType === 'consultation' && !isProjectCreationMode ? 'Submit Consultation Outcome' : 'Create Project'}
+                    <Send className="mr-2 h-4 w-4" />
+                    {effectiveVisitType === 'consultation' ? 'Submit Consultation Outcome' : 'Submit Visit Report'}
                   </Button>
                 </div>
               )}
@@ -2033,7 +1820,7 @@ export function VisitReportPage() {
                 </Button>
               )}
 
-              {isConsultationDraftProject && (isSalesStaff || isAdmin) && (
+              {(isSalesStaff || isAdmin) && (
                 <Button
                   onClick={() => navigate(`/appointments/${appointmentNavigationId}`)}
                   variant="outline"
@@ -2047,27 +1834,31 @@ export function VisitReportPage() {
           </div>
         )}
 
-        {/* Go to Appointment button is rendered beside the project button above when applicable */}
+        {!linkedProjectId && (isSalesStaff || isAdmin) && (isSubmitted || isCompleted) && appointmentRecord?.status === 'completed' && (
+          <Button
+            variant="outline"
+            className="rounded-xl"
+            onClick={() => navigate(`/projects/create?${new URLSearchParams({ customerId: rawId(report.customerId), appointmentId }).toString()}`)}
+          >
+            <FolderOpen className="mr-2 h-4 w-4" />
+            Create Project
+          </Button>
+        )}
       </div>
 
       {/* ── Submit Confirmation ── */}
       <ConfirmDialog
         open={submitOpen}
         onOpenChange={setSubmitOpen}
-        title={effectiveVisitType === 'consultation' && !isProjectCreationMode ? 'Consultation Outcome' : 'Create Project'}
-        description={
-          isProjectCreationMode
-            ? effectiveVisitType === 'ocular'
-              ? 'This will update the existing project with the on-site measurements and details collected during the ocular visit. The initial design package will also be submitted to engineering for approval, and the appointment will be marked as completed. Are you sure?'
-              : 'This will create the internal draft project from the consultation details. You will be redirected to upload the signed contract before engineering can claim or progress the job.'
-            : `Choose whether this consultation needs an ocular visit for ${appointmentItemsText}.`
-        }
-        confirmLabel={effectiveVisitType === 'consultation' && !isProjectCreationMode ? (consultationOutcome === 'schedule_ocular' ? 'Proceed With Ocular' : 'Proceed Without Ocular') : 'Create Project'}
+        title={effectiveVisitType === 'consultation' ? 'Consultation Outcome' : 'Submit Visit Report'}
+        description={effectiveVisitType === 'consultation'
+          ? `Choose whether this consultation needs an ocular visit for ${appointmentItemsText}.`
+          : 'Submit the on-site measurements and observations, and mark the appointment as completed.'}
+        confirmLabel={effectiveVisitType === 'consultation' ? (consultationOutcome === 'schedule_ocular' ? 'Proceed With Ocular' : 'Complete Consultation') : 'Submit Visit Report'}
         confirmClassName="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
         isLoading={submitMutation.isPending || updateMutation.isPending}
         confirmDisabled={
           effectiveVisitType === 'consultation'
-          && !isProjectCreationMode
           && (
             (consultationOutcome === 'schedule_ocular' && (!recommendedOcularDate || !recommendedOcularSlot))
             || (consultationOutcome === 'no_ocular' && !noOcularReason.trim())
@@ -2075,7 +1866,7 @@ export function VisitReportPage() {
         }
         onConfirm={handleSubmit}
       >
-        {effectiveVisitType === 'consultation' && !isProjectCreationMode && (
+        {effectiveVisitType === 'consultation' && (
           <div className="space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <button

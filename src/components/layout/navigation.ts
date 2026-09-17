@@ -2,6 +2,7 @@ import { Role } from '@/lib/constants';
 import {
   Calendar,
   FolderKanban,
+  FolderPlus,
   CreditCard,
   BarChart3,
   Settings,
@@ -57,6 +58,12 @@ export const sidebarNavGroups: NavGroup[] = [
         path: '/projects',
         icon: FolderKanban,
         roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
+      },
+      {
+        label: 'Create Project',
+        path: '/projects/create',
+        icon: FolderPlus,
+        roles: [Role.SALES_STAFF, Role.ADMIN],
       },
     ],
   },
@@ -160,6 +167,7 @@ export const mobileMenuItems: NavItem[] = [
   { label: 'Employee Monitoring', path: '/employees', icon: Users, roles: [Role.ADMIN] },
   { label: 'Slot Management', path: '/slot-management', icon: CalendarOff, roles: [Role.ADMIN, Role.APPOINTMENT_AGENT] },
   { label: 'Create Appointment', path: '/appointments/create-for-customer', icon: CalendarPlus, roles: [Role.APPOINTMENT_AGENT, Role.SALES_STAFF] },
+  { label: 'Create Project', path: '/projects/create', icon: FolderPlus, roles: [Role.SALES_STAFF, Role.ADMIN] },
   { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
   { label: 'Reviews', path: '/admin/reviews', icon: Star, roles: [Role.ADMIN] },
   { label: 'Help Center', path: '/help', icon: LifeBuoy, roles: Object.values(Role) },

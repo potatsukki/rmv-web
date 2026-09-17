@@ -4,8 +4,6 @@ import {
   ArrowLeft,
   Send,
   SkipForward,
-  Ruler,
-  Package,
   Camera,
   MapPin,
   AlertCircle,
@@ -14,22 +12,13 @@ import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
-import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { SiteConditionsPanel } from '@/components/shared/SiteConditionsPanel';
 import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import {
@@ -41,34 +30,9 @@ import {
   AppointmentType,
   AppointmentAttendanceStatus,
   ServiceType,
-  MeasurementUnit,
   Environment,
 } from '@/lib/constants';
-import type { LineItem, SiteConditions } from '@/lib/types';
-
-const MATERIAL_OPTIONS = [
-  { value: 'stainless_201', label: 'Stainless 201' },
-  { value: 'stainless_304', label: 'Stainless 304' },
-  { value: 'stainless_316', label: 'Stainless 316' },
-  { value: 'mild_steel', label: 'Mild Steel' },
-  { value: 'galvanized_iron', label: 'Galvanized Iron (GI)' },
-  { value: 'aluminum', label: 'Aluminum' },
-  { value: 'wrought_iron', label: 'Wrought Iron' },
-  { value: 'glass', label: 'Glass' },
-  { value: 'wood', label: 'Wood' },
-];
-
-const FINISH_OPTIONS = [
-  { value: 'hairline', label: 'Hairline / Brushed' },
-  { value: 'mirror', label: 'Mirror / Polished' },
-  { value: 'matte', label: 'Matte' },
-  { value: 'powder_coated', label: 'Powder Coated' },
-  { value: 'painted', label: 'Painted' },
-  { value: 'sandblasted', label: 'Sandblasted' },
-  { value: 'pvd_rose_gold', label: 'Rose Gold (PVD)' },
-  { value: 'pvd_gold', label: 'Gold (PVD)' },
-  { value: 'pvd_black', label: 'Black (PVD)' },
-];
+import type { SiteConditions } from '@/lib/types';
 
 const DEFAULT_SITE_CONDITIONS: SiteConditions = {
   environment: Environment.INDOOR,
@@ -88,15 +52,8 @@ export function CustomerSiteDetailsPage() {
   // ── Form state ──
   const [serviceTypes, setServiceTypes] = useState<string[]>([]);
   const [serviceTypeCustom, setServiceTypeCustom] = useState('');
-  const [materials, setMaterials] = useState('');
-  const [finishes, setFinishes] = useState('');
-  const [preferredDesign, setPreferredDesign] = useState('');
   const [customerRequirements, setCustomerRequirements] = useState('');
   const [notes, setNotes] = useState('');
-
-  // Measurements
-  const [measurementUnit, setMeasurementUnit] = useState(MeasurementUnit.CM as string);
-  const [lineItems, setLineItems] = useState<LineItem[]>([]);
 
   // Site conditions
   const [siteConditions, setSiteConditions] = useState<SiteConditions>(DEFAULT_SITE_CONDITIONS);
@@ -154,12 +111,7 @@ export function CustomerSiteDetailsPage() {
     id: id!,
     serviceTypes: serviceTypes.length > 0 ? (serviceTypes as import('@/lib/constants').ServiceType[]) : undefined,
     serviceTypeCustom: serviceTypes.includes(ServiceType.CUSTOM) ? serviceTypeCustom : undefined,
-    measurementUnit: measurementUnit || undefined,
-    lineItems: lineItems.length > 0 ? lineItems : undefined,
     siteConditions,
-    materials: materials || undefined,
-    finishes: finishes || undefined,
-    preferredDesign: preferredDesign || undefined,
     customerRequirements: customerRequirements || undefined,
     notes: notes || undefined,
     photoKeys: photoKeys.length > 0 ? photoKeys : undefined,
@@ -234,7 +186,7 @@ export function CustomerSiteDetailsPage() {
           <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg text-[#1d1d1f]">
-                Items
+                Consultation Topic
               </CardTitle>
               <CardDescription className="text-[#6e6e73]">
                 What type of fabrication do you need?
@@ -255,16 +207,16 @@ export function CustomerSiteDetailsPage() {
           <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
             <CardHeader>
               <CardTitle className="text-lg text-[#1d1d1f]">
-                Your Requirements
+                Appointment Notes
               </CardTitle>
               <CardDescription className="text-[#6e6e73]">
-                Describe what you need and any special notes
+                Share what you want to discuss during your appointment
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-1.5">
                 <Label className="text-[13px] font-medium text-[#3a3a3e]">
-                  What do you need?
+                  What would you like to discuss?
                 </Label>
                 <Textarea
                   value={customerRequirements}
@@ -289,27 +241,6 @@ export function CustomerSiteDetailsPage() {
           </Card>
         </div>
 
-        {/* Section 2: Measurements */}
-        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
-              <Ruler className="h-5 w-5 text-[#86868b]" />
-              Measurements
-            </CardTitle>
-            <CardDescription className="text-[#6e6e73]">
-              If you have approximate measurements, add them here — the sales staff will verify during the consultation.
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <LineItemsEditor
-              items={lineItems}
-              unit={measurementUnit}
-              onItemsChange={setLineItems}
-              onUnitChange={setMeasurementUnit}
-            />
-          </CardContent>
-        </Card>
-
         {/* Section 3: Site Conditions */}
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
           <CardHeader>
@@ -318,7 +249,7 @@ export function CustomerSiteDetailsPage() {
               Site Conditions
             </CardTitle>
             <CardDescription className="text-[#6e6e73]">
-              Describe the conditions at your installation site
+              Describe site access and conditions to help prepare for the visit
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -326,74 +257,6 @@ export function CustomerSiteDetailsPage() {
               value={siteConditions}
               onChange={setSiteConditions}
             />
-          </CardContent>
-        </Card>
-
-        {/* Section 4: Materials & Design */}
-        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f]">
-              <Package className="h-5 w-5 text-[#86868b]" />
-              Materials & Design Preference
-            </CardTitle>
-            <CardDescription className="text-[#6e6e73]">
-              Tell us your preferred materials and design style
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-3">
-            <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-[#3a3a3e]">
-                Materials
-              </Label>
-              <Select value={materials} onValueChange={setMaterials}>
-                <SelectTrigger className="h-11 rounded-xl border-[#d2d2d7] bg-white px-4 text-sm text-[#1d1d1f] focus:ring-1 focus:ring-[#f0f0f5] focus:ring-offset-0 focus:border-[#c8c8cd] w-full">
-                  <SelectValue placeholder="Select material..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg">
-                  {MATERIAL_OPTIONS.map((opt) => (
-                    <SelectItem
-                      key={opt.value}
-                      value={opt.value}
-                      className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-[#f0f0f5] focus:text-[#1d1d1f] data-[highlighted]:bg-[#f0f0f5] data-[highlighted]:text-[#1d1d1f]"
-                    >
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-[#3a3a3e]">
-                Finishes
-              </Label>
-              <Select value={finishes} onValueChange={setFinishes}>
-                <SelectTrigger className="h-11 rounded-xl border-[#d2d2d7] bg-white px-4 text-sm text-[#1d1d1f] focus:ring-1 focus:ring-[#f0f0f5] focus:ring-offset-0 focus:border-[#c8c8cd] w-full">
-                  <SelectValue placeholder="Select finish..." />
-                </SelectTrigger>
-                <SelectContent className="rounded-xl border-[#d2d2d7] bg-white shadow-lg">
-                  {FINISH_OPTIONS.map((opt) => (
-                    <SelectItem
-                      key={opt.value}
-                      value={opt.value}
-                      className="rounded-lg cursor-pointer text-sm py-2.5 focus:bg-[#f0f0f5] focus:text-[#1d1d1f] data-[highlighted]:bg-[#f0f0f5] data-[highlighted]:text-[#1d1d1f]"
-                    >
-                      {opt.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            <div className="space-y-1.5">
-              <Label className="text-[13px] font-medium text-[#3a3a3e]">
-                Preferred Design
-              </Label>
-              <Input
-                value={preferredDesign}
-                onChange={(e) => setPreferredDesign(e.target.value)}
-                placeholder="e.g., Modern minimalist"
-                className="h-11 rounded-xl border-[#d2d2d7]"
-              />
-            </div>
           </CardContent>
         </Card>
 

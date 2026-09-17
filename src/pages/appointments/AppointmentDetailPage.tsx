@@ -755,8 +755,8 @@ export function AppointmentDetailPage() {
               <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-100">Visit Completed</p>
               <p className="text-xs text-emerald-700 dark:text-emerald-200 mt-0.5">
                 {isCustomer
-                  ? 'The visit is complete. The sales staff will submit a visit report, which will automatically create your project.'
-                  : 'Visit complete. Submit the visit report to generate the project for this customer.'}
+                  ? 'The visit is complete. The sales staff will submit the visit report.'
+                  : 'Visit complete. Submit the visit report to record the outcome and site observations.'}
               </p>
             </div>
           </CardContent>
@@ -1032,7 +1032,7 @@ export function AppointmentDetailPage() {
                 <div className="p-4">
                   <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#b77900] dark:text-[#f5b400]">Customer-Selected Design</p>
                   <p className="mt-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{appt.selectedDesignTemplateName}</p>
-                  <p className="mt-1 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">This sample design stays linked to the appointment for the sales consultation and project record.</p>
+                  <p className="mt-1 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">This sample design stays linked to the appointment for the sales consultation.</p>
                 </div>
               </div>
             )}

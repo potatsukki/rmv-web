@@ -25,6 +25,8 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { FileUpload } from '@/components/shared/FileUpload';
+import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
+import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -1545,6 +1547,15 @@ export function ProjectDetailPage() {
               {projectSiteAddress && (
                 <DetailField label="Site Address" value={projectSiteAddress} />
               )}
+              {(activeProjectItemRecord?.materials || project.materialType) && <DetailField label="Materials" value={activeProjectItemRecord?.materials || project.materialType} />}
+              {(activeProjectItemRecord?.finishes || project.finishColor) && <DetailField label="Finish / Color" value={activeProjectItemRecord?.finishes || project.finishColor} />}
+              {(activeProjectItemRecord?.preferredDesign || project.preferredDesign) && <DetailField label="Preferred Design" value={activeProjectItemRecord?.preferredDesign || project.preferredDesign} />}
+              {(activeProjectItemRecord?.customerRequirements || project.customerRequirements) && <DetailField label="Customer Requirements" value={activeProjectItemRecord?.customerRequirements || project.customerRequirements} />}
+              {(activeProjectItemRecord?.notes || project.notes) && <DetailField label="Project Notes" value={activeProjectItemRecord?.notes || project.notes} />}
+              {project.quantity != null && <DetailField label="Quantity" value={String(project.quantity)} />}
+              {project.measurements && (['length', 'width', 'height', 'area', 'thickness'] as const).map((dimension) => project.measurements?.[dimension] != null && (
+                <DetailField key={dimension} label={dimension.charAt(0).toUpperCase() + dimension.slice(1)} value={`${project.measurements[dimension]} ${project.measurements.unit}${dimension === 'area' ? '²' : ''}`} />
+              ))}
               {project.projectNumber && (
                 <DetailField label="Project Number" value={project.projectNumber} />
               )}
@@ -1566,6 +1577,18 @@ export function ProjectDetailPage() {
               )}
             </div>
           </DetailSectionCard>
+
+          {Boolean((activeProjectItemRecord?.lineItems || project.lineItems)?.length) && (
+            <DetailSectionCard title="Component Measurements" icon={FileText} className="lg:col-span-2">
+              <LineItemsEditor items={activeProjectItemRecord?.lineItems || project.lineItems || []} unit={activeProjectItemRecord?.measurementUnit || project.measurementUnit || 'cm'} onItemsChange={() => {}} onUnitChange={() => {}} disabled />
+            </DetailSectionCard>
+          )}
+
+          {Boolean(project.photoKeys?.length || project.videoKeys?.length || project.sketchKeys?.length || project.referenceImageKeys?.length) && (
+            <DetailSectionCard title="Project Attachments" icon={Camera} className="lg:col-span-2">
+              <PhotoUploadGrid photoKeys={project.photoKeys || []} videoKeys={project.videoKeys || []} sketchKeys={project.sketchKeys || []} referenceImageKeys={project.referenceImageKeys || []} onPhotoKeysChange={() => {}} onVideoKeysChange={() => {}} onSketchKeysChange={() => {}} onReferenceImageKeysChange={() => {}} disabled />
+            </DetailSectionCard>
+          )}
 
           {activeSelectedDesignTemplateName && (
             <DetailSectionCard title="Selected Design" icon={Image} className="lg:col-span-2">

@@ -268,8 +268,21 @@ export interface AppointmentQueueResponse {
 
 // ── Project ──
 export interface Project {
+  serviceTypeCustom?: string;
+  measurementUnit?: string;
+  lineItems?: LineItem[];
+  specifications?: ServiceSpecifications;
+  preferredDesign?: string;
+  customerRequirements?: string;
+  selectedDesignTemplateId?: string;
+  selectedDesignTemplateName?: string;
+  selectedDesignTemplateImageUrl?: string;
+  photoKeys?: string[];
+  videoKeys?: string[];
+  sketchKeys?: string[];
+  referenceImageKeys?: string[];
   _id: string;
-  appointmentId: string;
+  appointmentId?: string;
   customerId: string | { _id: string; firstName: string; lastName: string; email?: string };
   customerName?: string;
   salesStaffId?: string | { _id: string; firstName: string; lastName: string; availabilityStatus?: string; availabilityNote?: string };
@@ -350,7 +363,7 @@ export interface Project {
 export interface ProjectItem {
   _id: string;
   projectId: string;
-  appointmentId: string;
+  appointmentId?: string;
   consultationVisitReportId?: string | VisitReport;
   ocularVisitReportId?: string | VisitReport;
   serviceType: string;

@@ -22,6 +22,8 @@ function isNavItemActive(pathname: string, search: string, itemPath: string): bo
   
   if (baseItemPath === '/dashboard') return pathname === '/dashboard';
 
+  if (baseItemPath === '/projects' && pathname === '/projects/create') return false;
+
   if (baseItemPath === '/appointments') {
     return (
       pathname === '/appointments' ||
