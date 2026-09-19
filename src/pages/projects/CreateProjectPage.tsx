@@ -13,6 +13,7 @@ import { DesignTemplateSelector } from '@/components/shared/DesignTemplateSelect
 import { ServiceSpecificationForm } from '@/components/shared/ServiceSpecificationForm';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { FileUpload } from '@/components/shared/FileUpload';
+import { useAppointment } from '@/hooks/useAppointments';
 import { useCreateProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { api } from '@/lib/api';
@@ -34,12 +35,14 @@ const attachmentGroups = [
 export function CreateProjectPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const appointmentId = searchParams.get('appointmentId') || '';
   const [customerId, setCustomerId] = useState(searchParams.get('customerId') || '');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const createProject = useCreateProject();
   const [serviceType, setServiceType] = useState('');
+  const [serviceTypeFromAppointment, setServiceTypeFromAppointment] = useState(false);
   const [deliveryType, setDeliveryType] = useState<DeliveryType>(DeliveryType.SHOP_FABRICATED);
   const [materialType, setMaterialType] = useState('');
   const [finishColor, setFinishColor] = useState('');
@@ -71,6 +74,7 @@ export function CreateProjectPage() {
   }, [search]);
 
   const customerSearch = useCustomerSearch(debouncedSearch);
+  const appointment = useAppointment(appointmentId);
   const customerLookup = useQuery({
     queryKey: ['project-customer', customerId],
     queryFn: async () => {
@@ -80,6 +84,19 @@ export function CreateProjectPage() {
     enabled: !!customerId && !selectedCustomer,
   });
   const customer = selectedCustomer || customerLookup.data;
+
+  useEffect(() => {
+    if (serviceType || !appointment.data) return;
+    const appointmentServiceType = appointment.data.serviceTypes?.[0]
+      || appointment.data.customerSiteDetails?.serviceTypes?.[0]
+      || appointment.data.serviceType
+      || appointment.data.customerSiteDetails?.serviceType;
+    if (appointmentServiceType && SERVICE_TYPE_LABELS[appointmentServiceType]) {
+      setServiceType(appointmentServiceType);
+      setServiceTypeFromAppointment(true);
+    }
+  }, [appointment.data, serviceType]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createProject.isPending || isUploading) return;
@@ -239,7 +256,18 @@ export function CreateProjectPage() {
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2"><Label htmlFor="project-title">Project Title *</Label><Input id="project-title" name="title" required maxLength={100} /></div>
-                <div className="space-y-2"><Label htmlFor="project-service">Service Type *</Label><select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => setServiceType(event.target.value)} className={selectClassName}><option value="" disabled>Select a service</option>{Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+                <div className="space-y-2">
+                  <Label htmlFor="project-service">Service Type *</Label>
+                  <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
+                    setServiceType(event.target.value);
+                    setServiceTypeFromAppointment(false);
+                  }} className={selectClassName}>
+                    <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
+                    {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                  {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the customer appointment. You can change it if needed.</p>}
+                  {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="project-delivery-type">Delivery Type *</Label>
