@@ -13,11 +13,10 @@ import { DesignTemplateSelector } from '@/components/shared/DesignTemplateSelect
 import { ServiceSpecificationForm } from '@/components/shared/ServiceSpecificationForm';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { FileUpload } from '@/components/shared/FileUpload';
-import { useAppointments } from '@/hooks/useAppointments';
 import { useCreateProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { api } from '@/lib/api';
-import { APPOINTMENT_TYPE_LABELS, AppointmentStatus, MEASUREMENT_UNIT_LABELS, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import { DELIVERY_TYPE_LABELS, DeliveryType, MEASUREMENT_UNIT_LABELS, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications } from '@/lib/types';
 import type { DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
@@ -37,11 +36,11 @@ export function CreateProjectPage() {
   const [searchParams] = useSearchParams();
   const [customerId, setCustomerId] = useState(searchParams.get('customerId') || '');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
-  const [appointmentId, setAppointmentId] = useState(searchParams.get('appointmentId') || '');
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const createProject = useCreateProject();
   const [serviceType, setServiceType] = useState('');
+  const [deliveryType, setDeliveryType] = useState<DeliveryType>(DeliveryType.SHOP_FABRICATED);
   const [materialType, setMaterialType] = useState('');
   const [finishColor, setFinishColor] = useState('');
   const [preferredDesign, setPreferredDesign] = useState('');
@@ -81,21 +80,11 @@ export function CreateProjectPage() {
     enabled: !!customerId && !selectedCustomer,
   });
   const customer = selectedCustomer || customerLookup.data;
-  const appointments = useAppointments(
-    { customerId, status: AppointmentStatus.COMPLETED, limit: '100' },
-    !!customerId,
-  );
-  const completedAppointments = appointments.data?.items || [];
-
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createProject.isPending || isUploading) return;
     if (!customerId || !customer) {
       toast.error('Select a customer first.');
-      return;
-    }
-    if (appointmentId && !completedAppointments.some((appointment) => appointment._id === appointmentId)) {
-      toast.error('Choose a completed appointment for this customer, or select No appointment.');
       return;
     }
     if (!contractFileKeys[0]) {
@@ -127,9 +116,9 @@ export function CreateProjectPage() {
     try {
       const project = await createProject.mutateAsync({
         customerId,
-        ...(appointmentId ? { appointmentId } : {}),
         title,
         serviceType,
+        deliveryType,
         description,
         siteAddress,
         serviceTypeCustom: value('serviceTypeCustom') || undefined,
@@ -165,7 +154,7 @@ export function CreateProjectPage() {
       </Button>
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">Create Project</h1>
-        <p className="text-sm text-muted-foreground">Upload the signed contract, then enter the project details. An appointment is optional.</p>
+        <p className="text-sm text-muted-foreground">Upload the signed contract, then enter the project details.</p>
       </div>
 
       <datalist id="project-material-options">{['Stainless 201', 'Stainless 304', 'Stainless 316', 'Mild Steel', 'Galvanized Iron (GI)', 'Aluminum', 'Wrought Iron', 'Glass', 'Wood'].map((label) => <option key={label} value={label} />)}</datalist>
@@ -210,7 +199,6 @@ export function CreateProjectPage() {
                   <Button type="button" variant="outline" onClick={() => {
                     setCustomerId('');
                     setSelectedCustomer(null);
-                    setAppointmentId('');
                     setSearch('');
                   }}>Change Customer</Button>
                 </div>
@@ -230,7 +218,6 @@ export function CreateProjectPage() {
                         <button key={result._id} type="button" className="block w-full p-3 text-left hover:bg-muted focus-visible:bg-muted" onClick={() => {
                           setSelectedCustomer(result);
                           setCustomerId(result._id);
-                          setAppointmentId('');
                           setSearch('');
                         }}>
                           <p className="font-medium">{result.firstName} {result.lastName}</p>
@@ -253,6 +240,13 @@ export function CreateProjectPage() {
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2"><Label htmlFor="project-title">Project Title *</Label><Input id="project-title" name="title" required maxLength={100} /></div>
                 <div className="space-y-2"><Label htmlFor="project-service">Service Type *</Label><select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => setServiceType(event.target.value)} className={selectClassName}><option value="" disabled>Select a service</option>{Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="project-delivery-type">Delivery Type *</Label>
+                <select id="project-delivery-type" value={deliveryType} onChange={(event) => setDeliveryType(event.target.value as DeliveryType)} className={selectClassName}>
+                  {Object.entries(DELIVERY_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+                <p className="text-xs text-muted-foreground">Controls the lifecycle markers used for fabrication and installation updates.</p>
               </div>
               <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work *</Label><Textarea id="project-description" name="description" required maxLength={2000} rows={3} /></div>
               <div className="space-y-2"><Label htmlFor="project-address">Project Site Address *</Label><Textarea id="project-address" name="siteAddress" required maxLength={500} rows={2} /></div>
@@ -293,27 +287,9 @@ export function CreateProjectPage() {
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle>Linked Appointment (optional)</CardTitle>
-              <CardDescription>Choose a completed appointment for this customer if it relates to the project.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-2">
-              <Label htmlFor="project-appointment">Appointment</Label>
-              <select id="project-appointment" value={appointmentId} onChange={(event) => setAppointmentId(event.target.value)} disabled={!customerId || appointments.isLoading || appointments.isError} className={selectClassName}>
-                <option value="">No appointment — create an independent project</option>
-                {appointmentId && !completedAppointments.some((appointment) => appointment._id === appointmentId) && <option value={appointmentId} disabled>{appointments.isLoading ? 'Loading linked appointment…' : 'Appointment unavailable — choose another or No appointment'}</option>}
-                {completedAppointments.map((appointment) => <option key={appointment._id} value={appointment._id}>{appointment.date.slice(0, 10)} · {appointment.slotCode} · {APPOINTMENT_TYPE_LABELS[appointment.type] || appointment.type}</option>)}
-              </select>
-              {!customerId && <p className="text-xs text-muted-foreground">Select a customer to see their completed appointments.</p>}
-              {customerId && !appointments.isLoading && !appointments.isError && completedAppointments.length === 0 && <p className="text-xs text-muted-foreground">No completed appointments available. You can still create the project.</p>}
-              {appointments.isError && <p role="alert" className="text-sm text-destructive">Unable to load appointments. <button type="button" className="underline" onClick={() => appointments.refetch()}>Retry</button>{appointmentId && <button type="button" className="ml-3 underline" onClick={() => setAppointmentId('')}>Remove appointment link</button>}</p>}
-            </CardContent>
-          </Card>
-
           <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            <Button type="submit" disabled={!customer || !contractFileKeys[0] || isUploading || createProject.isPending || (!!appointmentId && appointments.isLoading)}>
+            <Button type="submit" disabled={!customer || !contractFileKeys[0] || isUploading || createProject.isPending}>
               {createProject.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
               {createProject.isPending ? 'Creating…' : isUploading ? 'Uploading…' : 'Create Project'}
             </Button>

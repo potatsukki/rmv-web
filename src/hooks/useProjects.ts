@@ -81,6 +81,7 @@ export function useCreateProject() {
       appointmentId?: string;
       title: string;
       serviceType: string;
+      deliveryType: 'shop_fabricated' | 'on_site_installation';
       serviceTypeCustom?: string;
       measurementUnit?: string;
       lineItems?: LineItem[];
@@ -120,7 +121,7 @@ export function useCreateProject() {
 export function useUpdateProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, ...body }: { id: string; title?: string; description?: string; serviceType?: string; siteAddress?: string; notes?: string }) => {
+    mutationFn: async ({ id, ...body }: { id: string; title?: string; description?: string; serviceType?: string; deliveryType?: 'shop_fabricated' | 'on_site_installation'; siteAddress?: string; notes?: string }) => {
       const { data } = await api.patch<ApiResponse<Project>>(`/projects/${id}`, body);
       return data.data;
     },

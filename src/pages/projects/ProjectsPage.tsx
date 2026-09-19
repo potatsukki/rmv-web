@@ -28,7 +28,6 @@ import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader'
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Needs Action', value: 'active' },
   { label: 'Design / Blueprint', value: ProjectStatus.BLUEPRINT },
   { label: 'Billing', value: ProjectStatus.PAYMENT_PENDING },
   { label: 'Fabrication', value: ProjectStatus.FABRICATION },
@@ -101,54 +100,14 @@ function getActionSortTime(project: any) {
   return Number.isNaN(time) ? 0 : time;
 }
 
-function getAppointmentDate(project: any) {
-  const appointment = project.appointmentId;
-  if (appointment && typeof appointment === 'object' && appointment.date) return String(appointment.date);
-  return '';
-}
-
-function getAppointmentSlot(project: any) {
-  const appointment = project.appointmentId;
-  if (appointment && typeof appointment === 'object' && appointment.slotCode) return String(appointment.slotCode);
-  return '';
-}
-
-function salesActiveSort(a: any, b: any) {
-  const today = new Date().toISOString().slice(0, 10);
-  const rank = (project: any) => {
-    const date = getAppointmentDate(project);
-    if (!date) return 3;
-    if (date === today) return 0;
-    if (date > today) return 1;
-    return 2;
-  };
-
-  const rankDiff = rank(a) - rank(b);
-  if (rankDiff !== 0) return rankDiff;
-
-  const aDate = getAppointmentDate(a);
-  const bDate = getAppointmentDate(b);
-  if (aDate && bDate && aDate !== bDate) return aDate < bDate ? -1 : 1;
-
-  const aSlot = getAppointmentSlot(a);
-  const bSlot = getAppointmentSlot(b);
-  if (aSlot && bSlot && aSlot !== bSlot) return aSlot < bSlot ? -1 : 1;
-
-  return getActionSortTime(b) - getActionSortTime(a);
-}
-
 export function ProjectsPage() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('active');
+  const [statusFilter, setStatusFilter] = useState('');
   const [search, setSearch] = useState('');
   const { user } = useAuthStore();
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isStaff = !isCustomer;
   const canCreateProject = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role as Role));
-  const isSalesOnly = Boolean(
-    user?.roles?.includes(Role.SALES_STAFF)
-    && !user.roles.some((role) => [Role.ADMIN, Role.APPOINTMENT_AGENT].includes(role as Role)),
-  );
   const params: Record<string, string> = {};
   if (statusFilter) params.status = statusFilter;
   if (search) params.search = search;
@@ -161,18 +120,14 @@ export function ProjectsPage() {
 
   const upcomingItems = projects
     .filter((p: any) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(p.status as ProjectStatus))
-    .sort((a: any, b: any) => (
-      isSalesOnly && statusFilter === 'active'
-        ? salesActiveSort(a, b)
-        : getActionSortTime(b) - getActionSortTime(a)
-    ));
+    .sort((a: any, b: any) => getActionSortTime(b) - getActionSortTime(a));
     
   const recentItems = projects
     .filter((p: any) => [ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(p.status as ProjectStatus))
     .sort((a: any, b: any) => new Date(String(b.createdAt || '')).getTime() - new Date(String(a.createdAt || '')).getTime());
 
   const sections = [
-    { key: 'upcoming', label: 'Upcoming and Actionable', items: upcomingItems },
+    { key: 'upcoming', label: '', items: upcomingItems },
     { key: 'recent', label: 'Recent and History', items: recentItems },
   ].filter(s => s.items.length > 0);
 
@@ -261,13 +216,15 @@ export function ProjectsPage() {
               <TableBody>
                 {sections.map((section) => (
                   <Fragment key={section.key}>
-                    <TableRow key={`${section.key}-heading`} className="hover:bg-transparent">
-                      <TableCell colSpan={6} className="px-5 py-3">
-                        <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">
-                          {section.label}
-                        </p>
-                      </TableCell>
-                    </TableRow>
+                    {section.label && (
+                      <TableRow key={`${section.key}-heading`} className="hover:bg-transparent">
+                        <TableCell colSpan={6} className="px-5 py-3">
+                          <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">
+                            {section.label}
+                          </p>
+                        </TableCell>
+                      </TableRow>
+                    )}
                     {section.items.map((project: any) => {
                   const { status: displayStatus, label: displayLabel, cfg } = deriveDisplayStatus(project);
                   const engineers = Array.isArray(project.engineerIds)
@@ -390,11 +347,13 @@ export function ProjectsPage() {
           <div className="md:hidden space-y-2">
             {sections.map((section) => (
               <div key={section.key} className="space-y-2">
-                <div className="px-1 py-1">
-                  <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">
-                    {section.label}
-                  </p>
-                </div>
+                {section.label && (
+                  <div className="px-1 py-1">
+                    <p className="text-[11px] font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">
+                      {section.label}
+                    </p>
+                  </div>
+                )}
                 {section.items.map((project: any) => {
               const { status: displayStatus, label: displayLabel, cfg } = deriveDisplayStatus(project);
               const customer =
