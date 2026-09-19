@@ -37,6 +37,7 @@ import { PageError } from '@/components/shared/PageError';
 import { AuthImage } from '@/components/shared/AuthImage';
 import {
   useProject,
+  useUpdateProject,
   useAssignEngineers,
   useReassignProjectSales,
   useAssignFabrication,
@@ -53,7 +54,7 @@ import { useUsers } from '@/hooks/useUsers';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
-import { ContractStatus, Role, StaffAvailabilityStatus, ProjectStatus, ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import { ContractStatus, DELIVERY_TYPE_LABELS, DeliveryType, Role, StaffAvailabilityStatus, ProjectStatus, ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications } from '@/lib/service-specifications';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
@@ -565,6 +566,7 @@ export function ProjectDetailPage() {
 
   // ── Mutations ──
   const assignEngineers = useAssignEngineers();
+  const updateProject = useUpdateProject();
   const reassignProjectSales = useReassignProjectSales();
   const assignFabrication = useAssignFabrication();
   const reviewInitialDesign = useReviewInitialDesign();
@@ -612,6 +614,11 @@ export function ProjectDetailPage() {
     availabilityNote?: string;
   }>>([]);
   const [selectedSalesStaffId, setSelectedSalesStaffId] = useState('');
+  const [deliveryTypeDraft, setDeliveryTypeDraft] = useState<DeliveryType>(DeliveryType.SHOP_FABRICATED);
+
+  useEffect(() => {
+    setDeliveryTypeDraft((project?.deliveryType as DeliveryType | undefined) || DeliveryType.SHOP_FABRICATED);
+  }, [project?.deliveryType]);
 
   // ── Fab assignment form state ──
   const [showFabForm, setShowFabForm] = useState(false);
@@ -1086,6 +1093,17 @@ export function ProjectDetailPage() {
     }
   };
 
+  const handleDeliveryTypeChange = async () => {
+    if (!project || deliveryTypeDraft === project.deliveryType) return;
+    try {
+      await updateProject.mutateAsync({ id: project._id, deliveryType: deliveryTypeDraft });
+      toast.success('Delivery type updated.');
+      refetch();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to update delivery type'));
+    }
+  };
+
   const toggleAssistant = (staffId: string) => {
     setFabAssistantIds((prev) =>
       prev.includes(staffId) ? prev.filter((id) => id !== staffId) : [...prev, staffId],
@@ -1541,6 +1559,33 @@ export function ProjectDetailPage() {
                   )}
                 </DetailField>
               )}
+              <DetailField label="Delivery Type">
+                {isAdmin && ['draft', 'submitted'].includes(project.status) ? (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                    <Select value={deliveryTypeDraft} onValueChange={(value) => setDeliveryTypeDraft(value as DeliveryType)}>
+                      <SelectTrigger className="max-w-sm bg-white dark:bg-slate-800 dark:border-slate-700 dark:text-slate-100">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent className="dark:bg-slate-900 dark:border-slate-700 dark:text-slate-100">
+                        {Object.entries(DELIVERY_TYPE_LABELS).map(([value, label]) => (
+                          <SelectItem key={value} value={value}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleDeliveryTypeChange}
+                      disabled={updateProject.isPending || deliveryTypeDraft === project.deliveryType}
+                    >
+                      {updateProject.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                      Save
+                    </Button>
+                  </div>
+                ) : (
+                  <p>{DELIVERY_TYPE_LABELS[(project.deliveryType as DeliveryType | undefined) || DeliveryType.SHOP_FABRICATED]}</p>
+                )}
+              </DetailField>
               {isStaff && project.customerName && (
                 <DetailField label="Customer" value={project.customerName} />
               )}

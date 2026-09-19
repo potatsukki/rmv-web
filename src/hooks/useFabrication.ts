@@ -62,6 +62,10 @@ export function useFabricationUpdates(projectId: string, enabled = true, project
 }
 
 interface FabricationStatusResponse {
+  deliveryType: 'shop_fabricated' | 'on_site_installation';
+  lifecycleStatuses: string[];
+  requiresInstallationConfirmation: boolean;
+  confirmationGateStatus: string | null;
   currentStatus: string;
   latestUpdate: FabricationApiUpdate | null;
   allowedTransitions: string[];
@@ -89,6 +93,10 @@ export function useFabricationStatus(projectId: string, enabled = true, projectI
       );
 
       return {
+        deliveryType: data.data.deliveryType,
+        lifecycleStatuses: data.data.lifecycleStatuses,
+        requiresInstallationConfirmation: data.data.requiresInstallationConfirmation,
+        confirmationGateStatus: data.data.confirmationGateStatus,
         currentStatus: data.data.currentStatus,
         latestUpdate: data.data.latestUpdate
           ? normalizeUpdate(data.data.latestUpdate)

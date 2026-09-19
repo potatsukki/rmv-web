@@ -269,6 +269,7 @@ export interface AppointmentQueueResponse {
 // ── Project ──
 export interface Project {
   serviceTypeCustom?: string;
+  deliveryType?: 'shop_fabricated' | 'on_site_installation';
   measurementUnit?: string;
   lineItems?: LineItem[];
   specifications?: ServiceSpecifications;
