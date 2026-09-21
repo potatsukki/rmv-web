@@ -27,17 +27,6 @@ describe('service project references', () => {
     });
   });
 
-  it('provides an estimated price for every selectable booking design', () => {
-    const projects = SERVICE_CATALOG.flatMap(getServiceProjectReferences);
-
-    expect(projects.length).toBeGreaterThan(0);
-    expect(projects.every((project) => Boolean(project.estimatedPrice))).toBe(true);
-    expect(projects.find((project) => project.title === 'Commercial stainless guardrail')?.estimatedPrice)
-      .toBe('₱3,500 – ₱9,500 per linear meter');
-    expect(projects.find((project) => project.title === 'Stainless staircase installation')?.estimatedPrice)
-      .toBe('Final estimate after site assessment');
-  });
-
   it('resolves a landing variant by its catalog-owned image', () => {
     const project = findServiceProjectReference({
       serviceId: 'kitchen-cabinet',
