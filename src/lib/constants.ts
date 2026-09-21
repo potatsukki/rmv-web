@@ -200,6 +200,35 @@ export const SERVICE_TYPE_LABELS: Record<string, string> = {
   [ServiceType.CUSTOM]: 'Custom',
 };
 
+const SHOP_FABRICATED_SERVICE_TYPES = new Set<string>([
+  ServiceType.TABLE,
+  ServiceType.CHAIR,
+]);
+
+const ON_SITE_INSTALLATION_SERVICE_TYPES = new Set<string>([
+  ServiceType.RAILINGS,
+  ServiceType.GRILLS,
+  ServiceType.GATES,
+  ServiceType.FENCES,
+  ServiceType.KITCHEN_COUNTER,
+  ServiceType.KITCHEN_CABINET,
+  ServiceType.DOOR,
+  ServiceType.WINDOW_FRAME,
+  ServiceType.CANOPY,
+  ServiceType.STAIRCASE,
+  ServiceType.BALUSTRADE,
+]);
+
+export function getDefaultDeliveryType(serviceType?: string): DeliveryType | undefined {
+  if (serviceType && SHOP_FABRICATED_SERVICE_TYPES.has(serviceType)) {
+    return DeliveryType.SHOP_FABRICATED;
+  }
+  if (serviceType && ON_SITE_INSTALLATION_SERVICE_TYPES.has(serviceType)) {
+    return DeliveryType.ON_SITE_INSTALLATION;
+  }
+  return undefined;
+}
+
 // ── Measurement Unit ──
 export enum MeasurementUnit {
   CM = 'cm',

@@ -17,7 +17,7 @@ import { useAppointment } from '@/hooks/useAppointments';
 import { useCreateProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { api } from '@/lib/api';
-import { DELIVERY_TYPE_LABELS, DeliveryType, MEASUREMENT_UNIT_LABELS, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import { DELIVERY_TYPE_LABELS, DeliveryType, getDefaultDeliveryType, MEASUREMENT_UNIT_LABELS, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications } from '@/lib/types';
 import type { DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
@@ -43,7 +43,7 @@ export function CreateProjectPage() {
   const createProject = useCreateProject();
   const [serviceType, setServiceType] = useState('');
   const [serviceTypeFromAppointment, setServiceTypeFromAppointment] = useState(false);
-  const [deliveryType, setDeliveryType] = useState<DeliveryType>(DeliveryType.SHOP_FABRICATED);
+  const [deliveryType, setDeliveryType] = useState<DeliveryType | ''>('');
   const [materialType, setMaterialType] = useState('');
   const [finishColor, setFinishColor] = useState('');
   const [preferredDesign, setPreferredDesign] = useState('');
@@ -97,6 +97,11 @@ export function CreateProjectPage() {
     }
   }, [appointment.data, serviceType]);
 
+  useEffect(() => {
+    const defaultDeliveryType = getDefaultDeliveryType(serviceType);
+    setDeliveryType(defaultDeliveryType || '');
+  }, [serviceType]);
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createProject.isPending || isUploading) return;
@@ -114,7 +119,7 @@ export function CreateProjectPage() {
     const title = value('title');
     const description = value('description');
     const siteAddress = value('siteAddress');
-    if (!title || !serviceType || !description || !siteAddress) {
+    if (!title || !serviceType || !deliveryType || !description || !siteAddress) {
       toast.error('Complete the required project information.');
       return;
     }
@@ -271,7 +276,8 @@ export function CreateProjectPage() {
               </div>
               <div className="space-y-2">
                 <Label htmlFor="project-delivery-type">Delivery Type *</Label>
-                <select id="project-delivery-type" value={deliveryType} onChange={(event) => setDeliveryType(event.target.value as DeliveryType)} className={selectClassName}>
+                <select id="project-delivery-type" required value={deliveryType} onChange={(event) => setDeliveryType(event.target.value as DeliveryType)} className={selectClassName}>
+                  <option value="" disabled>Select a delivery type</option>
                   {Object.entries(DELIVERY_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
                 <p className="text-xs text-muted-foreground">Controls the lifecycle markers used for fabrication and installation updates.</p>
