@@ -34,7 +34,6 @@ interface SelectedDesign {
   serviceLabel: string;
   serviceType: ServiceType;
   description?: string;
-  estimatedPrice?: string;
 }
 
 function toSelectedDesign(project: ServiceProjectReference): SelectedDesign {
@@ -46,7 +45,6 @@ function toSelectedDesign(project: ServiceProjectReference): SelectedDesign {
     serviceLabel: project.serviceLabel,
     serviceType: project.serviceType,
     description: project.description,
-    estimatedPrice: project.estimatedPrice,
   };
 }
 
@@ -563,12 +561,6 @@ export function BookAppointmentPage() {
                           <span className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b77900] dark:text-[#f5b400]">{project.serviceLabel}</span>
                           <span className="mt-1 block text-sm font-semibold leading-5 text-[#1d1d1f] dark:text-slate-100">{project.title}</span>
                           {project.description && <span className="mt-1.5 line-clamp-2 block text-xs leading-5 text-[#6e6e73] dark:text-slate-400">{project.description}</span>}
-                          {project.estimatedPrice && (
-                            <span className="mt-2 block border-t border-[#e8e8ed] pt-2 dark:border-white/10">
-                              <span className="block text-[10px] font-semibold uppercase tracking-[0.1em] text-[#86868b] dark:text-slate-500">Estimated price</span>
-                              <span className="mt-0.5 block text-xs font-semibold text-[#3a3a3e] dark:text-slate-300">{project.estimatedPrice}</span>
-                            </span>
-                          )}
                         </span>
                       </button>
                     );
@@ -583,7 +575,6 @@ export function BookAppointmentPage() {
                         <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">Selected Design</p>
                         <p className="mt-1 truncate text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{selectedDesign.name}</p>
                         <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">{selectedDesign.serviceLabel}</p>
-                        {selectedDesign.estimatedPrice && <p className="mt-1 text-xs font-semibold text-emerald-800 dark:text-emerald-200">Estimated price: {selectedDesign.estimatedPrice}</p>}
                         <p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">{requestedWork}</p>
                       </div>
                     </div>
@@ -776,7 +767,6 @@ export function BookAppointmentPage() {
                     <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#b77900] dark:text-[#f5b400]">Selected Sample Design</p>
                     <p className="mt-2 text-base font-semibold text-[#1d1d1f] dark:text-slate-100">{selectedDesign.name}</p>
                     <p className="mt-1 text-sm text-[#6e6e73] dark:text-slate-400">{selectedDesign.serviceLabel}</p>
-                    {selectedDesign.estimatedPrice && <p className="mt-2 text-sm font-semibold text-[#3a3a3e] dark:text-slate-200">Estimated price: {selectedDesign.estimatedPrice}</p>}
                     <p className="mt-3 text-sm font-medium text-[#1d1d1f] dark:text-slate-100">{requestedWork}</p>
                     {selectedDesign.description && <p className="mt-3 line-clamp-3 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">{selectedDesign.description}</p>}
                   </div>

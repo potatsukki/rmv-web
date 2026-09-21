@@ -180,50 +180,9 @@ export function getServiceProjectId(serviceId: string, projectTitle: string) {
   return `${serviceId}-${projectSlug(projectTitle)}`;
 }
 
-const PROJECT_PRICE_GUIDANCE: Record<string, string> = {
-  'Commercial stainless guardrail': '₱3,500 – ₱9,500 per linear meter',
-  'Outdoor stainless stair railing': '₱4,000 – ₱10,500 per linear meter',
-  'Terrace stainless railing': '₱3,800 – ₱10,000 per linear meter',
-  'Indoor stainless stair railing': '₱3,500 – ₱9,000 per linear meter',
-  'Glass stainless balcony railing': '₱7,500 – ₱16,500 per linear meter',
-  'Wall-mounted stainless handrail': '₱2,800 – ₱7,500 per linear meter',
-  'Balcony horizontal stainless railing': '₱3,500 – ₱9,500 per linear meter',
-  'Double swing gate': '₱35,000 – ₱120,000+',
-  'Modern metal gate': '₱45,000 – ₱150,000+',
-  'Commercial security gate': '₱40,000 – ₱160,000+',
-  'Pedestrian gate': '₱12,000 – ₱45,000+',
-  'Corner counter with open shelf': '₱30,000 – ₱85,000+',
-  'Sink and drainer workstation': '₱25,000 – ₱65,000+',
-  'Island preparation table': '₱15,000 – ₱55,000+',
-  'Drawer base workstation': '₱35,000 – ₱95,000+',
-  'Walkway canopy': '₱4,500 – ₱12,000 per square meter',
-  'Garage carport canopy': '₱55,000 – ₱250,000+',
-  'Storefront canopy': '₱25,000 – ₱120,000+',
-  'Entrance canopy': '₱18,000 – ₱85,000+',
-  'Stainless staircase installation': 'Final estimate after site assessment',
-  'Outdoor stair railing': '₱4,000 – ₱10,500 per linear meter',
-  'Commercial guardrail': '₱3,500 – ₱9,500 per linear meter',
-  'Tall storage cabinet': '₱28,000 – ₱85,000+',
-  'Drawer and shelf cabinet': '₱35,000 – ₱95,000+',
-  'Overhead cabinet': '₱22,000 – ₱70,000+',
-  'Full cabinet system': '₱80,000 – ₱220,000+',
-  'Custom metal fence': 'Final estimate after site assessment',
-  'Decorative stainless gate': '₱35,000 – ₱140,000+',
-  'Modern mixed metal gate': '₱45,000 – ₱150,000+',
-  'Stainless storage cabinet': '₱18,000 – ₱95,000+',
-  'Food cart kiosk frame': '₱35,000 – ₱180,000+',
-  'Utility frame': '₱15,000 – ₱120,000+',
-  'Stainless work table': '₱10,000 – ₱65,000+',
-};
-
-export function getServiceProjectPrice(project: Pick<ServiceProject, 'title' | 'estimatedPrice'>) {
-  return project.estimatedPrice || PROJECT_PRICE_GUIDANCE[project.title] || 'Final estimate after consultation';
-}
-
 export function getServiceProjectReferences(service: ServiceCollection): ServiceProjectReference[] {
   return service.projects.map((project) => ({
     ...project,
-    estimatedPrice: getServiceProjectPrice(project),
     id: getServiceProjectId(service.id, project.title),
     serviceId: service.id,
     serviceLabel: service.label,
