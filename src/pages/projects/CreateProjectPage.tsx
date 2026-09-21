@@ -93,14 +93,10 @@ export function CreateProjectPage() {
       || appointment.data.customerSiteDetails?.serviceType;
     if (appointmentServiceType && SERVICE_TYPE_LABELS[appointmentServiceType]) {
       setServiceType(appointmentServiceType);
+      setDeliveryType(getDefaultDeliveryType(appointmentServiceType) || '');
       setServiceTypeFromAppointment(true);
     }
   }, [appointment.data, serviceType]);
-
-  useEffect(() => {
-    const defaultDeliveryType = getDefaultDeliveryType(serviceType);
-    setDeliveryType(defaultDeliveryType || '');
-  }, [serviceType]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -264,7 +260,9 @@ export function CreateProjectPage() {
                 <div className="space-y-2">
                   <Label htmlFor="project-service">Service Type *</Label>
                   <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
-                    setServiceType(event.target.value);
+                    const nextServiceType = event.target.value;
+                    setServiceType(nextServiceType);
+                    setDeliveryType(getDefaultDeliveryType(nextServiceType) || '');
                     setServiceTypeFromAppointment(false);
                   }} className={selectClassName}>
                     <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
