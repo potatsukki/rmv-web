@@ -1,6 +1,6 @@
 import { Fragment, useEffect, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
-import { Plus, Calendar, FileText, ChevronRight, MapPin, RefreshCw } from 'lucide-react';
+import { Plus, Calendar, FileText, ChevronRight, MapPin, RefreshCw, TicketCheck, Users, Radio } from 'lucide-react';
 import { format } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
-import { useAppointmentQueue, useAppointments } from '@/hooks/useAppointments';
+import { useAppointmentQueue, useAppointments, useCustomerQueueStatus } from '@/hooks/useAppointments';
 import type { Appointment } from '@/lib/types';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
@@ -238,6 +238,7 @@ export function AppointmentsPage() {
     user?.roles.some((role) => [Role.APPOINTMENT_AGENT, Role.ADMIN, Role.SALES_STAFF].includes(role)),
   );
   const isCustomer = user?.roles.includes(Role.CUSTOMER) && user.roles.length === 1;
+  const customerQueueQuery = useCustomerQueueStatus(isCustomer);
 
   if (isCustomer && !params.limit) {
     params.limit = '100';
@@ -392,6 +393,48 @@ export function AppointmentsPage() {
           description="Book a consultation, review confirmations, and keep every project visit in one place."
           image="/landing/services/railings/01-commercial-stainless-guardrail.png"
         />
+      )}
+      {isCustomer && customerQueueQuery.data && (
+        <section className="metal-panel overflow-hidden rounded-[1.5rem]" aria-labelledby="customer-queue-title">
+          <div className="grid gap-4 p-5 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-6">
+            <div className="flex min-w-0 items-start gap-4">
+              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#e5edf5] text-[#4f6679] dark:bg-slate-800 dark:text-sky-300">
+                <TicketCheck className="h-6 w-6" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-[#6d7782] dark:text-slate-400">
+                  Today&apos;s consultation queue
+                </p>
+                <h2 id="customer-queue-title" className="mt-1 text-2xl font-semibold text-[#171b21] dark:text-white">
+                  Queue number {customerQueueQuery.data.queueNumber}
+                </h2>
+                <div className="mt-3 flex flex-wrap gap-x-5 gap-y-2 text-sm text-[#56616d] dark:text-slate-300">
+                  <span className="inline-flex items-center gap-2">
+                    <Users className="h-4 w-4" />
+                    {customerQueueQuery.data.status === 'serving'
+                      ? 'It is your turn'
+                      : `${customerQueueQuery.data.aheadCount} ${customerQueueQuery.data.aheadCount === 1 ? 'customer' : 'customers'} ahead`}
+                  </span>
+                  <span className="inline-flex items-center gap-2">
+                    <Radio className="h-4 w-4" />
+                    Now serving: {customerQueueQuery.data.nowServing || 'Preparing'}
+                  </span>
+                </div>
+                {customerQueueQuery.data.status === 'waiting' && (
+                  <p className="mt-2 text-xs text-[#7a8490] dark:text-slate-400">
+                    Estimated wait: about {customerQueueQuery.data.estimatedWaitMinutes} minutes. This updates automatically.
+                  </p>
+                )}
+              </div>
+            </div>
+            <Button asChild variant="outline" className="w-full sm:w-auto">
+              <Link to={`/appointments/${customerQueueQuery.data.appointmentId}`}>
+                View appointment
+                <ChevronRight className="ml-2 h-4 w-4" />
+              </Link>
+            </Button>
+          </div>
+        </section>
       )}
       {canSeeVisitReports && (
         <div className="flex items-center gap-1 overflow-x-auto rounded-xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-muted)]/40 p-1">
