@@ -356,7 +356,7 @@ export function UsersPage() {
       <CollectionToolbar
         title="Find the right account fast"
         description={isEmployeeMonitoringPage ? 'Search staff records and narrow by role before updating availability.' : 'Search account records and narrow by role before making access changes.'}
-        searchPlaceholder="Search users"
+        searchPlaceholder="Search name, email, or customer ID"
         searchValue={search}
         onSearchChange={setSearch}
         filters={[{ value: 'all', label: 'All' }, ...ROLES.filter((role) => !isEmployeeMonitoringPage || role.value !== Role.CUSTOMER)]}
@@ -431,6 +431,9 @@ export function UsersPage() {
                       {u.firstName} {u.lastName}
                     </p>
                     <p className="truncate text-xs text-[#68727d] dark:text-slate-400">{u.email}</p>
+                    {u.customerNumber && (
+                      <p className="mt-0.5 font-mono text-[10px] font-semibold text-[#69737d] dark:text-slate-400">{u.customerNumber}</p>
+                    )}
                   </div>
                   {/* Actions */}
                   <DropdownMenu>
@@ -533,9 +536,14 @@ export function UsersPage() {
                         >
                           {u.firstName[0]}{u.lastName[0]}
                         </div>
-                        <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
-                          {u.firstName} {u.lastName}
-                        </p>
+                        <div className="min-w-0">
+                          <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
+                            {u.firstName} {u.lastName}
+                          </p>
+                          {u.customerNumber && (
+                            <p className="mt-0.5 font-mono text-[10px] font-semibold text-[#69737d] dark:text-slate-400">{u.customerNumber}</p>
+                          )}
+                        </div>
                       </div>
                     </TableCell>
 
