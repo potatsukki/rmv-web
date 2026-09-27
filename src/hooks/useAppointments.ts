@@ -7,6 +7,7 @@ import type {
   PaginatedResponse,
   CustomerSiteDetails,
   CustomerQueueStatus,
+  SelectedDesignTemplate,
 } from '@/lib/types';
 import type { SlotCode } from '@/lib/constants';
 import { extractItems } from '@/lib/utils';
@@ -120,6 +121,7 @@ export function useRequestAppointment() {
       selectedDesignTemplateId?: string;
       selectedDesignTemplateName?: string;
       selectedDesignTemplateImageUrl?: string;
+      selectedDesignTemplates?: SelectedDesignTemplate[];
       formattedAddress?: string;
       customerLocation?: { lat: number; lng: number };
       lockId?: string;

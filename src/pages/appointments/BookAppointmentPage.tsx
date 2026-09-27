@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addDays, format, getDay, startOfDay, startOfMonth } from 'date-fns';
-import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Loader2, Calendar, FileText, Image as ImageIcon, Info, Wrench } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Loader2, Calendar, FileText, Image as ImageIcon, Info, Wrench, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
@@ -19,6 +19,11 @@ import { useAppointments } from '@/hooks/useAppointments';
 import { useHolidays } from '@/hooks/useConfig';
 import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import {
+  hasDesignSelection,
+  MAX_SELECTED_DESIGNS,
+  toggleDesignSelection,
+} from '@/lib/design-selection';
 import {
   SERVICE_CATALOG,
   findServiceProjectReference,
@@ -154,7 +159,9 @@ export function BookAppointmentPage() {
       : '',
   );
   const [notes, setNotes] = useState('');
-  const [selectedDesign, setSelectedDesign] = useState<SelectedDesign | null>(initialSelectedDesign);
+  const [selectedDesigns, setSelectedDesigns] = useState<SelectedDesign[]>(
+    initialSelectedDesign ? [initialSelectedDesign] : [],
+  );
   const initialCatalogService = SERVICE_CATALOG.find((service) => (
     service.id === selectedServiceIdParam || service.serviceType === selectedServiceTypeParam
   ));
@@ -172,9 +179,12 @@ export function BookAppointmentPage() {
   const activeSampleDesigns = activeCatalogService
     ? getServiceProjectReferences(activeCatalogService)
     : [];
-  const requestedDesignName = bookingMode === 'sample' ? selectedDesign?.name : undefined;
-  const requestedWork = buildAppointmentPurpose(requestedDesignName);
-  const appointmentPurpose = buildAppointmentPurpose(requestedDesignName, notes);
+  const requestedWork = bookingMode === 'sample' && selectedDesigns.length > 0
+    ? selectedDesigns.length === 1
+      ? buildAppointmentPurpose(selectedDesigns[0]?.name)
+      : `I selected ${selectedDesigns.length} sample designs as project references.`
+    : '';
+  const appointmentPurpose = [requestedWork, notes.trim()].filter(Boolean).join('\n\n');
   const maxNotesLength = 500 - (requestedWork ? requestedWork.length + 2 : 0);
 
   useEffect(() => {
@@ -189,26 +199,44 @@ export function BookAppointmentPage() {
     }
   }, [selectedServiceTypeParam, serviceTypes]);
 
-  const selectSampleDesign = (project: ServiceProjectReference) => {
-    const design = toSelectedDesign(project);
+  const updateSampleSelections = (nextDesigns: SelectedDesign[]) => {
     setBookingMode('sample');
-    setSelectedDesign(design);
-    setServiceTypes([design.serviceType]);
+    setSelectedDesigns(nextDesigns);
+    setServiceTypes([...new Set(nextDesigns.map((selected) => selected.serviceType))]);
     setServiceTypeCustom('');
 
     const next = new URLSearchParams(searchParams);
     next.delete('mode');
-    next.set('serviceType', design.serviceType);
-    next.set('serviceId', design.serviceId);
-    next.set('designId', design.id);
-    next.set('design', design.name);
-    next.set('designImage', design.imageUrl);
+    const latestDesign = nextDesigns.at(-1);
+    if (latestDesign) {
+      next.set('serviceType', latestDesign.serviceType);
+      next.set('serviceId', latestDesign.serviceId);
+      next.set('designId', latestDesign.id);
+      next.set('design', latestDesign.name);
+      next.set('designImage', latestDesign.imageUrl);
+    } else {
+      next.delete('serviceType');
+      next.delete('serviceId');
+      next.delete('designId');
+      next.delete('design');
+      next.delete('designImage');
+    }
     setSearchParams(next, { replace: true });
+  };
+
+  const selectSampleDesign = (project: ServiceProjectReference) => {
+    const design = toSelectedDesign(project);
+    const alreadySelected = hasDesignSelection(selectedDesigns, design);
+    if (!alreadySelected && selectedDesigns.length >= MAX_SELECTED_DESIGNS) {
+      toast.error(`You can select up to ${MAX_SELECTED_DESIGNS} sample designs per appointment.`);
+      return;
+    }
+    updateSampleSelections(toggleDesignSelection(selectedDesigns, design));
   };
 
   const selectCustomMade = () => {
     setBookingMode('custom');
-    setSelectedDesign(null);
+    setSelectedDesigns([]);
     const next = new URLSearchParams(searchParams);
     next.set('mode', 'custom');
     next.delete('designId');
@@ -261,7 +289,7 @@ export function BookAppointmentPage() {
     const stepKey = steps[currentStep]?.key;
     if (stepKey === 'service') {
       if (appointmentPurpose.length > 500) return false;
-      if (bookingMode === 'sample') return Boolean(selectedDesign);
+      if (bookingMode === 'sample') return selectedDesigns.length > 0;
       if (bookingMode === 'custom') {
         const hasCustomLabel = !serviceTypes.includes(ServiceType.CUSTOM) || Boolean(serviceTypeCustom.trim());
         return serviceTypes.length > 0 && hasCustomLabel && Boolean(notes.trim());
@@ -278,7 +306,7 @@ export function BookAppointmentPage() {
     selectedDate,
     selectedSlot,
     bookingMode,
-    selectedDesign,
+    selectedDesigns,
     serviceTypes,
     serviceTypeCustom,
     notes,
@@ -320,9 +348,17 @@ export function BookAppointmentPage() {
           purpose: appointmentPurpose || undefined,
           serviceTypes: serviceTypes as import('@/lib/constants').ServiceType[],
           serviceTypeCustom: serviceTypeCustom || undefined,
-          selectedDesignTemplateId: selectedDesign?.id,
-          selectedDesignTemplateName: selectedDesign?.name,
-          selectedDesignTemplateImageUrl: selectedDesign?.imageUrl,
+          selectedDesignTemplateId: selectedDesigns[0]?.id,
+          selectedDesignTemplateName: selectedDesigns[0]?.name,
+          selectedDesignTemplateImageUrl: selectedDesigns[0]?.imageUrl,
+          selectedDesignTemplates: selectedDesigns.map((design) => ({
+            id: design.id,
+            name: design.name,
+            imageUrl: design.imageUrl,
+            serviceId: design.serviceId,
+            serviceLabel: design.serviceLabel,
+            serviceType: design.serviceType,
+          })),
         });
 
         toast.success('Appointment booked successfully!');
@@ -482,7 +518,7 @@ export function BookAppointmentPage() {
               <CardHeader>
                 <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Choose a Design</CardTitle>
                 <CardDescription className="text-[#6e6e73] dark:text-slate-400">
-                  Select one of RMV&apos;s sample designs, or choose Custom Made for a design built around your requirements.
+                  Select one or more sample designs—even from different categories—or choose Custom Made.
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-6">
@@ -513,30 +549,44 @@ export function BookAppointmentPage() {
                 <div className="space-y-3">
                   <div>
                     <p className="text-[13px] font-semibold text-[#3a3a3e] dark:text-slate-300">Sample Designs</p>
-                    <p className="mt-1 text-xs text-[#86868b] dark:text-slate-500">Choose a category, then select the design you want to use as your starting reference.</p>
+                    <p className="mt-1 text-xs text-[#86868b] dark:text-slate-500">Your selections stay selected when you move between Railings, Gates, Kitchen Counter, and other categories.</p>
                   </div>
                   <div className="flex gap-2 overflow-x-auto pb-1">
-                    {SERVICE_CATALOG.map((service) => (
-                      <button
-                        key={service.id}
-                        type="button"
-                        onClick={() => setActiveServiceId(service.id)}
-                        className={cn(
-                          'shrink-0 rounded-full border px-3 py-1.5 text-xs font-semibold transition',
-                          activeCatalogService?.id === service.id
-                            ? 'border-[#1d1d1f] bg-[#1d1d1f] text-white dark:border-[#f5b400] dark:bg-[#f5b400] dark:text-[#090b0d]'
-                            : 'border-[#d2d2d7] bg-white text-[#6e6e73] hover:border-[#86868b] dark:border-white/12 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-white/25',
-                        )}
-                      >
-                        {service.label}
-                      </button>
-                    ))}
+                    {SERVICE_CATALOG.map((service) => {
+                      const selectedCount = selectedDesigns.filter((design) => design.serviceId === service.id).length;
+                      return (
+                        <button
+                          key={service.id}
+                          type="button"
+                          onClick={() => setActiveServiceId(service.id)}
+                          className={cn(
+                            'inline-flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition',
+                            activeCatalogService?.id === service.id
+                              ? 'border-[#1d1d1f] bg-[#1d1d1f] text-white dark:border-[#f5b400] dark:bg-[#f5b400] dark:text-[#090b0d]'
+                              : 'border-[#d2d2d7] bg-white text-[#6e6e73] hover:border-[#86868b] dark:border-white/12 dark:bg-white/[0.03] dark:text-slate-300 dark:hover:border-white/25',
+                          )}
+                        >
+                          {service.label}
+                          {selectedCount > 0 && (
+                            <span className={cn(
+                              'inline-flex h-4 min-w-4 items-center justify-center rounded-full px-1 text-[9px]',
+                              activeCatalogService?.id === service.id
+                                ? 'bg-white/20 text-white dark:bg-black/20 dark:text-[#090b0d]'
+                                : 'bg-[#f5b400] text-[#291b00]',
+                            )}>
+                              {selectedCount}
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
 
                 <div className="grid gap-3 sm:grid-cols-2">
                   {activeSampleDesigns.map((project) => {
-                    const isSelected = bookingMode === 'sample' && selectedDesign?.id === project.id;
+                    const isSelected = bookingMode === 'sample'
+                      && hasDesignSelection(selectedDesigns, project);
                     return (
                       <button
                         key={project.id}
@@ -567,16 +617,34 @@ export function BookAppointmentPage() {
                   })}
                 </div>
 
-                {bookingMode === 'sample' && selectedDesign && (
+                {bookingMode === 'sample' && selectedDesigns.length > 0 && (
                   <div className="rounded-2xl border border-emerald-200 bg-emerald-50/70 p-4 dark:border-emerald-500/25 dark:bg-emerald-500/10">
-                    <div className="flex items-center gap-3">
-                      <img src={selectedDesign.imageUrl} alt={selectedDesign.name} className="h-16 w-20 shrink-0 rounded-xl object-cover" />
-                      <div className="min-w-0">
-                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">Selected Design</p>
-                        <p className="mt-1 truncate text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{selectedDesign.name}</p>
-                        <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">{selectedDesign.serviceLabel}</p>
-                        <p className="mt-2 text-sm text-emerald-900 dark:text-emerald-100">{requestedWork}</p>
+                    <div className="flex items-center justify-between gap-3">
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-[0.12em] text-emerald-700 dark:text-emerald-300">
+                          {selectedDesigns.length} Selected {selectedDesigns.length === 1 ? 'Design' : 'Designs'}
+                        </p>
+                        <p className="mt-1 text-xs text-emerald-900/80 dark:text-emerald-100/80">You can continue browsing categories and add more.</p>
                       </div>
+                    </div>
+                    <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                      {selectedDesigns.map((design) => (
+                        <div key={`${design.serviceId}-${design.id}`} className="flex items-center gap-2 rounded-xl border border-emerald-200/80 bg-white/70 p-2 dark:border-emerald-500/20 dark:bg-black/15">
+                          <img src={design.imageUrl} alt={design.name} className="h-12 w-14 shrink-0 rounded-lg object-cover" />
+                          <div className="min-w-0 flex-1">
+                            <p className="truncate text-xs font-semibold text-[#1d1d1f] dark:text-slate-100">{design.name}</p>
+                            <p className="truncate text-[10px] text-[#6e6e73] dark:text-slate-400">{design.serviceLabel}</p>
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => updateSampleSelections(toggleDesignSelection(selectedDesigns, design))}
+                            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-emerald-800 transition hover:bg-emerald-100 dark:text-emerald-200 dark:hover:bg-emerald-500/15"
+                            aria-label={`Remove ${design.name}`}
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 )}
@@ -617,10 +685,10 @@ export function BookAppointmentPage() {
                   </div>
                 )}
 
-                {!bookingMode && (
+                {(!bookingMode || (bookingMode === 'sample' && selectedDesigns.length === 0)) && (
                   <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3.5 dark:border-sky-500/20 dark:bg-sky-500/10">
                     <ImageIcon className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-sky-300" />
-                    <p className="text-sm text-blue-800 dark:text-sky-100/90">Select a sample design above or choose Custom Made to continue.</p>
+                    <p className="text-sm text-blue-800 dark:text-sky-100/90">Select one or more sample designs above, or choose Custom Made to continue.</p>
                   </div>
                 )}
               </CardContent>
@@ -760,16 +828,29 @@ export function BookAppointmentPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {bookingMode === 'sample' && selectedDesign && (
-                <div className="overflow-hidden rounded-2xl border border-[#f5b400]/45 bg-[#fffaf0] dark:border-[#f5b400]/30 dark:bg-[#f5b400]/[0.07] sm:flex">
-                  <img src={selectedDesign.imageUrl} alt={selectedDesign.name} className="h-44 w-full object-cover sm:h-auto sm:w-48" />
-                  <div className="p-4">
-                    <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#b77900] dark:text-[#f5b400]">Selected Sample Design</p>
-                    <p className="mt-2 text-base font-semibold text-[#1d1d1f] dark:text-slate-100">{selectedDesign.name}</p>
-                    <p className="mt-1 text-sm text-[#6e6e73] dark:text-slate-400">{selectedDesign.serviceLabel}</p>
-                    <p className="mt-3 text-sm font-medium text-[#1d1d1f] dark:text-slate-100">{requestedWork}</p>
-                    {selectedDesign.description && <p className="mt-3 line-clamp-3 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">{selectedDesign.description}</p>}
+              {bookingMode === 'sample' && selectedDesigns.length > 0 && (
+                <div className="rounded-2xl border border-[#f5b400]/45 bg-[#fffaf0] p-4 dark:border-[#f5b400]/30 dark:bg-[#f5b400]/[0.07]">
+                  <div className="flex items-center justify-between gap-3">
+                    <div>
+                      <p className="text-xs font-semibold uppercase tracking-[0.14em] text-[#b77900] dark:text-[#f5b400]">Selected Sample Designs</p>
+                      <p className="mt-1 text-sm text-[#6e6e73] dark:text-slate-400">{selectedDesigns.length} project {selectedDesigns.length === 1 ? 'reference' : 'references'}</p>
+                    </div>
+                    <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-[#f5b400] px-2 text-sm font-bold text-[#291b00]">
+                      {selectedDesigns.length}
+                    </span>
                   </div>
+                  <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                    {selectedDesigns.map((design) => (
+                      <div key={`${design.serviceId}-${design.id}`} className="overflow-hidden rounded-xl border border-[#ead8a7] bg-white/75 dark:border-[#f5b400]/20 dark:bg-black/15">
+                        <img src={design.imageUrl} alt={design.name} className="h-28 w-full object-cover" />
+                        <div className="p-3">
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b77900] dark:text-[#f5b400]">{design.serviceLabel}</p>
+                          <p className="mt-1 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{design.name}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-4 text-sm font-medium text-[#1d1d1f] dark:text-slate-100">{requestedWork}</p>
                 </div>
               )}
 

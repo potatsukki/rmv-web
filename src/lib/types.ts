@@ -146,6 +146,15 @@ export interface CustomerSiteDetails {
 }
 
 // ── Appointment ──
+export interface SelectedDesignTemplate {
+  id: string;
+  name: string;
+  imageUrl: string;
+  serviceId: string;
+  serviceLabel: string;
+  serviceType: string;
+}
+
 export interface Appointment {
   _id: string;
   appointmentNumber?: string;
@@ -188,6 +197,7 @@ export interface Appointment {
   selectedDesignTemplateId?: string;
   selectedDesignTemplateName?: string;
   selectedDesignTemplateImageUrl?: string;
+  selectedDesignTemplates?: SelectedDesignTemplate[];
   address?: string;
   customerAddress?: string;
   formattedAddress?: string;
