@@ -6,6 +6,7 @@ import type {
   AppointmentQueueResponse,
   PaginatedResponse,
   CustomerSiteDetails,
+  CustomerQueueStatus,
 } from '@/lib/types';
 import type { SlotCode } from '@/lib/constants';
 import { extractItems } from '@/lib/utils';
@@ -58,6 +59,21 @@ export function useAppointmentQueue(params?: Record<string, string>, enabled = t
       return data.data;
     },
     enabled,
+  });
+}
+
+export function useCustomerQueueStatus(enabled = true) {
+  return useQuery({
+    queryKey: [...KEYS.all, 'customer-queue'] as const,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<CustomerQueueStatus | null>>(
+        '/appointments/customer-queue',
+      );
+      return data.data;
+    },
+    enabled,
+    refetchInterval: 15_000,
+    refetchOnWindowFocus: true,
   });
 }
 

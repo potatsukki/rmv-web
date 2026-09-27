@@ -174,6 +174,10 @@ export interface Appointment {
   attendanceNotes?: string;
   attendanceUpdatedAt?: string;
   attendanceOverrideReason?: string;
+  queueDate?: string;
+  queueSequence?: number;
+  queueNumber?: string;
+  queueIssuedAt?: string;
   purpose?: string;
   serviceTypes?: string[];
   serviceType?: string;
@@ -264,6 +268,19 @@ export interface AppointmentQueueResponse {
   recentCount: number;
   recentWindowDays: number;
   generatedAt: string;
+}
+
+export interface CustomerQueueStatus {
+  appointmentId: string;
+  queueNumber: string;
+  queueDate: string;
+  status: 'waiting' | 'serving';
+  position: number;
+  aheadCount: number;
+  nowServing: string | null;
+  estimatedWaitMinutes: number;
+  issuedAt?: string;
+  updatedAt: string;
 }
 
 // ── Project ──
