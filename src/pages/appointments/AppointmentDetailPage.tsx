@@ -425,6 +425,18 @@ export function AppointmentDetailPage() {
 
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
+  const selectedDesignTemplates = appt.selectedDesignTemplates?.length
+    ? appt.selectedDesignTemplates
+    : appt.selectedDesignTemplateName
+      ? [{
+          id: appt.selectedDesignTemplateId || appt.selectedDesignTemplateName,
+          name: appt.selectedDesignTemplateName,
+          imageUrl: appt.selectedDesignTemplateImageUrl || '',
+          serviceId: '',
+          serviceLabel: '',
+          serviceType: '',
+        }]
+      : [];
   const canSeeConsultationAttendance = Boolean(isOfficeConsultation && (isSalesStaff || isAdmin));
   const assignedSalesStaffId = typeof appt.salesStaffId === 'string'
     ? appt.salesStaffId
@@ -1051,19 +1063,39 @@ export function AppointmentDetailPage() {
               />
             )}
 
-            {appt.selectedDesignTemplateName && (
-              <div className="overflow-hidden rounded-2xl border border-[#d8dee6] bg-[#f8fafc] dark:border-white/10 dark:bg-white/[0.03] sm:flex">
-                {appt.selectedDesignTemplateImageUrl && (
-                  <img
-                    src={appt.selectedDesignTemplateImageUrl}
-                    alt={appt.selectedDesignTemplateName}
-                    className="h-44 w-full object-cover sm:h-32 sm:w-44"
-                  />
-                )}
-                <div className="p-4">
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#b77900] dark:text-[#f5b400]">Customer-Selected Design</p>
-                  <p className="mt-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{appt.selectedDesignTemplateName}</p>
-                  <p className="mt-1 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">This sample design stays linked to the appointment for the sales consultation.</p>
+            {selectedDesignTemplates.length > 0 && (
+              <div className="rounded-2xl border border-[#d8dee6] bg-[#f8fafc] p-4 dark:border-white/10 dark:bg-white/[0.03]">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-[#b77900] dark:text-[#f5b400]">
+                      Customer-Selected {selectedDesignTemplates.length === 1 ? 'Design' : 'Designs'}
+                    </p>
+                    <p className="mt-1 text-xs leading-5 text-[#6e6e73] dark:text-slate-400">
+                      {selectedDesignTemplates.length === 1 ? 'This sample design stays' : 'These sample designs stay'} linked to the appointment for the sales consultation.
+                    </p>
+                  </div>
+                  <span className="inline-flex h-8 min-w-8 items-center justify-center rounded-full bg-[#f5b400] px-2 text-sm font-bold text-[#291b00]">
+                    {selectedDesignTemplates.length}
+                  </span>
+                </div>
+                <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                  {selectedDesignTemplates.map((design) => (
+                    <div key={`${design.serviceId}-${design.id}`} className="overflow-hidden rounded-xl border border-[#d8dee6] bg-white dark:border-white/10 dark:bg-black/15">
+                      {design.imageUrl && (
+                        <img
+                          src={design.imageUrl}
+                          alt={design.name}
+                          className="h-32 w-full object-cover"
+                        />
+                      )}
+                      <div className="p-3">
+                        {design.serviceLabel && (
+                          <p className="text-[10px] font-bold uppercase tracking-[0.12em] text-[#b77900] dark:text-[#f5b400]">{design.serviceLabel}</p>
+                        )}
+                        <p className="mt-1 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">{design.name}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </div>
             )}
