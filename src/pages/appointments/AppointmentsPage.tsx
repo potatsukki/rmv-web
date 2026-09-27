@@ -237,7 +237,7 @@ export function AppointmentsPage() {
   const isQueueRole = Boolean(
     user?.roles.some((role) => [Role.APPOINTMENT_AGENT, Role.ADMIN, Role.SALES_STAFF].includes(role)),
   );
-  const isCustomer = user?.roles.includes(Role.CUSTOMER) && user.roles.length === 1;
+  const isCustomer = Boolean(user?.roles.includes(Role.CUSTOMER));
   const customerQueueQuery = useCustomerQueueStatus(isCustomer);
 
   if (isCustomer && !params.limit) {
@@ -566,6 +566,29 @@ export function AppointmentsPage() {
                           </div>
                         </div>
 
+                        <div className="mt-2 ml-[18px] flex flex-wrap gap-1.5">
+                          {appt.appointmentNumber && (
+                            <span className="rounded-md border border-[#d1d8e0] bg-white/55 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-[#4f5b68] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">
+                              {appt.appointmentNumber}
+                            </span>
+                          )}
+                          {appt.customerNumber && (
+                            <span className="rounded-md border border-[#d1d8e0] bg-white/55 px-1.5 py-0.5 font-mono text-[10px] text-[#68727d] dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                              {appt.customerNumber}
+                            </span>
+                          )}
+                          {appt.queueNumber && (
+                            <span className="rounded-md border border-sky-200 bg-sky-50 px-1.5 py-0.5 font-mono text-[10px] font-semibold text-sky-700 dark:border-sky-700 dark:bg-sky-950/50 dark:text-sky-300">
+                              Queue {appt.queueNumber}
+                            </span>
+                          )}
+                          {!appt.queueNumber && appt.type === 'office' && !['completed', 'cancelled', 'no_show'].includes(appt.status) && (
+                            <span className="rounded-md border border-[#d7dde4] bg-white/40 px-1.5 py-0.5 text-[10px] text-[#7a8490] dark:border-slate-700 dark:bg-slate-900/40 dark:text-slate-400">
+                              Queue assigned at check-in
+                            </span>
+                          )}
+                        </div>
+
                         {/* Row 2: Meta — type · date · time */}
                         <div className="mt-2 ml-[18px] flex items-center gap-1.5 text-xs text-[#68727d] dark:text-slate-400">
                           <span className="capitalize">{APPOINTMENT_TYPE_LABELS[appt.type] || appt.type}</span>
@@ -682,6 +705,20 @@ export function AppointmentsPage() {
                                     </span>
                                   )}
                                 </p>
+                                <div className="mt-1 flex flex-wrap gap-1.5">
+                                  {appt.appointmentNumber && (
+                                    <span className="font-mono text-[10px] font-semibold text-[#4f5b68] dark:text-slate-300">{appt.appointmentNumber}</span>
+                                  )}
+                                  {appt.customerNumber && (
+                                    <span className="font-mono text-[10px] text-[#76818c] dark:text-slate-400">{appt.customerNumber}</span>
+                                  )}
+                                  {appt.queueNumber && (
+                                    <span className="font-mono text-[10px] font-semibold text-sky-700 dark:text-sky-300">Queue {appt.queueNumber}</span>
+                                  )}
+                                  {!appt.queueNumber && appt.type === 'office' && !['completed', 'cancelled', 'no_show'].includes(appt.status) && (
+                                    <span className="text-[10px] text-[#7a8490] dark:text-slate-400">Queue assigned at check-in</span>
+                                  )}
+                                </div>
                                 {appt.siteDetailsStatus === 'pending'
                                   && appt.status === 'requested'
                                   && !appt.consultationStartedAt

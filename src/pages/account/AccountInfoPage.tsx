@@ -59,9 +59,10 @@ export function AccountInfoPage() {
   };
 
   const handleCopyId = () => {
-    if (!user?._id) return;
-    navigator.clipboard.writeText(user._id);
-    toast.success('User ID copied to clipboard');
+    const displayId = user?.customerNumber || user?._id;
+    if (!displayId) return;
+    navigator.clipboard.writeText(displayId);
+    toast.success(`${user?.customerNumber ? 'Customer' : 'User'} ID copied to clipboard`);
   };
 
   return (
@@ -96,16 +97,18 @@ export function AccountInfoPage() {
             )}
           </div>
 
-          {/* User ID */}
+          {/* Public customer ID / internal user ID */}
           <div className="flex items-center justify-between gap-3 p-4 border border-[#d2d2d7]/50 dark:border-white/10 rounded-xl bg-white/60 dark:bg-slate-800/70">
             <div className="flex items-center gap-3 min-w-0">
               <div className="p-2 bg-[#f0f0f5] dark:bg-slate-700/70 rounded-lg shrink-0">
                 <Shield className="h-4 w-4 text-[#6e6e73] dark:text-slate-300" />
               </div>
               <div className="min-w-0">
-                <p className="text-xs text-[#86868b] dark:text-slate-300 font-medium">User ID</p>
+                <p className="text-xs text-[#86868b] dark:text-slate-300 font-medium">
+                  {user?.customerNumber ? 'Customer ID' : 'User ID'}
+                </p>
                 <p className="text-sm font-mono text-[#6e6e73] dark:text-slate-200 truncate">
-                  #{user?._id?.substring(0, 8)}...
+                  {user?.customerNumber || `#${user?._id?.substring(0, 8)}...`}
                 </p>
               </div>
             </div>

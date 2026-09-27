@@ -3,6 +3,7 @@ import type { Role, StaffAvailabilityStatus, AppointmentStatus } from './constan
 // ── Auth ──
 export interface User {
   _id: string;
+  customerNumber?: string;
   firstName: string;
   lastName: string;
   email: string;
@@ -147,9 +148,11 @@ export interface CustomerSiteDetails {
 // ── Appointment ──
 export interface Appointment {
   _id: string;
+  appointmentNumber?: string;
   canonicalAppointmentId?: string;
   customerId: string;
   customerName?: string;
+  customerNumber?: string;
   customerPhone?: string;
   salesStaffId?:
     | string

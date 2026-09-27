@@ -573,6 +573,15 @@ export function AppointmentDetailPage() {
           <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
             Appointment Details
           </h1>
+          <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-[#69737d] dark:text-slate-400">
+            {appt.appointmentNumber && <span>{appt.appointmentNumber}</span>}
+            {appt.customerNumber && <span>{appt.customerNumber}</span>}
+            {appt.queueNumber ? (
+              <span className="font-semibold text-sky-700 dark:text-sky-300">Queue {appt.queueNumber}</span>
+            ) : appt.type === 'office' && !['completed', 'cancelled', 'no_show'].includes(appt.status) ? (
+              <span className="font-sans">Queue number will be assigned at check-in</span>
+            ) : null}
+          </div>
         </div>
         {isCustomer && appt.type === 'ocular' && !appt.ocularFeePaid && appt.ocularFeeStatus === 'pending' ? (
           <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">

@@ -100,6 +100,7 @@ export function useEnableUser() {
 
 export interface CustomerSearchResult {
   _id: string;
+  customerNumber?: string;
   firstName: string;
   lastName: string;
   email: string;
