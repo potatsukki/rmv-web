@@ -1857,7 +1857,11 @@ export function VisitReportPage() {
           <Button
             variant="outline"
             className="rounded-xl"
-            onClick={() => navigate(`/projects/create?${new URLSearchParams({ customerId: rawId(report.customerId), appointmentId }).toString()}`)}
+            onClick={() => navigate(`/projects/create?${new URLSearchParams({
+              customerId: rawId(report.customerId),
+              appointmentId,
+              visitReportId: String(report._id),
+            }).toString()}`)}
           >
             <FolderOpen className="mr-2 h-4 w-4" />
             Create Project
