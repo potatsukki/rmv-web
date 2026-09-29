@@ -59,7 +59,7 @@ export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | u
   if (verifiedCount === stages.length) {
     return {
       key: 'paid',
-      label: 'Paid',
+      label: 'Fully Paid',
       tone: 'green',
       stage: 'billing',
       isTerminal: false,
@@ -77,7 +77,15 @@ export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | u
     };
   }
 
-  if (verifiedCount > 0) {
+  const hasPartialAmount = stages.some((stage) => {
+    const amountPaid = Number(stage.amountPaid || 0);
+    const remainingBalance = stage.remainingBalance == null
+      ? Math.max(Number(stage.amount || 0) - amountPaid, 0)
+      : Number(stage.remainingBalance);
+    return amountPaid > 0 && remainingBalance > 0;
+  });
+
+  if (verifiedCount > 0 || hasPartialAmount) {
     return {
       key: 'partially_paid',
       label: 'Partially Paid',
@@ -162,7 +170,7 @@ export function resolveProjectWorkflowStatus(input: {
 
   if (hasPaymentPlans) {
     if (paymentStatus.key === 'paid') {
-      return { ...paymentStatus, key: 'paid', label: 'Paid', secondaryLabel: 'Ready for fabrication assignment' };
+      return { ...paymentStatus, key: 'paid', label: 'Fully Paid', secondaryLabel: 'Ready for fabrication assignment' };
     }
     if (paymentStatus.key === 'payment_for_verification') return paymentStatus;
     if (paymentStatus.key === 'partially_paid') return paymentStatus;
