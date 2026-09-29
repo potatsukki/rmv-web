@@ -867,7 +867,8 @@ export function VisitReportPage() {
           referenceImageKeys,
           selectedDesignTemplateId,
           selectedDesignTemplateName,
-          selectedDesignTemplateImageUrl: selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport,
+          selectedDesignTemplateImageUrl:
+            selectedDesignTemplateImageUrl || customerSelectedDesignImageUrlForReport || undefined,
         }),
         // Consultation-specific fields
         ...(visitType === 'consultation' && {
