@@ -11,6 +11,14 @@ type ProjectSiteAddressSource = {
   visitReportId?: unknown;
 };
 
+export function getItemScopedProjectValue<T>(
+  itemValue: T | undefined,
+  legacyProjectValue: T | undefined,
+  hasMultipleItems: boolean,
+) {
+  return hasMultipleItems ? itemValue : itemValue ?? legacyProjectValue;
+}
+
 function isPlaceholderAddress(value?: string | null) {
   const normalized = value?.trim();
   if (!normalized) return true;

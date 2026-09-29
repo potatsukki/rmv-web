@@ -58,7 +58,7 @@ import { ContractStatus, DELIVERY_TYPE_LABELS, DeliveryType, Role, StaffAvailabi
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications } from '@/lib/service-specifications';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
-import { getProjectDisplaySiteAddress } from '@/lib/project-display';
+import { getItemScopedProjectValue, getProjectDisplaySiteAddress } from '@/lib/project-display';
 import { cn, extractErrorMessage } from '@/lib/utils';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import type { ApiResponse, PaymentPlan, ProjectItem, VisitReport } from '@/lib/types';
@@ -643,9 +643,24 @@ export function ProjectDetailPage() {
   const visitReport: VisitReport | null = useMemo(() => {
     const activeReport = activeProjectItemRecord?.ocularVisitReportId || activeProjectItemRecord?.consultationVisitReportId;
     if (activeReport && typeof activeReport !== 'string') return activeReport as VisitReport;
+    if (activeProjectItemRecord) return null;
     if (!project?.visitReportId || typeof project.visitReportId === 'string') return null;
     return project.visitReportId as VisitReport;
   }, [activeProjectItemRecord, project]);
+
+  const hasMultipleProjectItems = projectServiceItems.length > 1;
+  const activeMaterials = getItemScopedProjectValue(activeProjectItemRecord?.materials, project?.materialType, hasMultipleProjectItems);
+  const activeFinishes = getItemScopedProjectValue(activeProjectItemRecord?.finishes, project?.finishColor, hasMultipleProjectItems);
+  const activePreferredDesign = getItemScopedProjectValue(activeProjectItemRecord?.preferredDesign, project?.preferredDesign, hasMultipleProjectItems);
+  const activeCustomerRequirements = getItemScopedProjectValue(activeProjectItemRecord?.customerRequirements, project?.customerRequirements, hasMultipleProjectItems);
+  const activeProjectNotes = getItemScopedProjectValue(activeProjectItemRecord?.notes, project?.notes, hasMultipleProjectItems);
+  const activeMeasurements = getItemScopedProjectValue(activeProjectItemRecord?.measurements, project?.measurements, hasMultipleProjectItems);
+  const activeLineItems = getItemScopedProjectValue(activeProjectItemRecord?.lineItems, project?.lineItems, hasMultipleProjectItems) || [];
+  const activeMeasurementUnit = getItemScopedProjectValue(activeProjectItemRecord?.measurementUnit, project?.measurementUnit, hasMultipleProjectItems) || 'cm';
+  const activePhotoKeys = getItemScopedProjectValue(visitReport?.photoKeys, project?.photoKeys, hasMultipleProjectItems) || [];
+  const activeVideoKeys = getItemScopedProjectValue(visitReport?.videoKeys, project?.videoKeys, hasMultipleProjectItems) || [];
+  const activeSketchKeys = getItemScopedProjectValue(visitReport?.sketchKeys, project?.sketchKeys, hasMultipleProjectItems) || [];
+  const activeReferenceImageKeys = getItemScopedProjectValue(visitReport?.referenceImageKeys, project?.referenceImageKeys, hasMultipleProjectItems) || [];
 
   const activeProjectItemHasSpecifications = hasMeaningfulSpecifications(activeProjectItemRecord?.specifications);
   const visitReportHasSpecifications = hasMeaningfulSpecifications(visitReport?.specifications);
@@ -679,21 +694,20 @@ export function ProjectDetailPage() {
   }, [project?.salesStaffId, salesStaffList]);
   const activeInitialDesignKeys = useMemo(
     () => {
-      if (activeProjectItemRecord?.initialDesignKeys?.length) {
-        return activeProjectItemRecord.initialDesignKeys;
-      }
-
-      if (project?.initialDesignKeys?.length) {
-        return project.initialDesignKeys;
-      }
-
-      return project?.items?.find((item) => item.initialDesignKeys?.length)?.initialDesignKeys || [];
+      if (activeProjectItemRecord) return activeProjectItemRecord.initialDesignKeys || [];
+      return project?.initialDesignKeys || [];
     },
-    [activeProjectItemRecord?.initialDesignKeys, project?.initialDesignKeys, project?.items],
+    [activeProjectItemRecord, project?.initialDesignKeys],
   );
-  const activeInitialDesignNotes = activeProjectItemRecord?.initialDesignNotes ?? project?.initialDesignNotes;
-  const activeDesignReviewStatus = activeProjectItemRecord?.designReviewStatus || project?.designReviewStatus || 'not_required';
-  const activeDesignReviewNotes = activeProjectItemRecord?.designReviewNotes ?? project?.designReviewNotes;
+  const activeInitialDesignNotes = activeProjectItemRecord
+    ? activeProjectItemRecord.initialDesignNotes
+    : project?.initialDesignNotes;
+  const activeDesignReviewStatus = activeProjectItemRecord
+    ? activeProjectItemRecord.designReviewStatus || 'not_required'
+    : project?.designReviewStatus || 'not_required';
+  const activeDesignReviewNotes = activeProjectItemRecord
+    ? activeProjectItemRecord.designReviewNotes
+    : project?.designReviewNotes;
   const hasInitialDesign = Boolean(activeInitialDesignKeys.length || activeInitialDesignNotes);
   const activeSelectedDesignTemplateName = activeProjectItemRecord?.selectedDesignTemplateName;
   const activeSelectedDesignTemplateImageUrl = activeProjectItemRecord?.selectedDesignTemplateImageUrl;
@@ -1592,14 +1606,14 @@ export function ProjectDetailPage() {
               {projectSiteAddress && (
                 <DetailField label="Site Address" value={projectSiteAddress} />
               )}
-              {(activeProjectItemRecord?.materials || project.materialType) && <DetailField label="Materials" value={activeProjectItemRecord?.materials || project.materialType} />}
-              {(activeProjectItemRecord?.finishes || project.finishColor) && <DetailField label="Finish / Color" value={activeProjectItemRecord?.finishes || project.finishColor} />}
-              {(activeProjectItemRecord?.preferredDesign || project.preferredDesign) && <DetailField label="Preferred Design" value={activeProjectItemRecord?.preferredDesign || project.preferredDesign} />}
-              {(activeProjectItemRecord?.customerRequirements || project.customerRequirements) && <DetailField label="Customer Requirements" value={activeProjectItemRecord?.customerRequirements || project.customerRequirements} />}
-              {(activeProjectItemRecord?.notes || project.notes) && <DetailField label="Project Notes" value={activeProjectItemRecord?.notes || project.notes} />}
-              {project.quantity != null && <DetailField label="Quantity" value={String(project.quantity)} />}
-              {project.measurements && (['length', 'width', 'height', 'area', 'thickness'] as const).map((dimension) => project.measurements?.[dimension] != null && (
-                <DetailField key={dimension} label={dimension.charAt(0).toUpperCase() + dimension.slice(1)} value={`${project.measurements[dimension]} ${project.measurements.unit}${dimension === 'area' ? '²' : ''}`} />
+              {activeMaterials && <DetailField label="Materials" value={activeMaterials} />}
+              {activeFinishes && <DetailField label="Finish / Color" value={activeFinishes} />}
+              {activePreferredDesign && <DetailField label="Preferred Design" value={activePreferredDesign} />}
+              {activeCustomerRequirements && <DetailField label="Customer Requirements" value={activeCustomerRequirements} />}
+              {activeProjectNotes && <DetailField label="Project Notes" value={activeProjectNotes} />}
+              {!hasMultipleProjectItems && project.quantity != null && <DetailField label="Quantity" value={String(project.quantity)} />}
+              {activeMeasurements && (['length', 'width', 'height', 'area', 'thickness'] as const).map((dimension) => activeMeasurements?.[dimension] != null && (
+                <DetailField key={dimension} label={dimension.charAt(0).toUpperCase() + dimension.slice(1)} value={`${activeMeasurements[dimension]} ${activeMeasurements.unit || activeMeasurementUnit}${dimension === 'area' ? '²' : ''}`} />
               ))}
               {project.projectNumber && (
                 <DetailField label="Project Number" value={project.projectNumber} />
@@ -1623,15 +1637,15 @@ export function ProjectDetailPage() {
             </div>
           </DetailSectionCard>
 
-          {Boolean((activeProjectItemRecord?.lineItems || project.lineItems)?.length) && (
+          {activeLineItems.length > 0 && (
             <DetailSectionCard title="Component Measurements" icon={FileText} className="lg:col-span-2">
-              <LineItemsEditor items={activeProjectItemRecord?.lineItems || project.lineItems || []} unit={activeProjectItemRecord?.measurementUnit || project.measurementUnit || 'cm'} onItemsChange={() => {}} onUnitChange={() => {}} disabled />
+              <LineItemsEditor items={activeLineItems} unit={activeMeasurementUnit} onItemsChange={() => {}} onUnitChange={() => {}} disabled />
             </DetailSectionCard>
           )}
 
-          {Boolean(project.photoKeys?.length || project.videoKeys?.length || project.sketchKeys?.length || project.referenceImageKeys?.length) && (
+          {Boolean(activePhotoKeys.length || activeVideoKeys.length || activeSketchKeys.length || activeReferenceImageKeys.length) && (
             <DetailSectionCard title="Project Attachments" icon={Camera} className="lg:col-span-2">
-              <PhotoUploadGrid photoKeys={project.photoKeys || []} videoKeys={project.videoKeys || []} sketchKeys={project.sketchKeys || []} referenceImageKeys={project.referenceImageKeys || []} onPhotoKeysChange={() => {}} onVideoKeysChange={() => {}} onSketchKeysChange={() => {}} onReferenceImageKeysChange={() => {}} disabled />
+              <PhotoUploadGrid photoKeys={activePhotoKeys} videoKeys={activeVideoKeys} sketchKeys={activeSketchKeys} referenceImageKeys={activeReferenceImageKeys} onPhotoKeysChange={() => {}} onVideoKeysChange={() => {}} onSketchKeysChange={() => {}} onReferenceImageKeysChange={() => {}} disabled />
             </DetailSectionCard>
           )}
 
