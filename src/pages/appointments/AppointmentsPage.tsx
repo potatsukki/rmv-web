@@ -137,6 +137,18 @@ function compareAppointmentLatestActivity(a: Appointment, b: Appointment) {
   return compareAppointmentAscending(a, b);
 }
 
+function compareAppointmentRequestsFirst(
+  a: Appointment,
+  b: Appointment,
+  fallback: (left: Appointment, right: Appointment) => number,
+) {
+  const aIsRequest = a.status === AppointmentStatus.REQUESTED;
+  const bIsRequest = b.status === AppointmentStatus.REQUESTED;
+
+  if (aIsRequest !== bIsRequest) return aIsRequest ? -1 : 1;
+  return fallback(a, b);
+}
+
 function getOcularDuplicateKey(appt: Appointment) {
   const services = (appt.serviceTypes || [])
     .map((service) => service.trim().toLowerCase())
@@ -294,9 +306,12 @@ export function AppointmentsPage() {
   let sections: Array<{ key: string; items: Appointment[] }> = [];
 
   if (isQueueRole) {
-    const sortUpcomingQueueItems = !statusFilter && !search
+    const fallbackUpcomingSort = !statusFilter && !search
       ? compareAppointmentLatestActivity
       : compareAppointmentAscending;
+    const sortUpcomingQueueItems = !statusFilter
+      ? (a: Appointment, b: Appointment) => compareAppointmentRequestsFirst(a, b, fallbackUpcomingSort)
+      : fallbackUpcomingSort;
 
     sections = [
       {
