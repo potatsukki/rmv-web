@@ -133,14 +133,14 @@ const PAYMENT_STATUS_BADGES: Record<PaymentListStatus, { status: string; label: 
   payment_pending: { status: 'payment_pending', label: 'Payment Pending' },
   for_verification: { status: 'proof_submitted', label: 'Awaiting Cashier Verification' },
   partially_paid: { status: 'approved', label: 'Partially Paid' },
-  paid: { status: 'verified', label: 'Paid' },
+  paid: { status: 'verified', label: 'Fully Paid' },
 };
 
 const formatStatusLabel = (status: string) =>
   status.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
 const formatProjectStageFilterLabel = (status: string) => {
-  if (status === 'paid') return 'Paid';
+  if (status === 'paid') return 'Fully Paid';
   if (status === 'payment_pending') return 'Billing';
   if (status === 'fabrication') return 'Fabrication';
   if (status === 'completed') return 'Completed';
@@ -187,7 +187,7 @@ function PaymentProjectRow({
 }) {
   const paymentBadge = PAYMENT_STATUS_BADGES[paymentStatus];
   const projectStageBadge = projectStage === 'paid'
-    ? { status: 'verified', label: 'Paid' }
+    ? { status: 'verified', label: 'Fully Paid' }
     : { status: projectStage, label: formatStatusLabel(projectStage) };
   const siteAddress = getProjectDisplaySiteAddress(project);
 
@@ -870,7 +870,7 @@ export function PaymentsPage() {
             {selectedProject && (
               <StatusBadge
                 status={planSummary.allVerified ? 'verified' : String(selectedProject.status)}
-                label={planSummary.allVerified ? 'Paid' : undefined}
+                label={planSummary.allVerified ? 'Fully Paid' : undefined}
               />
             )}
           </div>
