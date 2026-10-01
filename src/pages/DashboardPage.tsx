@@ -194,7 +194,7 @@ interface QuickAction {
 function getRoleGreeting(role: Role): string {
   const greetings: Partial<Record<Role, string>> = {
     [Role.CUSTOMER]: 'Start a new project or track your orders.',
-    [Role.APPOINTMENT_AGENT]: 'Manage schedules and ocular visits.',
+    [Role.APPOINTMENT_AGENT]: 'Manage office consultation schedules.',
     [Role.SALES_STAFF]: 'Manage your appointments and visit reports.',
     [Role.ENGINEER]: 'Review blueprints and technical specs.',
     [Role.CASHIER]: 'Process payments and manage cash flow.',
