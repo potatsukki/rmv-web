@@ -19,6 +19,19 @@ export function getItemScopedProjectValue<T>(
   return hasMultipleItems ? itemValue : itemValue ?? legacyProjectValue;
 }
 
+export function getProjectSnapshotLabels(itemCount: number, selectedItemLabel?: string) {
+  const hasMultipleItems = itemCount > 1;
+
+  return {
+    title: hasMultipleItems && selectedItemLabel
+      ? `${selectedItemLabel} Details`
+      : 'Project Snapshot',
+    description: hasMultipleItems ? 'Project Overview (All Items)' : 'Description',
+    items: hasMultipleItems ? 'Project Includes' : 'Item',
+    showSelectedItem: hasMultipleItems && Boolean(selectedItemLabel),
+  };
+}
+
 function isPlaceholderAddress(value?: string | null) {
   const normalized = value?.trim();
   if (!normalized) return true;

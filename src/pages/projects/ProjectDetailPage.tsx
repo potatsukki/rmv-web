@@ -58,7 +58,7 @@ import { ContractStatus, DELIVERY_TYPE_LABELS, DeliveryType, Role, StaffAvailabi
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications } from '@/lib/service-specifications';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
-import { getItemScopedProjectValue, getProjectDisplaySiteAddress } from '@/lib/project-display';
+import { getItemScopedProjectValue, getProjectDisplaySiteAddress, getProjectSnapshotLabels } from '@/lib/project-display';
 import { cn, extractErrorMessage } from '@/lib/utils';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import type { ApiResponse, PaymentPlan, ProjectItem, VisitReport } from '@/lib/types';
@@ -1180,6 +1180,7 @@ export function ProjectDetailPage() {
   const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
   const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
   const headerTitle = activeProjectServiceLabel || projectServiceTitle;
+  const projectSnapshotLabels = getProjectSnapshotLabels(projectServiceItems.length, activeProjectServiceLabel);
   const approvedProjectCost = getPositiveAmount(project.totalCost);
   const approvedItemQuotationTotal = blueprint?.status === 'approved'
     ? getPositiveAmount(blueprint.quotation?.total)
@@ -1554,23 +1555,21 @@ export function ProjectDetailPage() {
         >
           {/* Project Info */}
           <DetailSectionCard
-            title="Project Snapshot"
+            title={projectSnapshotLabels.title}
             icon={FileText}
             className="lg:col-span-2"
             action={<StatusBadge status={projectStatusBadgeStatus} label={projectStatusBadgeLabel} />}
           >
             <div className="grid gap-3">
+              {projectSnapshotLabels.showSelectedItem && (
+                <DetailField label="Selected Item" value={activeProjectServiceLabel} />
+              )}
               {project.description && (
-                <DetailField label="Description" value={project.description} />
+                <DetailField label={projectSnapshotLabels.description} value={project.description} />
               )}
               {project.serviceType && (
-                <DetailField label="Items">
+                <DetailField label={projectSnapshotLabels.items}>
                   <p>{projectServiceTitle}</p>
-                  {activeProjectServiceLabel && projectServiceItems.length > 1 && (
-                    <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
-                      Viewing: <span className="text-sky-700 dark:text-sky-200">{activeProjectServiceLabel}</span>
-                    </p>
-                  )}
                 </DetailField>
               )}
               <DetailField label="Delivery Type">
