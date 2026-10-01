@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, FolderPlus, Loader2, Search } from 'lucide-react';
+import { ArrowLeft, FolderPlus, Loader2, MapPin, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -13,7 +13,7 @@ import { DesignTemplateSelector } from '@/components/shared/DesignTemplateSelect
 import { ServiceSpecificationForm } from '@/components/shared/ServiceSpecificationForm';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { FileUpload } from '@/components/shared/FileUpload';
-import { useAppointment } from '@/hooks/useAppointments';
+import { useAppointment, useAvailableSlots } from '@/hooks/useAppointments';
 import { useCreateProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
@@ -49,6 +49,16 @@ function serviceLabel(serviceType?: string, custom?: string) {
   return serviceType ? SERVICE_TYPE_LABELS[serviceType] || serviceType : '';
 }
 
+function localDateAfter(days: number) {
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + days);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function CreateProjectPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -74,7 +84,11 @@ export function CreateProjectPage() {
   const [contractFileKeys, setContractFileKeys] = useState<string[]>([]);
   const [attachments, setAttachments] = useState({ photoKeys: [] as string[], videoKeys: [] as string[], sketchKeys: [] as string[], referenceImageKeys: [] as string[] });
   const [uploads, setUploads] = useState<Record<string, boolean>>({});
+  const [projectPath, setProjectPath] = useState<'direct' | 'ocular'>('direct');
+  const [ocularVisitDate, setOcularVisitDate] = useState('');
+  const [ocularVisitSlot, setOcularVisitSlot] = useState('');
   const isUploading = Object.values(uploads).some(Boolean);
+  const availableOcularSlots = useAvailableSlots(ocularVisitDate, 'ocular');
 
   function selectDesign(template: DesignTemplate) {
     setSelectedDesign(template);
@@ -180,13 +194,29 @@ export function CreateProjectPage() {
       toast.error('Upload the signed contract before creating the project.');
       return;
     }
+    if (projectPath === 'ocular') {
+      if (!appointmentId) {
+        toast.error('Open Create Project from a completed appointment before scheduling an ocular visit.');
+        return;
+      }
+      if (!ocularVisitDate || !ocularVisitSlot) {
+        toast.error('Select the ocular visit date and time.');
+        return;
+      }
+      const selectedSlot = availableOcularSlots.data?.slots.find((slot) => slot.slotCode === ocularVisitSlot);
+      if (!selectedSlot?.available) {
+        toast.error('Select an available ocular visit time.');
+        return;
+      }
+    }
 
     const form = new FormData(event.currentTarget);
     const value = (name: string) => String(form.get(name) || '').trim();
-    const title = value('title');
+    const title = defaultTitle
+      || `${serviceLabel(serviceType, value('serviceTypeCustom')) || 'Custom'} Project`.slice(0, 100);
     const description = value('description');
     const siteAddress = value('siteAddress');
-    if (!title || !serviceType || !deliveryType || !description || !siteAddress) {
+    if (!serviceType || !deliveryType || !description || !siteAddress) {
       toast.error('Complete the required project information.');
       return;
     }
@@ -231,8 +261,13 @@ export function CreateProjectPage() {
         quantity: value('quantity') ? Number(value('quantity')) : undefined,
         notes: value('notes') || undefined,
         contractFileKey: contractFileKeys[0],
+        ocularVisit: projectPath === 'ocular'
+          ? { date: ocularVisitDate, slotCode: ocularVisitSlot }
+          : undefined,
       });
-      toast.success('Project created successfully.');
+      toast.success(projectPath === 'ocular'
+        ? 'Project created and ocular visit scheduled.'
+        : 'Project created successfully.');
       navigate(`/projects/${project._id}`);
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Failed to create project.'));
@@ -273,6 +308,78 @@ export function CreateProjectPage() {
                 onUploadComplete={setContractFileKeys}
                 onUploadingChange={(active) => setUploads((current) => current.contract === active ? current : { ...current, contract: active })}
               />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Project Workflow</CardTitle>
+              <CardDescription>Choose whether this project can proceed directly or needs an ocular site visit first.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <button
+                  type="button"
+                  aria-pressed={projectPath === 'direct'}
+                  onClick={() => setProjectPath('direct')}
+                  className={`rounded-xl border p-4 text-left transition-colors ${projectPath === 'direct' ? 'border-blue-400 bg-blue-50 text-blue-950 dark:border-blue-500/60 dark:bg-blue-500/10 dark:text-blue-100' : 'hover:bg-muted'}`}
+                >
+                  <p className="text-sm font-semibold">Create Project</p>
+                  <p className="mt-1 text-xs opacity-75">Send the completed project details to engineering.</p>
+                </button>
+                <button
+                  type="button"
+                  aria-pressed={projectPath === 'ocular'}
+                  disabled={!appointmentId}
+                  onClick={() => setProjectPath('ocular')}
+                  className={`rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${projectPath === 'ocular' ? 'border-emerald-400 bg-emerald-50 text-emerald-950 dark:border-emerald-500/60 dark:bg-emerald-500/10 dark:text-emerald-100' : 'hover:bg-muted'}`}
+                >
+                  <p className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4" />Ocular Visit</p>
+                  <p className="mt-1 text-xs opacity-75">Create the project first, then collect and verify details on site.</p>
+                </button>
+              </div>
+
+              {!appointmentId && (
+                <p className="text-xs text-muted-foreground">Ocular Visit is available when this page is opened from a completed appointment.</p>
+              )}
+
+              {projectPath === 'ocular' && (
+                <div className="grid gap-4 rounded-xl border bg-muted/30 p-4 sm:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label htmlFor="project-ocular-date">Ocular Visit Date *</Label>
+                    <Input
+                      id="project-ocular-date"
+                      type="date"
+                      min={localDateAfter(3)}
+                      value={ocularVisitDate}
+                      onChange={(event) => {
+                        setOcularVisitDate(event.target.value);
+                        setOcularVisitSlot('');
+                      }}
+                      required
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="project-ocular-slot">Time Slot *</Label>
+                    <select
+                      id="project-ocular-slot"
+                      value={ocularVisitSlot}
+                      onChange={(event) => setOcularVisitSlot(event.target.value)}
+                      className={selectClassName}
+                      required
+                      disabled={!ocularVisitDate || availableOcularSlots.isLoading}
+                    >
+                      <option value="">{availableOcularSlots.isLoading ? 'Checking slots…' : 'Select an available time'}</option>
+                      {availableOcularSlots.data?.slots.filter((slot) => slot.available).map((slot) => (
+                        <option key={slot.slotCode} value={slot.slotCode}>{slot.slotCode}</option>
+                      ))}
+                    </select>
+                    {ocularVisitDate && !availableOcularSlots.isLoading && availableOcularSlots.data?.slots.every((slot) => !slot.available) && (
+                      <p className="text-xs text-destructive">No available ocular slots on this date.</p>
+                    )}
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -338,7 +445,11 @@ export function CreateProjectPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2"><Label htmlFor="project-title">Project Title *</Label><Input id="project-title" name="title" required maxLength={100} defaultValue={defaultTitle} /></div>
+                <div className="space-y-2">
+                  <Label htmlFor="project-id-preview">Unique Project ID</Label>
+                  <Input id="project-id-preview" value="Generated automatically after creation" readOnly aria-describedby="project-id-format" />
+                  <p id="project-id-format" className="text-xs text-muted-foreground">Format: PRJ-YYYY-#####</p>
+                </div>
                 <div className="space-y-2">
                   <Label htmlFor="project-service">Service Type *</Label>
                   <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
@@ -405,7 +516,13 @@ export function CreateProjectPage() {
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
             <Button type="submit" disabled={!customer || !contractFileKeys[0] || isUploading || createProject.isPending}>
               {createProject.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
-              {createProject.isPending ? 'Creating…' : isUploading ? 'Uploading…' : 'Create Project'}
+              {createProject.isPending
+                ? 'Creating…'
+                : isUploading
+                  ? 'Uploading…'
+                  : projectPath === 'ocular'
+                    ? 'Create Project & Schedule Ocular Visit'
+                    : 'Create Project'}
             </Button>
           </div>
         </fieldset>

@@ -718,7 +718,7 @@ export function AppointmentDetailPage() {
             <div>
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Site Location Required</p>
               <p className="text-xs text-blue-700 dark:text-blue-200 mt-0.5">
-                Your consultation is ready for an ocular visit. Submit your site pin and official address below so we can calculate whether the ocular visit is free within Metro Manila or has an outside-area fee.
+                This project has a scheduled ocular visit. Submit your site pin and official address below so we can calculate whether the visit is free within Metro Manila or has an outside-area fee.
               </p>
             </div>
           </CardContent>
@@ -1253,7 +1253,7 @@ export function AppointmentDetailPage() {
           <CardContent className="space-y-4">
             <p className="text-sm text-blue-800 dark:text-blue-200/90">
               {isReadyForOcularConsultation ? (
-                'Your consultation is ready for an ocular visit. Select the exact project site below so we can calculate the visit fee and continue scheduling.'
+                'This project has a scheduled ocular visit. Select the exact project site below so we can calculate the visit fee and finalize the schedule.'
               ) : (
                 <>
                   An ocular visit has been scheduled for{' '}
