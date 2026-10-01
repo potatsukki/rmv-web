@@ -769,7 +769,7 @@ function CustomerDashboard({
         title={<><span>Good to see you, </span><em>{firstName}.</em></>}
         description="Track your project, review important updates, and take the next step whenever you are ready."
         image="/landing/hero/hero-stainless-railing-bg.png"
-        actions={<Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]"><CalendarPlus className="h-4 w-4" /> Request a quote <ArrowRight className="h-4 w-4" /></Link>}
+        actions={<Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]"><CalendarPlus className="h-4 w-4" /> BOOK AN APPOINTMENT <ArrowRight className="h-4 w-4" /></Link>}
       />
 
       <section aria-labelledby="customer-sample-projects-heading">
@@ -902,7 +902,7 @@ function CustomerDashboard({
               <Link to={`/projects/${activeProject._id}`} className="workspace-focus mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#f5b400] hover:text-[#ffd047]">Open project <ArrowRight className="h-4 w-4" /></Link>
             </div>
           ) : (
-            <div className="p-6"><p className="text-sm font-semibold text-slate-200">No active project yet</p><p className="mt-2 max-w-md text-sm leading-6 text-slate-400">When a project starts, its current status and next steps will appear here.</p><Link to="/appointments/book" className="workspace-focus mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#f5b400] hover:text-[#ffd047]">Request a quote <ArrowRight className="h-4 w-4" /></Link></div>
+            <div className="p-6"><p className="text-sm font-semibold text-slate-200">No active project yet</p><p className="mt-2 max-w-md text-sm leading-6 text-slate-400">When a project starts, its current status and next steps will appear here.</p><Link to="/appointments/book" className="workspace-focus mt-5 inline-flex items-center gap-2 text-sm font-bold text-[#f5b400] hover:text-[#ffd047]">BOOK AN APPOINTMENT <ArrowRight className="h-4 w-4" /></Link></div>
           )}
         </div>
         <div className="workspace-panel overflow-hidden">
@@ -915,7 +915,7 @@ function CustomerDashboard({
 
       <section className="workspace-panel flex flex-col gap-5 overflow-hidden px-6 py-6 md:flex-row md:items-center md:justify-between" style={{ backgroundImage: "linear-gradient(90deg, rgba(9,11,13,.96), rgba(9,11,13,.7)), url('/landing/about-legacy-welder.png')", backgroundSize: 'cover', backgroundPosition: 'right center' }}>
         <div><p className="workspace-eyebrow">Ready when you are</p><h2 className="mt-2 text-xl font-bold text-[#f7f7f5]">Have a new fabrication project in mind?</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">Tell us what you need and the RMV team will guide you through the existing consultation and site-review process.</p></div>
-        <Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]">Request a quote <ArrowRight className="h-4 w-4" /></Link>
+        <Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]">BOOK AN APPOINTMENT <ArrowRight className="h-4 w-4" /></Link>
       </section>
     </div>
   );
