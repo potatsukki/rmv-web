@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router';
+import { useNavigate, useSearchParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -13,6 +13,7 @@ import {
   Mail,
   Phone,
   X,
+  Info,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -21,10 +22,13 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { useAvailableSlots, useAgentCreateAppointment } from '@/hooks/useAppointments';
+import { useAvailableSlots, useAgentCreateAppointment, useAgentCreateOcular } from '@/hooks/useAppointments';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { AppointmentType, Role, SLOT_CODES, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
+import type { MapPoint } from '@/lib/maps';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api';
+import type { ApiResponse } from '@/lib/types';
 import { useAuthStore } from '@/stores/auth.store';
 
 /* ── Helpers ── */
@@ -41,7 +45,7 @@ function formatSlotTime(slotCode: string): string {
 /* ── Schema ── */
 
 const bookingSchema = z.object({
-  type: z.literal(AppointmentType.OFFICE),
+  type: z.enum(['office', 'ocular']),
   date: z.string().min(1, 'Please select a date'),
   slotCode: z.string().min(1, 'Please select a time slot'),
   purpose: z.string().max(500).optional(),
@@ -55,7 +59,14 @@ export function AgentBookAppointmentPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const isAppointmentAgent = !!user?.roles?.includes(Role.APPOINTMENT_AGENT);
+  const isSalesStaff = !!user?.roles?.includes(Role.SALES_STAFF);
+  const [searchParams] = useSearchParams();
+  const ocularForCustomerId = searchParams.get('ocularFor');
+  const recommendedDate = searchParams.get('recommendedDate');
+  const recommendedSlot = searchParams.get('recommendedSlot');
   const canCreateOfficeForCustomer = isAppointmentAgent;
+  const canBookOcularAsStaff = isSalesStaff;
+  const isOcularMode = !!ocularForCustomerId && canBookOcularAsStaff;
 
   /* ── Step 1: Customer Search ── */
   const [searchTerm, setSearchTerm] = useState('');
@@ -70,7 +81,9 @@ export function AgentBookAppointmentPage() {
   const { data: customers, isLoading: isSearching } = useCustomerSearch(debouncedSearch);
 
   /* ── Step 2: Booking Form ── */
-  const defaultDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
+  const defaultDate = recommendedDate && recommendedDate >= format(addDays(new Date(), 3), 'yyyy-MM-dd')
+    ? recommendedDate
+    : format(addDays(new Date(), 3), 'yyyy-MM-dd');
 
   const {
     register,
@@ -81,8 +94,11 @@ export function AgentBookAppointmentPage() {
   } = useForm<BookingForm>({
     resolver: zodResolver(bookingSchema),
     defaultValues: {
-      type: AppointmentType.OFFICE,
+      type: canCreateOfficeForCustomer && !canBookOcularAsStaff
+        ? AppointmentType.OFFICE
+        : AppointmentType.OCULAR,
       date: defaultDate,
+      ...(recommendedSlot && { slotCode: recommendedSlot }),
     },
   });
 
@@ -91,15 +107,50 @@ export function AgentBookAppointmentPage() {
   const selectedSlot = watch('slotCode');
   const minDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
 
+  const [selectedLocation, setSelectedLocation] = useState<MapPoint | null>(null);
+  const [formattedAddress, setFormattedAddress] = useState('');
+
+  const isOcularBooking = selectedType === AppointmentType.OCULAR;
+
   const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(selectedDate, selectedType);
 
   const createMutation = useAgentCreateAppointment();
+  const createOcularMutation = useAgentCreateOcular();
+
+  // Auto-fetch customer when ocularFor param is present
+  useEffect(() => {
+    if (ocularForCustomerId && !selectedCustomer) {
+      api.get<ApiResponse<CustomerSearchResult>>(`/users/customers/${ocularForCustomerId}`)
+        .then(res => setSelectedCustomer(res.data.data))
+        .catch(() => toast.error('Failed to load customer'));
+    }
+  }, [ocularForCustomerId]);
 
   useEffect(() => {
-    if (canCreateOfficeForCustomer) return;
-    toast.error('Ocular visits are scheduled while creating a project.');
-    navigate('/projects/create', { replace: true });
-  }, [canCreateOfficeForCustomer, navigate]);
+    if (!ocularForCustomerId || canBookOcularAsStaff) return;
+    toast.error('Only sales staff can open the ocular scheduling flow.');
+    navigate('/appointments/create-for-customer', { replace: true });
+  }, [canBookOcularAsStaff, navigate, ocularForCustomerId]);
+
+  // Reset location state when switching away from ocular
+  useEffect(() => {
+    if (!isOcularBooking) {
+      setSelectedLocation(null);
+      setFormattedAddress('');
+    }
+  }, [isOcularBooking]);
+
+  useEffect(() => {
+    if (!canBookOcularAsStaff && selectedType === AppointmentType.OCULAR) {
+      setValue('type', AppointmentType.OFFICE);
+    }
+  }, [canBookOcularAsStaff, selectedType, setValue]);
+
+  useEffect(() => {
+    if (!canCreateOfficeForCustomer && selectedType === AppointmentType.OFFICE) {
+      setValue('type', AppointmentType.OCULAR);
+    }
+  }, [canCreateOfficeForCustomer, selectedType, setValue]);
 
   const onSubmit = async (data: BookingForm) => {
     if (!selectedCustomer) {
@@ -108,21 +159,40 @@ export function AgentBookAppointmentPage() {
     }
 
     try {
-      if (!canCreateOfficeForCustomer) {
-        toast.error('Only appointment agents can create the first office consultation for a customer.');
-        return;
-      }
+      if (data.type === AppointmentType.OCULAR) {
+        if (!canBookOcularAsStaff) {
+          toast.error('Only sales staff can schedule ocular visits after consultation.');
+          return;
+        }
 
-      await createMutation.mutateAsync({
-        customerId: selectedCustomer._id,
-        type: AppointmentType.OFFICE,
-        date: data.date,
-        slotCode: data.slotCode,
-        purpose: data.purpose,
-      });
-      toast.success(
-        `Appointment created for ${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
-      );
+        // New flow: create ocular without location, customer provides later
+        await createOcularMutation.mutateAsync({
+          customerId: selectedCustomer._id,
+          date: data.date,
+          slotCode: data.slotCode,
+        });
+        toast.success(
+          `Ocular scheduled for ${selectedCustomer.firstName} ${selectedCustomer.lastName}. Customer will provide their location.`,
+        );
+      } else {
+        if (!canCreateOfficeForCustomer) {
+          toast.error('Only appointment agents can create the first office consultation for a customer.');
+          return;
+        }
+
+        await createMutation.mutateAsync({
+          customerId: selectedCustomer._id,
+          type: data.type,
+          date: data.date,
+          slotCode: data.slotCode,
+          purpose: data.purpose,
+          customerLocation: selectedLocation ?? undefined,
+          formattedAddress: formattedAddress || undefined,
+        });
+        toast.success(
+          `Appointment created for ${selectedCustomer.firstName} ${selectedCustomer.lastName}`,
+        );
+      }
 
       navigate('/appointments');
     } catch (error: unknown) {
@@ -131,10 +201,11 @@ export function AgentBookAppointmentPage() {
   };
 
   const submitDisabled = useMemo(() => {
-    if (createMutation.isPending || !selectedSlot || !selectedCustomer) return true;
+    if ((createMutation.isPending || createOcularMutation.isPending) || !selectedSlot || !selectedCustomer) return true;
     return false;
   }, [
     createMutation.isPending,
+    createOcularMutation.isPending,
     selectedCustomer,
     selectedSlot,
   ]);
@@ -160,10 +231,12 @@ export function AgentBookAppointmentPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
-            Create Appointment
+            {isOcularMode ? `Schedule ${APPOINTMENT_TYPE_LABELS['ocular']}` : 'Create Appointment'}
           </h1>
           <p className="text-sm text-[#6e6e73] dark:text-slate-400">
-            Book an office consultation on behalf of a customer
+            {isOcularMode
+              ? 'Customer will provide location after booking'
+              : 'Book an appointment on behalf of a customer'}
           </p>
         </div>
       </div>
@@ -296,6 +369,20 @@ export function AgentBookAppointmentPage() {
       {/* Step 2: Booking form (shown after selecting customer) */}
       {selectedCustomer && (
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {/* Pre-filled recommendation banner */}
+          {(recommendedDate || recommendedSlot) && (
+            <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-4 dark:border-[#3d587d] dark:bg-[#112035]">
+              <Info className="mt-0.5 h-5 w-5 shrink-0 text-blue-600 dark:text-[#8ec5ff]" />
+              <div className="text-sm text-blue-800 dark:text-[#c8dfff]">
+                <p className="font-medium">Pre-filled from consultation recommendation</p>
+                <p className="mt-0.5 text-blue-600 dark:text-[#8fb7df]">
+                  {recommendedDate && `Date: ${recommendedDate}`}
+                  {recommendedDate && recommendedSlot && ' · '}
+                  {recommendedSlot && `Time: ${formatSlotTime(recommendedSlot)}`}
+                </p>
+              </div>
+            </div>
+          )}
           {/* Visit Type & Date */}
           <Card className={sectionCardClassName}>
             <CardHeader>
@@ -313,12 +400,19 @@ export function AgentBookAppointmentPage() {
                       value: AppointmentType.OFFICE,
                       label: APPOINTMENT_TYPE_LABELS[AppointmentType.OFFICE],
                       desc: 'Customer visits the shop',
+                      show: canCreateOfficeForCustomer,
                     },
-                  ].map((opt) => (
+                    {
+                      value: AppointmentType.OCULAR,
+                      label: APPOINTMENT_TYPE_LABELS[AppointmentType.OCULAR],
+                      desc: 'Staff visits customer site',
+                      show: canBookOcularAsStaff,
+                    },
+                  ].filter((opt) => opt.show).map((opt) => (
                     <button
                       key={opt.value}
                       type="button"
-                      onClick={() => setValue('type', AppointmentType.OFFICE)}
+                      onClick={() => setValue('type', opt.value)}
                       className={cn(
                         'rounded-xl border-2 p-4 text-left transition-all',
                         selectedType === opt.value
@@ -331,9 +425,16 @@ export function AgentBookAppointmentPage() {
                     </button>
                   ))}
                 </div>
-                <p className="text-xs text-amber-700 dark:text-amber-300">
-                  Ocular visits are scheduled from Create Project after the consultation is completed.
-                </p>
+                {!canCreateOfficeForCustomer && canBookOcularAsStaff && (
+                  <p className="text-xs text-blue-700 dark:text-blue-300">
+                    Sales staff can only schedule ocular visits here. First consultations must be created by an appointment agent or the customer.
+                  </p>
+                )}
+                {canCreateOfficeForCustomer && !canBookOcularAsStaff && (
+                  <p className="text-xs text-amber-700 dark:text-amber-300">
+                    Appointment agents can only create the first office consultation. Ocular scheduling is handled by sales staff after consultation.
+                  </p>
+                )}
               </div>
 
               <div className="space-y-1.5">
@@ -350,6 +451,18 @@ export function AgentBookAppointmentPage() {
                 {errors.date && <p className="text-sm text-red-500">{errors.date.message}</p>}
               </div>
 
+              {/* Ocular info banner */}
+              {isOcularBooking && (
+                <div className="flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 p-3.5 dark:border-[#3d587d] dark:bg-[#112035]">
+                  <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-[#8ec5ff]" />
+                  <div className="text-sm text-blue-800 dark:text-[#c8dfff]">
+                    <p className="font-medium">No location needed yet</p>
+                    <p className="mt-0.5 text-xs text-blue-700 dark:text-[#8fb7df]">
+                      After scheduling, the customer will be notified to provide their site location. You will finalize the visit once they submit it.
+                    </p>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
@@ -429,12 +542,14 @@ export function AgentBookAppointmentPage() {
             size="lg"
             disabled={submitDisabled}
           >
-            {createMutation.isPending ? (
+            {(createMutation.isPending || createOcularMutation.isPending) ? (
               <Loader2 className="mr-2 h-4 w-4 animate-spin" />
             ) : (
               <CheckCircle className="mr-2 h-4 w-4" />
             )}
-            Create Appointment for {selectedCustomer.firstName}
+            {isOcularBooking
+              ? `Schedule Ocular for ${selectedCustomer.firstName}`
+              : `Create Appointment for ${selectedCustomer.firstName}`}
           </Button>
         </form>
       )}

@@ -1339,7 +1339,7 @@ export function ProjectDetailPage() {
       </div>
 
       {/* ── Customer Status Guide Banner ── */}
-      {project.status === 'draft' && visitReport && (
+      {project.status === 'draft' && visitReport?.visitType === 'consultation' && (
         <Card className={cn(
           'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
           isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-blue-200 bg-blue-50/50'
@@ -1348,11 +1348,11 @@ export function ProjectDetailPage() {
             <Info className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-slate-300' : 'text-blue-600')} />
             <div>
               <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-blue-900')}>
-                {visitReport.visitType === 'ocular' ? 'Awaiting ocular visit' : 'Complete project details'}
+                {visitReport.consultationOutcome === 'no_ocular' ? 'Complete project details' : 'Awaiting ocular visit'}
               </p>
               <p className={cn('mt-0.5 text-xs', isDark ? 'text-slate-400' : 'text-blue-700')}>
-                {visitReport.visitType !== 'ocular'
-                  ? 'Complete and review the project details before submitting it to engineering.'
+                {visitReport.consultationOutcome === 'no_ocular'
+                  ? 'Ocular was skipped for this consultation. Complete and review the project details before submitting it to engineering.'
                   : isEngineer
                     ? 'Engineering work starts after the ocular visit is finalized and its report moves this project into the submitted stage.'
                     : 'This draft came from the consultation stage. The next step is to finalize the ocular visit before engineering begins.'}

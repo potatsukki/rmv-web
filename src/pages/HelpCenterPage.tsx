@@ -203,7 +203,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: APPOINTMENT_HELP_ROLES,
         body: [
           'Customers can book their own first office consultation, while appointment agents can create that consultation on behalf of a customer.',
-          'After consultation, sales staff creates the project and chooses the Ocular Visit option there when site verification is needed.',
+          'Sales staff should only schedule ocular visits after consultation, not the customer’s first appointment.',
           'If the customer decides not to proceed during consultation, assigned sales staff can mark Customer Declined so the appointment is cancelled and the report workflow stops.',
           'Status changes are visible in the appointment detail flow and reflected in notifications.',
           'Cashiers and admins can coordinate on ocular fee queues when manual payment review is involved.',

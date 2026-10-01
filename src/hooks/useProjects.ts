@@ -108,10 +108,6 @@ export function useCreateProject() {
       contractFileName?: string;
       contractContentType?: string;
       contractFileSize?: number;
-      ocularVisit?: {
-        date: string;
-        slotCode: string;
-      };
     }) => {
       const { data } = await api.post<ApiResponse<Project>>('/projects', body);
       return data.data;

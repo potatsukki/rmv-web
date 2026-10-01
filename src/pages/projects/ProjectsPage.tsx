@@ -146,8 +146,8 @@ export function ProjectsPage() {
       {/* Controls */}
       <CollectionToolbar
         title={isCustomer ? 'Track your projects' : 'Find a project faster'}
-        description={isCustomer ? 'Review each project’s current stage, service details, and next action.' : 'Search by Unique Project ID or service, then narrow the list by stage.'}
-        searchPlaceholder="Search by Unique Project ID or service"
+        description={isCustomer ? 'Review each project’s current stage, service details, and next action.' : 'Search by project name or ID, then narrow the list by stage.'}
+        searchPlaceholder="Search by project name or ID"
         searchValue={search}
         onSearchChange={setSearch}
         filters={STATUS_FILTERS}
@@ -201,7 +201,7 @@ export function ProjectsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Unique Project ID</TableHead>
+                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Project</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Status</TableHead>
                   {isStaff && (
                     <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Customer</TableHead>
@@ -252,11 +252,11 @@ export function ProjectsPage() {
                           <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${cfg.bar}`} />
                           <div className="min-w-0">
                             <p className="max-w-[260px] truncate text-[15px] font-medium text-[var(--color-card-foreground)] transition-colors group-hover:text-[var(--text-metal-color)]">
-                              {project.projectNumber || 'ID pending'}
+                              {serviceLabel}
                             </p>
-                            {serviceLabel && (
+                            {project.projectNumber && (
                               <p className="text-[10px] font-bold text-[var(--text-metal-color)] tracking-tight">
-                                {serviceLabel}
+                                {project.projectNumber}
                               </p>
                             )}
                           </div>
@@ -374,8 +374,13 @@ export function ProjectsPage() {
                     <div className="flex items-center gap-2 min-w-0">
                       <div className={`h-2 w-2 rounded-full shrink-0 ${cfg.bar}`} />
                       <p className="truncate text-[15px] font-semibold text-[var(--color-card-foreground)]">
-                        {project.projectNumber || 'ID pending'}
+                        {serviceLabel}
                       </p>
+                      {project.projectNumber && (
+                        <span className="text-[10px] font-bold text-[var(--text-metal-color)] tracking-tight bg-[color:var(--color-muted)] px-1 rounded">
+                          {project.projectNumber}
+                        </span>
+                      )}
                     </div>
                     <StatusBadge status={displayStatus} label={displayLabel} className="shrink-0 text-[11px] uppercase" />
                   </div>
