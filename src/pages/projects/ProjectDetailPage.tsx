@@ -59,6 +59,7 @@ import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngin
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications } from '@/lib/service-specifications';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { getItemScopedProjectValue, getProjectDisplaySiteAddress, getProjectSnapshotLabels } from '@/lib/project-display';
+import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
 import { cn, extractErrorMessage } from '@/lib/utils';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import type { ApiResponse, PaymentPlan, ProjectItem, VisitReport } from '@/lib/types';
@@ -563,6 +564,11 @@ export function ProjectDetailPage() {
     [projectServiceItems],
   );
   const projectPaymentPlanQueries = useProjectPaymentPlans(id!, projectPaymentPlanItemIds);
+  const projectPaymentPlansLoading = projectPaymentPlanQueries.some((query) => query.isLoading);
+  const projectPaymentSummary = useMemo(() => summarizeProjectPaymentPlans(
+    projectServiceItems.map((item) => ({ id: item.id, label: item.label })),
+    projectPaymentPlanQueries.map((query) => query.data),
+  ), [projectPaymentPlanQueries, projectServiceItems]);
 
   // ── Mutations ──
   const assignEngineers = useAssignEngineers();
@@ -825,8 +831,7 @@ export function ProjectDetailPage() {
     || project?.status === ProjectStatus.COMPLETED
     || (
       projectPaymentPlanItemIds.length > 0
-      && projectPaymentPlanQueries.length === projectPaymentPlanItemIds.length
-      && projectPaymentPlanQueries.every((query) => query.data?.stages?.[0]?.status === 'verified')
+      && projectPaymentSummary.allInitialPaymentsVerified
     )
     || (
       projectPaymentPlanItemIds.length === 0
@@ -2673,6 +2678,45 @@ export function ProjectDetailPage() {
       </div>
 
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
+      {activeTab === 'payments' && projectServiceItems.length > 1 && (
+        <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
+          <CardHeader className="px-4 sm:px-6">
+            <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <CardTitle className={`text-base sm:text-lg ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Project Payment Summary</CardTitle>
+                <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
+                  All project items are listed, including items whose payment plan is not ready yet.
+                </p>
+              </div>
+              {!projectPaymentPlansLoading && (
+                <div className="text-left sm:text-right">
+                  <p className={`text-[10px] font-semibold uppercase tracking-[0.14em] ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>
+                    {projectPaymentSummary.hasAllPlans ? 'Combined Project Total' : 'Available Plans Total'}
+                  </p>
+                  <p className={`text-lg font-semibold ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`}>
+                    {shouldHideAmount ? 'Hidden for your role' : formatCurrency(projectPaymentSummary.combinedTotal)}
+                  </p>
+                </div>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-2 px-4 sm:px-6">
+            {projectPaymentPlansLoading ? (
+              <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-slate-600'}`}>Loading all item payment plans…</p>
+            ) : projectPaymentSummary.rows.map((row) => (
+              <div key={row.id} className="flex flex-col gap-1 rounded-xl border border-[color:var(--color-border)]/55 bg-slate-50 px-3.5 py-3 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{row.label}</p>
+                  <p className={`text-xs ${row.readiness === 'verified' ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{row.readinessLabel}</p>
+                </div>
+                <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
+                  {row.totalAmount === undefined ? 'Amount unavailable' : shouldHideAmount ? '***' : formatCurrency(row.totalAmount)}
+                </p>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
       {activeTab === 'payments' && isCustomer && !paymentPlan && (
         <div
           className="w-full"
@@ -2845,6 +2889,30 @@ export function ProjectDetailPage() {
                   <Users className="mr-1.5 h-4 w-4" />
                   Assign Team
                 </Button>
+              </CardContent>
+            </Card>
+          )}
+
+          {!canStartFabricationSetup && isAssignedEngineer && !hasFabLead && !projectPaymentPlansLoading && (
+            <Card className={cn(
+              'rounded-none border-x-0 sm:rounded-xl sm:border-x',
+              isDark ? 'border-amber-400/25 bg-amber-500/10' : 'border-amber-200 bg-amber-50/70',
+            )}>
+              <CardContent className="flex items-start gap-3 p-4">
+                <LockKeyhole className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-amber-300' : 'text-amber-700')} />
+                <div className="min-w-0 flex-1">
+                  <p className={cn('text-sm font-semibold', isDark ? 'text-amber-100' : 'text-amber-900')}>Fabrication team assignment is locked</p>
+                  <p className={cn('mt-0.5 text-xs', isDark ? 'text-amber-200/80' : 'text-amber-800')}>
+                    Each project item needs a cashier-verified first payment before you can assign fabricators.
+                  </p>
+                  {projectPaymentSummary.outstandingRows.length > 0 && (
+                    <ul className={cn('mt-2 space-y-1 text-xs', isDark ? 'text-amber-100/90' : 'text-amber-900')}>
+                      {projectPaymentSummary.outstandingRows.map((row) => (
+                        <li key={row.id}>• {row.label}: {row.readinessLabel}</li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
