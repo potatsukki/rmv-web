@@ -1,4 +1,4 @@
-import { AppointmentStatus, PaymentStageStatus, ProjectStatus } from '@/lib/constants';
+import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus, ProjectStatus } from '@/lib/constants';
 import type { Appointment, Blueprint, PaymentPlan, Project, ProjectItem } from '@/lib/types';
 
 export type WorkflowStatusStage =
@@ -104,7 +104,7 @@ export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | u
   };
 }
 
-export function resolveAppointmentWorkflowStatus(appointment: Pick<Appointment, 'status' | 'ocularFeeStatus' | 'ocularFeePaid' | 'type'>): WorkflowStatus {
+export function resolveAppointmentWorkflowStatus(appointment: Pick<Appointment, 'status' | 'attendanceStatus' | 'ocularFeeStatus' | 'ocularFeePaid' | 'type'>): WorkflowStatus {
   const status = String(appointment.status || '');
 
   if (status === AppointmentStatus.CANCELLED) {
@@ -112,6 +112,15 @@ export function resolveAppointmentWorkflowStatus(appointment: Pick<Appointment, 
   }
   if (status === AppointmentStatus.NO_SHOW) {
     return { key: 'no_show', label: 'No Show', tone: 'gray', stage: 'cancelled', isTerminal: true };
+  }
+  if (status === AppointmentStatus.READY_FOR_OCULAR) {
+    return { key: 'ready_for_ocular', label: 'Ready for Ocular', tone: 'purple', stage: 'appointment', isTerminal: false };
+  }
+  if (
+    appointment.type === 'office'
+    && appointment.attendanceStatus === AppointmentAttendanceStatus.COMPLETED
+  ) {
+    return { key: 'appointment_done', label: 'Appointment Done', tone: 'green', stage: 'completed', isTerminal: true };
   }
   if (status === AppointmentStatus.COMPLETED) {
     return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
@@ -124,9 +133,6 @@ export function resolveAppointmentWorkflowStatus(appointment: Pick<Appointment, 
   }
   if (status === AppointmentStatus.CONFIRMED) {
     return { key: 'appointment_confirmed', label: 'Appointment Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false };
-  }
-  if (status === AppointmentStatus.READY_FOR_OCULAR) {
-    return { key: 'ready_for_ocular', label: 'Ready for Ocular', tone: 'purple', stage: 'appointment', isTerminal: false };
   }
   if (status === AppointmentStatus.RESCHEDULE_REQUESTED) {
     return { key: 'reschedule_requested', label: 'Reschedule Requested', tone: 'orange', stage: 'appointment', isTerminal: false };
