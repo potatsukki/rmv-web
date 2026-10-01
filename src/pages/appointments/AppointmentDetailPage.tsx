@@ -6,6 +6,7 @@ import toast from 'react-hot-toast';
 import { extractErrorMessage, cn } from '@/lib/utils';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
+import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -425,6 +426,8 @@ export function AppointmentDetailPage() {
 
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
+  const appointmentWorkflowStatus = resolveAppointmentWorkflowStatus(appt);
+  const isConsultationDone = appointmentWorkflowStatus.key === 'appointment_done';
   const selectedDesignTemplates = appt.selectedDesignTemplates?.length
     ? appt.selectedDesignTemplates
     : appt.selectedDesignTemplateName
@@ -600,7 +603,10 @@ export function AppointmentDetailPage() {
             Awaiting Payment
           </span>
         ) : (
-          <StatusBadge status={appt.status} />
+          <StatusBadge
+            status={isConsultationDone ? appointmentWorkflowStatus.key : appt.status}
+            label={isConsultationDone ? appointmentWorkflowStatus.label : undefined}
+          />
         )}
       </div>
 

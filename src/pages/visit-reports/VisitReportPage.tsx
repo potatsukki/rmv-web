@@ -951,6 +951,15 @@ export function VisitReportPage() {
     await saveDraft({ showSuccessToast: true, showErrorToast: true });
   };
 
+  const handleBack = async () => {
+    if (canEdit) {
+      const saved = await saveDraft({ showSuccessToast: false, showErrorToast: true });
+      if (!saved) return;
+    }
+
+    navigate(sourcePath || '/appointments?tab=visit-reports');
+  };
+
   const updateConsultationAttendance = async (action: 'check_in' | 'test_start') => {
     if (!appointmentId) return;
     try {
@@ -1217,7 +1226,8 @@ export function VisitReportPage() {
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => navigate(sourcePath || '/appointments?tab=visit-reports')}
+            onClick={handleBack}
+            disabled={updateMutation.isPending}
             className="rounded-xl text-gray-500 dark:text-slate-300 hover:text-gray-900 dark:hover:text-slate-100"
             aria-label="Go back"
           >

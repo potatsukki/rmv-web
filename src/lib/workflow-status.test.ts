@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
-import { PaymentStageStatus } from './constants';
+import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus } from './constants';
 import type { PaymentPlan } from './types';
-import { resolvePaymentWorkflowStatus } from './workflow-status';
+import { resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus } from './workflow-status';
 
 function paymentPlan(stages: PaymentPlan['stages']): PaymentPlan {
   return {
@@ -42,5 +42,36 @@ describe('resolvePaymentWorkflowStatus', () => {
     }])]);
 
     expect(status).toMatchObject({ key: 'paid', label: 'Fully Paid' });
+  });
+});
+
+describe('resolveAppointmentWorkflowStatus', () => {
+  it('labels a finished office consultation as Appointment Done', () => {
+    const completedConsultation = {
+      status: AppointmentStatus.CONFIRMED,
+      type: 'office',
+      attendanceStatus: AppointmentAttendanceStatus.COMPLETED,
+      ocularFeeStatus: undefined,
+      ocularFeePaid: false,
+    };
+
+    expect(resolveAppointmentWorkflowStatus(completedConsultation)).toMatchObject({
+      key: 'appointment_done',
+      label: 'Appointment Done',
+      tone: 'green',
+      isTerminal: true,
+    });
+  });
+
+  it('keeps the existing completed label for ocular appointments', () => {
+    expect(resolveAppointmentWorkflowStatus({
+      status: AppointmentStatus.COMPLETED,
+      type: 'ocular',
+      ocularFeeStatus: undefined,
+      ocularFeePaid: true,
+    })).toMatchObject({
+      key: 'appointment_completed',
+      label: 'Appointment Completed',
+    });
   });
 });
