@@ -44,6 +44,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { Role } from '@/lib/constants';
+import { QUOTATION_COPY } from '@/lib/quotation-copy';
 import type { Blueprint, BlueprintDraft, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
 import { resolveBlueprintWorkflowStatus } from '@/lib/workflow-status';
 
@@ -992,10 +993,10 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       </section>
 
       <section className={`rounded-xl border p-4 ${isDark ? 'border-slate-800 bg-slate-950/45' : 'border-[#e8e8ed] bg-white'}`}>
-        <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Commercial Terms</p>
+        <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{QUOTATION_COPY.detailsHeading}</p>
         <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
           <label className="block">
-            <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Quotation Validity</span>
+            <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>{QUOTATION_COPY.validityLabel}</span>
             <Select value={quotValidityDays} onValueChange={setQuotValidityDays}>
               <SelectTrigger className={`h-9 rounded-lg border px-3 text-sm ${isDark ? 'border-slate-700 bg-slate-950/70 text-slate-100' : 'border-[#d2d2d7] bg-[#f5f5f7]/50'}`}><SelectValue /></SelectTrigger>
               <SelectContent className={isDark ? 'border-slate-700 bg-slate-950 text-slate-100' : 'border-[#d2d2d7] bg-white'}>
@@ -1007,7 +1008,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
             </Select>
           </label>
           <label className="block">
-            <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>System Estimated Duration</span>
+            <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>{QUOTATION_COPY.estimatedTimeLabel}</span>
             <input value={quotSystemDuration} readOnly className={`${inputCls} opacity-80`} />
           </label>
         </div>
@@ -1341,7 +1342,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                               </p>
                               {blueprint.quotation?.estimatedDuration && (
                                 <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-                                  Estimated duration: {blueprint.quotation.estimatedDuration}
+                                  {QUOTATION_COPY.estimatedTimeLabel}: {blueprint.quotation.estimatedDuration}
                                 </p>
                               )}
                             </>
@@ -1837,7 +1838,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                           {formatCurrency(getPayableQuotationTotal(bp))}
                         </p>
                         {bp.quotation?.estimatedDuration && (
-                          <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>Estimated duration: {bp.quotation.estimatedDuration}</p>
+                          <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{QUOTATION_COPY.estimatedTimeLabel}: {bp.quotation.estimatedDuration}</p>
                         )}
                       </>
                     )}

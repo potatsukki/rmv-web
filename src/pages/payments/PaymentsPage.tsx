@@ -55,6 +55,7 @@ import {
 import { useUnpaidOcularFees } from '@/hooks/useAppointments';
 import { resolvePaymentWorkflowStatus } from '@/lib/workflow-status';
 import { getProjectDisplaySiteAddress } from '@/lib/project-display';
+import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
 
 
 import { CashierQueuePage } from './CashierQueuePage';
@@ -112,7 +113,7 @@ type PaymentListProject = {
     };
   };
   status: string;
-  items?: { _id: string; status: string }[];
+  items?: { _id: string; status: string; title?: string }[];
 };
 
 const getPaymentProjectCustomerName = (project: PaymentListProject) => {
@@ -379,6 +380,13 @@ export function PaymentsPage() {
   );
   const selectedProjectPlanQueries = useProjectPaymentPlans(selectedProjectId, selectedProjectItemIds);
   const selectedProjectPlansLoading = selectedProjectPlanQueries.some((query) => query.isLoading);
+  const selectedProjectPaymentSummary = useMemo(() => summarizeProjectPaymentPlans(
+    (selectedProject?.items || []).map((item, index) => ({
+      id: String(item._id),
+      label: String(item.title || `Item ${index + 1}`),
+    })),
+    selectedProjectPlanQueries.map((query) => query.data),
+  ), [selectedProject?.items, selectedProjectPlanQueries]);
   const paymentReadyItems = useMemo(() => (
     (selectedProject?.items || []).filter((_item, index) => Boolean(selectedProjectPlanQueries[index]?.data))
   ), [selectedProject?.items, selectedProjectPlanQueries]);
@@ -875,28 +883,76 @@ export function PaymentsPage() {
             )}
           </div>
 
-          {/* Item Selector (if multi-item) */}
-          {paymentReadyItems.length > 1 && (
-            <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
-              {paymentReadyItems.map((item) => (
-                <button
-                  key={String(item._id)}
-                  onClick={() => setSelectedProjectItemId(String(item._id))}
-                  className={cn(
-                    "whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
-                    selectedProjectItemId === String(item._id)
-                      ? "bg-[#171b21] text-white border-[#171b21] dark:bg-white dark:text-[#171b21] dark:border-white shadow-sm"
-                      : "bg-white text-[#616a74] border-[#e9ecef] hover:bg-[#f8f9fa] dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-800"
+          {selectedProject && selectedProjectPaymentSummary.rows.length > 1 && (
+            <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
+              <CardHeader className="px-4 sm:px-6">
+                <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <CardTitle className="text-base text-[#1d1d1f] dark:text-slate-100">Project Payment Summary</CardTitle>
+                    <p className="mt-1 text-xs text-[var(--text-metal-muted-color)] dark:text-slate-400">
+                      Every project item is shown, even when its payment plan is not ready.
+                    </p>
+                  </div>
+                  {!selectedProjectPlansLoading && (
+                    <div className="text-left sm:text-right">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500 dark:text-slate-400">
+                        {selectedProjectPaymentSummary.hasAllPlans ? 'Combined Project Total' : 'Available Plans Total'}
+                      </p>
+                      <p className="text-lg font-semibold text-emerald-700 dark:text-emerald-300">
+                        {shouldHideAmount ? 'Hidden for your role' : formatCurrency(selectedProjectPaymentSummary.combinedTotal)}
+                      </p>
+                    </div>
                   )}
-                >
-                  <span className="flex items-center gap-1.5">
-                    {item.title}
-                    {item.status === 'payment_pending' && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                </div>
+              </CardHeader>
+              <CardContent className="space-y-2 px-4 sm:px-6">
+                {selectedProjectPlansLoading ? (
+                  <p className="text-sm text-slate-600 dark:text-slate-300">Loading all item payment plans…</p>
+                ) : selectedProjectPaymentSummary.rows.map((row) => (
+                  <div key={row.id} className="flex flex-col gap-1 rounded-xl border border-[color:var(--color-border)]/55 bg-slate-50 px-3.5 py-3 dark:bg-white/[0.04] sm:flex-row sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-[var(--color-card-foreground)] dark:text-slate-100">{row.label}</p>
+                      <p className={cn('text-xs', row.readiness === 'verified' ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300')}>{row.readinessLabel}</p>
+                    </div>
+                    <p className="text-sm font-semibold text-slate-800 dark:text-slate-100">
+                      {row.totalAmount === undefined ? 'Amount unavailable' : shouldHideAmount ? '***' : formatCurrency(row.totalAmount)}
+                    </p>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Item Selector (if multi-item) */}
+          {(selectedProject?.items?.length || 0) > 1 && (
+            <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
+              {(selectedProject?.items || []).map((item, index) => {
+                const hasPlan = Boolean(selectedProjectPlanQueries[index]?.data);
+                return (
+                  <button
+                    key={String(item._id)}
+                    type="button"
+                    disabled={!hasPlan}
+                    onClick={() => hasPlan && setSelectedProjectItemId(String(item._id))}
+                    className={cn(
+                      "whitespace-nowrap px-3 py-1.5 rounded-full text-xs font-medium transition-all duration-200 border",
+                      selectedProjectItemId === String(item._id)
+                        ? "bg-[#171b21] text-white border-[#171b21] dark:bg-white dark:text-[#171b21] dark:border-white shadow-sm"
+                        : hasPlan
+                          ? "bg-white text-[#616a74] border-[#e9ecef] hover:bg-[#f8f9fa] dark:bg-slate-900/50 dark:text-slate-400 dark:border-slate-800 dark:hover:bg-slate-800"
+                          : "cursor-not-allowed border-amber-200 bg-amber-50 text-amber-800 opacity-80 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200"
                     )}
-                  </span>
-                </button>
-              ))}
+                  >
+                    <span className="flex items-center gap-1.5">
+                      {item.title || `Item ${index + 1}`}
+                      {!hasPlan && <span className="font-normal">· No plan</span>}
+                      {item.status === 'payment_pending' && (
+                        <span className="w-1.5 h-1.5 rounded-full bg-orange-500 animate-pulse" />
+                      )}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           )}
 
