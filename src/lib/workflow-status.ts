@@ -31,24 +31,6 @@ export interface WorkflowStatus {
 }
 
 const terminalStatuses = new Set(['completed', 'cancelled', 'no_show', 'done']);
-const APPOINTMENT_SLOT_DURATION_MS = 60 * 60 * 1000;
-
-type AppointmentWorkflowInput = Pick<
-  Appointment,
-  'status' | 'attendanceStatus' | 'ocularFeeStatus' | 'ocularFeePaid' | 'type'
-> & Partial<Pick<Appointment, 'date' | 'slotCode'>>;
-
-function hasElapsedAppointmentSlot(
-  appointment: Pick<AppointmentWorkflowInput, 'date' | 'slotCode'>,
-  now: Date,
-) {
-  if (!appointment.date || !appointment.slotCode) return false;
-
-  const start = new Date(`${appointment.date.slice(0, 10)}T${appointment.slotCode}:00+08:00`);
-  if (Number.isNaN(start.getTime())) return false;
-
-  return now.getTime() >= start.getTime() + APPOINTMENT_SLOT_DURATION_MS;
-}
 
 export function formatWorkflowStatusLabel(status?: string) {
   if (!status) return 'In Review';
@@ -122,10 +104,7 @@ export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | u
   };
 }
 
-export function resolveAppointmentWorkflowStatus(
-  appointment: AppointmentWorkflowInput,
-  now = new Date(),
-): WorkflowStatus {
+export function resolveAppointmentWorkflowStatus(appointment: Pick<Appointment, 'status' | 'attendanceStatus' | 'ocularFeeStatus' | 'ocularFeePaid' | 'type'>): WorkflowStatus {
   const status = String(appointment.status || '');
 
   if (status === AppointmentStatus.CANCELLED) {
@@ -145,13 +124,6 @@ export function resolveAppointmentWorkflowStatus(
   }
   if (status === AppointmentStatus.COMPLETED) {
     return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
-  }
-  if (
-    (status === AppointmentStatus.IN_PROGRESS
-      || appointment.attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS)
-    && hasElapsedAppointmentSlot(appointment, now)
-  ) {
-    return { key: 'appointment_done', label: 'Appointment Done', tone: 'green', stage: 'completed', isTerminal: true };
   }
   if (appointment.type === 'ocular' && appointment.ocularFeeStatus === 'pending' && !appointment.ocularFeePaid) {
     return { key: 'awaiting_ocular_fee', label: 'Awaiting Ocular Fee', tone: 'orange', stage: 'billing', isTerminal: false };

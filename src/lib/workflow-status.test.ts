@@ -74,35 +74,4 @@ describe('resolveAppointmentWorkflowStatus', () => {
       label: 'Appointment Completed',
     });
   });
-
-  it('labels a stale in-progress appointment as Appointment Done after its slot', () => {
-    expect(resolveAppointmentWorkflowStatus({
-      status: AppointmentStatus.IN_PROGRESS,
-      type: 'ocular',
-      date: '2026-08-28',
-      slotCode: '15:00',
-      ocularFeeStatus: undefined,
-      ocularFeePaid: true,
-    }, new Date('2026-10-01T08:40:00.000Z'))).toMatchObject({
-      key: 'appointment_done',
-      label: 'Appointment Done',
-      tone: 'green',
-      isTerminal: true,
-    });
-  });
-
-  it('keeps an appointment In Progress until its one-hour slot ends', () => {
-    expect(resolveAppointmentWorkflowStatus({
-      status: AppointmentStatus.IN_PROGRESS,
-      type: 'ocular',
-      date: '2026-10-01',
-      slotCode: '16:00',
-      ocularFeeStatus: undefined,
-      ocularFeePaid: true,
-    }, new Date('2026-10-01T08:40:00.000Z'))).toMatchObject({
-      key: 'in_progress',
-      label: 'Appointment In Progress',
-      isTerminal: false,
-    });
-  });
 });
