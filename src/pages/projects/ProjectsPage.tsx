@@ -146,8 +146,8 @@ export function ProjectsPage() {
       {/* Controls */}
       <CollectionToolbar
         title={isCustomer ? 'Track your projects' : 'Find a project faster'}
-        description={isCustomer ? 'Review each project’s current stage, service details, and next action.' : 'Search by Unique Project ID or service, then narrow the list by stage.'}
-        searchPlaceholder="Search by Unique Project ID or service"
+        description={isCustomer ? 'Review each project’s current stage, service details, and next action.' : 'Search by Project ID or service, then narrow the list by stage.'}
+        searchPlaceholder="Search by Project ID or service"
         searchValue={search}
         onSearchChange={setSearch}
         filters={STATUS_FILTERS}
@@ -201,7 +201,7 @@ export function ProjectsPage() {
             <Table>
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Unique Project ID</TableHead>
+                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Project ID</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)]">Status</TableHead>
                   {isStaff && (
                     <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[var(--text-metal-color)] lg:table-cell">Customer</TableHead>
