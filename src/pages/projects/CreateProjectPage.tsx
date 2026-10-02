@@ -18,7 +18,7 @@ import { useCreateProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { api } from '@/lib/api';
-import { DELIVERY_TYPE_LABELS, DeliveryType, getDefaultDeliveryType, MEASUREMENT_UNIT_LABELS, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import { DeliveryType, getDefaultDeliveryType, MEASUREMENT_UNIT_LABELS, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import type { ApiResponse, Appointment, LineItem, ServiceSpecifications } from '@/lib/types';
 import type { DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
@@ -71,7 +71,7 @@ export function CreateProjectPage() {
   const createProject = useCreateProject();
   const [serviceType, setServiceType] = useState('');
   const [serviceTypeFromAppointment, setServiceTypeFromAppointment] = useState(false);
-  const [deliveryType, setDeliveryType] = useState<DeliveryType | ''>('');
+  const deliveryType = getDefaultDeliveryType(serviceType) || DeliveryType.SHOP_FABRICATED;
   const [materialType, setMaterialType] = useState('');
   const [finishColor, setFinishColor] = useState('');
   const [preferredDesign, setPreferredDesign] = useState('');
@@ -164,7 +164,6 @@ export function CreateProjectPage() {
     if (!appointmentServiceType || !SERVICE_TYPE_LABELS[appointmentServiceType]) return;
 
     setServiceType(appointmentServiceType);
-    setDeliveryType(getDefaultDeliveryType(appointmentServiceType) || '');
     setServiceTypeFromAppointment(true);
     setMaterialType(primaryReport?.materials || siteDetails?.materials || '');
     setFinishColor(primaryReport?.finishes || siteDetails?.finishes || '');
@@ -440,38 +439,21 @@ export function CreateProjectPage() {
               <CardDescription>
                 {linkedServiceTypes.length > 1
                   ? `${linkedServiceTypes.length} service items and their appointment/ocular details will be linked automatically.`
-                  : 'Required fields are marked with *. Appointment and ocular details are filled automatically.'}
+                  : 'Required fields are marked with *. Project ID, delivery type, and appointment/ocular details are filled automatically.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2">
-                  <Label htmlFor="project-id-preview">Unique Project ID</Label>
-                  <Input id="project-id-preview" value="Generated automatically after creation" readOnly aria-describedby="project-id-format" />
-                  <p id="project-id-format" className="text-xs text-muted-foreground">Format: PRJ-YYYY-#####</p>
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="project-service">Service Type *</Label>
-                  <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
-                    const nextServiceType = event.target.value;
-                    setServiceType(nextServiceType);
-                    setDeliveryType(getDefaultDeliveryType(nextServiceType) || '');
-                    setServiceTypeFromAppointment(false);
-                  }} className={selectClassName}>
-                    <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
-                    {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
-                  {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the appointment and visit report. You can change it if needed.</p>}
-                  {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
-                </div>
-              </div>
               <div className="space-y-2">
-                <Label htmlFor="project-delivery-type">Delivery Type *</Label>
-                <select id="project-delivery-type" required value={deliveryType} onChange={(event) => setDeliveryType(event.target.value as DeliveryType)} className={selectClassName}>
-                  <option value="" disabled>Select a delivery type</option>
-                  {Object.entries(DELIVERY_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                <Label htmlFor="project-service">Service Type *</Label>
+                <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
+                  setServiceType(event.target.value);
+                  setServiceTypeFromAppointment(false);
+                }} className={selectClassName}>
+                  <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
+                  {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
-                <p className="text-xs text-muted-foreground">Controls the lifecycle markers used for fabrication and installation updates.</p>
+                {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the appointment and visit report. You can change it if needed.</p>}
+                {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
               </div>
               <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work *</Label><Textarea id="project-description" name="description" required maxLength={2000} rows={3} defaultValue={defaultDescription} /></div>
               <div className="space-y-2"><Label htmlFor="project-address">Project Site Address *</Label><Textarea id="project-address" name="siteAddress" required maxLength={500} rows={2} defaultValue={appointmentAddress(appointment.data)} /></div>
