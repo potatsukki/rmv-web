@@ -1,5 +1,5 @@
 export const QUOTATION_COPY = {
   detailsHeading: 'Quote Details',
-  validityLabel: 'Quote Valid For',
+  validityLabel: 'Quote Expires In',
   estimatedTimeLabel: 'Estimated Completion Time',
 } as const;

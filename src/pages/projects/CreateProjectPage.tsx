@@ -18,18 +18,16 @@ import { useCreateProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { api } from '@/lib/api';
-import { DeliveryType, getDefaultDeliveryType, MEASUREMENT_UNIT_LABELS, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import { DeliveryType, getDefaultDeliveryType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import type { ApiResponse, Appointment, LineItem, ServiceSpecifications } from '@/lib/types';
-import type { DesignTemplate } from '@/lib/design-templates';
+import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 import { extractErrorMessage } from '@/lib/utils';
 
 const selectClassName = 'h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring';
-const dimensions = ['length', 'width', 'height', 'area', 'thickness'] as const;
 const attachmentGroups = [
   { key: 'photoKeys', label: 'Photos', folder: 'visit-photos', accept: 'image/*', maxFiles: 20, maxSizeMB: 10 },
   { key: 'videoKeys', label: 'Videos', folder: 'visit-videos', accept: 'video/*', maxFiles: 5, maxSizeMB: 50 },
-  { key: 'sketchKeys', label: 'Sketches', folder: 'visit-sketches', accept: 'image/*,.pdf', maxFiles: 10, maxSizeMB: 10 },
   { key: 'referenceImageKeys', label: 'Reference Images', folder: 'visit-references', accept: 'image/*,.pdf', maxFiles: 10, maxSizeMB: 10 },
 ] as const;
 
@@ -129,14 +127,9 @@ export function CreateProjectPage() {
   const defaultTitle = linkedServiceLabels.length
     ? `${linkedServiceLabels.join(' & ')} Project`.slice(0, 100)
     : '';
-  const defaultDescription = (primaryReport?.discussionNotes
-    || detailsSource?.customerRequirements
-    || detailsSource?.notes
-    || (linkedServiceLabels.length ? `Fabrication project for ${linkedServiceLabels.join(' and ')}.` : '')).slice(0, 2000);
   const defaultNotes = [...new Set([primaryReport?.discussionNotes, detailsSource?.notes].filter(Boolean))]
     .join('\n\n')
     .slice(0, 2000);
-  const defaultQuantity = (detailsSource?.lineItems || []).reduce((total, item) => total + (item.quantity || 1), 0) || 1;
   const sourceSelectedDesignId = primaryReport?.selectedDesignTemplateId || appointment.data?.selectedDesignTemplateId;
   const sourceSelectedDesignName = primaryReport?.selectedDesignTemplateName || appointment.data?.selectedDesignTemplateName;
   const sourceSelectedDesignImage = primaryReport?.selectedDesignTemplateImageUrl || appointment.data?.selectedDesignTemplateImageUrl;
@@ -163,16 +156,28 @@ export function CreateProjectPage() {
       || siteDetails?.serviceType;
     if (!appointmentServiceType || !SERVICE_TYPE_LABELS[appointmentServiceType]) return;
 
+    const sourceTemplate = getDesignTemplates(appointmentServiceType).find((template) => (
+      template.id === sourceSelectedDesignId
+      || template.title.toLowerCase() === sourceSelectedDesignName?.trim().toLowerCase()
+      || template.imageUrl === sourceSelectedDesignImage
+    ));
+    const sourceSpecifications = primaryReport?.specifications || siteDetails?.specifications;
+    const sourceLineItems = primaryReport?.lineItems || siteDetails?.lineItems;
+
     setServiceType(appointmentServiceType);
     setServiceTypeFromAppointment(true);
-    setMaterialType(primaryReport?.materials || siteDetails?.materials || '');
-    setFinishColor(primaryReport?.finishes || siteDetails?.finishes || '');
-    setPreferredDesign(primaryReport?.preferredDesign || siteDetails?.preferredDesign || '');
-    setSpecifications(primaryReport?.specifications || siteDetails?.specifications || {});
-    setLineItems((primaryReport?.lineItems || siteDetails?.lineItems || []).map((item) => ({ ...item })));
+    setSelectedDesign(sourceTemplate || null);
+    setMaterialType(primaryReport?.materials || siteDetails?.materials || sourceTemplate?.material || '');
+    setFinishColor(primaryReport?.finishes || siteDetails?.finishes || sourceTemplate?.finish || '');
+    setPreferredDesign(primaryReport?.preferredDesign || siteDetails?.preferredDesign || sourceTemplate?.preferredDesign || '');
+    setSpecifications(mergeSpecificationsWithDefaults(
+      appointmentServiceType,
+      sourceSpecifications || sourceTemplate?.suggestedSpecifications || {},
+    ));
+    setLineItems((sourceLineItems?.length ? sourceLineItems : sourceTemplate?.suggestedLineItems || []).map((item) => ({ ...item })));
     setMeasurementUnit(primaryReport?.measurementUnit || siteDetails?.measurementUnit || 'cm');
     setInitialDesignKeys(primaryReport?.initialDesignKeys || appointment.data.initialDesignKeys || []);
-    setInitialDesignNotes(primaryReport?.initialDesignNotes || appointment.data.initialDesignNotes || '');
+    setInitialDesignNotes(primaryReport?.initialDesignNotes || appointment.data.initialDesignNotes || sourceTemplate?.initialDesignNotes || '');
     setAttachments({
       photoKeys: primaryReport?.photoKeys || siteDetails?.photoKeys || [],
       videoKeys: primaryReport?.videoKeys || siteDetails?.videoKeys || [],
@@ -180,7 +185,14 @@ export function CreateProjectPage() {
       referenceImageKeys: primaryReport?.referenceImageKeys || siteDetails?.referenceImageKeys || [],
     });
     prefillKeyRef.current = sourceKey;
-  }, [appointment.data, primaryReport, visitReports.isLoading]);
+  }, [
+    appointment.data,
+    primaryReport,
+    sourceSelectedDesignId,
+    sourceSelectedDesignImage,
+    sourceSelectedDesignName,
+    visitReports.isLoading,
+  ]);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -215,7 +227,7 @@ export function CreateProjectPage() {
       || `${serviceLabel(serviceType, value('serviceTypeCustom')) || 'Custom'} Project`.slice(0, 100);
     const description = value('description');
     const siteAddress = value('siteAddress');
-    if (!serviceType || !deliveryType || !description || !siteAddress) {
+    if (!serviceType || !deliveryType || !siteAddress) {
       toast.error('Complete the required project information.');
       return;
     }
@@ -224,13 +236,6 @@ export function CreateProjectPage() {
       return;
     }
 
-    const measurements: Record<string, unknown> = {};
-    for (const dimension of dimensions) {
-      if (value(dimension)) measurements[dimension] = Number(value(dimension));
-    }
-    const hasMeasurements = Object.keys(measurements).length > 0;
-    if (hasMeasurements) measurements.unit = value('unit');
-
     try {
       const project = await createProject.mutateAsync({
         customerId,
@@ -238,7 +243,7 @@ export function CreateProjectPage() {
         title,
         serviceType,
         deliveryType,
-        description,
+        description: description || undefined,
         siteAddress,
         serviceTypeCustom: value('serviceTypeCustom') || undefined,
         measurementUnit,
@@ -254,10 +259,8 @@ export function CreateProjectPage() {
           ? undefined
           : selectedDesign?.imageUrl || sourceSelectedDesignImage || undefined,
         ...attachments,
-        ...(hasMeasurements ? { measurements } : {}),
         materialType: value('materialType') || undefined,
         finishColor: value('finishColor') || undefined,
-        quantity: value('quantity') ? Number(value('quantity')) : undefined,
         notes: value('notes') || undefined,
         contractFileKey: contractFileKeys[0],
         ocularVisit: projectPath === 'ocular'
@@ -448,6 +451,7 @@ export function CreateProjectPage() {
                 <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
                   setServiceType(event.target.value);
                   setServiceTypeFromAppointment(false);
+                  setSelectedDesign(null);
                 }} className={selectClassName}>
                   <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
                   {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
@@ -455,19 +459,11 @@ export function CreateProjectPage() {
                 {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the appointment and visit report. You can change it if needed.</p>}
                 {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
               </div>
-              <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work *</Label><Textarea id="project-description" name="description" required maxLength={2000} rows={3} defaultValue={defaultDescription} /></div>
+              <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work (optional)</Label><Textarea id="project-description" name="description" maxLength={2000} rows={3} /></div>
               <div className="space-y-2"><Label htmlFor="project-address">Project Site Address *</Label><Textarea id="project-address" name="siteAddress" required maxLength={500} rows={2} defaultValue={appointmentAddress(appointment.data)} /></div>
-              <div className="grid gap-4 sm:grid-cols-3">
+              <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2"><Label htmlFor="project-material">Material Type</Label><Input id="project-material" name="materialType" maxLength={1000} value={materialType} onChange={(event) => setMaterialType(event.target.value)} list="project-material-options" /></div>
                 <div className="space-y-2"><Label htmlFor="project-finish">Finish / Color</Label><Input id="project-finish" name="finishColor" maxLength={500} value={finishColor} onChange={(event) => setFinishColor(event.target.value)} list="project-finish-options" /></div>
-                <div className="space-y-2"><Label htmlFor="project-quantity">Quantity</Label><Input id="project-quantity" name="quantity" type="number" min="1" step="1" defaultValue={defaultQuantity} /></div>
-              </div>
-              <div className="space-y-3 rounded-xl border p-4">
-                <h2 className="text-sm font-medium">Measurements (optional)</h2>
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-                  {dimensions.map((dimension) => <div key={dimension} className="space-y-2"><Label htmlFor={`project-${dimension}`} className="capitalize">{dimension}</Label><Input id={`project-${dimension}`} name={dimension} type="number" min="0.001" step="any" defaultValue={primaryReport?.measurements?.[dimension]} /></div>)}
-                  <div className="space-y-2"><Label htmlFor="project-unit">Unit</Label><select id="project-unit" name="unit" value={measurementUnit} onChange={(event) => setMeasurementUnit(event.target.value)} className={selectClassName}>{Object.entries(MEASUREMENT_UNIT_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}</select></div>
-                </div>
               </div>
               <div className="space-y-2"><Label htmlFor="project-notes">Project Notes</Label><Textarea id="project-notes" name="notes" maxLength={2000} rows={3} defaultValue={defaultNotes} /></div>
             </CardContent>
@@ -478,11 +474,36 @@ export function CreateProjectPage() {
             <CardContent className="min-w-0 space-y-5">
               {serviceType === 'custom' && <div className="space-y-2"><Label htmlFor="project-custom-service">Custom Service</Label><Input id="project-custom-service" name="serviceTypeCustom" maxLength={200} defaultValue={primaryReport?.serviceTypeCustom || appointment.data?.serviceTypeCustom || appointment.data?.customerSiteDetails?.serviceTypeCustom} /></div>}
               {serviceType && <DesignTemplateSelector serviceType={serviceType} selectedTemplateId={selectedDesign?.id || sourceSelectedDesignId} onSelect={selectDesign} />}
-              <div className="space-y-2"><Label htmlFor="project-preferred-design">Preferred Design</Label><Textarea id="project-preferred-design" value={preferredDesign} onChange={(event) => setPreferredDesign(event.target.value)} maxLength={1000} /></div>
+              <div className="space-y-3">
+                <div>
+                  <Label>Preferred Design</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">Upload the customer's preferred design images, then add a short description below.</p>
+                </div>
+                <FileUpload
+                  folder="projects/initial-design"
+                  accept="image/*"
+                  maxSizeMB={5}
+                  maxFiles={10}
+                  label="Upload Preferred Design Images"
+                  existingKeys={initialDesignKeys}
+                  onUploadComplete={setInitialDesignKeys}
+                  onUploadingChange={(active) => setUploads((current) => current.initialDesign === active ? current : { ...current, initialDesign: active })}
+                />
+                <div className="space-y-2">
+                  <Label htmlFor="project-preferred-design">Description</Label>
+                  <Textarea
+                    id="project-preferred-design"
+                    value={preferredDesign}
+                    onChange={(event) => setPreferredDesign(event.target.value)}
+                    maxLength={1000}
+                    rows={3}
+                    placeholder="Describe the preferred style, layout, finish, or other design details."
+                  />
+                </div>
+              </div>
               <div className="space-y-2"><Label htmlFor="project-requirements">Customer Requirements</Label><Textarea id="project-requirements" name="customerRequirements" maxLength={2000} defaultValue={detailsSource?.customerRequirements} /></div>
               {serviceType && <ServiceSpecificationForm serviceType={serviceType} value={specifications} onChange={setSpecifications} />}
               <div className="space-y-3"><h2 className="font-semibold">Component Measurements</h2><LineItemsEditor items={lineItems} unit={measurementUnit} onItemsChange={setLineItems} onUnitChange={setMeasurementUnit} /></div>
-              <FileUpload folder="projects/initial-design" accept="image/*,.pdf" maxSizeMB={5} maxFiles={10} label="Initial Design Files" existingKeys={initialDesignKeys} onUploadComplete={setInitialDesignKeys} onUploadingChange={(active) => setUploads((current) => current.initialDesign === active ? current : { ...current, initialDesign: active })} />
               <div className="space-y-2"><Label htmlFor="project-design-notes">Initial Design Notes</Label><Textarea id="project-design-notes" value={initialDesignNotes} onChange={(event) => setInitialDesignNotes(event.target.value)} maxLength={2000} /></div>
             </CardContent>
           </Card>

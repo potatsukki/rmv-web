@@ -228,7 +228,7 @@ function AppointmentIdentifiers({ appt, compact = false }: { appt: Appointment; 
   return (
     <dl className={compact
       ? 'grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl border border-[#d7dde4] bg-white/45 p-3 dark:border-slate-700 dark:bg-slate-900/35'
-      : 'min-w-[190px] space-y-2'}
+      : 'min-w-0 space-y-2'}
     >
       {identifiers.map((identifier, index) => (
         <div key={identifier.label} className={compact && index === 0 ? 'col-span-2' : undefined}>
@@ -682,16 +682,16 @@ export function AppointmentsPage() {
 
           {/* ── Desktop table (md+) ── */}
           <div className="metal-panel hidden overflow-x-auto rounded-[1.5rem] md:block">
-            <Table>
+            <Table className="table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">{isCustomer ? 'Appointment' : 'Customer'}</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">References</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Type</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Date & Time</TableHead>
-                  <TableHead className="hidden text-xs font-semibold uppercase tracking-wider text-[#68727d] xl:table-cell">Location</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
-                  <TableHead className="pr-5 text-right text-xs font-semibold uppercase tracking-wider text-[#68727d]">Open</TableHead>
+                  <TableHead className="w-[18%] pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">{isCustomer ? 'Appointment' : 'Customer'}</TableHead>
+                  <TableHead className="w-[17%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">References</TableHead>
+                  <TableHead className="w-[11%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Type</TableHead>
+                  <TableHead className="w-[22%] whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-[#68727d]">Date & Time</TableHead>
+                  <TableHead className="hidden w-[12%] text-xs font-semibold uppercase tracking-wider text-[#68727d] xl:table-cell">Location</TableHead>
+                  <TableHead className="w-[12%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="w-[8%] pr-5 text-right text-xs font-semibold uppercase tracking-wider text-[#68727d]">Open</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>

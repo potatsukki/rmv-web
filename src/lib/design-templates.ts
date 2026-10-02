@@ -1,4 +1,9 @@
 import { ServiceType } from './constants';
+import {
+  SERVICE_CATALOG,
+  getServiceProjectReferences,
+  type ServiceProjectReference,
+} from './service-catalog';
 import { getServiceSpecificationSchema, type SpecificationField } from './service-specifications';
 import type { LineItem } from './types';
 import type { ServiceSpecifications } from './types';
@@ -8,6 +13,7 @@ export interface DesignTemplate {
   serviceType: ServiceType;
   title: string;
   imageUrl: string;
+  description: string;
   material: string;
   finish: string;
   style: string;
@@ -259,6 +265,7 @@ function makeTemplate(
     serviceType,
     title,
     imageUrl: getDesignTemplatePlaceholderImage(serviceType, title),
+    description: `${title} is a configurable starting design for this project. Final dimensions, materials, finish, and installation details remain editable.`,
     material,
     finish,
     style,
@@ -361,6 +368,64 @@ const catalog: Partial<Record<ServiceType, DesignTemplate[]>> = {
 
 export function getDesignTemplates(serviceType?: string): DesignTemplate[] {
   const key = serviceType as ServiceType | undefined;
+  const service = key
+    ? SERVICE_CATALOG.find((entry) => entry.serviceType === key)
+    : undefined;
+
+  if (key && service) {
+    const fallbackTemplates = catalog[key] || catalog[ServiceType.CUSTOM]!;
+    return getServiceProjectReferences(service).map((project, index) => {
+      const fallback = fallbackTemplates[Math.min(index, fallbackTemplates.length - 1)]
+        || catalog[ServiceType.CUSTOM]![0]!;
+      return createCatalogTemplate(project, index, fallback);
+    });
+  }
+
   if (key && catalog[key]?.length) return catalog[key]!;
   return catalog[ServiceType.CUSTOM]!;
+}
+
+function createCatalogTemplate(
+  project: ServiceProjectReference,
+  index: number,
+  fallback: DesignTemplate,
+): DesignTemplate {
+  const description = project.description
+    || `${project.title} can be adjusted to the final site dimensions and customer requirements.`;
+  const material = findProjectDetailValue(project, /stainless grade|material grade|frame material|panel material|glass type/)
+    || fallback.material;
+  const finish = findProjectDetailValue(project, /finish|color|coating/)
+    || fallback.finish;
+  const template = makeTemplate(
+    project.serviceType,
+    index,
+    project.title,
+    project.image,
+    material,
+    finish,
+    project.title,
+    [item(project.title, description)],
+  );
+
+  return {
+    ...template,
+    id: project.id,
+    imageUrl: project.image,
+    description,
+    preferredDesign: project.title,
+    initialDesignNotes: `${project.title} selected from the RMV design catalog. ${description} Confirm final measurements, material grade, finish, mounting details, and customer-requested changes before fabrication.`,
+  };
+}
+
+function findProjectDetailValue(project: ServiceProjectReference, labelPattern: RegExp) {
+  for (const group of project.detailGroups || []) {
+    for (const detail of group.items) {
+      const separatorIndex = detail.indexOf(':');
+      if (separatorIndex < 0) continue;
+      const label = detail.slice(0, separatorIndex).trim();
+      if (!labelPattern.test(label)) continue;
+      return detail.slice(separatorIndex + 1).trim();
+    }
+  }
+  return undefined;
 }

@@ -1,4 +1,4 @@
-import { CheckCircle2, Images, FileText } from 'lucide-react';
+import { CheckCircle2, Images } from 'lucide-react';
 
 import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
 import { cn } from '@/lib/utils';
@@ -25,7 +25,12 @@ export function DesignTemplateSelector({
           <Images className="h-5 w-5" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Design Selection</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Design Selection</p>
+            <span className="rounded-full bg-blue-50 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:bg-blue-500/10 dark:text-blue-200">
+              {templates.length} {templates.length === 1 ? 'design' : 'designs'}
+            </span>
+          </div>
           <p className="text-xs text-gray-500 dark:text-slate-400">
             Pick a pre-made design. The generated project fields remain editable.
           </p>
@@ -51,10 +56,13 @@ export function DesignTemplateSelector({
                 disabled && 'cursor-not-allowed opacity-60 hover:translate-y-0 hover:shadow-sm',
               )}
             >
-              <div className="flex h-[144px] items-center justify-center border-b border-gray-200 bg-gradient-to-br from-slate-50 via-white to-slate-100 dark:border-white/10 dark:from-slate-900 dark:via-slate-950 dark:to-slate-900">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl border border-blue-200 bg-white text-blue-600 shadow-sm dark:border-blue-500/25 dark:bg-slate-900 dark:text-blue-300">
-                  <FileText className="h-7 w-7" />
-                </div>
+              <div className="relative h-[144px] overflow-hidden border-b border-gray-200 bg-slate-100 dark:border-white/10 dark:bg-slate-900">
+                <img
+                  src={template.imageUrl}
+                  alt={template.title}
+                  className="h-full w-full object-cover transition duration-300 group-hover:scale-[1.03]"
+                  loading="lazy"
+                />
                 {selected && (
                   <div className="absolute right-3 top-3 rounded-full bg-blue-500 p-1.5 text-white shadow-lg">
                     <CheckCircle2 className="h-4 w-4" />
@@ -63,7 +71,8 @@ export function DesignTemplateSelector({
               </div>
               <div className="space-y-2 p-4">
                 <p className="text-sm font-semibold text-gray-950 dark:text-slate-100">{template.title}</p>
-                <p className="line-clamp-2 text-xs text-gray-500 dark:text-slate-400">Pre-made design option for customer selection.</p>
+                <p className="line-clamp-2 text-xs leading-5 text-gray-500 dark:text-slate-400">{template.description}</p>
+                <p className="line-clamp-1 text-[11px] font-medium text-blue-700 dark:text-blue-300">{template.material}</p>
               </div>
             </button>
           );

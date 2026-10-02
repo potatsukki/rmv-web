@@ -838,13 +838,9 @@ export function ProjectDetailPage() {
       && paymentPlan?.stages?.[0]?.status === 'verified'
     ),
   );
-  const hasReachedFabricationPaymentStage = Boolean(
+  const canAssignFabricationTeam = Boolean(
     project
-    && allRequiredInitialFabricationPaymentsVerified,
-  );
-  const canStartFabricationSetup = Boolean(
-    project
-    && hasReachedFabricationPaymentStage,
+    && [ProjectStatus.APPROVED, ProjectStatus.PAYMENT_PENDING, ProjectStatus.FABRICATION].includes(project.status as ProjectStatus),
   );
   const isActivePaymentPlanFullyVerified = Boolean(
     paymentPlan?.stages?.length
@@ -1069,8 +1065,8 @@ export function ProjectDetailPage() {
       toast.error('Please select a fabrication lead');
       return;
     }
-    if (!canStartFabricationSetup) {
-      toast.error('Team assignment unlocks after the required customer payment is verified.');
+    if (!canAssignFabricationTeam) {
+      toast.error('Team assignment unlocks after the customer approves the blueprint and costing.');
       return;
     }
     try {
@@ -1079,7 +1075,12 @@ export function ProjectDetailPage() {
         fabricationLeadId: fabLeadId,
         fabricationAssistantIds: fabAssistantIds,
       });
-      toast.success('Fabrication team assigned! They can now begin tracking fabrication progress.', { duration: 5000 });
+      toast.success(
+        allRequiredInitialFabricationPaymentsVerified
+          ? 'Fabrication team assigned! They can now post fabrication updates.'
+          : 'Fabrication team assigned. Updates will unlock after the required downpayment or full payment is verified.',
+        { duration: 5000 },
+      );
       setShowFabForm(false);
       setFabLeadId('');
       setFabAssistantIds([]);
@@ -1130,8 +1131,8 @@ export function ProjectDetailPage() {
   };
 
   const handleOpenFabricationAssign = () => {
-    if (!canStartFabricationSetup) {
-      toast.error('Team assignment unlocks after the required customer payment is verified.');
+    if (!canAssignFabricationTeam) {
+      toast.error('Team assignment unlocks after the customer approves the blueprint and costing.');
       return;
     }
     setShowFabForm(true);
@@ -2651,6 +2652,7 @@ export function ProjectDetailPage() {
         {activeTab === 'blueprint' && (
           <Suspense fallback={<TabPanelFallback message="Loading the blueprint workspace." />}>
             <LazyBlueprintTab
+              key={`${id}:${activeProjectItemRecord?._id || 'legacy'}:blueprint`}
               projectId={id!}
               projectItemId={activeProjectItemRecord?._id}
               mode="blueprint"
@@ -2669,6 +2671,7 @@ export function ProjectDetailPage() {
         {activeTab === 'costing' && (
           <Suspense fallback={<TabPanelFallback message="Loading the costing workspace." />}>
             <LazyBlueprintTab
+              key={`${id}:${activeProjectItemRecord?._id || 'legacy'}:costing`}
               projectId={id!}
               projectItemId={activeProjectItemRecord?._id}
               mode="costing"
@@ -2867,7 +2870,7 @@ export function ProjectDetailPage() {
           id="project-panel-fabrication"
           aria-labelledby="project-tab-fabrication"
         >
-          {canStartFabricationSetup && isAssignedEngineer && !hasFabLead && !showFabForm && (
+          {canAssignFabricationTeam && isAssignedEngineer && !hasFabLead && !showFabForm && (
             <Card className={cn(
               'rounded-none sm:rounded-xl border-x-0 sm:border-x',
               isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-violet-200 bg-violet-50/50',
@@ -2877,7 +2880,11 @@ export function ProjectDetailPage() {
                   <Users className={cn('h-5 w-5 shrink-0 mt-0.5 sm:mt-0', isDark ? 'text-violet-300' : 'text-violet-600')} />
                   <div className="flex-1 min-w-0">
                     <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-violet-800')}>Assign fabrication team</p>
-                    <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-violet-700')}>Customer payment is verified. Select a lead fabricator and assistants for this project.</p>
+                    <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-violet-700')}>
+                      {allRequiredInitialFabricationPaymentsVerified
+                        ? 'Customer payment is verified. Select a lead fabricator and assistants for this project.'
+                        : 'Select the fabrication team now. They can view the project, but updates stay locked until the required downpayment or full payment is verified.'}
+                    </p>
                   </div>
                 </div>
                 <Button
@@ -2893,7 +2900,7 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          {!canStartFabricationSetup && isAssignedEngineer && !hasFabLead && !projectPaymentPlansLoading && (
+          {!canAssignFabricationTeam && isAssignedEngineer && !hasFabLead && !projectPaymentPlansLoading && (
             <Card className={cn(
               'rounded-none border-x-0 sm:rounded-xl sm:border-x',
               isDark ? 'border-amber-400/25 bg-amber-500/10' : 'border-amber-200 bg-amber-50/70',
@@ -2901,17 +2908,10 @@ export function ProjectDetailPage() {
               <CardContent className="flex items-start gap-3 p-4">
                 <LockKeyhole className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-amber-300' : 'text-amber-700')} />
                 <div className="min-w-0 flex-1">
-                  <p className={cn('text-sm font-semibold', isDark ? 'text-amber-100' : 'text-amber-900')}>Fabrication team assignment is locked</p>
+                  <p className={cn('text-sm font-semibold', isDark ? 'text-amber-100' : 'text-amber-900')}>Fabrication team assignment is not ready</p>
                   <p className={cn('mt-0.5 text-xs', isDark ? 'text-amber-200/80' : 'text-amber-800')}>
-                    Each project item needs a cashier-verified first payment before you can assign fabricators.
+                    The customer must approve the blueprint and costing before you can assign fabricators.
                   </p>
-                  {projectPaymentSummary.outstandingRows.length > 0 && (
-                    <ul className={cn('mt-2 space-y-1 text-xs', isDark ? 'text-amber-100/90' : 'text-amber-900')}>
-                      {projectPaymentSummary.outstandingRows.map((row) => (
-                        <li key={row.id}>• {row.label}: {row.readinessLabel}</li>
-                      ))}
-                    </ul>
-                  )}
                 </div>
               </CardContent>
             </Card>
@@ -3130,6 +3130,7 @@ export function ProjectDetailPage() {
 
           <Suspense fallback={<TabPanelFallback message="Loading fabrication updates, assignments, and delivery milestones." />}>
             <LazyFabricationTab
+              key={`${id}:${activeProjectItemRecord?._id || 'legacy'}:fabrication`}
               projectId={id!}
               projectItemId={activeProjectItemRecord?._id}
               projectStatus={project.status}

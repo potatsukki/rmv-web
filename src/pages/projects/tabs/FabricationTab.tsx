@@ -319,6 +319,10 @@ export function FabricationTab({
   const deleteMutation = useDeleteFabricationUpdate(projectId);
   const confirmInstallationMutation = useConfirmInstallation();
   const isProjectInFabrication = projectStatus === 'fabrication';
+  const isWaitingForInitialPayment = Boolean(
+    project?.fabricationLeadId
+    && projectStatus === 'payment_pending',
+  );
 
   const canAddUpdate = isProjectInFabrication && canManageUpdates;
   const isCustomer = user?.roles.some((r: string) => r === Role.CUSTOMER);
@@ -708,6 +712,20 @@ export function FabricationTab({
             <p className="text-sm font-medium text-emerald-800 dark:text-emerald-100">
               Customer confirmed the installation schedule — you may proceed to the next stage.
             </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {isWaitingForInitialPayment && (
+        <Card className="rounded-xl border-amber-200 bg-amber-50/70 dark:border-amber-500/35 dark:bg-amber-500/10">
+          <CardContent className="flex items-start gap-3 p-4">
+            <Lock className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
+            <div>
+              <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Waiting for customer payment</p>
+              <p className="mt-0.5 text-xs text-amber-800 dark:text-amber-200/90">
+                The fabrication team is assigned, but progress updates stay locked until the required downpayment or full payment is cashier-verified.
+              </p>
+            </div>
           </CardContent>
         </Card>
       )}
