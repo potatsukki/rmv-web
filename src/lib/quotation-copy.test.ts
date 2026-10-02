@@ -6,7 +6,7 @@ describe('QUOTATION_COPY', () => {
   it('uses direct wording for the quote timing fields', () => {
     expect(QUOTATION_COPY).toEqual({
       detailsHeading: 'Quote Details',
-      validityLabel: 'Quote Valid For',
+      validityLabel: 'Quote Expires In',
       estimatedTimeLabel: 'Estimated Completion Time',
     });
   });

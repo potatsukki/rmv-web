@@ -28,7 +28,6 @@ import {
   useProjectPaymentPlans,
   usePaymentsByProject,
   useStageCheckout,
-  useRequestStageCashPayment,
   useSimulateStagePayment,
   useRecordCashPayment,
   useMyPaymentHistory,
@@ -264,7 +263,6 @@ export function PaymentsPage() {
   const { data: plan, isLoading: planLoading } = usePaymentPlan(selectedProjectId, selectedProjectItemId);
   const { data: payments } = usePaymentsByProject(selectedProjectId, selectedProjectItemId);
   const stageCheckout = useStageCheckout();
-  const requestStageCash = useRequestStageCashPayment();
   const simulatePayment = useSimulateStagePayment();
   const recordCash = useRecordCashPayment();
 
@@ -518,19 +516,6 @@ export function PaymentsPage() {
     } catch (err) {
       setBlockedAction(resolveBlockedAction(err, '/help/payments/payment-stage-status-reference#overview'));
       toast.error(extractErrorMessage(err, 'Simulation failed'));
-    }
-  };
-
-  const handleRequestCash = async (stageId: string) => {
-    try {
-      setBlockedAction(null);
-      await requestStageCash.mutateAsync(stageId);
-      toast.success('Cash payment request submitted. A cashier will verify it shortly.', {
-        duration: 5000,
-      });
-    } catch (err) {
-      setBlockedAction(resolveBlockedAction(err, '/help/payments/payment-stage-status-reference#overview'));
-      toast.error(extractErrorMessage(err, 'Failed to request cash payment'));
     }
   };
 
@@ -1152,14 +1137,6 @@ export function PaymentsPage() {
                                   <QrCode className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                   <span>{isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}</span>
                                 </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleRequestCash(String(stage.stageId))}
-                                  disabled={requestStageCash.isPending}
-                                  className="cursor-pointer py-3 sm:py-2"
-                                >
-                                  <Banknote className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                  <span>Pay in Cash</span>
-                                </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
                                   onClick={() => handleSimulate(String(stage.stageId))}
@@ -1255,14 +1232,6 @@ export function PaymentsPage() {
                                 >
                                   <QrCode className="mr-2 h-4 w-4 text-emerald-600 dark:text-emerald-400" />
                                   <span>{isEarlyPay ? 'Pay Early via QR' : 'Pay via QR'}</span>
-                                </DropdownMenuItem>
-                                <DropdownMenuItem 
-                                  onClick={() => handleRequestCash(String(stage.stageId))}
-                                  disabled={requestStageCash.isPending}
-                                  className="cursor-pointer"
-                                >
-                                  <Banknote className="mr-2 h-4 w-4 text-blue-600 dark:text-blue-400" />
-                                  <span>Pay in Cash</span>
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 

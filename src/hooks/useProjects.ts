@@ -97,7 +97,7 @@ export function useCreateProject() {
       videoKeys?: string[];
       sketchKeys?: string[];
       referenceImageKeys?: string[];
-      description: string;
+      description?: string;
       siteAddress: string;
       measurements?: Record<string, unknown>;
       materialType?: string;

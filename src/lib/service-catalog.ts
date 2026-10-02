@@ -154,7 +154,39 @@ const PROJECT_DESCRIPTIONS: Record<string, string> = {
 
 for (const serviceItem of SERVICE_CATALOG) {
   for (const project of serviceItem.projects) {
-    if (PROJECT_DESCRIPTIONS[project.title]) project.description = PROJECT_DESCRIPTIONS[project.title];
+    project.description = PROJECT_DESCRIPTIONS[project.title]
+      || project.description
+      || `${project.title} is a ${serviceItem.label.toLowerCase()} reference that can be adjusted to the actual site dimensions, required use, material grade, finish, and installation condition.`;
+
+    if (!project.detailGroups?.length) {
+      project.detailGroups = [
+        {
+          title: 'Measurements',
+          items: project.measurements?.length
+            ? project.measurements
+            : serviceItem.measurementNotes?.length
+              ? serviceItem.measurementNotes
+              : [
+                  'Final length, width, height, quantity, and clearances are confirmed from the site.',
+                  'Existing walls, floors, openings, and connection points must be measured before fabrication.',
+                ],
+        },
+        {
+          title: 'Material & finish',
+          items: [
+            `${serviceItem.tags[1] || 'Material grade and thickness'} will be confirmed based on the intended use.`,
+            'Final finish, color, hardware, and exposed edge details remain customer-selectable.',
+          ],
+        },
+        {
+          title: 'Installation & quote',
+          items: [
+            serviceItem.scopeNote,
+            'Provide site photos, approximate dimensions, preferred design, and access conditions for quotation preparation.',
+          ],
+        },
+      ];
+    }
   }
 }
 

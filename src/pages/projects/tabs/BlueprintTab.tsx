@@ -13,7 +13,6 @@ import { resolveBlockedAction, type BlockedActionInfo } from '@/lib/blocked-acti
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { BlockedActionPrompt } from '@/components/shared/BlockedActionPrompt';
 import { AuthImage } from '@/components/shared/AuthImage';
@@ -44,6 +43,13 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { Role } from '@/lib/constants';
+import {
+  getBlueprintDraftCacheKey,
+  resolveBlueprintDraftCache,
+  type BlueprintDraftFileCache,
+  type BlueprintMaterialCostCache,
+  type BlueprintTabDraftCache,
+} from '@/lib/blueprint-draft-cache';
 import { QUOTATION_COPY } from '@/lib/quotation-copy';
 import type { Blueprint, BlueprintDraft, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
 import { resolveBlueprintWorkflowStatus } from '@/lib/workflow-status';
@@ -54,10 +60,12 @@ interface BlueprintTabProps {
   mode?: 'blueprint' | 'costing';
 }
 
-type DraftFileMeta = { name: string; type: string; size: number; key: string; uploadedAt: string };
+type DraftFileMeta = BlueprintDraftFileCache;
+type MaterialCost = BlueprintMaterialCostCache;
 type InternalCostKey = keyof QuotationInternalCosts<string>;
 type QuotationDraftState = {
   internalCosts: QuotationInternalCosts<string>;
+  lineItems: NonNullable<NonNullable<BlueprintDraft['quotation']>['lineItems']>;
   costPreset: {
     serviceType: string;
     complexity: QuotationComplexity;
@@ -76,15 +84,6 @@ type QuotationDraftState = {
   engineerNotes: string;
   paymentMilestones: NonNullable<BlueprintDraft['quotation']>['paymentMilestones'];
 };
-type BlueprintTabDraftCache = {
-  blueprintFileMeta: DraftFileMeta | null;
-  designFileMeta: DraftFileMeta | null;
-  costingFileMeta: DraftFileMeta | null;
-  quotInternalCosts: QuotationInternalCosts<string>;
-  quotValidityDays: string;
-  quotSystemDuration: string;
-};
-
 const INTERNAL_COST_FIELDS: Array<{ key: InternalCostKey; label: string }> = [
   { key: 'estimatedMaterials', label: 'Estimated Materials' },
   { key: 'fabricationWork', label: 'Fabrication Work' },
@@ -157,6 +156,7 @@ function getEmptyQuotation(serviceType = 'custom', complexity: QuotationComplexi
   const systemEstimatedDuration = getSystemDuration(serviceType, complexity);
   return {
     internalCosts: { ...EMPTY_INTERNAL_COSTS },
+    lineItems: [],
     costPreset: { serviceType, complexity },
     discount: '',
     subtotal: '',
@@ -188,13 +188,29 @@ function normalizeDraftQuotation(
     } : {}),
     ...(quotation?.internalCosts || {}),
   };
-  const subtotal = INTERNAL_COST_FIELDS.reduce((sum, field) => sum + asMoney(internalCosts[field.key]), 0);
+  const lineItems = quotation?.lineItems?.length
+    ? quotation.lineItems.map((item) => ({
+        label: item.label,
+        quantity: 1,
+        materials: String((asMoney(item.materials) + asMoney(item.labor)) * (item.quantity || 1) || ''),
+        labor: '',
+      }))
+    : INTERNAL_COST_FIELDS
+        .filter((field) => asMoney(internalCosts[field.key]) > 0)
+        .map((field) => ({
+          label: field.label,
+          quantity: 1,
+          materials: String(asMoney(internalCosts[field.key])),
+          labor: '',
+        }));
+  const subtotal = lineItems.reduce((sum, item) => sum + asMoney(item.materials), 0);
   const discount = quotation?.discount || '';
   const total = Math.max(subtotal - asMoney(discount), 0);
   const systemEstimatedDuration = quotation?.systemEstimatedDuration || empty.systemEstimatedDuration;
   const adjustedEstimatedDuration = quotation?.adjustedEstimatedDuration || '';
   return {
     internalCosts,
+    lineItems,
     costPreset: {
       serviceType: quotation?.costPreset?.serviceType || serviceType,
       complexity: quotation?.costPreset?.complexity || complexity,
@@ -479,10 +495,12 @@ function FilePreviewThumb({
   fileKey,
   label,
   frameClassName,
+  onClick,
 }: {
   fileKey: string | undefined | null;
   label: string;
   frameClassName?: string;
+  onClick?: () => void;
 }) {
   const { url, isLoading } = useAuthenticatedUrl(fileKey ?? null);
   const { resolvedTheme } = useThemeStore();
@@ -503,6 +521,19 @@ function FilePreviewThumb({
   }
 
   if (url && isImage) {
+    if (onClick) {
+      return (
+        <button
+          type="button"
+          className={cn(baseFrameClassName, 'cursor-pointer transition-colors hover:border-sky-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400')}
+          onClick={onClick}
+          aria-label={`View ${label}`}
+        >
+          <img src={url} alt={label} className="max-h-full max-w-full object-contain" />
+        </button>
+      );
+    }
+
     return (
       <div className={baseFrameClassName}>
         <img src={url} alt={label} className="max-h-full max-w-full object-contain" />
@@ -513,8 +544,8 @@ function FilePreviewThumb({
   // Non-image file or no URL � show icon placeholder
   const isPdf = fileKey ? /\.pdf$/i.test(fileKey) : false;
   const isSpreadsheet = fileKey ? /\.(xlsx?|csv)$/i.test(fileKey) : false;
-  return (
-    <div className={baseFrameClassName}>
+  const placeholder = (
+    <>
       <div className="text-center p-6">
         {isPdf ? (
           <FileText className={`mx-auto mb-3 h-12 w-12 ${isDark ? 'text-red-300' : 'text-red-500'}`} />
@@ -526,6 +557,25 @@ function FilePreviewThumb({
         <p className={`text-sm font-medium ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{label}</p>
         <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>Click to view full document</p>
       </div>
+    </>
+  );
+
+  if (onClick) {
+    return (
+      <button
+        type="button"
+        className={cn(baseFrameClassName, 'cursor-pointer transition-colors hover:border-sky-400/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-400')}
+        onClick={onClick}
+        aria-label={`View ${label}`}
+      >
+        {placeholder}
+      </button>
+    );
+  }
+
+  return (
+    <div className={baseFrameClassName}>
+      {placeholder}
     </div>
   );
 }
@@ -645,18 +695,20 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const [uploadingFile, setUploadingFile] = useState<'blueprint'|'design'|'costing'|null>(null);
   const [uploading, setUploading] = useState(false);
   const [quotInternalCosts, setQuotInternalCosts] = useState<QuotationInternalCosts<string>>({ ...EMPTY_INTERNAL_COSTS });
+  const [quotMaterialCosts, setQuotMaterialCosts] = useState<MaterialCost[]>([{ material: '', amount: '' }]);
   const [quotValidityDays, setQuotValidityDays] = useState('30');
   const [quotSystemDuration, setQuotSystemDuration] = useState('');
   const [quotInitialized, setQuotInitialized] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const draftCacheKey = useMemo(
-    () => `blueprint-tab-cache:${projectId}:${projectItemId || 'legacy'}:${mode}`,
+    () => getBlueprintDraftCacheKey(projectId, projectItemId, mode),
     [projectId, projectItemId, mode],
   );
+  const [hydratedDraftCacheKey, setHydratedDraftCacheKey] = useState('');
 
   const quotSubtotal = useMemo(
-    () => INTERNAL_COST_FIELDS.reduce((sum, field) => sum + asMoney(quotInternalCosts[field.key]), 0),
-    [quotInternalCosts],
+    () => quotMaterialCosts.reduce((sum, item) => sum + asMoney(item.amount), 0),
+    [quotMaterialCosts],
   );
   const quotGrandTotal = quotSubtotal;
   const quotEstimatedDuration = quotSystemDuration;
@@ -667,7 +719,13 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const isPreviewImage = previewType.startsWith('image/') || /\.(png|jpe?g|webp|gif|bmp|svg)$/i.test(previewKey);
 
   const currentQuotation = useMemo<BlueprintDraft['quotation']>(() => ({
-    internalCosts: quotInternalCosts,
+    internalCosts: { ...EMPTY_INTERNAL_COSTS },
+    lineItems: quotMaterialCosts.map((item) => ({
+      label: item.material,
+      quantity: 1,
+      materials: item.amount,
+      labor: '',
+    })),
     costPreset: {
       serviceType: costingServiceType,
       complexity: 'standard',
@@ -687,7 +745,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     costingServiceType,
     quotEstimatedDuration,
     quotGrandTotal,
-    quotInternalCosts,
+    quotMaterialCosts,
     quotSubtotal,
     quotSystemDuration,
     quotValidityDays,
@@ -696,27 +754,43 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const lastSavedQuotation = useRef(currentQuotation);
 
   useEffect(() => {
-    try {
-      const raw = sessionStorage.getItem(draftCacheKey);
-      if (!raw) return;
-      const cached = JSON.parse(raw) as BlueprintTabDraftCache;
-      if (cached.blueprintFileMeta) setBlueprintFileMeta(cached.blueprintFileMeta);
-      if (cached.designFileMeta) setDesignFileMeta(cached.designFileMeta);
-      if (cached.costingFileMeta) setCostingFileMeta(cached.costingFileMeta);
-      if (cached.quotInternalCosts) setQuotInternalCosts(cached.quotInternalCosts);
-      if (typeof cached.quotValidityDays === 'string') setQuotValidityDays(cached.quotValidityDays);
-      if (typeof cached.quotSystemDuration === 'string') setQuotSystemDuration(cached.quotSystemDuration);
-    } catch {
-      // ignore corrupted cache payload
-    }
-  }, [draftCacheKey]);
+    const emptyQuotation = getEmptyQuotation(costingServiceType, 'standard');
+    const cached = resolveBlueprintDraftCache(sessionStorage.getItem(draftCacheKey), {
+      quotInternalCosts: emptyQuotation.internalCosts,
+      quotValidityDays: emptyQuotation.validityDays,
+      quotSystemDuration: emptyQuotation.systemEstimatedDuration,
+    });
+
+    setBlueprintFileMeta(cached.blueprintFileMeta);
+    setDesignFileMeta(cached.designFileMeta);
+    setCostingFileMeta(cached.costingFileMeta);
+    setQuotInternalCosts(cached.quotInternalCosts);
+    const cachedMaterialCosts = cached.quotMaterialCosts.some((item) => item.material || item.amount)
+      ? cached.quotMaterialCosts
+      : INTERNAL_COST_FIELDS
+          .filter((field) => asMoney(cached.quotInternalCosts[field.key]) > 0)
+          .map((field) => ({
+            material: field.label,
+            amount: String(asMoney(cached.quotInternalCosts[field.key])),
+          }));
+    setQuotMaterialCosts(cachedMaterialCosts.length > 0 ? cachedMaterialCosts : [{ material: '', amount: '' }]);
+    setQuotValidityDays(cached.quotValidityDays);
+    setQuotSystemDuration(cached.quotSystemDuration);
+    setPreviewFile(null);
+    lastSavedQuotation.current = emptyQuotation;
+    setQuotInitialized(false);
+    setHydratedDraftCacheKey(draftCacheKey);
+  }, [costingServiceType, draftCacheKey]);
 
   useEffect(() => {
+    if (hydratedDraftCacheKey !== draftCacheKey) return;
+
     const payload: BlueprintTabDraftCache = {
       blueprintFileMeta,
       designFileMeta,
       costingFileMeta,
       quotInternalCosts,
+      quotMaterialCosts,
       quotValidityDays,
       quotSystemDuration,
     };
@@ -726,26 +800,12 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     costingFileMeta,
     designFileMeta,
     draftCacheKey,
+    hydratedDraftCacheKey,
     quotInternalCosts,
+    quotMaterialCosts,
     quotSystemDuration,
     quotValidityDays,
   ]);
-
-  useEffect(() => {
-    if (sessionStorage.getItem(draftCacheKey)) {
-      setQuotInitialized(false);
-      return;
-    }
-    const emptyQuotation = getEmptyQuotation(costingServiceType, 'standard');
-    setBlueprintFileMeta(null);
-    setDesignFileMeta(null);
-    setCostingFileMeta(null);
-    setQuotInternalCosts(emptyQuotation.internalCosts);
-    setQuotValidityDays(emptyQuotation.validityDays || '30');
-    setQuotSystemDuration(emptyQuotation.systemEstimatedDuration);
-    lastSavedQuotation.current = emptyQuotation;
-    setQuotInitialized(false);
-  }, [costingServiceType, draftCacheKey, projectItemId]);
 
   // Payment dialogs still use the live config to show surcharge details.
   const cfgSplit: number[] = (() => {
@@ -777,6 +837,14 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       const nextQuotation = normalizeDraftQuotation(dbDraft.quotation, costingServiceType, 'standard');
       if (dbDraft.quotation) {
         setQuotInternalCosts(nextQuotation.internalCosts);
+        setQuotMaterialCosts(
+          nextQuotation.lineItems.length > 0
+            ? nextQuotation.lineItems.map((item) => ({
+                material: item.label,
+                amount: item.materials,
+              }))
+            : [{ material: '', amount: '' }],
+        );
         setQuotValidityDays(nextQuotation.validityDays || '30');
         setQuotSystemDuration(nextQuotation.systemEstimatedDuration);
       }
@@ -787,6 +855,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       // null means successfully fetched but no draft exists
       const nextQuotation = getEmptyQuotation(costingServiceType, 'standard');
       setQuotSystemDuration(nextQuotation.systemEstimatedDuration);
+      setQuotMaterialCosts([{ material: '', amount: '' }]);
       lastSavedQuotation.current = nextQuotation;
       setQuotInitialized(true);
     }
@@ -894,8 +963,22 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     setPreviewFile(file);
   };
 
-  const updateInternalCost = (key: InternalCostKey, value: string) => {
-    setQuotInternalCosts((prev) => ({ ...prev, [key]: value }));
+  const updateMaterialCost = (index: number, field: keyof MaterialCost, value: string) => {
+    setQuotMaterialCosts((items) => items.map((item, itemIndex) => (
+      itemIndex === index ? { ...item, [field]: value } : item
+    )));
+  };
+
+  const addMaterialCost = () => {
+    setQuotMaterialCosts((items) => [...items, { material: '', amount: '' }]);
+  };
+
+  const removeMaterialCost = (index: number) => {
+    setQuotMaterialCosts((items) => (
+      items.length === 1
+        ? [{ material: '', amount: '' }]
+        : items.filter((_, itemIndex) => itemIndex !== index)
+    ));
   };
 
   const inputCls = `w-full h-9 rounded-lg border px-3 text-sm transition-colors focus:outline-none focus:ring-2 ${isDark ? 'border-slate-700 bg-slate-950/70 text-slate-100 placeholder:text-slate-500 focus:border-sky-400/70 focus:ring-sky-400/25' : 'border-[#d2d2d7] bg-[#f5f5f7]/50 focus:border-[#b8b8bd] focus:ring-[#6e6e73]'}`;
@@ -967,6 +1050,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     </Dialog>
   );
 
+  const enteredMaterialCosts = quotMaterialCosts.filter((item) => item.material.trim() || item.amount);
+  const hasValidMaterialCosts = enteredMaterialCosts.length > 0 && enteredMaterialCosts.every((item) => (
+    item.material.trim().length > 0 && asMoney(item.amount) > 0
+  ));
+
   // Shared quotation form used in both first-upload and revision-upload
   const quotationFormJSX = (
     <div className={`space-y-4 border-t pt-3 ${isDark ? 'border-slate-800/80' : 'border-[#c8c8cd]/50'}`}>
@@ -975,42 +1063,60 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
           <div>
             <div className="flex items-center gap-2">
               <ShieldCheck className={`h-4 w-4 ${isDark ? 'text-sky-300' : 'text-blue-700'}`} />
-              <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Internal Cost Breakdown</p>
+              <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Material Costing</p>
               <Badge variant="outline" className={isDark ? 'border-amber-300/40 text-amber-200' : 'border-amber-300 text-amber-700'}>Internal Use Only</Badge>
             </div>
-            <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[#6e6e73]'}`}>Used by engineering/admin for estimation. Customers will not see this breakdown.</p>
+            <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[#6e6e73]'}`}>Enter the material and its amount. The total is calculated automatically.</p>
           </div>
           <div />
         </div>
-        <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-          {INTERNAL_COST_FIELDS.map((field) => (
-            <label key={field.key} className="block">
-              <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>{field.label}</span>
-              <input type="number" min={0} step={0.01} value={quotInternalCosts[field.key]} onChange={(e) => updateInternalCost(field.key, e.target.value)} placeholder="0.00" className={inputCls} />
-            </label>
+        <div className="mt-4 space-y-3">
+          {quotMaterialCosts.map((item, index) => (
+            <div key={index} className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[minmax(0,1fr)_minmax(180px,0.45fr)_auto]">
+              <label className="block">
+                <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Material</span>
+                <input
+                  type="text"
+                  value={item.material}
+                  onChange={(e) => updateMaterialCost(index, 'material', e.target.value)}
+                  placeholder="Enter material"
+                  className={inputCls}
+                />
+              </label>
+              <label className="block">
+                <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Amount</span>
+                <input
+                  type="number"
+                  min={0}
+                  step={0.01}
+                  value={item.amount}
+                  onChange={(e) => updateMaterialCost(index, 'amount', e.target.value)}
+                  placeholder="0.00"
+                  className={inputCls}
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => removeMaterialCost(index)}
+                className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-[#d2d2d7] text-[#6e6e73] hover:bg-[#e8e8ed]'}`}
+                aria-label={`Remove material ${index + 1}`}
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           ))}
-        </div>
-      </section>
-
-      <section className={`rounded-xl border p-4 ${isDark ? 'border-slate-800 bg-slate-950/45' : 'border-[#e8e8ed] bg-white'}`}>
-        <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>{QUOTATION_COPY.detailsHeading}</p>
-        <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <label className="block">
-            <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>{QUOTATION_COPY.validityLabel}</span>
-            <Select value={quotValidityDays} onValueChange={setQuotValidityDays}>
-              <SelectTrigger className={`h-9 rounded-lg border px-3 text-sm ${isDark ? 'border-slate-700 bg-slate-950/70 text-slate-100' : 'border-[#d2d2d7] bg-[#f5f5f7]/50'}`}><SelectValue /></SelectTrigger>
-              <SelectContent className={isDark ? 'border-slate-700 bg-slate-950 text-slate-100' : 'border-[#d2d2d7] bg-white'}>
-                <SelectItem value="15">15 days</SelectItem>
-                <SelectItem value="30">30 days</SelectItem>
-                <SelectItem value="45">45 days</SelectItem>
-                <SelectItem value="60">60 days</SelectItem>
-              </SelectContent>
-            </Select>
-          </label>
-          <label className="block">
-            <span className={`mb-1 block text-xs ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>{QUOTATION_COPY.estimatedTimeLabel}</span>
-            <input value={quotSystemDuration} readOnly className={`${inputCls} opacity-80`} />
-          </label>
+          <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+            <button
+              type="button"
+              onClick={addMaterialCost}
+              className={`text-sm font-medium ${isDark ? 'text-sky-300 hover:text-sky-200' : 'text-blue-700 hover:text-blue-800'}`}
+            >
+              + Add material
+            </button>
+            <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>
+              Total: {formatCurrency(quotGrandTotal)}
+            </p>
+          </div>
         </div>
       </section>
     </div>
@@ -1126,8 +1232,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       toast.error('Please select a blueprint file before finalizing');
       return;
     }
-    if (isCostingMode && quotGrandTotal <= 0) {
-      toast.error('Enter internal costing amounts before sending the quotation to the customer.');
+    if (isCostingMode && !hasValidMaterialCosts) {
+      toast.error('Enter a material and a valid amount before sending the quotation.');
       return;
     }
     uploadInProgressRef.current = true;
@@ -1169,6 +1275,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       setDesignFileMeta(null);
       setCostingFileMeta(null);
       setQuotInternalCosts({ ...EMPTY_INTERNAL_COSTS });
+      setQuotMaterialCosts([{ material: '', amount: '' }]);
       setQuotValidityDays('30');
       setQuotInitialized(false);
       sessionStorage.removeItem(draftCacheKey);
@@ -1443,7 +1550,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                         type="button"
                         className={uploadActionButtonClass}
                         onClick={handleBlueprintUpload}
-                        disabled={uploading || !blueprintFileMeta || !effectiveDesignFileMeta || quotGrandTotal <= 0 || isSavingDraft || !!uploadingFile}
+                        disabled={uploading || !blueprintFileMeta || !effectiveDesignFileMeta || !hasValidMaterialCosts || isSavingDraft || !!uploadingFile}
                       >
                         {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
                         Send Quotation to Customer & Cashier
@@ -1514,7 +1621,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                         type="button"
                         className={uploadActionButtonClass}
                         onClick={handleBlueprintUpload}
-                        disabled={uploading || !blueprintFileMeta || !effectiveDesignFileMeta || quotGrandTotal <= 0 || isSavingDraft || !!uploadingFile}
+                        disabled={uploading || !blueprintFileMeta || !effectiveDesignFileMeta || !hasValidMaterialCosts || isSavingDraft || !!uploadingFile}
                       >
                         {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
                         Send Quotation to Customer & Cashier
@@ -1772,16 +1879,13 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 )}
               </CardHeader>
               <CardContent className="pt-6 space-y-4 px-4 sm:px-6">
-                <FilePreviewThumb fileKey={bp.designKey || bp.blueprintKey} label="Design Preview" />
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  <Button
-                    variant="prominent"
-                    className="flex-1 rounded-xl"
-                    onClick={() => handleViewFile(bp.designKey || bp.blueprintKey)}
-                  >
-                    <Eye className="mr-2 h-4 w-4" /> View Design
-                  </Button>
-                  {canReviewBlueprint && !bp.blueprintApproved && (
+                <FilePreviewThumb
+                  fileKey={bp.designKey || bp.blueprintKey}
+                  label="Design Preview"
+                  onClick={() => handleViewFile(bp.designKey || bp.blueprintKey)}
+                />
+                {canReviewBlueprint && !bp.blueprintApproved && (
+                  <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
                     <Button
                       className="flex-1 rounded-xl border border-emerald-500/70 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_10px_24px_rgba(6,95,70,0.3)] hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)] hover:text-white dark:border-emerald-400/55 dark:bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_28px_rgba(6,78,59,0.34)] dark:hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)]"
                       onClick={() => setApproveConfirmDialog({ open: true, blueprintId: bp._id, component: 'blueprint' })}
@@ -1793,8 +1897,16 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                         <><CheckCircle className="mr-2 h-4 w-4" /> Approve</>
                       )}
                     </Button>
-                  )}
-                </div>
+                    <Button
+                      variant="destructive"
+                      className="flex-1 rounded-xl"
+                      onClick={() => setRevisionDialog({ open: true, blueprintId: bp._id })}
+                    >
+                      <AlertCircle className="mr-2 h-4 w-4" />
+                      Request Revision
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
             )}
@@ -2014,7 +2126,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
           )}
 
           {/* Action buttons for customer review */}
-          {canReviewBlueprint && ['uploaded', 'revision_uploaded'].includes(bp.status) && (
+          {isCostingMode && canReviewBlueprint && ['uploaded', 'revision_uploaded'].includes(bp.status) && (
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="destructive"
