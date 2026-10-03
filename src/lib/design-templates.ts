@@ -14,7 +14,6 @@ export interface DesignTemplate {
   suggestedLineItems: LineItem[];
   suggestedSpecifications?: ServiceSpecifications;
   preferredDesign: string;
-  initialDesignNotes: string;
 }
 
 const images = {
@@ -272,7 +271,6 @@ function makeTemplate(
       suggestedSpecifications || defaultTemplateSpecs(serviceType, index, material, finish, style),
     ),
     preferredDesign: style,
-    initialDesignNotes: `${title} selected as starting reference. Confirm final measurements, material grade, finish, mounting details, and custom changes with the customer.`,
   };
 }
 

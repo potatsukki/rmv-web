@@ -728,7 +728,6 @@ export function VisitReportPage() {
     setFinishes(template.finish);
     setPreferredDesign(template.preferredDesign);
     setSpecifications(mergeSpecificationsWithDefaults(serviceType, template.suggestedSpecifications || specifications));
-    setInitialDesignNotes(template.initialDesignNotes);
     setLineItems(template.suggestedLineItems.map((item) => ({ ...item })));
     toast.success(`${template.title} selected. You can still edit every populated field.`);
   };

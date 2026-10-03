@@ -1437,11 +1437,7 @@ export function AppointmentDetailPage() {
               <div className="space-y-3">
                 <label className="block text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Select a staff member</label>
                 <div className="max-h-[320px] overflow-y-auto space-y-2 pr-1">
-                  {[...salesStaffList].sort((a, b) => {
-                    const aAvailable = a.availabilityStatus === StaffAvailabilityStatus.AVAILABLE && a.assignmentEligible !== false;
-                    const bAvailable = b.availabilityStatus === StaffAvailabilityStatus.AVAILABLE && b.assignmentEligible !== false;
-                    return Number(bAvailable) - Number(aAvailable);
-                  }).map((s) => {
+                  {salesStaffList.map((s) => {
                     const isSelected = selectedSalesStaff === s._id;
                     const isBlocked = s.assignmentEligible === false;
                     const isAvailable = s.availabilityStatus === StaffAvailabilityStatus.AVAILABLE && !isBlocked;
