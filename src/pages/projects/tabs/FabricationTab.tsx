@@ -327,6 +327,10 @@ export function FabricationTab({
   );
 
   const canAddUpdate = isProjectInFabrication && canManageUpdates;
+  const isFabricationComplete = selectedItem?.status === 'completed'
+    || fabricationStatus?.currentStatus === FabricationStatus.DONE
+    || fabricationStatus?.currentStatus === FabricationStatus.TURNOVER;
+  const canCreateUpdate = canAddUpdate && !isFabricationComplete;
   const isCustomer = user?.roles.some((r: string) => r === Role.CUSTOMER);
 
   if (!canViewUpdates) {
@@ -747,7 +751,7 @@ export function FabricationTab({
               </p>
             )}
           </div>
-          {canAddUpdate && !(confirmationGateStatus && allowedStatuses.includes(confirmationGateStatus) && !installationConfirmed && allowedStatuses.length === 1) && (
+          {canCreateUpdate && !(confirmationGateStatus && allowedStatuses.includes(confirmationGateStatus) && !installationConfirmed && allowedStatuses.length === 1) && (
             <Dialog open={updateDialogOpen} onOpenChange={setUpdateDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="prominent" className="shrink-0 rounded-xl" size="sm">
@@ -980,7 +984,7 @@ export function FabricationTab({
               <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-color)]'}`}>
                 Updates will appear here as the fabrication team logs progress.
               </p>
-              {canAddUpdate && (
+              {canCreateUpdate && (
                 <Button
                   onClick={() => setUpdateDialogOpen(true)}
                   variant="outline"

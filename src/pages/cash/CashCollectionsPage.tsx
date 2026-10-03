@@ -8,6 +8,7 @@ import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
+import { CashAmountWarning } from '@/components/shared/CashAmountWarning';
 import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
@@ -583,9 +584,11 @@ export function CashCollectionsPage() {
                 max={MAX_PAYMENT_AMOUNT}
                 value={recordAmount}
                 onChange={(e) => setRecordAmount(e.target.value)}
+                aria-describedby="ocular-cash-amount-warning"
                 placeholder="Enter amount collected"
                 className={inputClassName}
               />
+              <CashAmountWarning amount={recordAmount} amountDue={recordDialog.expectedAmount} id="ocular-cash-amount-warning" />
             </div>
             <div className="space-y-2">
               <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Notes (optional)</Label>
