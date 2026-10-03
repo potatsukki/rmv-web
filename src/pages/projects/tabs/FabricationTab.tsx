@@ -86,7 +86,7 @@ const ON_SITE_INSTALLATION_STEP_MARKERS: Array<{ key: string; label: string }> =
   { key: FabricationStatus.WELDING_ASSEMBLY, label: 'Welding / Assembly' },
   { key: FabricationStatus.FINISHING, label: 'Finishing' },
   { key: FabricationStatus.QUALITY_CHECK, label: 'Quality Check' },
-  { key: FabricationStatus.TURNOVER, label: 'Turnover' },
+  { key: FabricationStatus.TURNOVER, label: 'Done' },
 ];
 
 function getFabricationStepMarkers(deliveryType?: string) {
