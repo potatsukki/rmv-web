@@ -676,7 +676,7 @@ export function FabricationTab({
             <div className="flex-1">
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Confirm your installation schedule</p>
               <p className="mt-0.5 text-xs text-blue-700 dark:text-blue-300">
-                Please confirm your schedule so our team can proceed with the on-site work.
+                Please confirm your installation schedule before our team marks this as Done.
               </p>
             </div>
             <Button
