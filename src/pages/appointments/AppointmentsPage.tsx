@@ -30,13 +30,8 @@ import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader'
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
   {
-    label: 'Needs Action',
-    value: [
-      AppointmentStatus.REQUESTED,
-      AppointmentStatus.CONFIRMED,
-      AppointmentStatus.RESCHEDULE_REQUESTED,
-      AppointmentStatus.READY_FOR_OCULAR,
-    ].join(','),
+    label: 'Appointment Request',
+    value: AppointmentStatus.REQUESTED,
   },
   { label: 'Completed', value: AppointmentStatus.COMPLETED },
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
@@ -524,7 +519,7 @@ export function AppointmentsPage() {
         searchPlaceholder={searchPlaceholder}
         searchValue={search}
         onSearchChange={setSearch}
-        filters={isSalesOnly ? STATUS_FILTERS.filter((filter) => filter.label !== 'Needs Action') : STATUS_FILTERS}
+        filters={isSalesOnly ? STATUS_FILTERS.filter((filter) => filter.label !== 'Appointment Request') : STATUS_FILTERS}
         activeFilter={statusFilter ?? ''}
         onFilterChange={setStatusFilter}
         action={toolbarActions}
