@@ -37,7 +37,7 @@ import { useDashboardSummary, useAuditLogs } from '@/hooks/useReports';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
-import { Role } from '@/lib/constants';
+import { ProjectStatus, Role } from '@/lib/constants';
 import type { AuditLog } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -404,7 +404,7 @@ export function DashboardPage() {
   // Fetch activity: audit logs for admin, notifications for everyone else
   const auditQuery = useAuditLogs({ limit: 5 }, !!isAdmin);
   const notifQuery = useNotifications({ limit: '5' }, !isAdmin);
-  const activeProjectQuery = useProjects({ status: 'active', limit: '1' });
+  const projectsQuery = useProjects({ limit: '1000' });
 
   // Decide which data source to use
   const activityLoading = isAdmin ? auditQuery.isLoading : notifQuery.isLoading;
@@ -414,9 +414,15 @@ export function DashboardPage() {
   const primaryRole =
     user?.roles.find((r) => r !== Role.ADMIN) ?? user?.roles[0] ?? Role.CUSTOMER;
   const dashboardRole = primaryRole as Role;
+  const activeProjects = projectsQuery.data?.items.filter(
+    (project) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(project.status as ProjectStatus),
+  );
+  const dashboardData = data && activeProjects
+    ? { ...data, activeProjects: activeProjects.length }
+    : data;
   const kpis = getRoleKpis(
     primaryRole as Role,
-    data as Record<string, unknown> | undefined,
+    dashboardData as Record<string, unknown> | undefined,
   ).filter((item) => roleCanOpenDashboardPath(dashboardRole, item.path));
   const actions = getRoleActions(primaryRole as Role)
     .filter((action) => roleCanOpenDashboardPath(dashboardRole, action.path));
@@ -435,11 +441,11 @@ export function DashboardPage() {
     return (
       <CustomerDashboard
         firstName={user?.firstName || 'there'}
-        summary={data as Record<string, number> | undefined}
+        summary={dashboardData as Record<string, number> | undefined}
         isLoading={isLoading}
         notifications={notifQuery.data?.items ?? []}
         notificationsLoading={notifQuery.isLoading}
-        activeProject={activeProjectQuery.data?.items?.[0]}
+        activeProject={activeProjects?.[0]}
       />
     );
   }
