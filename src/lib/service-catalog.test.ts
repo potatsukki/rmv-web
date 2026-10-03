@@ -25,6 +25,17 @@ describe('service project references', () => {
     ]);
   });
 
+  it('uses title case for fence design names', () => {
+    const fenceService = getServiceById('fences');
+
+    expect(fenceService?.projects.map((project) => project.title)).toEqual([
+      'Custom Metal Fence',
+      'Decorative Stainless Gate',
+      'Commercial Security Gate',
+      'Modern Mixed Metal Gate',
+    ]);
+  });
+
   it('creates stable design references from the centralized catalog', () => {
     const service = getServiceById('railings');
     expect(service).toBeDefined();
@@ -46,7 +57,7 @@ describe('service project references', () => {
       designImage: '/landing/services/kitchen-cabinet/01-kitchen-cabinet-tall-storage.png',
     });
 
-    expect(project?.title).toBe('Tall storage cabinet');
+    expect(project?.title).toBe('Tall Storage Cabinet');
   });
 
   it('does not treat arbitrary query data as a catalog design', () => {
