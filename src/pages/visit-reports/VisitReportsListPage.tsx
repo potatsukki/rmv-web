@@ -22,6 +22,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { VisitReportStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import type { VisitReport } from '@/lib/types';
 import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
+import { normalizeVisitReportStatusFilter } from '@/lib/visit-report-filters';
 
 /* ── Helpers ── */
 
@@ -98,7 +99,6 @@ interface ReportSection {
 
 const STATUS_FILTERS = [
   { label: 'All Reports', value: '' },
-  { label: 'Pending', value: 'pending' },
   { label: 'Draft', value: VisitReportStatus.DRAFT },
   { label: 'Submitted', value: VisitReportStatus.SUBMITTED },
   { label: 'Returned', value: VisitReportStatus.RETURNED },
@@ -132,7 +132,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const statusFilter = searchParams.get('reportStatus') || '';
+  const statusFilter = normalizeVisitReportStatusFilter(searchParams.get('reportStatus'));
   const [search, setSearch] = useState('');
 
   const params: Record<string, string> = {};
