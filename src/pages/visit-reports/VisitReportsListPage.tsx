@@ -98,7 +98,7 @@ interface ReportSection {
 
 const STATUS_FILTERS = [
   { label: 'All Reports', value: '' },
-  { label: 'Pending', value: 'pending' },
+  { label: 'Needs Action', value: 'pending' },
   { label: 'Draft', value: VisitReportStatus.DRAFT },
   { label: 'Submitted', value: VisitReportStatus.SUBMITTED },
   { label: 'Returned', value: VisitReportStatus.RETURNED },
