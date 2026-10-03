@@ -109,13 +109,14 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
-            # ── Reclaim Docker disk space to avoid pull/build failures ──
+<<<<<<< HEAD
+            # Reclaim space from previous image-based deployments before
+            # pulling the next immutable image. Keep volumes untouched.
             echo "Docker disk usage (before cleanup):"
             docker system df || true
-            docker container prune -f || true
+            docker container prune -f --filter "label=com.docker.compose.project=deploy" || true
             docker image prune -af || true
             docker builder prune -af || true
-            docker volume prune -f || true
             echo "Docker disk usage (after cleanup):"
             docker system df || true
 
