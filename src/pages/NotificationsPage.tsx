@@ -30,6 +30,8 @@ import {
   useMarkAllAsRead,
 } from '@/hooks/useNotifications';
 import { useNotificationStore } from '@/stores/notification.store';
+import { useAuthStore } from '@/stores/auth.store';
+import { Role } from '@/lib/constants';
 import type { Notification } from '@/lib/types';
 import { extractItems, formatApiTimeAgo } from '@/lib/utils';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
@@ -45,6 +47,13 @@ const CATEGORY_TABS = [
   { label: 'System', value: 'system', icon: Settings },
 ] as const;
 
+const APPOINTMENT_NOTIFICATION_ROLES: Role[] = [
+  Role.CUSTOMER,
+  Role.APPOINTMENT_AGENT,
+  Role.SALES_STAFF,
+  Role.ADMIN,
+];
+
 function isRescheduleNotification(notification: Notification): boolean {
   const haystack = `${notification.title} ${notification.message}`.toLowerCase();
   return notification.category === 'appointment' && haystack.includes('reschedule');
@@ -52,6 +61,7 @@ function isRescheduleNotification(notification: Notification): boolean {
 
 export function NotificationsPage() {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const { data, isLoading, isError, refetch } = useNotifications();
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
@@ -60,6 +70,9 @@ export function NotificationsPage() {
   const [searchQuery, setSearchQuery] = useState('');
 
   const notifications = extractItems<Notification>(data);
+  const categoryTabs = user?.roles.some((role) => APPOINTMENT_NOTIFICATION_ROLES.includes(role))
+    ? CATEGORY_TABS
+    : CATEGORY_TABS.filter((tab) => tab.value !== 'appointment');
 
   const filteredNotifications = useMemo(
     () => {
@@ -165,7 +178,7 @@ export function NotificationsPage() {
           </div>
 
           <div className="flex flex-wrap gap-3">
-            {CATEGORY_TABS.map((tab) => {
+            {categoryTabs.map((tab) => {
               const Icon = tab.icon;
               const active = activeFilter === tab.value;
               return (
