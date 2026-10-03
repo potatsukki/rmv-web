@@ -9,6 +9,7 @@ import { extractErrorMessage, cn } from '@/lib/utils';
 import { resolveBlockedAction, type BlockedActionInfo } from '@/lib/blocked-actions';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { CashAmountWarning } from '@/components/shared/CashAmountWarning';
 import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -1160,7 +1161,7 @@ export function PaymentsPage() {
                                 setCashDialog({
                                   open: true,
                                   stageId: String(stage.stageId),
-                                  amount: Number(stage.amount),
+                                  amount: Number(stage.remainingBalance ?? stage.amount),
                                 })
                               }
                             >
@@ -1255,7 +1256,7 @@ export function PaymentsPage() {
                                 setCashDialog({
                                   open: true,
                                   stageId: String(stage.stageId),
-                                  amount: Number(stage.amount),
+                                  amount: Number(stage.remainingBalance ?? stage.amount),
                                 })
                               }
                             >
@@ -1427,9 +1428,11 @@ export function PaymentsPage() {
                 max={MAX_PAYMENT_AMOUNT}
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
+                aria-describedby="project-cash-amount-warning"
                 placeholder="0.00"
                 className="metal-input h-11 border-[#93ad9d] focus:border-[#93ad9d] focus:ring-[#dceade]"
               />
+              <CashAmountWarning amount={cashAmount} amountDue={cashDialog.amount} id="project-cash-amount-warning" />
             </div>
           </div>
           <DialogFooter>
