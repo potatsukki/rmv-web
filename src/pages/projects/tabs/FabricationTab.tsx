@@ -368,7 +368,12 @@ export function FabricationTab({
         projectId,
         projectItemId: selectedFabricationItemId,
       });
-      toast.success('Installation confirmed! The fabrication team will coordinate delivery and installation.', { duration: 5000 });
+      toast.success(
+        deliveryType === DeliveryType.ON_SITE_INSTALLATION
+          ? 'Installation confirmed! The fabrication team can now complete the on-site work.'
+          : 'Installation confirmed! The fabrication team will coordinate delivery and installation.',
+        { duration: 5000 },
+      );
     } catch (err) {
       setBlockedAction(resolveBlockedAction(err, '/help/projects-fabrication/fabrication-gates-and-payments#overview'));
       toast.error(extractErrorMessage(err, 'Failed to confirm installation'));
