@@ -23,16 +23,17 @@ import { ProjectStatus, BlueprintStatus, Role, SERVICE_TYPE_LABELS } from '@/lib
 import { formatPersonName } from '@/lib/address';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
+import { matchesProjectStage, type ProjectListingStage } from '@/lib/project-stage-filter';
 import type { Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Design / Blueprint', value: ProjectStatus.BLUEPRINT },
-  { label: 'Billing', value: ProjectStatus.PAYMENT_PENDING },
-  { label: 'Fabrication', value: ProjectStatus.FABRICATION },
-  { label: 'Completed', value: ProjectStatus.COMPLETED },
-  { label: 'Cancelled', value: ProjectStatus.CANCELLED },
+  { label: 'Design / Blueprint', value: 'design' },
+  { label: 'Billing', value: 'billing' },
+  { label: 'Fabrication', value: 'fabrication' },
+  { label: 'Completed', value: 'completed' },
+  { label: 'Cancelled', value: 'cancelled' },
 ];
 
 function statusConfig(status: string) {
@@ -102,21 +103,21 @@ function getActionSortTime(project: any) {
 
 export function ProjectsPage() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState<ProjectListingStage | ''>('');
   const [search, setSearch] = useState('');
   const { user } = useAuthStore();
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isStaff = !isCustomer;
   const canCreateProject = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role as Role));
   const params: Record<string, string> = {};
-  if (statusFilter) params.status = statusFilter;
+  if (statusFilter) params.limit = '100';
   if (search) params.search = search;
 
   const { data, isLoading, isError, refetch } = useProjects(params);
 
   if (isError) return <PageError onRetry={refetch} />;
 
-  const projects = data?.items || [];
+  const projects = (data?.items || []).filter((project) => matchesProjectStage(project, statusFilter));
 
   const upcomingItems = projects
     .filter((p: any) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(p.status as ProjectStatus))
@@ -152,7 +153,7 @@ export function ProjectsPage() {
         onSearchChange={setSearch}
         filters={STATUS_FILTERS}
         activeFilter={statusFilter}
-        onFilterChange={setStatusFilter}
+        onFilterChange={(value) => setStatusFilter(value as ProjectListingStage | '')}
         action={canCreateProject ? (
           <Button asChild className="shrink-0">
             <Link to="/projects/create"><FolderPlus className="h-4 w-4" />Create Project</Link>
