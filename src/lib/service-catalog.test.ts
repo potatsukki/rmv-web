@@ -14,6 +14,17 @@ import {
 } from '@/pages/LandingPage';
 
 describe('service project references', () => {
+  it('uses title case for custom fabrication design names', () => {
+    const customService = getServiceById('custom');
+
+    expect(customService?.projects.slice(0, 4).map((project) => project.title)).toEqual([
+      'Stainless Storage Cabinet',
+      'Food Cart Kiosk Frame',
+      'Utility Frame',
+      'Stainless Work Table',
+    ]);
+  });
+
   it('creates stable design references from the centralized catalog', () => {
     const service = getServiceById('railings');
     expect(service).toBeDefined();
