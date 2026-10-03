@@ -152,8 +152,13 @@ export function ServiceDetailsPage() {
   const rememberGuestBooking = (target: string) => {
     if (!user) setStoredAuthContinuationPath(target);
   };
-  const priceGuidance = currentProject ? RAILING_PRICE_GUIDANCE[currentProject.title] : undefined;
-  const priceEstimate = currentProject ? currentProject.estimatedPrice ?? priceGuidance?.estimate ?? ADDITIONAL_PROJECT_PRICE_GUIDANCE[currentProject.title] : undefined;
+  const priceGuidance = currentProject
+    ? Object.entries(RAILING_PRICE_GUIDANCE).find(([title]) => title.toLowerCase() === currentProject.title.toLowerCase())?.[1]
+    : undefined;
+  const additionalPriceEstimate = currentProject
+    ? Object.entries(ADDITIONAL_PROJECT_PRICE_GUIDANCE).find(([title]) => title.toLowerCase() === currentProject.title.toLowerCase())?.[1]
+    : undefined;
+  const priceEstimate = currentProject ? currentProject.estimatedPrice ?? priceGuidance?.estimate ?? additionalPriceEstimate : undefined;
   const customerDetails = currentVariant
     ? getCustomerServiceDetails(currentVariant.confirmationGroups)
     : DEFAULT_CUSTOMER_PROJECT_DETAILS;

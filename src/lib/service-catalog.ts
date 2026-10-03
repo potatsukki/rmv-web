@@ -41,6 +41,19 @@ export interface ServiceCollection {
   measurementNotes?: string[];
 }
 
+const TITLE_CASE_SMALL_WORDS = new Set(['and', 'as', 'at', 'by', 'for', 'from', 'in', 'of', 'on', 'or', 'the', 'to', 'with']);
+
+function toTitleCase(value: string) {
+  const words = value.trim().split(/\s+/);
+
+  return words.map((word, index) => {
+    const lowerWord = word.toLowerCase();
+    if (index > 0 && index < words.length - 1 && TITLE_CASE_SMALL_WORDS.has(lowerWord)) return lowerWord;
+
+    return word.replace(/(^|[-/])([a-z])/g, (_, separator: string, letter: string) => `${separator}${letter.toUpperCase()}`);
+  }).join(' ');
+}
+
 const service = (
   id: string,
   label: string,
@@ -56,7 +69,22 @@ const service = (
   serviceType: ServiceType,
   projects: ServiceProject[],
   measurementNotes: string[] = [],
-): ServiceCollection => ({ id, label, eyebrow, shortDescription, capabilityDescription, bestFor, scopeNote, coverImage, tags, systems, icon, serviceType, projects, measurementNotes });
+): ServiceCollection => ({
+  id,
+  label,
+  eyebrow,
+  shortDescription,
+  capabilityDescription,
+  bestFor,
+  scopeNote,
+  coverImage,
+  tags,
+  systems,
+  icon,
+  serviceType,
+  projects: projects.map((project) => ({ ...project, title: toTitleCase(project.title) })),
+  measurementNotes,
+});
 
 export const SERVICE_CATALOG: ServiceCollection[] = [
   service('railings', 'Railings', 'Stainless Railings', 'Stainless railing systems for balconies, stairs, terraces, and safety edges.', 'Custom railing work is planned around the site, the intended use, and the finished look required for the space.', 'Balconies, stairways, terraces, walkways, and commercial safety edges.', 'Site measurement, fabrication, finishing, and installation preparation.', '/landing/services/railings.png', ['Made-to-measure layouts', 'Stainless steel fabrication', 'Indoor and outdoor applications'], ['Handrails', 'Guardrails', 'Balcony railings', 'Stair railings'], Layers, ServiceType.RAILINGS, [
@@ -152,9 +180,13 @@ const PROJECT_DESCRIPTIONS: Record<string, string> = {
   'Modern mixed metal gate': 'A modern boundary design combining a painted steel frame with stainless accent strips or panels, adaptable for the required privacy, airflow, gate connection, and exterior finish.',
 };
 
+const PROJECT_DESCRIPTIONS_BY_TITLE = new Map(
+  Object.entries(PROJECT_DESCRIPTIONS).map(([title, description]) => [title.toLowerCase(), description]),
+);
+
 for (const serviceItem of SERVICE_CATALOG) {
   for (const project of serviceItem.projects) {
-    project.description = PROJECT_DESCRIPTIONS[project.title]
+    project.description = PROJECT_DESCRIPTIONS_BY_TITLE.get(project.title.toLowerCase())
       || project.description
       || `${project.title} is a ${serviceItem.label.toLowerCase()} reference that can be adjusted to the actual site dimensions, required use, material grade, finish, and installation condition.`;
 
