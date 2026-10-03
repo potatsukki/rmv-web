@@ -31,12 +31,7 @@ const STATUS_FILTERS = [
   { label: 'All', value: '' },
   {
     label: 'Appointment Request',
-    value: [
-      AppointmentStatus.REQUESTED,
-      AppointmentStatus.CONFIRMED,
-      AppointmentStatus.RESCHEDULE_REQUESTED,
-      AppointmentStatus.READY_FOR_OCULAR,
-    ].join(','),
+    value: AppointmentStatus.REQUESTED,
   },
   { label: 'Completed', value: AppointmentStatus.COMPLETED },
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
