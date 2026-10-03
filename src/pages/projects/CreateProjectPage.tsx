@@ -296,7 +296,7 @@ export function CreateProjectPage() {
         <fieldset disabled={createProject.isPending} className="min-w-0 space-y-6">
           <Card>
             <CardHeader>
-              <CardTitle>Signed Contract *</CardTitle>
+              <CardTitle>Signed Contract</CardTitle>
               <CardDescription>A signed contract is required before the project can be created.</CardDescription>
             </CardHeader>
             <CardContent>
@@ -348,7 +348,7 @@ export function CreateProjectPage() {
               {projectPath === 'ocular' && (
                 <div className="grid gap-4 rounded-xl border bg-muted/30 p-4 sm:grid-cols-2">
                   <div className="space-y-2">
-                    <Label htmlFor="project-ocular-date">Ocular Visit Date *</Label>
+                    <Label htmlFor="project-ocular-date">Ocular Visit Date</Label>
                     <Input
                       id="project-ocular-date"
                       type="date"
@@ -362,7 +362,7 @@ export function CreateProjectPage() {
                     />
                   </div>
                   <div className="space-y-2">
-                    <Label htmlFor="project-ocular-slot">Time Slot *</Label>
+                    <Label htmlFor="project-ocular-slot">Time Slot</Label>
                     <select
                       id="project-ocular-slot"
                       value={ocularVisitSlot}
@@ -409,7 +409,7 @@ export function CreateProjectPage() {
                 </div>
               ) : (
                 <>
-                  <Label htmlFor="project-customer-search">Customer *</Label>
+                  <Label htmlFor="project-customer-search">Customer</Label>
                   <div className="relative">
                     <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                     <Input id="project-customer-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type at least 2 characters…" className="pl-10" autoComplete="off" />
@@ -442,12 +442,12 @@ export function CreateProjectPage() {
               <CardDescription>
                 {linkedServiceTypes.length > 1
                   ? `${linkedServiceTypes.length} service items and their appointment/ocular details will be linked automatically.`
-                  : 'Required fields are marked with *. Project ID, delivery type, and appointment/ocular details are filled automatically.'}
+                  : 'Project ID, delivery type, and appointment/ocular details are filled automatically.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
-                <Label htmlFor="project-service">Service Type *</Label>
+                <Label htmlFor="project-service">Service Type</Label>
                 <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
                   setServiceType(event.target.value);
                   setServiceTypeFromAppointment(false);
@@ -460,7 +460,7 @@ export function CreateProjectPage() {
                 {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
               </div>
               <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work (optional)</Label><Textarea id="project-description" name="description" maxLength={2000} rows={3} /></div>
-              <div className="space-y-2"><Label htmlFor="project-address">Project Site Address *</Label><Textarea id="project-address" name="siteAddress" required maxLength={500} rows={2} defaultValue={appointmentAddress(appointment.data)} /></div>
+              <div className="space-y-2"><Label htmlFor="project-address">Project Site Address</Label><Textarea id="project-address" name="siteAddress" required maxLength={500} rows={2} defaultValue={appointmentAddress(appointment.data)} /></div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2"><Label htmlFor="project-material">Material Type</Label><Input id="project-material" name="materialType" maxLength={1000} value={materialType} onChange={(event) => setMaterialType(event.target.value)} list="project-material-options" /></div>
                 <div className="space-y-2"><Label htmlFor="project-finish">Finish / Color</Label><Input id="project-finish" name="finishColor" maxLength={500} value={finishColor} onChange={(event) => setFinishColor(event.target.value)} list="project-finish-options" /></div>
