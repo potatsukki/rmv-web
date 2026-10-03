@@ -109,7 +109,6 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
-<<<<<<< HEAD
             # Reclaim space from previous image-based deployments before
             # pulling the next immutable image. Keep volumes untouched.
             echo "Docker disk usage (before cleanup):"
