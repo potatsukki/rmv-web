@@ -51,6 +51,7 @@ import {
   type BlueprintTabDraftCache,
 } from '@/lib/blueprint-draft-cache';
 import { QUOTATION_COPY } from '@/lib/quotation-copy';
+import { submitLatestBlueprintDraft } from '@/lib/blueprint-draft-submission';
 import type { Blueprint, BlueprintDraft, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
 import { resolveBlueprintWorkflowStatus } from '@/lib/workflow-status';
 
@@ -752,6 +753,15 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   ]);
 
   const lastSavedQuotation = useRef(currentQuotation);
+  const pendingDraftSaves = useRef(new Set<Promise<unknown>>());
+  const uploadInProgressRef = useRef(false);
+  const saveDraft = (...args: Parameters<typeof upsertDraftMutation.mutateAsync>) => {
+    const save = upsertDraftMutation.mutateAsync(...args);
+    pendingDraftSaves.current.add(save);
+    const removeSave = () => { pendingDraftSaves.current.delete(save); };
+    void save.then(removeSave, removeSave);
+    return save;
+  };
 
   useEffect(() => {
     const emptyQuotation = getEmptyQuotation(costingServiceType, 'standard');
@@ -863,13 +873,14 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
 
   // DB Autosave Form Hook
   useEffect(() => {
-    if (!quotInitialized) return;
+    if (!quotInitialized || uploading || uploadInProgressRef.current) return;
     const isDifferent = JSON.stringify(currentQuotation) !== JSON.stringify(lastSavedQuotation.current);
     if (!isDifferent) return;
 
     const timer = setTimeout(() => {
+      if (uploadInProgressRef.current) return;
       setIsSavingDraft(true);
-      upsertDraftMutation.mutate({
+      void saveDraft({
         projectId,
         projectItemId,
         mode: blueprint ? 'revision' : 'initial',
@@ -888,13 +899,14 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         onError: () => {
            setIsSavingDraft(false);
         }
-      });
+      }).catch(() => undefined);
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [currentQuotation, quotInitialized, blueprint, projectId, projectItemId, blueprintFileMeta, designFileMeta, costingFileMeta, upsertDraftMutation]);
+  }, [currentQuotation, quotInitialized, blueprint, projectId, projectItemId, blueprintFileMeta, designFileMeta, costingFileMeta, upsertDraftMutation, uploading]);
 
   const handleDraftFileUpload = async (file: File, type: 'blueprint'|'design'|'costing') => {
+    if (uploadInProgressRef.current) return;
     setUploadingFile(type);
     try {
       const { uploadUrl, fileKey } = await requestSignedUploadUrl({
@@ -922,7 +934,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         costing: type === 'costing' ? newMeta : costingFileMeta,
       };
 
-      await upsertDraftMutation.mutateAsync({
+      await saveDraft({
         projectId,
         projectItemId,
         mode: blueprint ? 'revision' : 'initial',
@@ -939,6 +951,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   };
 
   const handleDraftFileRemove = (type: 'blueprint'|'design'|'costing') => {
+    if (uploadInProgressRef.current) return;
     if (type === 'blueprint') setBlueprintFileMeta(null);
     if (type === 'design') setDesignFileMeta(null);
     if (type === 'costing') setCostingFileMeta(null);
@@ -949,14 +962,14 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       costing: type === 'costing' ? null : costingFileMeta,
     };
 
-    upsertDraftMutation.mutate({
+    void saveDraft({
       projectId,
       projectItemId,
       mode: blueprint ? 'revision' : 'initial',
       sourceBlueprintId: blueprint?._id,
       files: updatedFiles,
       quotation: currentQuotation,
-    });
+    }).catch((err) => toast.error(extractErrorMessage(err, 'Failed to save draft file changes')));
   };
 
   const handleOpenPreviewModal = (file: { key: string; name: string; type?: string }) => {
@@ -1078,6 +1091,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 <input
                   type="text"
                   value={item.material}
+                  disabled={uploading}
                   onChange={(e) => updateMaterialCost(index, 'material', e.target.value)}
                   placeholder="Enter material"
                   className={inputCls}
@@ -1090,6 +1104,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   min={0}
                   step={0.01}
                   value={item.amount}
+                  disabled={uploading}
                   onChange={(e) => updateMaterialCost(index, 'amount', e.target.value)}
                   placeholder="0.00"
                   className={inputCls}
@@ -1098,6 +1113,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
               <button
                 type="button"
                 onClick={() => removeMaterialCost(index)}
+                disabled={uploading}
                 className={`inline-flex h-9 w-9 items-center justify-center rounded-lg border transition-colors ${isDark ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-[#d2d2d7] text-[#6e6e73] hover:bg-[#e8e8ed]'}`}
                 aria-label={`Remove material ${index + 1}`}
               >
@@ -1109,6 +1125,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
             <button
               type="button"
               onClick={addMaterialCost}
+              disabled={uploading}
               className={`text-sm font-medium ${isDark ? 'text-sky-300 hover:text-sky-200' : 'text-blue-700 hover:text-blue-800'}`}
             >
               + Add material
@@ -1225,7 +1242,6 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     }
   };
 
-  const uploadInProgressRef = useRef(false);
   const handleBlueprintUpload = async () => {
     if (uploadInProgressRef.current) return;
     if (!blueprintFileMeta || !effectiveDesignFileMeta) {
@@ -1239,14 +1255,9 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     uploadInProgressRef.current = true;
     setUploading(true);
     try {
-      // Wait for any pending draft autosaves to settle
-      if (isSavingDraft) {
-        toast.loading('Saving final draft changes...', { id: 'draftSave' });
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        toast.dismiss('draftSave');
-      }
-      if (!designFileMeta && effectiveDesignFileMeta) {
-        await upsertDraftMutation.mutateAsync({
+      await submitLatestBlueprintDraft(
+        pendingDraftSaves.current,
+        () => saveDraft({
           projectId,
           projectItemId,
           mode: blueprint ? 'revision' : 'initial',
@@ -1257,10 +1268,9 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
             costing: costingFileMeta,
           },
           quotation: currentQuotation,
-        });
-      }
-
-      await finalizeDraftMutation.mutateAsync({ projectId, projectItemId });
+        }),
+        () => finalizeDraftMutation.mutateAsync({ projectId, projectItemId }),
+      );
 
       toast.success(
         isCostingMode
