@@ -109,6 +109,16 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
+            # ── Reclaim Docker disk space to avoid pull/build failures ──
+            echo "Docker disk usage (before cleanup):"
+            docker system df || true
+            docker container prune -f || true
+            docker image prune -af || true
+            docker builder prune -af || true
+            docker volume prune -f || true
+            echo "Docker disk usage (after cleanup):"
+            docker system df || true
+
             # ── Run blue-green deploy ─────────────────────────────────
             chmod +x /opt/rmv/rmv-server/deploy/scripts/blue-green-deploy.sh
             export RMV_WEB_IMAGE='${{ needs.image.outputs.image_repo }}'
