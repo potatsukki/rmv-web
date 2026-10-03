@@ -458,9 +458,11 @@ export function DashboardPage() {
           <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--text-metal-muted-color)]">
             Overview
           </p>
-          <div className="metal-pill mt-2 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-color)]">
-            {getRoleWorkspaceLabel(primaryRole as Role)}
-          </div>
+          {dashboardRole !== Role.ENGINEER && (
+            <div className="metal-pill mt-2 inline-flex items-center rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--text-metal-color)]">
+              {getRoleWorkspaceLabel(primaryRole as Role)}
+            </div>
+          )}
           <h2 className="text-2xl font-bold tracking-tight text-[var(--color-card-foreground)] sm:text-[2rem]">
             {greeting()}, {user?.firstName}
           </h2>
