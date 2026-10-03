@@ -451,7 +451,6 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
           { label: 'Mount Type', value: 'Surface mount / side mount / core drilled', note: 'Maps to mountType. Mounting method changes anchors and labor.' },
           { label: 'Mounting Surface', value: 'Concrete, steel, or mixed base', note: 'Maps to mountingSurface and baseMaterial.' },
           { label: 'Outdoor Exposure', value: 'Low / medium / high', note: 'Maps to outdoorExposure. Exposure affects grade and finish recommendation.' },
-          { label: 'Balcony Edge Condition', value: 'Verify slab edge and waterproofing', note: 'Maps to balconyEdgeCondition.' },
         ],
       },
       {

@@ -60,7 +60,7 @@ import {
 } from '@/lib/constants';
 import type { LineItem, ServiceSpecifications, SiteConditions, VisitReport } from '@/lib/types';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
-import { getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
+import { getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults, normalizeServiceSpecifications } from '@/lib/service-specifications';
 import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 
 
@@ -1272,7 +1272,7 @@ export function VisitReportPage() {
               </CardHeader>
               <CardContent className="space-y-4">
                 {getServiceSpecificationSchema(report.serviceType).sections.map((section) => {
-                  const values = report.specifications?.[section.key] || {};
+                  const values = normalizeServiceSpecifications(report.serviceType, report.specifications)[section.key] || {};
                   const filled = section.fields.filter((field) => values[field.key] !== undefined && values[field.key] !== '');
                   if (!filled.length) return null;
                   return (

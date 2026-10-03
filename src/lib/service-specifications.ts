@@ -56,7 +56,6 @@ const railingSchema: ServiceSpecificationSchema = {
     section('siteConditions', 'Site Conditions', [
       { key: 'mountingSurface', label: 'Mounting Surface', type: 'text' },
       { key: 'staircasePresent', label: 'Staircase Present', type: 'checkbox', defaultValue: false },
-      { key: 'balconyEdgeCondition', label: 'Balcony Edge Condition', type: 'text' },
       { key: 'baseMaterial', label: 'Concrete or Steel Base', type: 'select', options: [option('Concrete'), option('Steel'), option('Mixed')] },
       { key: 'outdoorExposure', label: 'Outdoor Exposure', type: 'select', options: [option('Low'), option('Medium'), option('High')] },
     ]),
@@ -432,15 +431,37 @@ export function createDefaultSpecifications(serviceType?: string): ServiceSpecif
   return specifications;
 }
 
+export function normalizeServiceSpecifications(
+  serviceType: string | undefined,
+  current?: ServiceSpecifications,
+): ServiceSpecifications {
+  if (!current) return {};
+
+  const next: ServiceSpecifications = {};
+  (['measurements', 'siteConditions', 'materialsDesign', 'additional'] as SpecificationSectionKey[]).forEach((key) => {
+    if (current[key]) next[key] = { ...current[key] };
+  });
+
+  if (serviceType === ServiceType.RAILINGS && next.siteConditions) {
+    delete next.siteConditions.balconyEdgeCondition;
+    if (next.siteConditions.mountingSurface === 'Concrete balcony') {
+      next.siteConditions.mountingSurface = 'Concrete Balcony';
+    }
+  }
+
+  return next;
+}
+
 export function mergeSpecificationsWithDefaults(serviceType: string | undefined, current?: ServiceSpecifications): ServiceSpecifications {
   const defaults = createDefaultSpecifications(serviceType);
   const next: ServiceSpecifications = { ...defaults };
   if (!current) return next;
+  const normalized = normalizeServiceSpecifications(serviceType, current);
 
   (['measurements', 'siteConditions', 'materialsDesign', 'additional'] as SpecificationSectionKey[]).forEach((key) => {
     next[key] = {
       ...(defaults[key] || {}),
-      ...(current[key] || {}),
+      ...(normalized[key] || {}),
     };
   });
   return next;

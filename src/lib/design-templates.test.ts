@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { getDesignTemplates } from './design-templates';
 import { SERVICE_CATALOG, getServiceProjectReferences } from './service-catalog';
+import { getServiceSpecificationSchema, mergeSpecificationsWithDefaults } from './service-specifications';
 
 describe('project design templates', () => {
   it('shows all seven railing designs from the landing catalog', () => {
@@ -37,6 +38,22 @@ describe('project design templates', () => {
         expect(Object.keys(template.suggestedSpecifications || {}).length, template.title).toBeGreaterThan(0);
       }
     }
+  });
+
+  it('uses the requested railing balcony details', () => {
+    const siteConditionFields = getServiceSpecificationSchema('railings')
+      .sections.find((section) => section.key === 'siteConditions')
+      ?.fields.map((field) => field.key);
+    const specifications = mergeSpecificationsWithDefaults('railings', {
+      siteConditions: {
+        mountingSurface: 'Concrete balcony',
+        balconyEdgeCondition: 'To confirm with customer',
+      },
+    });
+
+    expect(specifications.siteConditions?.mountingSurface).toBe('Concrete Balcony');
+    expect(siteConditionFields).not.toContain('balconyEdgeCondition');
+    expect(specifications.siteConditions).not.toHaveProperty('balconyEdgeCondition');
   });
 
   it('fills missing catalog descriptions and project detail guides', () => {
