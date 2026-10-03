@@ -503,7 +503,7 @@ export function CreateProjectPage() {
               </div>
               <div className="space-y-2"><Label htmlFor="project-requirements">Customer Requirements</Label><Textarea id="project-requirements" name="customerRequirements" maxLength={2000} defaultValue={detailsSource?.customerRequirements} /></div>
               {serviceType && <ServiceSpecificationForm serviceType={serviceType} value={specifications} onChange={setSpecifications} />}
-              <div className="space-y-3"><h2 className="font-semibold">Component Measurements</h2><LineItemsEditor items={lineItems} unit={measurementUnit} onItemsChange={setLineItems} onUnitChange={setMeasurementUnit} /></div>
+              <div className="space-y-3"><h2 className="font-semibold">Component Measurements</h2><LineItemsEditor items={lineItems} unit={measurementUnit} onItemsChange={setLineItems} onUnitChange={setMeasurementUnit} showNotes={false} /></div>
               <div className="space-y-2"><Label htmlFor="project-design-notes">Initial Design Notes</Label><Textarea id="project-design-notes" value={initialDesignNotes} onChange={(event) => setInitialDesignNotes(event.target.value)} maxLength={2000} /></div>
             </CardContent>
           </Card>

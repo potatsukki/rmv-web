@@ -13,6 +13,7 @@ interface LineItemsEditorProps {
   onItemsChange: (items: LineItem[]) => void;
   onUnitChange: (unit: string) => void;
   disabled?: boolean;
+  showNotes?: boolean;
 }
 
 const EMPTY_ITEM: LineItem = {
@@ -26,6 +27,7 @@ export function LineItemsEditor({
   onItemsChange,
   onUnitChange,
   disabled = false,
+  showNotes = true,
 }: LineItemsEditorProps) {
   const addItem = () => {
     onItemsChange([...items, { ...EMPTY_ITEM }]);
@@ -144,16 +146,18 @@ export function LineItemsEditor({
                 </div>
 
                 {/* Notes */}
-                <Textarea
-                  placeholder="Notes for this component..."
-                  value={item.notes || ''}
-                  onChange={(e) =>
-                    updateItem(index, 'notes', e.target.value || undefined)
-                  }
-                  disabled={disabled}
-                  className="min-h-[40px] rounded-lg border-gray-200 text-xs resize-none dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30"
-                  rows={1}
-                />
+                {showNotes && (
+                  <Textarea
+                    placeholder="Notes for this component..."
+                    value={item.notes || ''}
+                    onChange={(e) =>
+                      updateItem(index, 'notes', e.target.value || undefined)
+                    }
+                    disabled={disabled}
+                    className="min-h-[40px] rounded-lg border-gray-200 text-xs resize-none dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500 dark:hover:border-white/30"
+                    rows={1}
+                  />
+                )}
               </div>
 
               {/* Delete button */}
