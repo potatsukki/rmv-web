@@ -83,9 +83,9 @@ jobs:
         with:
           host: ${{ secrets.VPS_HOST }}
           username: ${{ secrets.VPS_USERNAME }}
-          password: ${{ secrets.VPS_PASSWORD }}
+          key: ${{ secrets.VPS_SSH_KEY }}
           command_timeout: 15m
-          script_stop: false
+          script_stop: true
           script: |
             echo "========== FRONTEND BLUE-GREEN DEPLOY =========="
 
@@ -109,6 +109,16 @@ jobs:
             git fetch --all
             git reset --hard origin/main
 
+            # Reclaim space from previous image-based deployments before
+            # pulling the next immutable image. Keep volumes untouched.
+            echo "Docker disk usage (before cleanup):"
+            docker system df || true
+            docker container prune -f --filter "label=com.docker.compose.project=deploy" || true
+            docker image prune -af || true
+            docker builder prune -af || true
+            echo "Docker disk usage (after cleanup):"
+            docker system df || true
+
             # ── Run blue-green deploy ─────────────────────────────────
             chmod +x /opt/rmv/rmv-server/deploy/scripts/blue-green-deploy.sh
             export RMV_WEB_IMAGE='${{ needs.image.outputs.image_repo }}'
@@ -119,4 +129,3 @@ jobs:
             /opt/rmv/rmv-server/deploy/scripts/blue-green-deploy.sh web
 
             echo "========== FRONTEND DEPLOY DONE =========="
-            exit 0
