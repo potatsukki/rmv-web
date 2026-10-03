@@ -117,7 +117,9 @@ const lifecycleIconByStatus: Record<string, ComponentType<{ className?: string }
 };
 
 const formatFabricationStatus = (value?: string) =>
-  (value || FabricationStatus.QUEUED).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+  value === FabricationStatus.TURNOVER
+    ? 'Done'
+    : (value || FabricationStatus.QUEUED).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
 function itemTitle(item: ProjectItem) {
   return item.title || item.serviceTypeCustom || item.serviceType.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -473,9 +475,6 @@ export function FabricationTab({
     }
   };
 
-  const formatStatus = (value: string) =>
-    value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
-
   const handleViewFile = (key: string) => {
     if (!key) return;
     if (key.startsWith('http')) {
@@ -782,7 +781,7 @@ export function FabricationTab({
                             <SelectItem key={value} value={value} disabled={isBlocked}>
                               <span className="flex items-center gap-2">
                                 {isBlocked && <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                                {formatStatus(value)}
+                                {formatFabricationStatus(value)}
                                 {isPaymentBlocked && (
                                   <span className="text-[11px] text-amber-600 font-normal">
                                     ({gate.currentPaid}/{gate.requiredPaid} paid)
@@ -937,7 +936,7 @@ export function FabricationTab({
                   </div>
 
                   <div className="flex items-center gap-2 mb-2">
-                    <StatusBadge status={String(update.status)} />
+                    <StatusBadge status={String(update.status)} label={formatFabricationStatus(String(update.status))} />
                   </div>
 
                   <Card className={`${isDark ? 'metal-panel dark:bg-slate-900/85' : 'metal-panel'} rounded-xl border-[color:var(--color-border)]/50 shadow-sm transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_34px_rgba(0,0,0,0.24)] dark:border-slate-700`}>
