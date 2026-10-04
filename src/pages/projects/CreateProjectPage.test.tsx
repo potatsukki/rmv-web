@@ -56,25 +56,26 @@ it('does not ask sales to enter the fabricator site address when creating a proj
   expect(html).not.toContain('name="siteAddress"');
 });
 
-it('shows which report needs submission even when the ocular appointment is complete', () => {
+it('does not show the report submission panel when the ocular appointment is complete', () => {
   completedOcular();
   source.reports = [
     { _id: 'report-1', serviceType: 'gates', status: 'submitted', visitType: 'ocular' },
     { _id: 'report-2', serviceType: 'railings', status: 'draft', visitType: 'ocular' },
   ];
   const html = renderPage('/projects/create?pendingProjectId=project-1');
-  expect(html).toContain('Appointment completed. Submit the remaining visit reports before creating the project.');
-  expect(html).toContain('href="/visit-reports/report-2"');
-  expect(html).toContain('target="_blank"');
+  expect(html).not.toContain('Appointment completed. Submit the remaining visit reports before creating the project.');
+  expect(html).not.toContain('href="/visit-reports/report-2"');
+  expect(html).not.toContain('Reports open in a new tab');
+  expect(html).not.toContain('Refresh Status');
   expect(html).not.toContain('href="/visit-reports/report-1"');
 });
 
-it('shows returned reports as needing resubmission', () => {
+it('does not show a report submission panel for returned reports', () => {
   completedOcular();
   source.reports = [{ _id: 'returned-1', serviceType: 'gates', status: 'returned', visitType: 'ocular' }];
   const html = renderPage('/projects/create?pendingProjectId=project-1');
-  expect(html).toContain('href="/visit-reports/returned-1"');
-  expect(html).toContain('Returned');
+  expect(html).not.toContain('href="/visit-reports/returned-1"');
+  expect(html).not.toContain('Refresh Status');
 });
 
 it('does not show a report blocker once all reports are submitted or completed', () => {
@@ -88,12 +89,12 @@ it('does not show a report blocker once all reports are submitted or completed',
   expect(html).not.toContain('View Ocular Visit');
 });
 
-it('explains loading, missing and failed report checks instead of treating them as ready', () => {
+it('does not show the removed panel while reports are loading, missing or failed', () => {
   completedOcular();
   source.reportsLoading = true;
-  expect(renderPage('/projects/create?pendingProjectId=project-1')).toContain('Checking ocular visit and reports');
+  expect(renderPage('/projects/create?pendingProjectId=project-1')).not.toContain('Checking ocular visit and reports');
   source.reportsLoading = false;
-  expect(renderPage('/projects/create?pendingProjectId=project-1')).toContain('No visit report found');
+  expect(renderPage('/projects/create?pendingProjectId=project-1')).not.toContain('No visit report found');
   source.reportsError = true;
-  expect(renderPage('/projects/create?pendingProjectId=project-1')).toContain('Unable to check ocular visit or reports');
+  expect(renderPage('/projects/create?pendingProjectId=project-1')).not.toContain('Unable to check ocular visit or reports');
 });

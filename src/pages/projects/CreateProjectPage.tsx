@@ -313,27 +313,6 @@ export function CreateProjectPage() {
           : 'Upload the signed contract, then enter the project details.'}</p>
       </div>
 
-      {ocularBlocker && <Card>
-        <CardContent className="space-y-2 p-4">
-          <p role="status" className="text-sm text-muted-foreground">{ocularBlocker}</p>
-          {unsubmittedReports.length > 0 && <div className="flex flex-wrap gap-2">
-            {unsubmittedReports.map((report) => <Button key={report._id} asChild variant="outline" size="sm">
-              <Link to={`/visit-reports/${report._id}`} target="_blank" rel="noopener noreferrer">
-                {serviceLabel(report.serviceType, report.serviceTypeCustom) || 'Visit Report'} — {report.status === VisitReportStatus.RETURNED ? 'Returned' : 'Draft'}: Submit Report
-              </Link>
-            </Button>)}
-          </div>}
-          <p className="text-xs text-muted-foreground">Reports open in a new tab. After submitting, return here and refresh the status to keep your project entries.</p>
-          <div className="flex flex-wrap gap-2">
-            {appointmentId && <Button asChild variant="outline"><Link to={`/appointments/${appointmentId}`} target="_blank" rel="noopener noreferrer">View Ocular Visit</Link></Button>}
-            <Button type="button" variant="outline" disabled={!appointmentId || appointment.isFetching || visitReports.isFetching} onClick={() => {
-              void appointment.refetch();
-              void visitReports.refetch();
-            }}>Refresh Status</Button>
-          </div>
-        </CardContent>
-      </Card>}
-
       <datalist id="project-material-options">{['Stainless 201', 'Stainless 304', 'Stainless 316', 'Mild Steel', 'Galvanized Iron (GI)', 'Aluminum', 'Wrought Iron', 'Glass', 'Wood'].map((label) => <option key={label} value={label} />)}</datalist>
       <datalist id="project-finish-options">{['Hairline / Brushed', 'Mirror / Polished', 'Matte', 'Powder Coated', 'Painted', 'Sandblasted', 'Rose Gold (PVD)', 'Gold (PVD)', 'Black (PVD)'].map((label) => <option key={label} value={label} />)}</datalist>
       <form
