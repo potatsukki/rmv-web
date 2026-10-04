@@ -26,6 +26,7 @@ import { extractErrorMessage, extractLocalDateValue, cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
+import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -374,6 +375,7 @@ export function VisitReportPage() {
   const [specifications, setSpecifications] = useState<ServiceSpecifications>({});
   const [customerRequirements, setCustomerRequirements] = useState('');
   const [notes, setNotes] = useState('');
+  const [salesNotes, setSalesNotes] = useState('');
 
   const [discussionNotes, setDiscussionNotes] = useState('');
   const [selectedDesignTemplateId, setSelectedDesignTemplateId] = useState('');
@@ -453,6 +455,7 @@ export function VisitReportPage() {
       consultationCompletedAt?: string;
       attendanceNotes?: string;
       salesStaffId?: unknown;
+      initialDesignNotes?: string;
       serviceTypes?: string[];
       selectedDesignTemplateId?: string;
       selectedDesignTemplateName?: string;
@@ -532,7 +535,7 @@ export function VisitReportPage() {
   }, [appointmentRecord, refetch]);
 
   // Pre-fill form when data arrives
-  if (report && reportMatchesRoute && !formLoaded) {
+  if (report && reportMatchesRoute && !formLoaded && !isAppointmentReportLookupLoading) {
     setVisitType(effectiveVisitType);
     // Convert UTC ISO string to local date + time for split pickers
     const sharedVisitParts = getLocalVisitParts(sharedActualVisitDateTime);
@@ -550,6 +553,7 @@ export function VisitReportPage() {
     setSpecifications(mergeSpecificationsWithDefaults(report.serviceType, report.specifications));
     setCustomerRequirements(report.customerRequirements || '');
     setNotes(report.notes || '');
+    setSalesNotes(combineSalesNotes(report.initialDesignNotes, appointmentRecord?.initialDesignNotes, ...(siblingReports || []).map((item) => item.initialDesignNotes)));
 
     // Consultation-specific fields
     setDiscussionNotes(report.discussionNotes || '');
@@ -741,6 +745,7 @@ export function VisitReportPage() {
         serviceTypeCustom: serviceTypeCustom || undefined,
         customerRequirements: customerRequirements || undefined,
         notes: notes || undefined,
+        initialDesignNotes: cleanSalesNotes(salesNotes),
         // Site measurements and evidence belong to the ocular visit report.
         ...(canEditSiteDetails && {
           measurementUnit,
@@ -1390,7 +1395,7 @@ export function VisitReportPage() {
             </Card>
           )}
 
-          {(report.initialDesignKeys?.length || report.initialDesignNotes) && (
+          {(report.initialDesignKeys?.length || cleanSalesNotes(report.initialDesignNotes)) && (
             <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2 text-lg text-gray-900 dark:text-slate-100">
@@ -1408,8 +1413,8 @@ export function VisitReportPage() {
                     label="Initial design files"
                   />
                 )}
-                {report.initialDesignNotes && (
-                  <InfoRow icon={Paintbrush} label="Initial Design Notes" value={report.initialDesignNotes} />
+                {cleanSalesNotes(report.initialDesignNotes) && (
+                  <InfoRow icon={Paintbrush} label="Sales Notes" value={cleanSalesNotes(report.initialDesignNotes)} />
                 )}
               </CardContent>
             </Card>
@@ -1534,6 +1539,14 @@ export function VisitReportPage() {
               </CardContent>
             </Card>
           )}
+
+          <Card className={editSectionClassName}>
+            <CardHeader><CardTitle>Sales Notes</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <Label htmlFor="visit-sales-notes">Sales Notes (optional)</Label>
+              <Textarea id="visit-sales-notes" value={salesNotes} onChange={(event) => setSalesNotes(event.target.value)} maxLength={2000} rows={4} className={editInputClassName} placeholder="Update your notes and clarified customer requirements." />
+            </CardContent>
+          </Card>
 
           {/* Consultation Summary (only for consultation visit type) */}
           {visitType === 'consultation' && (

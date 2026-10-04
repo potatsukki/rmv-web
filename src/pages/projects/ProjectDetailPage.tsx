@@ -15,6 +15,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
+import { cleanSalesNotes } from '@/lib/sales-notes';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -707,9 +708,7 @@ export function ProjectDetailPage() {
     },
     [activeProjectItemRecord, project?.initialDesignKeys],
   );
-  const activeInitialDesignNotes = activeProjectItemRecord
-    ? activeProjectItemRecord.initialDesignNotes
-    : project?.initialDesignNotes;
+  const activeInitialDesignNotes = cleanSalesNotes(project?.initialDesignNotes) || cleanSalesNotes(activeProjectItemRecord?.initialDesignNotes);
   const activeDesignReviewStatus = activeProjectItemRecord
     ? activeProjectItemRecord.designReviewStatus || 'not_required'
     : project?.designReviewStatus || 'not_required';
@@ -2255,7 +2254,7 @@ export function ProjectDetailPage() {
                     </div>
 
                     <div className="rounded-[22px] border border-blue-500/10 bg-[linear-gradient(180deg,rgba(37,99,235,0.08)_0%,rgba(15,23,42,0.02)_100%)] px-5 py-6 dark:border-blue-400/10 dark:bg-[linear-gradient(180deg,rgba(59,130,246,0.10)_0%,rgba(15,23,42,0.16)_100%)]">
-                      <p className="text-base leading-9 text-slate-900 dark:text-slate-100">
+                      <p className="whitespace-pre-wrap text-base leading-9 text-slate-900 dark:text-slate-100">
                         {activeInitialDesignNotes}
                       </p>
                     </div>
