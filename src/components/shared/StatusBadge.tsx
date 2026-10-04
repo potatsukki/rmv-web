@@ -94,6 +94,8 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   material_prep: 'blue',
   cutting: 'cyan',
   welding: 'orange',
+  welding_assembly: 'orange',
+  installation: 'cyan',
   finishing: 'purple',
   quality_check: 'indigo',
   ready_for_delivery: 'yellow',
@@ -141,6 +143,7 @@ const STATUS_LABEL_OVERRIDE: Record<string, string> = {
   awaiting_proof: 'Waiting for Proof',
   preparing_blueprint: 'Preparing Blueprint',
   design_billing_approved: 'Design & Billing Approved',
+  welding_assembly: 'Welding / Assembly',
   done: 'Completed',
 };
 
