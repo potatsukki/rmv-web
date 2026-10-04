@@ -35,6 +35,7 @@ const STATUS_FILTERS = [
   },
   { label: 'Completed', value: AppointmentStatus.COMPLETED },
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
+  { label: 'No Show', value: AppointmentStatus.NO_SHOW },
 ];
 
 const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
