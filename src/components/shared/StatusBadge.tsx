@@ -76,6 +76,10 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   design_billing_approved: 'green',
 
   // Payment
+  pending_verification: 'blue',
+  unpaid: 'yellow',
+  rejected: 'red',
+  pending_payment: 'yellow',
   proof_submitted: 'blue',
   verified: 'green',
   declined: 'red',

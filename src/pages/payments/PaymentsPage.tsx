@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck } from 'lucide-react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import { getCashPaymentAmountError } from '@/lib/money';
@@ -29,7 +29,6 @@ import {
   useProjectPaymentPlans,
   usePaymentsByProject,
   useStageCheckout,
-  useSimulateStagePayment,
   useRecordCashPayment,
   useMyPaymentHistory,
   useVerifyPayment,
@@ -59,6 +58,7 @@ import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
 
 
 import { CashierQueuePage } from './CashierQueuePage';
+import { GcashPayment } from './components/GcashPayment';
 import { OcularFeeQueuePage } from '../appointments/OcularFeeQueuePage';
 
 const formatCurrency = (v: number) =>
@@ -268,7 +268,7 @@ export function PaymentsPage() {
   const { data: plan, isLoading: planLoading } = usePaymentPlan(selectedProjectId, selectedProjectItemId);
   const { data: payments } = usePaymentsByProject(selectedProjectId, selectedProjectItemId);
   const stageCheckout = useStageCheckout();
-  const simulatePayment = useSimulateStagePayment();
+  const [gcashStageId, setGcashStageId] = useState('');
   const recordCash = useRecordCashPayment();
 
   const [searchParams, setSearchParams] = useSearchParams();
@@ -519,17 +519,6 @@ export function PaymentsPage() {
     } catch (err) {
       setBlockedAction(resolveBlockedAction(err, '/help/payments/payment-stage-status-reference#overview'));
       toast.error(extractErrorMessage(err, 'Failed to create checkout session'));
-    }
-  };
-
-  const handleSimulate = async (stageId: string) => {
-    try {
-      setBlockedAction(null);
-      await simulatePayment.mutateAsync(stageId);
-      toast.success('Payment simulated — awaiting cashier verification');
-    } catch (err) {
-      setBlockedAction(resolveBlockedAction(err, '/help/payments/payment-stage-status-reference#overview'));
-      toast.error(extractErrorMessage(err, 'Simulation failed'));
     }
   };
 
@@ -1046,6 +1035,7 @@ export function PaymentsPage() {
                   const isOverdue = isActivated && daysSinceActivation >= 3 &&
                     (stage.status === PaymentStageStatus.PENDING || stage.status === PaymentStageStatus.DECLINED);
                   const canPay = !isVerified && !isProofSubmitted;
+                  const gcashStageStatus = payments?.find((payment) => payment.stageId === stage.stageId)?.paymentStatus;
                   const isEarlyPay = canPay && !isActivated;
 
                   /* Timing badge */
@@ -1100,7 +1090,7 @@ export function PaymentsPage() {
                               <p className="text-xs text-[var(--text-metal-muted-color)] mt-0.5">{(stage as any).description}</p>
                             )}
                           </div>
-                          <StatusBadge status={String(stage.status)} />
+                            <StatusBadge status={gcashStageStatus || String(stage.status)} />
                         </div>
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
@@ -1149,12 +1139,11 @@ export function PaymentsPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
-                                  onClick={() => handleSimulate(String(stage.stageId))}
-                                  disabled={simulatePayment.isPending}
+                                  onClick={() => setGcashStageId(String(stage.stageId))}
                                   className="cursor-pointer py-3 sm:py-2 text-amber-600 dark:text-amber-400"
                                 >
-                                  <Zap className="mr-2 h-4 w-4" />
-                                  <span>Simulate Payment</span>
+                                  <CreditCard className="mr-2 h-4 w-4" />
+                                  <span>GCash / Cash On-site</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -1178,6 +1167,7 @@ export function PaymentsPage() {
                             </Button>
                           </div>
                         )}
+                        {isCustomer && !showPayButtons && <Button size="sm" variant="outline" onClick={() => setGcashStageId(String(stage.stageId))}>View Payment Status</Button>}
                         {isCashier && isProofSubmitted && (
                           <div className="pt-1">
                             <Button
@@ -1219,7 +1209,7 @@ export function PaymentsPage() {
                           {shouldHideAmount ? '***' : formatCurrency(Number(stage.amount))}
                         </p>
                         <div className="flex justify-center">
-                          <StatusBadge status={String(stage.status)} />
+                          <StatusBadge status={gcashStageStatus || String(stage.status)} />
                         </div>
                         <div className="flex justify-end gap-2">
                           {showPayButtons && (
@@ -1245,12 +1235,11 @@ export function PaymentsPage() {
                                 </DropdownMenuItem>
                                 <DropdownMenuSeparator />
                                 <DropdownMenuItem 
-                                  onClick={() => handleSimulate(String(stage.stageId))}
-                                  disabled={simulatePayment.isPending}
+                                  onClick={() => setGcashStageId(String(stage.stageId))}
                                   className="cursor-pointer text-amber-600 dark:text-amber-400"
                                 >
-                                  <Zap className="mr-2 h-4 w-4" />
-                                  <span>Simulate Payment</span>
+                                  <CreditCard className="mr-2 h-4 w-4" />
+                                  <span>GCash / Cash On-site</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -1273,6 +1262,7 @@ export function PaymentsPage() {
                             </Button>
                           )}
 
+                          {isCustomer && !showPayButtons && <Button size="sm" variant="outline" onClick={() => setGcashStageId(String(stage.stageId))}>View Payment Status</Button>}
                           {isCashier && isProofSubmitted && (
                             <Button
                               size="sm"
@@ -1336,7 +1326,7 @@ export function PaymentsPage() {
                           _id: String(p._id),
                           type: 'project_payment',
                           amount: Number(p.amountPaid),
-                          status: p.status as any,
+                          status: (p.paymentStatus || p.status) as any,
                           date: p.createdAt ? String(p.createdAt) : new Date().toISOString(),
                           description: `${String(p.method || '').replace('_', ' ')} for ${selectedProject?.title || 'Project'}`,
                           method: p.method,
@@ -1365,7 +1355,7 @@ export function PaymentsPage() {
                             )}
                           </div>
                           <div className="flex items-center gap-2 shrink-0">
-                            <StatusBadge status={String(p.status)} />
+                            <StatusBadge status={String(p.paymentStatus || p.status)} />
                           </div>
                         </div>
                         <p className="text-xs text-[var(--text-metal-muted-color)] mt-1">
@@ -1394,7 +1384,7 @@ export function PaymentsPage() {
                           {shouldHideAmount ? '***' : formatCurrency(Number(p.amountPaid))}
                         </p>
                         <div className="flex justify-center">
-                          <StatusBadge status={String(p.status)} />
+                          <StatusBadge status={String(p.paymentStatus || p.status)} />
                         </div>
                       </div>
                     </button>
@@ -1468,6 +1458,12 @@ export function PaymentsPage() {
         </DialogContent>
       </Dialog>
 
+      <Dialog open={!!gcashStageId} onOpenChange={(open) => !open && setGcashStageId('')}>
+        <DialogContent className="metal-panel-strong max-h-[90vh] overflow-y-auto sm:max-w-2xl">
+          <DialogHeader><DialogTitle>GCash / Cash On-site</DialogTitle></DialogHeader>
+          {gcashStageId && <GcashPayment key={gcashStageId} target={{ stageId: gcashStageId }} />}
+        </DialogContent>
+      </Dialog>
       {/* Payment History Detail Modal */}
       <Dialog
         open={!!selectedHistoryPayment}

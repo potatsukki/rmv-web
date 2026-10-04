@@ -26,6 +26,10 @@ import {
   useDeclineOcularFee,
 } from '@/hooks/useAppointments';
 import { useGetDownloadUrl } from '@/hooks/useUploads';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { api } from '@/lib/api';
+import { useAuthStore } from '@/stores/auth.store';
+import { Role } from '@/lib/constants';
 
 const formatCurrency = (v: number) =>
   new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
@@ -62,6 +66,11 @@ const statusBadge = (status?: string) => {
 export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolean }) {
   const { data: appointments, isLoading, isError, refetch } = usePendingOcularFees();
   const verifyMutation = useVerifyOcularFee();
+  const qc = useQueryClient();
+  const isCashier = useAuthStore((state) => state.user?.roles.includes(Role.CASHIER));
+  const recordCash = useMutation({ mutationFn: (id: string) => api.post(`/appointments/${id}/ocular-fee`, { paymentMethod: 'cash' }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['appointments'] }); qc.invalidateQueries({ queryKey: ['payments'] }); },
+  });
   const declineMutation = useDeclineOcularFee();
   const getDownloadUrl = useGetDownloadUrl();
 
@@ -73,7 +82,8 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
 
   const handleVerify = async () => {
     try {
-      await verifyMutation.mutateAsync(verifyId);
+      if (appointments?.find((appointment) => appointment._id === verifyId)?.ocularFeeStatus === 'cash_pending') await recordCash.mutateAsync(verifyId);
+      else await verifyMutation.mutateAsync(verifyId);
       toast.success('Ocular fee verified');
       setVerifyId('');
     } catch (err) {
@@ -216,6 +226,7 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
                       View Proof
                     </Button>
                   )}
+                  {isCashier && appt.ocularFeeStatus === 'cash_pending' && <Button size="sm" onClick={() => setVerifyId(appt._id)}>Record Cash Received</Button>}
                   {appt.ocularFeeStatus === 'proof_submitted' && (
                     <>
                       <Button
@@ -255,7 +266,7 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
         title="Verify Ocular Fee"
         description="Confirm that this customer's ocular fee payment has been received. The assigned sales staff can then finalize and proceed with the ocular visit."
         confirmLabel="Verify"
-        isLoading={verifyMutation.isPending}
+        isLoading={verifyMutation.isPending || recordCash.isPending}
         onConfirm={handleVerify}
       />
 
