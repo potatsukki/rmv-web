@@ -376,6 +376,8 @@ export function FabricationTab({
   }
 
   const deliveryType = fabricationStatus?.deliveryType || project?.deliveryType || DeliveryType.SHOP_FABRICATED;
+  const confirmationAction = deliveryType === DeliveryType.ON_SITE_INSTALLATION ? 'Installation' : 'Completion';
+  const confirmationSubject = deliveryType === DeliveryType.ON_SITE_INSTALLATION ? 'installation schedule' : 'completed work';
   const fabricationStepMarkers = getFabricationStepMarkers(deliveryType);
   const terminalStatus = FabricationStatus.DONE;
   const confirmationGateStatus = fabricationStatus?.confirmationGateStatus;
@@ -397,12 +399,12 @@ export function FabricationTab({
       toast.success(
         deliveryType === DeliveryType.ON_SITE_INSTALLATION
           ? 'Installation confirmed! The fabrication team can now complete the on-site work.'
-          : 'Installation confirmed! The fabrication team will coordinate delivery and installation.',
+          : 'Completion confirmed! Our team will coordinate delivery.',
         { duration: 5000 },
       );
     } catch (err) {
       setBlockedAction(resolveBlockedAction(err, '/help/projects-fabrication/fabrication-gates-and-payments#overview'));
-      toast.error(extractErrorMessage(err, 'Failed to confirm installation'));
+      toast.error(extractErrorMessage(err, `Failed to confirm ${confirmationAction.toLowerCase()}`));
     }
   };
 
@@ -733,15 +735,21 @@ export function FabricationTab({
         </Card>
       )}
 
-      {/* Installation Confirmation Banners */}
+      {/* Customer confirmation banners */}
       {confirmationGateStatus && allowedStatuses.includes(confirmationGateStatus) && !installationConfirmed && isCustomer && (
         <Card className="rounded-xl border-blue-200 bg-blue-50/60 dark:border-blue-500/35 dark:bg-blue-500/10">
           <CardContent className="p-4 flex items-start gap-3">
             <CalendarCheck className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
             <div className="flex-1">
-              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">Confirm your installation schedule</p>
+              <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
+                {deliveryType === DeliveryType.ON_SITE_INSTALLATION
+                  ? 'Installation at your location'
+                  : 'Confirm your order is complete'}
+              </p>
               <p className="mt-0.5 text-xs text-blue-700 dark:text-blue-300">
-                Please confirm your installation schedule before our team marks this as Done.
+                {deliveryType === DeliveryType.ON_SITE_INSTALLATION
+                  ? 'Please confirm your installation schedule.'
+                  : 'Please confirm that the work is finished and ready for delivery.'}
               </p>
             </div>
             <Button
@@ -750,7 +758,7 @@ export function FabricationTab({
               disabled={confirmInstallationMutation.isPending}
               onClick={handleConfirmInstallation}
             >
-              {confirmInstallationMutation.isPending ? 'Confirming...' : 'Confirm Installation'}
+              {confirmInstallationMutation.isPending ? 'Confirming...' : `Confirm ${confirmationAction}`}
             </Button>
           </CardContent>
         </Card>
@@ -763,7 +771,7 @@ export function FabricationTab({
             <div>
               <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">Awaiting Customer Confirmation</p>
               <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
-                The customer has been notified and must confirm the installation schedule before you can mark this as Done.
+                The customer has been notified and must confirm the {confirmationSubject} before you can mark this as Done.
               </p>
             </div>
           </CardContent>
@@ -775,7 +783,7 @@ export function FabricationTab({
           <CardContent className="p-4 flex items-center gap-3">
             <PackageCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />
             <p className="text-sm font-medium text-emerald-800 dark:text-emerald-100">
-              Customer confirmed the installation schedule — you may proceed to the next stage.
+              Customer confirmed the {confirmationSubject} — you may proceed to the next stage.
             </p>
           </CardContent>
         </Card>
