@@ -1354,7 +1354,7 @@ export function ProjectDetailPage() {
         <Card>
           <CardContent className="space-y-3 p-4">
             <div>
-              <p className="text-sm font-semibold">Pending Ocular</p>
+              <p className="text-sm font-semibold">Ocular</p>
               <p className="mt-1 text-xs text-muted-foreground">Complete the ocular visit and submit its reports, then enter the final project details and upload the signed contract.</p>
             </div>
             {(isAssignedSales || isAdmin) && <div className="flex flex-wrap gap-2">

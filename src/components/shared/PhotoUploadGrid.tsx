@@ -16,6 +16,7 @@ interface PhotoUploadGridProps {
   onSketchKeysChange: (keys: string[]) => void;
   onReferenceImageKeysChange: (keys: string[]) => void;
   disabled?: boolean;
+  showSketches?: boolean;
 }
 
 export function PhotoUploadGrid({
@@ -28,9 +29,10 @@ export function PhotoUploadGrid({
   onSketchKeysChange,
   onReferenceImageKeysChange,
   disabled = false,
+  showSketches = true,
 }: PhotoUploadGridProps) {
   if (disabled) {
-    const total = photoKeys.length + videoKeys.length + sketchKeys.length + referenceImageKeys.length;
+    const total = photoKeys.length + videoKeys.length + (showSketches ? sketchKeys.length : 0) + referenceImageKeys.length;
     if (total === 0) return null;
 
     return (
@@ -63,7 +65,7 @@ export function PhotoUploadGrid({
             </CardContent>
           </Card>
         )}
-        {sketchKeys.length > 0 && (
+        {showSketches && sketchKeys.length > 0 && (
           <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
@@ -140,7 +142,7 @@ export function PhotoUploadGrid({
       </Card>
 
       {/* Sketches */}
-      <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
+      {showSketches && <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
             <PenTool className="h-4 w-4 text-emerald-500 dark:text-emerald-300" />
@@ -158,7 +160,7 @@ export function PhotoUploadGrid({
             label="Upload sketches"
           />
         </CardContent>
-      </Card>
+      </Card>}
 
       {/* Reference Images */}
       <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">

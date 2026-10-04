@@ -218,10 +218,10 @@ export function CreateProjectPage() {
           serviceType: serviceType || undefined,
           ocularVisit: { date: ocularVisitDate, slotCode: ocularVisitSlot },
         });
-        toast.success('Ocular visit scheduled. Saved as Pending Ocular.');
+        toast.success('Ocular visit scheduled and saved.');
         navigate('/projects');
       } catch (error) {
-        toast.error(extractErrorMessage(error, 'Failed to save pending ocular.'));
+        toast.error(extractErrorMessage(error, 'Failed to save ocular visit.'));
       }
       return;
     }
@@ -290,7 +290,7 @@ export function CreateProjectPage() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">{pendingProjectId ? 'Complete Project' : 'Create Project'}</h1>
         <p className="text-sm text-muted-foreground">{projectPath === 'ocular'
-          ? 'Schedule the ocular visit and save it as Pending Ocular. Complete the project after the visit.'
+          ? 'Schedule and save the ocular visit. Complete the project after the visit.'
           : 'Upload the signed contract, then enter the project details.'}</p>
       </div>
 
@@ -351,7 +351,7 @@ export function CreateProjectPage() {
                   className={`rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${projectPath === 'ocular' ? 'border-emerald-400 bg-emerald-50 text-emerald-950 dark:border-emerald-500/60 dark:bg-emerald-500/10 dark:text-emerald-100' : 'hover:bg-muted'}`}
                 >
                   <p className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4" />Ocular Visit</p>
-                  <p className="mt-1 text-xs opacity-75">Save as Pending Ocular. Complete the project details after the visit.</p>
+                  <p className="mt-1 text-xs opacity-75">Save the ocular visit. Complete the project details after the visit.</p>
                 </button>
               </div>
 
@@ -536,7 +536,7 @@ export function CreateProjectPage() {
                 : isUploading
                   ? 'Uploading…'
                   : projectPath === 'ocular'
-                    ? 'Save Pending Ocular'
+                    ? 'Save Ocular'
                     : 'Create Project'}
             </Button>
           </div>

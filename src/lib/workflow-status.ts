@@ -196,7 +196,7 @@ export function resolveProjectWorkflowStatus(input: {
   }
 
   if (input.project?.status === ProjectStatus.DRAFT && input.project.ocularAppointmentId) {
-    return { key: 'pending_ocular', label: 'Pending Ocular', tone: 'green', stage: 'pending_ocular', isTerminal: false };
+    return { key: 'pending_ocular', label: 'Ocular', tone: 'green', stage: 'pending_ocular', isTerminal: false };
   }
 
   if (projectStatus === ProjectStatus.COMPLETED || allItemsCompleted) {

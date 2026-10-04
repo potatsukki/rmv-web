@@ -29,7 +29,7 @@ import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader'
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Pending Ocular', value: 'pending_ocular' },
+  { label: 'Ocular', value: 'pending_ocular' },
   { label: 'Design / Blueprint', value: 'design' },
   { label: 'Billing', value: 'billing' },
   { label: 'Fabrication', value: 'fabrication' },
