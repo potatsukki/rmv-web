@@ -308,8 +308,9 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       ];
     case Role.CASHIER:
       return [
-        { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Awaiting verification', detail: 'Received payment records that still need cashier review before they can be marked paid.', path: '/payments?tab=cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
+        { label: 'Pending Payments', value: d?.unpaidProjects ?? 0, icon: CreditCard, description: 'Projects with unpaid balances', detail: 'Projects with payment plans that still have an unpaid balance, including partially paid projects and payments awaiting verification. Each project is counted once.', path: '/payments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Monthly Revenue', value: formatCurrencyDashboard(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Total verified revenue collected during the current month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
+        { label: 'Awaiting Verification', value: d?.pendingPayments ?? 0, icon: CreditCard, description: 'Records to review', detail: 'Received payment records that still need cashier review before they can be marked paid.', path: '/payments?tab=cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
         { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Cash to collect', detail: 'Cash transactions that still need collection, confirmation, or posting.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
       ];
     case Role.FABRICATION_STAFF:

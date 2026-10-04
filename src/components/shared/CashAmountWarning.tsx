@@ -1,7 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(amount);
+import { getCashPaymentAmountError } from '@/lib/money';
 
 export function CashAmountWarning({
   amount,
@@ -12,18 +10,14 @@ export function CashAmountWarning({
   amountDue: number;
   id: string;
 }) {
-  const enteredAmount = Number(amount);
-  if (!Number.isFinite(enteredAmount) || !Number.isFinite(amountDue) || amountDue <= 0) return null;
-
-  const excess = (Math.round(enteredAmount * 100) - Math.round(amountDue * 100)) / 100;
-  if (excess <= 0) return null;
+  if (!amount.trim()) return null;
+  const error = getCashPaymentAmountError(Number(amount), amountDue);
+  if (!error) return null;
 
   return (
-    <p id={id} role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+    <p id={id} role="status" className="flex min-w-0 max-w-full items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
       <AlertTriangle aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
-      <span>
-        Amount entered is {formatCurrency(excess)} higher than the amount due ({formatCurrency(amountDue)}). Please check the amount before recording.
-      </span>
+      <span className="min-w-0 break-words">{error}</span>
     </p>
   );
 }
