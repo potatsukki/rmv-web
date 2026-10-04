@@ -602,6 +602,18 @@ export interface Payment {
   _id: string;
   projectId: string;
   projectItemId?: string;
+  bookingId?: string;
+  customerId?: string;
+  amountRequired?: number;
+  paymentDate?: string;
+  paymentStatus?: 'unpaid' | 'pending_verification' | 'paid' | 'rejected';
+  verifiedBy?: string | { firstName: string; lastName: string };
+  verifiedAt?: string;
+  rejectionReason?: string;
+  duplicateReference?: boolean;
+  rejectionSource?: 'system' | 'cashier';
+  rejectedBy?: string | { firstName: string; lastName: string } | null;
+  rejectedAt?: string;
   stageId: string;
   method: string;
   amountPaid: number;

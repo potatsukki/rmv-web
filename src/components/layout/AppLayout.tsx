@@ -321,6 +321,10 @@ export function AppLayout() {
       queryClientRef.current.invalidateQueries({ queryKey: ['blueprints'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['fabrication'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['cash'] });
+      if (n.category === 'payment') {
+        queryClientRef.current.invalidateQueries({ queryKey: ['payments'] });
+        queryClientRef.current.invalidateQueries({ queryKey: ['payment-plans'] });
+      }
       toast(n.title + ': ' + n.message);
     };
 

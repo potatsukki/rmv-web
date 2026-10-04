@@ -172,6 +172,7 @@ export function useSubmitPaymentProof() {
       amountPaid: number;
       referenceNumber?: string;
       proofKey?: string;
+      paymentDate: string;
     }) => {
       const { data } = await api.post<ApiResponse<Payment>>('/payments/submit-proof', body);
       return data.data;

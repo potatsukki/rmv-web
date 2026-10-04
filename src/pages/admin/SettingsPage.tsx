@@ -31,6 +31,7 @@ import {
   useScheduleMaintenance,
 } from '@/hooks/useConfig';
 import type { MapPoint } from '@/lib/maps';
+import { GcashSettings } from '@/pages/payments/components/GcashSettings';
 
 export function SettingsPage() {
   const { data: configs, isLoading: configsLoading, error: configsError, refetch: refetchConfigs } = useConfigs();
@@ -425,6 +426,7 @@ export function SettingsPage() {
           </section>
 
           {/* Section 2: Pricing & Follow-ups */}
+          <GcashSettings />
           <section className="space-y-4">
             <h2 className="text-lg font-bold text-[#171b21] dark:text-slate-100 flex items-center gap-2">
               <CreditCard className="h-5 w-5 text-gray-400" /> Billing & Fees
