@@ -51,6 +51,7 @@ import { useLatestBlueprint } from '@/hooks/useBlueprints';
 import { usePaymentPlan, usePaymentsByProject, useProjectPaymentPlans } from '@/hooks/usePayments';
 import { useGetDownloadUrl, openAuthenticatedFile, useAuthenticatedUrl } from '@/hooks/useUploads';
 import { useUsers } from '@/hooks/useUsers';
+import { useAppointment } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
@@ -530,6 +531,7 @@ export function ProjectDetailPage() {
 
   // ── Data queries ──
   const { data: project, isLoading, isError, refetch } = useProject(id!);
+  const ocularAppointment = useAppointment(project?.ocularAppointmentId || '');
   const projectServiceItems = useMemo(() => getProjectServiceItems(project), [project]);
   const linkedProjectItemId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -1348,7 +1350,21 @@ export function ProjectDetailPage() {
       </div>
 
       {/* ── Customer Status Guide Banner ── */}
-      {project.status === 'draft' && visitReport && (
+      {project.status === 'draft' && project.ocularAppointmentId && (
+        <Card>
+          <CardContent className="space-y-3 p-4">
+            <div>
+              <p className="text-sm font-semibold">Pending Ocular</p>
+              <p className="mt-1 text-xs text-muted-foreground">Complete the ocular visit and submit its reports, then enter the final project details and upload the signed contract.</p>
+            </div>
+            {(isAssignedSales || isAdmin) && <div className="flex flex-wrap gap-2">
+              <Button type="button" variant="outline" onClick={() => navigate(`/appointments/${project.ocularAppointmentId}`)}>View Ocular Visit</Button>
+              <Button type="button" disabled={ocularAppointment.data?.status !== 'completed'} onClick={() => navigate(`/projects/create?pendingProjectId=${project._id}`)}>Complete Project</Button>
+            </div>}
+          </CardContent>
+        </Card>
+      )}
+      {project.status === 'draft' && !project.ocularAppointmentId && visitReport && (
         <Card className={cn(
           'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
           isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-blue-200 bg-blue-50/50'
@@ -2630,10 +2646,10 @@ export function ProjectDetailPage() {
                         type="button"
                         variant="prominent"
                         className="w-full sm:w-auto"
-                        onClick={() => navigate(`/projects/${id}/contract`)}
+                        onClick={() => navigate(project.status === 'draft' && project.ocularAppointmentId ? `/projects/create?pendingProjectId=${id}` : `/projects/${id}/contract`)}
                       >
                         <Upload className="mr-1.5 h-4 w-4" />
-                        Go to Contract Upload
+                        {project.status === 'draft' && project.ocularAppointmentId ? 'Complete Project' : 'Go to Contract Upload'}
                       </Button>
                     )}
                   </div>

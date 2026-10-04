@@ -6,7 +6,7 @@ import {
 
 export type ProjectListingStage = Extract<
   WorkflowStatusStage,
-  'design' | 'billing' | 'fabrication' | 'completed' | 'cancelled'
+  'pending_ocular' | 'design' | 'billing' | 'fabrication' | 'completed' | 'cancelled'
 >;
 
 export function matchesProjectStage(

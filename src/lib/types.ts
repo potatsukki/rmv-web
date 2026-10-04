@@ -298,6 +298,7 @@ export interface CustomerQueueStatus {
 
 // ── Project ──
 export interface Project {
+  ocularAppointmentId?: string;
   serviceTypeCustom?: string;
   deliveryType?: 'shop_fabricated' | 'on_site_installation';
   measurementUnit?: string;
