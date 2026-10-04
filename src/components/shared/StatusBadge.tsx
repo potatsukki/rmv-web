@@ -54,6 +54,7 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   // Project
   draft: 'gray',
   pending_ocular: 'green',
+  ocular_completed: 'green',
   submitted: 'blue',
   blueprint: 'purple',
   approved: 'green',

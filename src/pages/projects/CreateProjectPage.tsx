@@ -20,7 +20,7 @@ import { useCreateProject, useProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { api } from '@/lib/api';
-import { DeliveryType, getDefaultDeliveryType, SERVICE_TYPE_LABELS } from '@/lib/constants';
+import { DeliveryType, getDefaultDeliveryType, SERVICE_TYPE_LABELS, VisitReportStatus } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications } from '@/lib/types';
 import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
@@ -100,6 +100,21 @@ export function CreateProjectPage() {
   const appointment = useAppointment(appointmentId);
   const visitReports = useVisitReportsByAppointment(appointmentId);
   const appointmentReports = visitReports.data || [];
+  const unsubmittedReports = appointmentReports.filter((report) => (
+    report.status !== VisitReportStatus.SUBMITTED && report.status !== VisitReportStatus.COMPLETED
+  ));
+  const ocularBlocker = !pendingProjectId ? ''
+    : !appointmentId || appointment.isLoading || visitReports.isLoading
+      ? 'Checking ocular visit and reports…'
+      : appointment.isError || visitReports.isError
+        ? 'Unable to check ocular visit or reports. Refresh the status to try again.'
+        : appointment.data?.status !== 'completed'
+          ? 'Complete the ocular visit and submit its reports before creating the final project.'
+          : !appointmentReports.length
+            ? 'No visit report found. Open the ocular visit to create and submit its report.'
+            : unsubmittedReports.length
+              ? 'Appointment completed. Submit the remaining visit reports before creating the project.'
+              : '';
   const primaryReport = appointmentReports.find((report) => String(report._id) === visitReportId)
     || appointmentReports.find((report) => report.visitType === 'ocular')
     || appointmentReports[0];
@@ -196,6 +211,10 @@ export function CreateProjectPage() {
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createProject.isPending || isUploading) return;
+    if (ocularBlocker) {
+      toast.error(ocularBlocker);
+      return;
+    }
     if (!customerId || !customer) {
       toast.error('Select a customer first.');
       return;
@@ -294,10 +313,24 @@ export function CreateProjectPage() {
           : 'Upload the signed contract, then enter the project details.'}</p>
       </div>
 
-      {pendingProjectId && appointment.data?.status !== 'completed' && <Card>
+      {ocularBlocker && <Card>
         <CardContent className="space-y-2 p-4">
-          <p className="text-sm text-muted-foreground">Complete the ocular visit and submit its reports before creating the final project.</p>
-          {appointmentId && <Button type="button" variant="outline" onClick={() => navigate(`/appointments/${appointmentId}`)}>View Ocular Visit</Button>}
+          <p role="status" className="text-sm text-muted-foreground">{ocularBlocker}</p>
+          {unsubmittedReports.length > 0 && <div className="flex flex-wrap gap-2">
+            {unsubmittedReports.map((report) => <Button key={report._id} asChild variant="outline" size="sm">
+              <Link to={`/visit-reports/${report._id}`} target="_blank" rel="noopener noreferrer">
+                {serviceLabel(report.serviceType, report.serviceTypeCustom) || 'Visit Report'} — {report.status === VisitReportStatus.RETURNED ? 'Returned' : 'Draft'}: Submit Report
+              </Link>
+            </Button>)}
+          </div>}
+          <p className="text-xs text-muted-foreground">Reports open in a new tab. After submitting, return here and refresh the status to keep your project entries.</p>
+          <div className="flex flex-wrap gap-2">
+            {appointmentId && <Button asChild variant="outline"><Link to={`/appointments/${appointmentId}`} target="_blank" rel="noopener noreferrer">View Ocular Visit</Link></Button>}
+            <Button type="button" variant="outline" disabled={!appointmentId || appointment.isFetching || visitReports.isFetching} onClick={() => {
+              void appointment.refetch();
+              void visitReports.refetch();
+            }}>Refresh Status</Button>
+          </div>
         </CardContent>
       </Card>}
 
@@ -529,7 +562,7 @@ export function CreateProjectPage() {
 
           <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            <Button type="submit" disabled={!customer || (projectPath !== 'ocular' && !contractFileKeys[0]) || isUploading || createProject.isPending || (!!pendingProjectId && appointment.data?.status !== 'completed')}>
+            <Button type="submit" disabled={!customer || (projectPath !== 'ocular' && !contractFileKeys[0]) || isUploading || createProject.isPending || !!ocularBlocker}>
               {createProject.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
               {createProject.isPending
                 ? 'Creating…'

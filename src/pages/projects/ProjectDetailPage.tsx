@@ -1354,8 +1354,10 @@ export function ProjectDetailPage() {
         <Card>
           <CardContent className="space-y-3 p-4">
             <div>
-              <p className="text-sm font-semibold">Ocular</p>
-              <p className="mt-1 text-xs text-muted-foreground">Complete the ocular visit and submit its reports, then enter the final project details and upload the signed contract.</p>
+              <p className="text-sm font-semibold">{ocularAppointment.data?.status === 'completed' ? 'Ocular Completed' : 'Ocular'}</p>
+              <p className="mt-1 text-xs text-muted-foreground">{ocularAppointment.data?.status === 'completed'
+                ? 'The ocular visit is complete. Submit any remaining reports, then complete the project details and upload the signed contract.'
+                : 'Complete the ocular visit and submit its reports, then enter the final project details and upload the signed contract.'}</p>
             </div>
             {(isAssignedSales || isAdmin) && <div className="flex flex-wrap gap-2">
               <Button type="button" variant="outline" onClick={() => navigate(`/appointments/${project.ocularAppointmentId}`)}>View Ocular Visit</Button>
