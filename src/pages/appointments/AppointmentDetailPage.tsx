@@ -234,10 +234,7 @@ export function AppointmentDetailPage() {
   const isOcularAppointment = appt.type === 'ocular';
   const isReadyForOcularConsultation =
     appt.type === 'office'
-    && (
-      appt.status === AppointmentStatus.READY_FOR_OCULAR
-      || (appt.status === AppointmentStatus.COMPLETED && appt.consultationReportSubmitted)
-    );
+    && appt.status === AppointmentStatus.READY_FOR_OCULAR;
   const hasCustomerMapPin = Boolean(
     appt.customerLocation
     && Number.isFinite(appt.customerLocation.lat)

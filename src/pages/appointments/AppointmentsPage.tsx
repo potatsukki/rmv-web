@@ -366,23 +366,12 @@ export function AppointmentsPage() {
     ? 'border border-white/35 bg-[linear-gradient(180deg,rgba(248,250,252,0.99)_0%,rgba(225,232,240,0.97)_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.94),0_18px_34px_rgba(0,0,0,0.34)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(233,239,245,1)_100%)] hover:text-slate-950'
     : '';
 
-  const isDerivedReadyForOcular = (appt: Appointment) =>
-    appt.type === 'office'
-    && appt.status === AppointmentStatus.COMPLETED
-    && appt.consultationReportSubmitted;
-
   const getStatusKey = (appt: Appointment) => {
     const awaitingPayment =
       appt.type === 'ocular' && appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
     if (awaitingPayment) return 'awaiting_payment';
     if (appt.status === AppointmentStatus.READY_FOR_OCULAR) {
       return AppointmentStatus.READY_FOR_OCULAR;
-    }
-    if (
-      statusFilter !== AppointmentStatus.COMPLETED
-      && isDerivedReadyForOcular(appt)
-    ) {
-      return 'ready_for_ocular';
     }
     return appt.status;
   };
