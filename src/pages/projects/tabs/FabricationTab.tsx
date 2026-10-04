@@ -81,14 +81,12 @@ const SHOP_FABRICATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
 ];
 
 const ON_SITE_INSTALLATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
-  { key: FabricationStatus.SITE_PREPARATION, label: 'Site Preparation' },
-  { key: FabricationStatus.MEASUREMENT_LAYOUT, label: 'Measurement / Layout' },
-  { key: FabricationStatus.MATERIAL_PREP, label: 'Material Prep' },
-  { key: FabricationStatus.FABRICATION_INSTALLATION, label: 'Fabrication / Installation' },
+  { key: FabricationStatus.FABRICATION, label: 'Fabrication' },
   { key: FabricationStatus.WELDING_ASSEMBLY, label: 'Welding / Assembly' },
+  { key: FabricationStatus.INSTALLATION, label: 'Installation' },
   { key: FabricationStatus.FINISHING, label: 'Finishing' },
   { key: FabricationStatus.QUALITY_CHECK, label: 'Quality Check' },
-  { key: FabricationStatus.TURNOVER, label: 'Done' },
+  { key: FabricationStatus.DONE, label: 'Done' },
 ];
 
 function getFabricationStepMarkers(deliveryType?: string) {
@@ -104,32 +102,31 @@ const WORKSTREAMS_BREAKPOINTS = {
 
 const lifecycleIconByStatus: Record<string, ComponentType<{ className?: string }>> = {
   [FabricationStatus.MATERIAL_PREP]: Boxes,
-  [FabricationStatus.SITE_PREPARATION]: Wrench,
-  [FabricationStatus.MEASUREMENT_LAYOUT]: Scissors,
   [FabricationStatus.CUTTING]: Scissors,
   [FabricationStatus.WELDING]: Wrench,
   [FabricationStatus.ASSEMBLY]: Hammer,
-  [FabricationStatus.FABRICATION_INSTALLATION]: Hammer,
+  [FabricationStatus.FABRICATION]: Hammer,
   [FabricationStatus.WELDING_ASSEMBLY]: Wrench,
+  [FabricationStatus.INSTALLATION]: Wrench,
   [FabricationStatus.FINISHING]: Pencil,
   [FabricationStatus.QUALITY_CHECK]: ShieldCheck,
   [FabricationStatus.READY_FOR_DELIVERY]: Truck,
-  [FabricationStatus.TURNOVER]: CheckCircle2,
   [FabricationStatus.DONE]: CheckCircle2,
 };
 
-const formatFabricationStatus = (value?: string) =>
-  value === FabricationStatus.TURNOVER
-    ? 'Done'
-    : (value || FabricationStatus.QUEUED).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+const formatFabricationStatus = (value?: string, deliveryType?: string) =>
+  getFabricationStepMarkers(deliveryType).find((step) => step.key === value)?.label
+    || (value || FabricationStatus.QUEUED).replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
 function itemTitle(item: ProjectItem) {
   return item.title || item.serviceTypeCustom || item.serviceType.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 }
 
-function statusFromProjectItem(item: ProjectItem) {
+function statusFromProjectItem(item: ProjectItem, deliveryType?: string) {
   if (item.status === 'completed') return FabricationStatus.DONE;
-  if (item.status === 'fabrication') return FabricationStatus.MATERIAL_PREP;
+  if (item.status === 'fabrication') return deliveryType === DeliveryType.ON_SITE_INSTALLATION
+    ? FabricationStatus.FABRICATION
+    : FabricationStatus.MATERIAL_PREP;
   return FabricationStatus.QUEUED;
 }
 
@@ -139,6 +136,7 @@ function FabricationItemStatusCard({
   index,
   selected,
   canViewUpdates,
+  deliveryType: projectDeliveryType,
   onSelect,
 }: {
   projectId: string;
@@ -146,13 +144,15 @@ function FabricationItemStatusCard({
   index: number;
   selected: boolean;
   canViewUpdates: boolean;
+  deliveryType?: string;
   onSelect: (itemId: string) => void;
 }) {
   const { resolvedTheme } = useThemeStore();
   const isDark = resolvedTheme === 'dark';
   const { data, isLoading } = useFabricationStatus(projectId, canViewUpdates, item._id);
-  const currentStatus = data?.currentStatus || statusFromProjectItem(item);
-  const fabricationStepMarkers = getFabricationStepMarkers(data?.deliveryType);
+  const deliveryType = data?.deliveryType || projectDeliveryType;
+  const currentStatus = data?.currentStatus || statusFromProjectItem(item, deliveryType);
+  const fabricationStepMarkers = getFabricationStepMarkers(deliveryType);
   const stepIndex = fabricationStepMarkers.findIndex((step) => step.key === currentStatus);
   const progress = stepIndex >= 0 ? Math.round(((stepIndex + 1) / fabricationStepMarkers.length) * 100) : 0;
 
@@ -184,7 +184,7 @@ function FabricationItemStatusCard({
             ? isDark ? 'bg-sky-400/15 text-sky-100' : 'bg-sky-100 text-sky-800'
             : isDark ? 'bg-slate-900 text-slate-300' : 'bg-slate-100 text-slate-700'
         }`}>
-          {isLoading ? 'Loading' : formatFabricationStatus(currentStatus)}
+          {isLoading ? 'Loading' : formatFabricationStatus(currentStatus, deliveryType)}
         </span>
       </div>
 
@@ -351,8 +351,7 @@ export function FabricationTab({
 
   const canAddUpdate = isProjectInFabrication && canManageUpdates;
   const isFabricationComplete = selectedItem?.status === 'completed'
-    || fabricationStatus?.currentStatus === FabricationStatus.DONE
-    || fabricationStatus?.currentStatus === FabricationStatus.TURNOVER;
+    || fabricationStatus?.currentStatus === FabricationStatus.DONE;
   const canCreateUpdate = canAddUpdate && !isFabricationComplete;
   const isCustomer = user?.roles.some((r: string) => r === Role.CUSTOMER);
 
@@ -378,9 +377,7 @@ export function FabricationTab({
 
   const deliveryType = fabricationStatus?.deliveryType || project?.deliveryType || DeliveryType.SHOP_FABRICATED;
   const fabricationStepMarkers = getFabricationStepMarkers(deliveryType);
-  const terminalStatus = deliveryType === DeliveryType.ON_SITE_INSTALLATION
-    ? FabricationStatus.TURNOVER
-    : FabricationStatus.DONE;
+  const terminalStatus = FabricationStatus.DONE;
   const confirmationGateStatus = fabricationStatus?.confirmationGateStatus;
   const installationConfirmed = Boolean(
     selectedItem?.installationConfirmedAt
@@ -416,6 +413,11 @@ export function FabricationTab({
   };
 
   const allowedStatuses = fabricationStatus?.allowedTransitions || [];
+  const selectableStatuses = deliveryType === DeliveryType.ON_SITE_INSTALLATION
+    ? allowedStatuses.filter((value) => fabricationStepMarkers.some((step) => step.key === value))
+    : allowedStatuses.length > 0
+      ? allowedStatuses
+      : Object.values(FabricationStatus).filter((value) => value !== FabricationStatus.FABRICATION && value !== FabricationStatus.INSTALLATION);
 
   useEffect(() => {
     if (allowedStatuses.length === 0) return;
@@ -598,6 +600,7 @@ export function FabricationTab({
                           index={realIndex}
                           selected={item._id === selectedFabricationItemId}
                           canViewUpdates={canViewUpdates}
+                          deliveryType={deliveryType}
                           onSelect={setSelectedItemId}
                         />
                       );
@@ -657,13 +660,13 @@ export function FabricationTab({
                       Lifecycle Marker
                     </p>
                     <span className={`rounded-full px-2.5 py-1 text-[11px] font-semibold ${isDark ? 'bg-slate-900 text-slate-200' : 'bg-slate-100 text-slate-700'}`}>
-                      {formatFabricationStatus(fabricationStatus.currentStatus)}
+                      {formatFabricationStatus(fabricationStatus.currentStatus, deliveryType)}
                     </span>
                   </div>
 
                   <div className="overflow-x-auto pb-1">
-                    <div className="min-w-[700px]">
-                      <div className="grid grid-cols-8 gap-0">
+                    <div className={deliveryType === DeliveryType.ON_SITE_INSTALLATION ? 'min-w-[600px]' : 'min-w-[700px]'}>
+                      <div className={deliveryType === DeliveryType.ON_SITE_INSTALLATION ? 'grid grid-cols-6 gap-0' : 'grid grid-cols-8 gap-0'}>
                         {fabricationStepMarkers.map((step, idx) => {
                           const isCurrent = step.key === fabricationStatus.currentStatus;
                           const isComplete = currentFabricationStepIndex >= 0 && idx < currentFabricationStepIndex;
@@ -830,7 +833,7 @@ export function FabricationTab({
                         <SelectValue placeholder="Select status" />
                       </SelectTrigger>
                       <SelectContent className={`${isDark ? 'bg-slate-950 text-slate-100' : 'bg-white text-[var(--color-card-foreground)]'} border-[color:var(--color-border)]/55`}>
-                        {(allowedStatuses.length > 0 ? allowedStatuses : Object.values(FabricationStatus)).map((value) => {
+                        {selectableStatuses.map((value) => {
                           const gate = fabricationStatus?.paymentGate?.stageGates?.[value];
                           const isPaymentBlocked = gate?.blocked === true;
                           const isConfirmationBlocked = value === confirmationGateStatus && !installationConfirmed;
@@ -839,7 +842,7 @@ export function FabricationTab({
                             <SelectItem key={value} value={value} disabled={isBlocked}>
                               <span className="flex items-center gap-2">
                                 {isBlocked && <Lock className="h-3.5 w-3.5 text-amber-500 shrink-0" />}
-                                {formatFabricationStatus(value)}
+                                {formatFabricationStatus(value, deliveryType)}
                                 {isPaymentBlocked && (
                                   <span className="text-[11px] text-amber-600 font-normal">
                                     ({gate.currentPaid}/{gate.requiredPaid} paid)
@@ -870,12 +873,12 @@ export function FabricationTab({
                       </div>
                     )}
                     {/* Payment notification hint */}
-                    {status && ['finishing', 'quality_check', 'ready_for_delivery', 'turnover', 'done'].includes(status) && (
+                    {status && ['finishing', 'quality_check', 'ready_for_delivery', 'done'].includes(status) && (
                       <div className="mt-1.5 flex items-start gap-2 rounded-xl border border-sky-400/25 bg-sky-500/10 px-3 py-2">
                         <CreditCard className="mt-0.5 h-4 w-4 shrink-0 text-sky-300" />
                         <p className={`text-xs ${isDark ? 'text-sky-100/90' : 'text-sky-800'}`}>
                           Advancing to this stage will notify the customer about an upcoming or due payment.
-                          {['quality_check', 'turnover', 'done'].includes(status)
+                          {['quality_check', 'done'].includes(status)
                             ? ' Their next payment stage will be unlocked for payment.'
                             : ' They\'ll receive a heads-up to prepare their payment.'}
                         </p>
@@ -994,7 +997,7 @@ export function FabricationTab({
                   </div>
 
                   <div className="flex items-center gap-2 mb-2">
-                    <StatusBadge status={String(update.status)} label={formatFabricationStatus(String(update.status))} />
+                    <StatusBadge status={String(update.status)} label={formatFabricationStatus(String(update.status), deliveryType)} />
                   </div>
 
                   <Card className={`${isDark ? 'metal-panel dark:bg-slate-900/85' : 'metal-panel'} rounded-xl border-[color:var(--color-border)]/50 shadow-sm transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_20px_34px_rgba(0,0,0,0.24)] dark:border-slate-700`}>
