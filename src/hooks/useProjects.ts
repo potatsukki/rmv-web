@@ -76,12 +76,13 @@ export function useProjectByVisitReport(visitReportId: string | undefined) {
 export function useCreateProject() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async (body: {
+    mutationFn: async ({ pendingProjectId, ...body }: {
+      pendingProjectId?: string;
       customerId?: string;
       appointmentId?: string;
-      title: string;
-      serviceType: string;
-      deliveryType: 'shop_fabricated' | 'on_site_installation';
+      title?: string;
+      serviceType?: string;
+      deliveryType?: 'shop_fabricated' | 'on_site_installation';
       serviceTypeCustom?: string;
       measurementUnit?: string;
       lineItems?: LineItem[];
@@ -104,7 +105,7 @@ export function useCreateProject() {
       finishColor?: string;
       quantity?: number;
       notes?: string;
-      contractFileKey: string;
+      contractFileKey?: string;
       contractFileName?: string;
       contractContentType?: string;
       contractFileSize?: number;
@@ -113,11 +114,16 @@ export function useCreateProject() {
         slotCode: string;
       };
     }) => {
-      const { data } = await api.post<ApiResponse<Project>>('/projects', body);
+      const { data } = await api.post<ApiResponse<Project>>(
+        pendingProjectId ? `/projects/${pendingProjectId}/finalize-ocular` : '/projects',
+        body,
+      );
       return data.data;
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+      qc.invalidateQueries({ queryKey: ['visit-reports'] });
     },
   });
 }

@@ -3,6 +3,7 @@ import type { Appointment, Blueprint, PaymentPlan, Project, ProjectItem } from '
 
 export type WorkflowStatusStage =
   | 'appointment'
+  | 'pending_ocular'
   | 'design'
   | 'billing'
   | 'fabrication'
@@ -176,7 +177,7 @@ export function resolveAppointmentWorkflowStatus(
 }
 
 export function resolveProjectWorkflowStatus(input: {
-  project?: Pick<Project, 'status' | 'contractStatus' | 'items'> | null;
+  project?: Pick<Project, 'status' | 'contractStatus' | 'items' | 'ocularAppointmentId'> | null;
   item?: Pick<ProjectItem, 'status'> | null;
   blueprint?: Pick<Blueprint, 'status' | 'quotationReviewStatus' | 'blueprintApproved' | 'costingApproved' | 'quotation'> | null;
   paymentPlans?: Array<PaymentPlan | null | undefined>;
@@ -192,6 +193,10 @@ export function resolveProjectWorkflowStatus(input: {
 
   if (projectStatus === ProjectStatus.CANCELLED) {
     return { key: 'cancelled', label: 'Cancelled', tone: 'red', stage: 'cancelled', isTerminal: true };
+  }
+
+  if (input.project?.status === ProjectStatus.DRAFT && input.project.ocularAppointmentId) {
+    return { key: 'pending_ocular', label: 'Pending Ocular', tone: 'green', stage: 'pending_ocular', isTerminal: false };
   }
 
   if (projectStatus === ProjectStatus.COMPLETED || allItemsCompleted) {

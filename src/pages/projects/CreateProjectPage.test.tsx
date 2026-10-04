@@ -3,7 +3,10 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 import { expect, it, vi } from 'vitest';
 
-vi.mock('@/hooks/useProjects', () => ({ useCreateProject: () => ({ isPending: false }) }));
+vi.mock('@/hooks/useProjects', () => ({
+  useCreateProject: () => ({ isPending: false }),
+  useProject: () => ({ data: undefined }),
+}));
 vi.mock('@/hooks/useAppointments', () => ({
   useAppointment: () => ({ data: undefined }),
   useAvailableSlots: () => ({ data: undefined }),

@@ -84,6 +84,16 @@ export function ProjectContractUploadPage() {
   if (isLoading) return <PageLoader />;
   if (isError || !project) return <PageError onRetry={refetch} />;
 
+  if (project.status === ProjectStatus.DRAFT && project.ocularAppointmentId) {
+    return <Card className="mx-auto max-w-4xl">
+      <CardContent className="space-y-3 p-6">
+        <h1 className="text-xl font-semibold">Pending Ocular</h1>
+        <p className="text-sm text-muted-foreground">Complete the ocular visit first, then complete the project details and upload the signed contract together.</p>
+        <Button onClick={() => navigate(`/projects/create?pendingProjectId=${id}`)}>Complete Project</Button>
+      </CardContent>
+    </Card>;
+  }
+
   const isUploaded = project.contractStatus === ContractStatus.UPLOADED;
   const rawProjectCost = Number(project.totalCost);
   const approvedProjectCost = Number.isFinite(rawProjectCost) && rawProjectCost > 0

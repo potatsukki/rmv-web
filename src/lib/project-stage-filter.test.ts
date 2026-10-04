@@ -20,6 +20,12 @@ function project(status: ProjectStatus, itemStatuses: ProjectStatus[]): Project 
 }
 
 describe('matchesProjectStage', () => {
+  it('lists an ocular draft under Pending Ocular until finalized', () => {
+    const pending = { ...project(ProjectStatus.DRAFT, []), ocularAppointmentId: 'ocular-1', contractStatus: 'missing' } as Project;
+    expect(matchesProjectStage(pending, 'pending_ocular')).toBe(true);
+    expect(matchesProjectStage(pending, 'design')).toBe(false);
+    expect(matchesProjectStage({ ...pending, status: ProjectStatus.SUBMITTED }, 'pending_ocular')).toBe(false);
+  });
   it('routes a blueprint project with a payment-pending item to Billing', () => {
     const mixedProject = project(ProjectStatus.BLUEPRINT, [
       ProjectStatus.PAYMENT_PENDING,

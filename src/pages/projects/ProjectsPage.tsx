@@ -29,6 +29,7 @@ import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader'
 
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
+  { label: 'Pending Ocular', value: 'pending_ocular' },
   { label: 'Design / Blueprint', value: 'design' },
   { label: 'Billing', value: 'billing' },
   { label: 'Fabrication', value: 'fabrication' },
@@ -110,6 +111,7 @@ export function ProjectsPage() {
   const isStaff = !isCustomer;
   const canCreateProject = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role as Role));
   const params: Record<string, string> = {};
+  if (statusFilter === 'pending_ocular') params.status = 'draft';
   if (statusFilter) params.limit = '100';
   if (search) params.search = search;
 
