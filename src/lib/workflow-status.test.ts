@@ -4,6 +4,20 @@ import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus } fr
 import type { PaymentPlan } from './types';
 import { resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from './workflow-status';
 
+describe('ocular project status', () => {
+  it('shows Ocular Completed while the draft still belongs to the Ocular stage', () => {
+    expect(resolveProjectWorkflowStatus({ project: {
+      status: 'draft', ocularAppointmentId: 'ocular-1', ocularVisitStatus: 'completed',
+    } })).toMatchObject({ label: 'Ocular Completed', stage: 'pending_ocular', isTerminal: false });
+  });
+
+  it.each(['requested', 'confirmed', 'in_progress', undefined])('keeps the Ocular label before visit completion (%s)', (ocularVisitStatus) => {
+    expect(resolveProjectWorkflowStatus({ project: {
+      status: 'draft', ocularAppointmentId: 'ocular-1', ocularVisitStatus,
+    } })).toMatchObject({ label: 'Ocular', stage: 'pending_ocular', isTerminal: false });
+  });
+});
+
 function paymentPlan(stages: PaymentPlan['stages']): PaymentPlan {
   return {
     _id: 'plan-1',

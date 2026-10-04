@@ -177,7 +177,7 @@ export function resolveAppointmentWorkflowStatus(
 }
 
 export function resolveProjectWorkflowStatus(input: {
-  project?: Pick<Project, 'status' | 'contractStatus' | 'items' | 'ocularAppointmentId'> | null;
+  project?: Pick<Project, 'status' | 'contractStatus' | 'items' | 'ocularAppointmentId' | 'ocularVisitStatus'> | null;
   item?: Pick<ProjectItem, 'status'> | null;
   blueprint?: Pick<Blueprint, 'status' | 'quotationReviewStatus' | 'blueprintApproved' | 'costingApproved' | 'quotation'> | null;
   paymentPlans?: Array<PaymentPlan | null | undefined>;
@@ -196,6 +196,9 @@ export function resolveProjectWorkflowStatus(input: {
   }
 
   if (input.project?.status === ProjectStatus.DRAFT && input.project.ocularAppointmentId) {
+    if (input.project.ocularVisitStatus === AppointmentStatus.COMPLETED) {
+      return { key: 'ocular_completed', label: 'Ocular Completed', tone: 'green', stage: 'pending_ocular', isTerminal: false };
+    }
     return { key: 'pending_ocular', label: 'Ocular', tone: 'green', stage: 'pending_ocular', isTerminal: false };
   }
 
