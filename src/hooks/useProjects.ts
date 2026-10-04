@@ -98,7 +98,7 @@ export function useCreateProject() {
       sketchKeys?: string[];
       referenceImageKeys?: string[];
       description?: string;
-      siteAddress: string;
+      siteAddress?: string;
       measurements?: Record<string, unknown>;
       materialType?: string;
       finishColor?: string;
@@ -127,6 +127,20 @@ export function useUpdateProject() {
   return useMutation({
     mutationFn: async ({ id, ...body }: { id: string; title?: string; description?: string; serviceType?: string; deliveryType?: 'shop_fabricated' | 'on_site_installation'; siteAddress?: string; notes?: string }) => {
       const { data } = await api.patch<ApiResponse<Project>>(`/projects/${id}`, body);
+      return data.data;
+    },
+    onSuccess: (project) => {
+      syncProjectCaches(qc, project);
+      qc.invalidateQueries({ queryKey: KEYS.all });
+    },
+  });
+}
+
+export function useUpdateProjectSiteAddress() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, siteAddress }: { id: string; siteAddress: string }) => {
+      const { data } = await api.patch<ApiResponse<Project>>(`/projects/${id}/site-address`, { siteAddress });
       return data.data;
     },
     onSuccess: (project) => {

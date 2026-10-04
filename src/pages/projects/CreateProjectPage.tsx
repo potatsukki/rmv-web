@@ -19,7 +19,7 @@ import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { api } from '@/lib/api';
 import { DeliveryType, getDefaultDeliveryType, SERVICE_TYPE_LABELS } from '@/lib/constants';
-import type { ApiResponse, Appointment, LineItem, ServiceSpecifications } from '@/lib/types';
+import type { ApiResponse, LineItem, ServiceSpecifications } from '@/lib/types';
 import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 import { extractErrorMessage } from '@/lib/utils';
@@ -30,17 +30,6 @@ const attachmentGroups = [
   { key: 'videoKeys', label: 'Videos', folder: 'visit-videos', accept: 'video/*', maxFiles: 5, maxSizeMB: 50 },
   { key: 'referenceImageKeys', label: 'Reference Images', folder: 'visit-references', accept: 'image/*,.pdf', maxFiles: 10, maxSizeMB: 10 },
 ] as const;
-
-function appointmentAddress(appointment?: Appointment) {
-  if (!appointment) return '';
-  if (appointment.formattedAddress) return appointment.formattedAddress;
-  if (appointment.address) return appointment.address;
-  if (appointment.customerAddress) return appointment.customerAddress;
-  const address = appointment.addressStructured;
-  return address
-    ? [address.street, address.barangay, address.city, address.province, address.zip].filter(Boolean).join(', ')
-    : '';
-}
 
 function serviceLabel(serviceType?: string, custom?: string) {
   if (serviceType === 'custom' && custom?.trim()) return custom.trim();
@@ -226,8 +215,7 @@ export function CreateProjectPage() {
     const title = defaultTitle
       || `${serviceLabel(serviceType, value('serviceTypeCustom')) || 'Custom'} Project`.slice(0, 100);
     const description = value('description');
-    const siteAddress = value('siteAddress');
-    if (!serviceType || !deliveryType || !siteAddress) {
+    if (!serviceType || !deliveryType) {
       toast.error('Complete the required project information.');
       return;
     }
@@ -244,7 +232,6 @@ export function CreateProjectPage() {
         serviceType,
         deliveryType,
         description: description || undefined,
-        siteAddress,
         serviceTypeCustom: value('serviceTypeCustom') || undefined,
         measurementUnit,
         lineItems,
@@ -460,7 +447,6 @@ export function CreateProjectPage() {
                 {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
               </div>
               <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work (optional)</Label><Textarea id="project-description" name="description" maxLength={2000} rows={3} /></div>
-              <div className="space-y-2"><Label htmlFor="project-address">Project Site Address</Label><Textarea id="project-address" name="siteAddress" required maxLength={500} rows={2} defaultValue={appointmentAddress(appointment.data)} /></div>
               <div className="grid gap-4 sm:grid-cols-2">
                 <div className="space-y-2"><Label htmlFor="project-material">Material Type</Label><Input id="project-material" name="materialType" maxLength={1000} value={materialType} onChange={(event) => setMaterialType(event.target.value)} list="project-material-options" /></div>
                 <div className="space-y-2"><Label htmlFor="project-finish">Finish / Color</Label><Input id="project-finish" name="finishColor" maxLength={500} value={finishColor} onChange={(event) => setFinishColor(event.target.value)} list="project-finish-options" /></div>

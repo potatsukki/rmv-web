@@ -50,7 +50,9 @@ import {
   useDeleteFabricationUpdate,
   useFabricationStatus,
 } from '@/hooks/useFabrication';
-import { useConfirmInstallation, useProject } from '@/hooks/useProjects';
+import { useConfirmInstallation, useProject, useUpdateProjectSiteAddress } from '@/hooks/useProjects';
+import { isAssignedFabricationMember } from '@/lib/project-access';
+import { getProjectDisplaySiteAddress } from '@/lib/project-display';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { connectSocket } from '@/lib/socket';
@@ -222,6 +224,7 @@ export function FabricationTab({
   const [status, setStatus] = useState<string>(FabricationStatus.MATERIAL_PREP);
   const [photoKeys, setPhotoKeys] = useState<string[]>([]);
   const [selectedItemId, setSelectedItemId] = useState(projectItemId || '');
+  const [siteAddressDraft, setSiteAddressDraft] = useState<string | null>(null);
 
   // Edit / delete state
   const [editingUpdate, setEditingUpdate] = useState<{
@@ -239,6 +242,26 @@ export function FabricationTab({
   const [baseCardsPerPage, setBaseCardsPerPage] = useState(4);
 
   const { data: project } = useProject(projectId);
+  const siteAddressMutation = useUpdateProjectSiteAddress();
+  const savedSiteAddress = getProjectDisplaySiteAddress(project);
+  const siteAddress = siteAddressDraft ?? savedSiteAddress;
+  const canEditSiteAddress = Boolean(project && user
+    && !['completed', 'cancelled'].includes(project.status)
+    && (user.roles.includes(Role.ADMIN)
+      || (user.roles.includes(Role.FABRICATION_STAFF) && isAssignedFabricationMember(project, user._id))));
+
+  useEffect(() => setSiteAddressDraft(null), [projectId]);
+
+  const saveSiteAddress = async () => {
+    if (!siteAddress.trim() || siteAddressMutation.isPending) return;
+    try {
+      await siteAddressMutation.mutateAsync({ id: projectId, siteAddress: siteAddress.trim() });
+      setSiteAddressDraft(null);
+      toast.success('Project site address saved.');
+    } catch (error) {
+      toast.error(extractErrorMessage(error, 'Failed to save project site address.'));
+    }
+  };
   const projectItems = useMemo(() => project?.items || [], [project?.items]);
   const selectedFabricationItemId = useMemo(() => {
     if (!projectItems.length) return projectItemId;
@@ -490,6 +513,37 @@ export function FabricationTab({
 
   return (
     <div className="space-y-4">
+      <Card className="metal-panel rounded-xl">
+        <CardHeader className="pb-3"><CardTitle className="text-lg">Project Site Address</CardTitle></CardHeader>
+        <CardContent className="space-y-3">
+          {canEditSiteAddress ? (
+            <>
+              <Label htmlFor="fabrication-site-address">Installation / Delivery Address</Label>
+              <Textarea
+                id="fabrication-site-address"
+                value={siteAddress}
+                onChange={(event) => setSiteAddressDraft(event.target.value)}
+                maxLength={500}
+                rows={3}
+                disabled={siteAddressMutation.isPending}
+                placeholder="Enter the complete project site address."
+              />
+              <p className="text-xs text-muted-foreground">The assigned fabrication team records the address for installation or delivery.</p>
+              <Button
+                type="button"
+                onClick={saveSiteAddress}
+                disabled={siteAddressMutation.isPending || !siteAddress.trim() || siteAddress.trim() === project?.siteAddress?.trim()}
+              >
+                {siteAddressMutation.isPending ? 'Saving…' : 'Save Address'}
+              </Button>
+            </>
+          ) : (
+            <p className="whitespace-pre-wrap break-words text-sm text-muted-foreground">
+              {savedSiteAddress || 'The assigned fabrication team has not added the project site address yet.'}
+            </p>
+          )}
+        </CardContent>
+      </Card>
       {blockedAction && (
         <BlockedActionPrompt
           title={blockedAction.title}
