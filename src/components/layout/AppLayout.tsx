@@ -314,7 +314,7 @@ export function AppLayout() {
     const handleNewNotification = (n: import('@/lib/types').Notification) => {
       addNotificationRef.current(n);
       queryClientRef.current.invalidateQueries({ queryKey: ['notifications'] });
-      queryClientRef.current.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['appointments'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['projects'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['visit-reports'] });
@@ -325,9 +325,9 @@ export function AppLayout() {
     };
 
     const handlePaymentsQueueUpdate = (payload: { type?: string; amountPaid?: number }) => {
-      queryClientRef.current.invalidateQueries({ queryKey: ['payments', 'pending'] });
-      queryClientRef.current.invalidateQueries({ queryKey: ['payments', 'overdue'] });
-      queryClientRef.current.invalidateQueries({ queryKey: ['dashboard-summary'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['payments'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['payment-plans'] });
+      queryClientRef.current.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
 
       if (!user.roles.includes(Role.CASHIER)) return;
 

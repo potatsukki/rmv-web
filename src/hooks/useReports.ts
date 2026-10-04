@@ -13,6 +13,7 @@ interface DashboardSummary {
   completedProjects: number;
   totalProjects: number;
   pendingPayments: number;
+  unpaidProjects: number;
   revenueThisMonth: number;
   conversionRate: number;
   fabricationInProgress: number;

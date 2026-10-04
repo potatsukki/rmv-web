@@ -134,6 +134,7 @@ export function useCreatePaymentPlan() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.plans });
     },
   });
@@ -155,6 +156,7 @@ export function useUpdatePaymentPlan() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.plans });
     },
   });
@@ -175,6 +177,7 @@ export function useSubmitPaymentProof() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -188,6 +191,7 @@ export function useVerifyPayment() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.plans });
     },
@@ -204,6 +208,7 @@ export function useDeclinePayment() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
   });
@@ -230,6 +235,7 @@ export function useStageCheckout() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.plans });
     },
   });
@@ -250,6 +256,7 @@ export function useRequestStageCashPayment() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.plans });
       qc.invalidateQueries({ queryKey: KEYS.pending });
@@ -268,6 +275,7 @@ export function useSimulateStagePayment() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.plans });
     },
@@ -286,6 +294,7 @@ export function useRecordCashPayment() {
       return data.data;
     },
     onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['reports', 'dashboard'] });
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.plans });
     },

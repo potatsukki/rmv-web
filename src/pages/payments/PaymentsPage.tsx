@@ -3,7 +3,7 @@ import { format, differenceInDays } from 'date-fns';
 import { CreditCard, AlertTriangle, MapPin, QrCode, Zap, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck } from 'lucide-react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
-import { MAX_PAYMENT_AMOUNT } from '@/lib/money';
+import { getCashPaymentAmountError } from '@/lib/money';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
 import { resolveBlockedAction, type BlockedActionInfo } from '@/lib/blocked-actions';
@@ -87,7 +87,7 @@ const isPaymentListReady = (project: { status: string; items?: { status: string 
   PAYMENT_READY_PROJECT_STATUSES.has(String(project.status))
   || Boolean(project.items?.some((item) => PAYMENT_READY_ITEM_STATUSES.has(String(item.status))));
 
-type PaymentListStatus = 'payment_pending' | 'for_verification' | 'partially_paid' | 'paid';
+type PaymentListStatus = 'not_billed' | 'loading' | 'unavailable' | 'payment_pending' | 'for_verification' | 'partially_paid' | 'paid';
 
 type PaymentListProject = {
   _id: string;
@@ -131,6 +131,9 @@ const getPaymentProjectCustomerName = (project: PaymentListProject) => {
 };
 
 const PAYMENT_STATUS_BADGES: Record<PaymentListStatus, { status: string; label: string }> = {
+  not_billed: { status: 'draft', label: 'Not Yet Billed' },
+  loading: { status: 'draft', label: 'Loading Payment Status' },
+  unavailable: { status: 'declined', label: 'Payment Status Unavailable' },
   payment_pending: { status: 'payment_pending', label: 'Payment Pending' },
   for_verification: { status: 'proof_submitted', label: 'Awaiting Cashier Verification' },
   partially_paid: { status: 'approved', label: 'Partially Paid' },
@@ -149,6 +152,7 @@ const formatProjectStageFilterLabel = (status: string) => {
 };
 
 const derivePaymentListStatus = (plans: any[]): PaymentListStatus => {
+  if (!plans.some((plan) => plan.stages?.length)) return 'not_billed';
   const status = resolvePaymentWorkflowStatus(plans);
   if (status.key === 'paid') return 'paid';
   if (status.key === 'payment_for_verification') return 'for_verification';
@@ -276,6 +280,7 @@ export function PaymentsPage() {
     amount: 0,
   });
   const [cashAmount, setCashAmount] = useState('');
+  const cashAmountError = getCashPaymentAmountError(Number(cashAmount), cashDialog.amount);
 
   const location = useLocation();
   const isCustomer = user?.roles.includes(Role.CUSTOMER);
@@ -448,8 +453,12 @@ export function PaymentsPage() {
 
   const paymentStatusByProject = useMemo(() => {
     const plansByProject = new Map<string, any[]>();
+    const loadingProjects = new Set<string>();
+    const failedProjects = new Set<string>();
 
     paymentPlanTargets.forEach((target, index) => {
+      if (paymentPlanQueries[index]?.isPending) loadingProjects.add(target.projectId);
+      if (paymentPlanQueries[index]?.isError) failedProjects.add(target.projectId);
       const plan = paymentPlanQueries[index]?.data;
       if (!plan) return;
       const existing = plansByProject.get(target.projectId) || [];
@@ -458,8 +467,12 @@ export function PaymentsPage() {
 
     return new Map(
       basePaymentProjects.map((project) => {
-        const plans = plansByProject.get(String(project._id)) || [];
-        return [String(project._id), derivePaymentListStatus(plans)];
+        const projectId = String(project._id);
+        const plans = plansByProject.get(projectId) || [];
+        let status: PaymentListStatus = derivePaymentListStatus(plans);
+        if (failedProjects.has(projectId)) status = 'unavailable';
+        if (loadingProjects.has(projectId)) status = 'loading';
+        return [projectId, status];
       }),
     );
   }, [basePaymentProjects, paymentPlanQueries, paymentPlanTargets]);
@@ -521,13 +534,9 @@ export function PaymentsPage() {
   };
 
   const handleRecordCash = async () => {
-    const amount = parseFloat(cashAmount);
-    if (!amount || amount <= 0) {
-      toast.error('Enter a valid amount');
-      return;
-    }
-    if (amount > MAX_PAYMENT_AMOUNT) {
-      toast.error('Amount is too large');
+    const amount = Number(cashAmount);
+    if (cashAmountError) {
+      toast.error(cashAmountError);
       return;
     }
     try {
@@ -689,7 +698,7 @@ export function PaymentsPage() {
                     key={String(p._id)}
                     project={p as PaymentListProject}
                     projectStage={getEffectiveProjectStageStatus(p as PaymentListProject)}
-                    paymentStatus={paymentStatusByProject.get(String(p._id)) || 'payment_pending'}
+                    paymentStatus={paymentStatusByProject.get(String(p._id)) || 'not_billed'}
                     onSelect={setSelectedProjectId}
                   />
                 ))
@@ -1409,7 +1418,7 @@ export function PaymentsPage() {
           }
         }}
       >
-        <DialogContent className="metal-panel-strong rounded-2xl sm:max-w-sm">
+        <DialogContent className="metal-panel-strong min-w-0 w-[calc(100vw-2rem)] max-w-sm max-h-[90vh] overflow-y-auto rounded-2xl [&>*]:min-w-0">
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Record Cash Payment</DialogTitle>
           </DialogHeader>
@@ -1425,12 +1434,14 @@ export function PaymentsPage() {
               <Input
                 type="number"
                 step="0.01"
-                max={MAX_PAYMENT_AMOUNT}
+                min="0.01"
+                max={cashDialog.amount}
                 value={cashAmount}
                 onChange={(e) => setCashAmount(e.target.value)}
                 aria-describedby="project-cash-amount-warning"
+                aria-invalid={!!cashAmount.trim() && !!cashAmountError}
                 placeholder="0.00"
-                className="metal-input h-11 border-[#93ad9d] focus:border-[#93ad9d] focus:ring-[#dceade]"
+                className="metal-input min-w-0 max-w-full h-11 border-[#93ad9d] focus:border-[#93ad9d] focus:ring-[#dceade]"
               />
               <CashAmountWarning amount={cashAmount} amountDue={cashDialog.amount} id="project-cash-amount-warning" />
             </div>
@@ -1449,7 +1460,7 @@ export function PaymentsPage() {
             <Button
               className="rounded-lg"
               onClick={handleRecordCash}
-              disabled={recordCash.isPending}
+              disabled={recordCash.isPending || !!cashAmountError}
             >
               Record Payment
             </Button>
