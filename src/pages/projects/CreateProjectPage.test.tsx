@@ -54,6 +54,7 @@ it('does not ask sales to enter the fabricator site address when creating a proj
   expect(html).toContain('Create Project');
   expect(html).not.toContain('Project Site Address');
   expect(html).not.toContain('name="siteAddress"');
+  expect(html).toContain('id="project-sales-notes"');
 });
 
 it('does not show the report submission panel when the ocular appointment is complete', () => {
@@ -97,4 +98,15 @@ it('does not show the removed panel while reports are loading, missing or failed
   expect(renderPage('/projects/create?pendingProjectId=project-1')).not.toContain('No visit report found');
   source.reportsError = true;
   expect(renderPage('/projects/create?pendingProjectId=project-1')).not.toContain('Unable to check ocular visit or reports');
+});
+
+it.each(['draft', 'returned', 'loading', 'error'])('lets sales click Create Project to validate the form when reports are %s', (status) => {
+  completedOcular();
+  source.reports = [{ _id: 'report-1', status }];
+  source.reportsLoading = status === 'loading';
+  source.reportsError = status === 'error';
+  const html = renderPage('/projects/create?pendingProjectId=project-1');
+  const submitButton = html.match(/<button\b[^>]*type="submit"[^>]*>/)?.[0];
+  expect(submitButton).toBeDefined();
+  expect(submitButton).not.toMatch(/\sdisabled(?:=|\s|>)/);
 });

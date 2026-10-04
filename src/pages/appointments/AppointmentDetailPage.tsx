@@ -17,6 +17,8 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { AppointmentSalesNotes } from '@/components/shared/AppointmentSalesNotes';
+import { combineSalesNotes } from '@/lib/sales-notes';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
 import {
@@ -1237,6 +1239,10 @@ export function AppointmentDetailPage() {
             </div>
           </CardContent>
         </Card>
+
+      {canSeeVisitReports && <AppointmentSalesNotes appointmentId={appt._id}
+        value={combineSalesNotes(appt.initialDesignNotes, ...(visitReports || []).map((report) => report.initialDesignNotes))}
+        canEdit={isAdmin || (isSalesStaff && String(appt.salesStaffId) === user?._id)} />}
 
       {/* Customer: Submit Location for Ocular Visit */}
       {canCustomerSubmitOcularLocation && (

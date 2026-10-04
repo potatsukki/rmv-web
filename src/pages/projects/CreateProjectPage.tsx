@@ -25,6 +25,7 @@ import type { ApiResponse, LineItem, ServiceSpecifications } from '@/lib/types';
 import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 import { extractErrorMessage } from '@/lib/utils';
+import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
 
 const selectClassName = 'h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring';
 const attachmentGroups = [
@@ -78,6 +79,7 @@ export function CreateProjectPage() {
   const [projectPath, setProjectPath] = useState<'direct' | 'ocular'>('direct');
   const [ocularVisitDate, setOcularVisitDate] = useState('');
   const [ocularVisitSlot, setOcularVisitSlot] = useState('');
+  const [isCheckingOcular, setIsCheckingOcular] = useState(false);
   const isUploading = Object.values(uploads).some(Boolean);
   const availableOcularSlots = useAvailableSlots(ocularVisitDate, 'ocular');
 
@@ -88,7 +90,6 @@ export function CreateProjectPage() {
     setPreferredDesign(template.preferredDesign);
     setSpecifications(mergeSpecificationsWithDefaults(serviceType, template.suggestedSpecifications || specifications));
     setLineItems(template.suggestedLineItems.map((item) => ({ ...item })));
-    setInitialDesignNotes(template.initialDesignNotes);
   }
 
   useEffect(() => {
@@ -100,21 +101,6 @@ export function CreateProjectPage() {
   const appointment = useAppointment(appointmentId);
   const visitReports = useVisitReportsByAppointment(appointmentId);
   const appointmentReports = visitReports.data || [];
-  const unsubmittedReports = appointmentReports.filter((report) => (
-    report.status !== VisitReportStatus.SUBMITTED && report.status !== VisitReportStatus.COMPLETED
-  ));
-  const ocularBlocker = !pendingProjectId ? ''
-    : !appointmentId || appointment.isLoading || visitReports.isLoading
-      ? 'Checking ocular visit and reports…'
-      : appointment.isError || visitReports.isError
-        ? 'Unable to check ocular visit or reports. Refresh the status to try again.'
-        : appointment.data?.status !== 'completed'
-          ? 'Complete the ocular visit and submit its reports before creating the final project.'
-          : !appointmentReports.length
-            ? 'No visit report found. Open the ocular visit to create and submit its report.'
-            : unsubmittedReports.length
-              ? 'Appointment completed. Submit the remaining visit reports before creating the project.'
-              : '';
   const primaryReport = appointmentReports.find((report) => String(report._id) === visitReportId)
     || appointmentReports.find((report) => report.visitType === 'ocular')
     || appointmentReports[0];
@@ -191,7 +177,7 @@ export function CreateProjectPage() {
     setLineItems((sourceLineItems?.length ? sourceLineItems : sourceTemplate?.suggestedLineItems || []).map((item) => ({ ...item })));
     setMeasurementUnit(primaryReport?.measurementUnit || siteDetails?.measurementUnit || 'cm');
     setInitialDesignKeys(primaryReport?.initialDesignKeys || appointment.data.initialDesignKeys || []);
-    setInitialDesignNotes(primaryReport?.initialDesignNotes || appointment.data.initialDesignNotes || sourceTemplate?.initialDesignNotes || '');
+    setInitialDesignNotes(combineSalesNotes(...appointmentReports.map((report) => report.initialDesignNotes), appointment.data.initialDesignNotes, pendingProject.data?.initialDesignNotes));
     setAttachments({
       photoKeys: primaryReport?.photoKeys || siteDetails?.photoKeys || [],
       videoKeys: primaryReport?.videoKeys || siteDetails?.videoKeys || [],
@@ -202,6 +188,7 @@ export function CreateProjectPage() {
   }, [
     appointment.data,
     primaryReport,
+    pendingProject.data?.initialDesignNotes,
     sourceSelectedDesignId,
     sourceSelectedDesignImage,
     sourceSelectedDesignName,
@@ -210,11 +197,7 @@ export function CreateProjectPage() {
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    if (createProject.isPending || isUploading) return;
-    if (ocularBlocker) {
-      toast.error(ocularBlocker);
-      return;
-    }
+    if (createProject.isPending || isUploading || isCheckingOcular) return;
     if (!customerId || !customer) {
       toast.error('Select a customer first.');
       return;
@@ -236,6 +219,7 @@ export function CreateProjectPage() {
           title: defaultTitle || undefined,
           serviceType: serviceType || undefined,
           ocularVisit: { date: ocularVisitDate, slotCode: ocularVisitSlot },
+          initialDesignNotes: cleanSalesNotes(initialDesignNotes),
         });
         toast.success('Ocular visit scheduled and saved.');
         navigate('/projects');
@@ -264,6 +248,46 @@ export function CreateProjectPage() {
     }
 
     try {
+      if (pendingProjectId) {
+        if (!appointmentId) {
+          toast.error('The linked ocular visit could not be found. Reopen the project and try again.');
+          return;
+        }
+        setIsCheckingOcular(true);
+        const [latestAppointment, latestReports] = await Promise.all([
+          appointment.refetch(),
+          visitReports.refetch(),
+        ]);
+        if (latestAppointment.isError || latestReports.isError) {
+          throw new Error('Unable to check the ocular visit and reports. Click Create Project to try again.');
+        }
+        const reports = latestReports.data || [];
+        const reportToSubmit = reports.find((report) => (
+          report.status !== VisitReportStatus.SUBMITTED && report.status !== VisitReportStatus.COMPLETED
+        ));
+        const visitComplete = latestAppointment.data?.status === 'completed';
+        if (!visitComplete || !reports.length || reportToSubmit) {
+          const needsReportSubmission = visitComplete && reportToSubmit;
+          toast.error(
+            <div className="space-y-2">
+              <p>{needsReportSubmission
+                ? `Submit the ${serviceLabel(reportToSubmit.serviceType, reportToSubmit.serviceTypeCustom) || 'ocular'} visit report before creating the project.`
+                : visitComplete
+                  ? 'Create and submit the ocular visit report before creating the project.'
+                  : 'Complete the ocular visit before creating the project.'}</p>
+              <a
+                href={needsReportSubmission ? `/visit-reports/${reportToSubmit._id}` : `/appointments/${appointmentId}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold underline underline-offset-4"
+              >{needsReportSubmission ? 'Submit Visit Report' : 'Go to Ocular Visit'}</a>
+            </div>,
+            { id: 'ocular-project-validation', duration: 10000 },
+          );
+          return;
+        }
+        toast.dismiss('ocular-project-validation');
+      }
       const project = await createProject.mutateAsync({
         pendingProjectId: pendingProjectId || undefined,
         customerId,
@@ -279,7 +303,7 @@ export function CreateProjectPage() {
         preferredDesign: preferredDesign || undefined,
         customerRequirements: value('customerRequirements') || undefined,
         initialDesignKeys,
-        initialDesignNotes: initialDesignNotes || undefined,
+        initialDesignNotes: cleanSalesNotes(initialDesignNotes),
         selectedDesignTemplateId: selectedDesign?.id || sourceSelectedDesignId,
         selectedDesignTemplateName: selectedDesign?.title || sourceSelectedDesignName,
         selectedDesignTemplateImageUrl: (selectedDesign?.imageUrl || sourceSelectedDesignImage)?.startsWith('data:')
@@ -295,6 +319,8 @@ export function CreateProjectPage() {
       navigate(`/projects/${project._id}`);
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Failed to create project.'));
+    } finally {
+      setIsCheckingOcular(false);
     }
   }
 
@@ -320,7 +346,14 @@ export function CreateProjectPage() {
         onSubmit={handleSubmit}
         className="space-y-6"
       >
-        <fieldset disabled={createProject.isPending} className="min-w-0 space-y-6">
+        <fieldset disabled={createProject.isPending || isCheckingOcular} className="min-w-0 space-y-6">
+          <Card>
+            <CardHeader><CardTitle>Sales Notes</CardTitle></CardHeader>
+            <CardContent className="space-y-2">
+              <Label htmlFor="project-sales-notes">Sales Notes (optional)</Label>
+              <Textarea id="project-sales-notes" value={initialDesignNotes} onChange={(event) => setInitialDesignNotes(event.target.value)} maxLength={2000} rows={4} placeholder="Enter your notes and clarified customer requirements." />
+            </CardContent>
+          </Card>
           {projectPath !== 'ocular' && <Card>
             <CardHeader>
               <CardTitle>Signed Contract</CardTitle>
@@ -541,10 +574,12 @@ export function CreateProjectPage() {
 
           <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            <Button type="submit" disabled={!customer || (projectPath !== 'ocular' && !contractFileKeys[0]) || isUploading || createProject.isPending || !!ocularBlocker}>
-              {createProject.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
+            <Button type="submit" disabled={isUploading || createProject.isPending || isCheckingOcular}>
+              {createProject.isPending || isCheckingOcular ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
               {createProject.isPending
                 ? 'Creating…'
+                : isCheckingOcular
+                  ? 'Checking ocular…'
                 : isUploading
                   ? 'Uploading…'
                   : projectPath === 'ocular'

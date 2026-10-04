@@ -34,6 +34,21 @@ function syncAppointmentCaches(qc: ReturnType<typeof useQueryClient>, appointmen
   qc.invalidateQueries({ queryKey: KEYS.all });
 }
 
+export function useUpdateAppointmentSalesNotes() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, initialDesignNotes }: { id: string; initialDesignNotes: string }) => {
+      const { data } = await api.put<ApiResponse<Appointment>>(`/appointments/${id}/sales-notes`, { initialDesignNotes });
+      return data.data;
+    },
+    onSuccess: (appointment) => {
+      syncAppointmentCaches(qc, appointment);
+      qc.invalidateQueries({ queryKey: ['visit-reports'] });
+      qc.invalidateQueries({ queryKey: ['projects'] });
+    },
+  });
+}
+
 // ── Queries ──
 export function useAppointments(params?: Record<string, string>, enabled = true) {
   return useQuery({

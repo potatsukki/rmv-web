@@ -155,6 +155,11 @@ export function useUpdateVisitReport() {
     },
     onSuccess: (report) => {
       syncVisitReportCaches(qc, report);
+      if (report.initialDesignNotes !== undefined) {
+        qc.invalidateQueries({ queryKey: ['appointments'] });
+        qc.invalidateQueries({ queryKey: ['projects'] });
+        qc.invalidateQueries({ queryKey: KEYS.all });
+      }
     },
   });
 }
