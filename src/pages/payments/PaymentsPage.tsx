@@ -1143,7 +1143,7 @@ export function PaymentsPage() {
                                   className="cursor-pointer py-3 sm:py-2 text-amber-600 dark:text-amber-400"
                                 >
                                   <CreditCard className="mr-2 h-4 w-4" />
-                                  <span>GCash / Cash On-site</span>
+                                  <span>GCash</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -1239,7 +1239,7 @@ export function PaymentsPage() {
                                   className="cursor-pointer text-amber-600 dark:text-amber-400"
                                 >
                                   <CreditCard className="mr-2 h-4 w-4" />
-                                  <span>GCash / Cash On-site</span>
+                                  <span>GCash</span>
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
@@ -1460,8 +1460,8 @@ export function PaymentsPage() {
 
       <Dialog open={!!gcashStageId} onOpenChange={(open) => !open && setGcashStageId('')}>
         <DialogContent className="metal-panel-strong max-h-[90vh] overflow-y-auto sm:max-w-2xl">
-          <DialogHeader><DialogTitle>GCash / Cash On-site</DialogTitle></DialogHeader>
-          {gcashStageId && <GcashPayment key={gcashStageId} target={{ stageId: gcashStageId }} />}
+          <DialogHeader><DialogTitle>GCash Payment</DialogTitle></DialogHeader>
+          {gcashStageId && <GcashPayment key={gcashStageId} target={{ stageId: gcashStageId }} allowCash={false} />}
         </DialogContent>
       </Dialog>
       {/* Payment History Detail Modal */}

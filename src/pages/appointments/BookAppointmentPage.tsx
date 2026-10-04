@@ -546,6 +546,19 @@ export function BookAppointmentPage() {
                   </span>
                 </button>
 
+                {bookingMode === 'custom' && (
+                  <div className="space-y-5 rounded-2xl border border-[#d2d2d7] bg-[#f8f9fb] p-4 dark:border-white/12 dark:bg-white/[0.025]">
+                    <ServiceTypePicker
+                      value={serviceTypes}
+                      customValue={serviceTypeCustom}
+                      onChange={(types, custom) => {
+                        setServiceTypes(types);
+                        setServiceTypeCustom(custom || '');
+                      }}
+                    />
+                  </div>
+                )}
+
                 <div className="space-y-3">
                   <div>
                     <p className="text-[13px] font-semibold text-[#3a3a3e] dark:text-slate-300">Sample Designs</p>
@@ -646,19 +659,6 @@ export function BookAppointmentPage() {
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
-
-                {bookingMode === 'custom' && (
-                  <div className="space-y-5 rounded-2xl border border-[#d2d2d7] bg-[#f8f9fb] p-4 dark:border-white/12 dark:bg-white/[0.025]">
-                    <ServiceTypePicker
-                      value={serviceTypes}
-                      customValue={serviceTypeCustom}
-                      onChange={(types, custom) => {
-                        setServiceTypes(types);
-                        setServiceTypeCustom(custom || '');
-                      }}
-                    />
                   </div>
                 )}
 
