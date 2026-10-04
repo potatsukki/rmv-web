@@ -1417,6 +1417,7 @@ export function VisitReportPage() {
 
           {(effectiveVisitType === 'ocular' || effectiveVisitType === 'consultation') && (
           <PhotoUploadGrid
+            showSketches={false}
             photoKeys={report.photoKeys || []}
             videoKeys={report.videoKeys || []}
             sketchKeys={report.sketchKeys || []}
@@ -1604,6 +1605,7 @@ export function VisitReportPage() {
             </CardHeader>
             <CardContent>
               <PhotoUploadGrid
+                showSketches={false}
                 photoKeys={photoKeys}
                 videoKeys={videoKeys}
                 sketchKeys={sketchKeys}
