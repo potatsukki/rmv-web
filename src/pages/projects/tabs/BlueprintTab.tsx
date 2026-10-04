@@ -665,6 +665,13 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   );
 
   const canReviewBlueprint = isCustomer;
+  const canRequestRevision = (bp: Blueprint) => Boolean(
+    canReviewBlueprint
+    && bp._id === blueprint?._id
+    && bp.status === 'uploaded'
+    && bp.version < 4
+    && !(isBlueprintMode ? bp.blueprintApproved : bp.costingApproved),
+  );
   const isRevisionRequested = blueprint?.status === 'revision_requested';
   const revisionComponent = blueprint?.revisionComponent || 'blueprint';
   const canEditDraft = Boolean(isAssigned && !isBlueprintPending && (
@@ -1189,6 +1196,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   };
 
   const handleRequestRevision = () => {
+    if (!blueprint || revisionDialog.blueprintId !== blueprint._id || !canRequestRevision(blueprint)) {
+      toast.error('This version is no longer available for revision.');
+      setRevisionDialog({ open: false, blueprintId: '' });
+      return;
+    }
     if (!revisionNotes.trim()) {
       toast.error('Please enter revision notes');
       return;
@@ -1881,8 +1893,42 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       <div className="space-y-6 -mx-3 sm:mx-0">
         {blueprints.map((bp: Blueprint) => (
           <div key={bp._id} className="space-y-4 px-3 sm:px-0">
-          {/* Design + billing cards for customers; full costing remains staff-only. */}
-          <div className={cn('grid grid-cols-1 gap-4', isCostingMode ? 'md:grid-cols-1' : 'md:grid-cols-1')}>
+          {/* Blueprint and design are visible to project viewers; internal costing stays staff-only. */}
+          <div className={cn('grid grid-cols-1 gap-4', isBlueprintMode ? 'md:grid-cols-2' : 'md:grid-cols-1')}>
+            {isBlueprintMode && (
+              <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
+                <CardHeader className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} flex flex-row items-center justify-between border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6 dark:border-slate-700`}>
+                  <div className="flex items-center gap-2">
+                    <FileText className={`h-5 w-5 ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
+                    <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>Blueprint</h3>
+                  </div>
+                  <Badge variant="outline" className="border-slate-300 bg-slate-100 text-slate-700 shadow-none dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200">Technical</Badge>
+                </CardHeader>
+                <CardContent className="space-y-4 px-4 pt-6 sm:px-6">
+                  <FilePreviewThumb
+                    fileKey={bp.blueprintKey}
+                    label="Blueprint Preview"
+                    onClick={() => handleViewFile(bp.blueprintKey)}
+                  />
+                  <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
+                    <Button
+                      variant="prominent"
+                      className="flex-1 rounded-xl"
+                      onClick={() => handleViewFile(bp.blueprintKey)}
+                    >
+                      <Eye className="mr-2 h-4 w-4" /> View Blueprint
+                    </Button>
+                    <Button
+                      variant="outline"
+                      className="flex-1 rounded-xl dark:border-slate-700 dark:bg-slate-900/55 dark:text-slate-100 dark:hover:bg-slate-800/80"
+                      onClick={() => handleDownloadFile(bp.blueprintKey)}
+                    >
+                      <Download className="mr-2 h-4 w-4" /> Download
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
             {/* Design Card — shown to everyone */}
             {isBlueprintMode && (
             <Card className={`${isDark ? 'metal-panel-strong dark:bg-slate-950/85' : 'metal-panel'} rounded-none border-x-0 border-[color:var(--color-border)]/60 sm:rounded-xl sm:border-x dark:border-slate-700`}>
@@ -1920,14 +1966,16 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                         <><CheckCircle className="mr-2 h-4 w-4" /> Approve</>
                       )}
                     </Button>
-                    <Button
-                      variant="destructive"
-                      className="flex-1 rounded-xl"
-                      onClick={() => setRevisionDialog({ open: true, blueprintId: bp._id })}
-                    >
-                      <AlertCircle className="mr-2 h-4 w-4" />
-                      Request Revision
-                    </Button>
+                    {canRequestRevision(bp) && (
+                      <Button
+                        variant="destructive"
+                        className="flex-1 rounded-xl"
+                        onClick={() => setRevisionDialog({ open: true, blueprintId: bp._id })}
+                      >
+                        <AlertCircle className="mr-2 h-4 w-4" />
+                        Request Revision
+                      </Button>
+                    )}
                   </div>
                 )}
               </CardContent>
@@ -2015,28 +2063,6 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
             </Card>
             )}
           </div>
-
-          {/* Technical Blueprint — staff/engineer/admin only, hidden from customers */}
-          {isBlueprintMode && !canReviewBlueprint && (
-            <div className="metal-panel-strong rounded-[1.25rem] border border-[color:var(--color-border)]/60 px-4 py-3.5 dark:border-slate-700 dark:bg-slate-950/85">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-300" />
-                  <p className="text-xs font-semibold uppercase tracking-[0.12em] text-slate-300">Technical Blueprint</p>
-                  <span className="rounded-md border border-white/12 bg-white/8 px-2 py-1 text-[10px] font-medium text-slate-200">Fabrication only</span>
-                </div>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-auto p-0 text-xs font-semibold text-slate-100 hover:bg-transparent hover:text-white"
-                  onClick={() => handleViewFile(bp.blueprintKey)}
-                >
-                  <Eye className="mr-1 h-3 w-3" />
-                  View
-                </Button>
-              </div>
-            </div>
-          )}
 
           {/* -- Prominent Accept CTA -- shown when both approved and customer hasn't accepted yet */}
           {isCostingMode && canReviewBlueprint && bp.blueprintApproved && bp.costingApproved &&
@@ -2149,7 +2175,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
           )}
 
           {/* Action buttons for customer review */}
-          {isCostingMode && canReviewBlueprint && ['uploaded', 'revision_uploaded'].includes(bp.status) && (
+          {isCostingMode && canRequestRevision(bp) && (
             <div className="flex flex-wrap gap-3">
               <Button
                 variant="destructive"
