@@ -665,6 +665,12 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   );
 
   const canReviewBlueprint = isCustomer;
+  const canApproveBilling = (bp: Blueprint) => Boolean(
+    canReviewBlueprint
+    && bp._id === blueprint?._id
+    && bp.status === 'uploaded'
+    && !bp.costingApproved,
+  );
   const canRequestRevision = (bp: Blueprint) => Boolean(
     canReviewBlueprint
     && bp._id === blueprint?._id
@@ -1166,6 +1172,12 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
 
   // ── Customer handlers ──
   const handleApprove = (blueprintId: string, component: 'blueprint' | 'costing') => {
+    if (component === 'costing' && (
+      !blueprint || blueprintId !== blueprint._id || !canApproveBilling(blueprint)
+    )) {
+      toast.error('Billing can only be approved on the latest submitted version.');
+      return;
+    }
     if (component === 'costing' && !hasPayableQuotation(blueprint)) {
       toast.error('Billing cannot be approved until engineering provides a valid quotation total.');
       return;
@@ -2045,7 +2057,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   </p>
                 )}
                 <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                  {canReviewBlueprint && !bp.costingApproved && (
+                  {canApproveBilling(bp) && (
                     <Button
                       className="flex-1 rounded-xl border border-emerald-500/70 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_10px_24px_rgba(6,95,70,0.3)] hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)] hover:text-white dark:border-emerald-400/55 dark:bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_28px_rgba(6,78,59,0.34)] dark:hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)]"
                       onClick={() => setApproveConfirmDialog({ open: true, blueprintId: bp._id, component: 'costing' })}
