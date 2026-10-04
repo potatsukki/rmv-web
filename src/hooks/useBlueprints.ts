@@ -250,15 +250,18 @@ export function useRequestBlueprintRevision() {
       id,
       revisionNotes,
       revisionRefKeys,
+      component,
     }: {
       id: string;
       revisionNotes: string;
       revisionRefKeys?: string[];
+      component: 'blueprint' | 'costing';
     }) => {
       const { data } = await api.post<ApiResponse<Blueprint>>(
         `/blueprints/${id}/request-revision`,
         {
           notes: revisionNotes,
+          component,
           refKeys: revisionRefKeys || [],
         },
       );

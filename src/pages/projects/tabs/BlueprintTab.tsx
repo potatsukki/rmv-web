@@ -52,6 +52,7 @@ import {
 } from '@/lib/blueprint-draft-cache';
 import { QUOTATION_COPY } from '@/lib/quotation-copy';
 import { submitLatestBlueprintDraft } from '@/lib/blueprint-draft-submission';
+import { getBlueprintDraftChanges, getRevisionQuotation } from '@/lib/blueprint-revision';
 import type { Blueprint, BlueprintDraft, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
 import { resolveBlueprintWorkflowStatus } from '@/lib/workflow-status';
 
@@ -258,6 +259,7 @@ function FilePickerWithPreview({
   onPreview,
   accept,
   label,
+  required = true,
 }: {
   fileMeta: DraftFileMeta | null;
   isUploading?: boolean;
@@ -266,6 +268,7 @@ function FilePickerWithPreview({
   onPreview: (file: { key: string; name: string; type?: string }) => void;
   accept: string;
   label: string;
+  required?: boolean;
 }) {
   const inputRef = useRef<HTMLInputElement>(null);
   const { resolvedTheme } = useThemeStore();
@@ -321,9 +324,9 @@ function FilePickerWithPreview({
         </span>
         <div>
           <p className={`text-base font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>
-            {label.replace('*', '')}<span className="text-red-400">*</span>
+            {label.replace('*', '')}{required && <span className="text-red-400">*</span>}
           </p>
-          <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-[#6e6e73]'}`}>Required</p>
+          <p className={`mt-1 text-sm ${isDark ? 'text-slate-400' : 'text-[#6e6e73]'}`}>{required ? 'Required' : 'Upload a replacement only if needed'}</p>
         </div>
       </div>
       <input
@@ -595,7 +598,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
 
   const { data: project, refetch: refetchProject } = useProject(projectId);
-  const { data: blueprint, refetch: refetchBlueprint } = useLatestBlueprint(projectId, projectItemId);
+  const { data: blueprint, refetch: refetchBlueprint, isPending: isBlueprintPending } = useLatestBlueprint(projectId, projectItemId);
   const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId, projectItemId);
   const { data: paymentPlan } = usePaymentPlan(projectId, projectItemId);
 
@@ -662,6 +665,12 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   );
 
   const canReviewBlueprint = isCustomer;
+  const isRevisionRequested = blueprint?.status === 'revision_requested';
+  const revisionComponent = blueprint?.revisionComponent || 'blueprint';
+  const canEditDraft = Boolean(isAssigned && !isBlueprintPending && (
+    blueprint ? isRevisionRequested && mode === revisionComponent : canUploadInitialBlueprint
+  ));
+  const revisionScope = isRevisionRequested ? `${blueprint._id}:${revisionComponent}` : undefined;
   const canViewInternalCosting = Boolean(isEngineer || isAdmin);
   const hasActiveItemPaymentPlan = Boolean(paymentPlan);
 
@@ -688,7 +697,9 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const [blueprintFileMeta, setBlueprintFileMeta] = useState<DraftFileMeta | null>(null);
   const [designFileMeta, setDesignFileMeta] = useState<DraftFileMeta | null>(null);
   const [costingFileMeta, setCostingFileMeta] = useState<DraftFileMeta | null>(null);
-  const effectiveDesignFileMeta = designFileMeta || autoDesignFileMeta;
+  const effectiveBlueprintKey = blueprintFileMeta?.key || (isRevisionRequested ? blueprint?.blueprintKey : undefined);
+  const effectiveDesignFileMeta = designFileMeta || (!isRevisionRequested ? autoDesignFileMeta : null);
+  const effectiveDesignKey = effectiveDesignFileMeta?.key || (isRevisionRequested ? blueprint?.designKey : undefined);
   const [previewFile, setPreviewFile] = useState<{ key: string; name: string; type?: string } | null>(null);
   const { url: previewFileUrl, isLoading: isPreviewFileLoading } = useAuthenticatedUrl(
     previewFile?.key && !previewFile.key.startsWith('http') ? previewFile.key : null,
@@ -702,8 +713,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const [quotInitialized, setQuotInitialized] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const draftCacheKey = useMemo(
-    () => getBlueprintDraftCacheKey(projectId, projectItemId, mode),
-    [projectId, projectItemId, mode],
+    () => getBlueprintDraftCacheKey(projectId, projectItemId, mode, revisionScope),
+    [projectId, projectItemId, mode, revisionScope],
   );
   const [hydratedDraftCacheKey, setHydratedDraftCacheKey] = useState('');
 
@@ -833,19 +844,26 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
 
   // Hydrate from DB Draft
   useEffect(() => {
-    if (quotInitialized) return;
+    if (quotInitialized || isBlueprintPending) return;
 
-    if (dbDraft) {
-      const draftProjectItemId = dbDraft.projectItemId ? String(dbDraft.projectItemId) : undefined;
-      const activeProjectItemId = projectItemId || undefined;
-      if (draftProjectItemId !== activeProjectItemId) return;
+    const matchingDraft = dbDraft && (!isRevisionRequested || (
+      dbDraft.mode === 'revision' && dbDraft.sourceBlueprintId === blueprint?._id
+    )) ? dbDraft : null;
+    if (dbDraft !== undefined) {
+      const draft = matchingDraft;
+      if (draft) {
+        const draftProjectItemId = draft.projectItemId ? String(draft.projectItemId) : undefined;
+        const activeProjectItemId = projectItemId || undefined;
+        if (draftProjectItemId !== activeProjectItemId) return;
 
-      if (dbDraft.files?.blueprint) setBlueprintFileMeta(dbDraft.files.blueprint as DraftFileMeta);
-      if (dbDraft.files?.design) setDesignFileMeta(dbDraft.files.design as DraftFileMeta);
-      if (dbDraft.files?.costing) setCostingFileMeta(dbDraft.files.costing as DraftFileMeta);
+        if (draft.files?.blueprint) setBlueprintFileMeta(draft.files.blueprint as DraftFileMeta);
+        if (draft.files?.design) setDesignFileMeta(draft.files.design as DraftFileMeta);
+        if (draft.files?.costing) setCostingFileMeta(draft.files.costing as DraftFileMeta);
+      }
 
-      const nextQuotation = normalizeDraftQuotation(dbDraft.quotation, costingServiceType, 'standard');
-      if (dbDraft.quotation) {
+      const savedQuotation = draft?.quotation || (isRevisionRequested && blueprint ? getRevisionQuotation(blueprint) : undefined);
+      const nextQuotation = normalizeDraftQuotation(savedQuotation, costingServiceType, 'standard');
+      if (savedQuotation) {
         setQuotInternalCosts(nextQuotation.internalCosts);
         setQuotMaterialCosts(
           nextQuotation.lineItems.length > 0
@@ -860,20 +878,13 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       }
       lastSavedQuotation.current = nextQuotation;
       setQuotInitialized(true);
-      return;
-    } else if (dbDraft === null) {
-      // null means successfully fetched but no draft exists
-      const nextQuotation = getEmptyQuotation(costingServiceType, 'standard');
-      setQuotSystemDuration(nextQuotation.systemEstimatedDuration);
-      setQuotMaterialCosts([{ material: '', amount: '' }]);
-      lastSavedQuotation.current = nextQuotation;
-      setQuotInitialized(true);
     }
-  }, [costingServiceType, dbDraft, projectItemId, quotInitialized]);
+  }, [blueprint, costingServiceType, dbDraft, isBlueprintPending, isRevisionRequested, projectItemId, quotInitialized]);
 
   // DB Autosave Form Hook
   useEffect(() => {
-    if (!quotInitialized || uploading || uploadInProgressRef.current) return;
+    if (!canEditDraft || !quotInitialized || uploading || uploadInProgressRef.current) return;
+    if (isRevisionRequested && revisionComponent === 'blueprint') return;
     const isDifferent = JSON.stringify(currentQuotation) !== JSON.stringify(lastSavedQuotation.current);
     if (!isDifferent) return;
 
@@ -885,12 +896,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         projectItemId,
         mode: blueprint ? 'revision' : 'initial',
         sourceBlueprintId: blueprint?._id,
-        files: {
+        ...getBlueprintDraftChanges(blueprint, {
           blueprint: blueprintFileMeta,
           design: designFileMeta,
           costing: costingFileMeta,
-        },
-        quotation: currentQuotation,
+        }, currentQuotation),
       }, {
         onSuccess: () => {
            lastSavedQuotation.current = currentQuotation;
@@ -903,10 +913,10 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     }, 1500);
 
     return () => clearTimeout(timer);
-  }, [currentQuotation, quotInitialized, blueprint, projectId, projectItemId, blueprintFileMeta, designFileMeta, costingFileMeta, upsertDraftMutation, uploading]);
+  }, [canEditDraft, isRevisionRequested, revisionComponent, currentQuotation, quotInitialized, blueprint, projectId, projectItemId, blueprintFileMeta, designFileMeta, costingFileMeta, upsertDraftMutation, uploading]);
 
   const handleDraftFileUpload = async (file: File, type: 'blueprint'|'design'|'costing') => {
-    if (uploadInProgressRef.current) return;
+    if (!canEditDraft || uploadInProgressRef.current) return;
     setUploadingFile(type);
     try {
       const { uploadUrl, fileKey } = await requestSignedUploadUrl({
@@ -939,8 +949,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         projectItemId,
         mode: blueprint ? 'revision' : 'initial',
         sourceBlueprintId: blueprint?._id,
-        files: updatedFiles,
-        quotation: currentQuotation,
+        ...getBlueprintDraftChanges(blueprint, updatedFiles, currentQuotation),
       });
 
     } catch (err) {
@@ -951,7 +960,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   };
 
   const handleDraftFileRemove = (type: 'blueprint'|'design'|'costing') => {
-    if (uploadInProgressRef.current) return;
+    if (!canEditDraft || uploadInProgressRef.current) return;
     if (type === 'blueprint') setBlueprintFileMeta(null);
     if (type === 'design') setDesignFileMeta(null);
     if (type === 'costing') setCostingFileMeta(null);
@@ -967,8 +976,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       projectItemId,
       mode: blueprint ? 'revision' : 'initial',
       sourceBlueprintId: blueprint?._id,
-      files: updatedFiles,
-      quotation: currentQuotation,
+      ...getBlueprintDraftChanges(blueprint, updatedFiles, currentQuotation),
     }).catch((err) => toast.error(extractErrorMessage(err, 'Failed to save draft file changes')));
   };
 
@@ -1188,6 +1196,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     revisionMutation.mutate(
       {
         id: revisionDialog.blueprintId,
+        component: mode,
         revisionNotes,
         revisionRefKeys: revisionRefKeys.length > 0 ? revisionRefKeys : undefined,
       },
@@ -1243,8 +1252,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   };
 
   const handleBlueprintUpload = async () => {
-    if (uploadInProgressRef.current) return;
-    if (!blueprintFileMeta || !effectiveDesignFileMeta) {
+    if (!canEditDraft || uploadInProgressRef.current) return;
+    if (!effectiveBlueprintKey || !effectiveDesignKey) {
       toast.error('Please select a blueprint file before finalizing');
       return;
     }
@@ -1262,12 +1271,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
           projectItemId,
           mode: blueprint ? 'revision' : 'initial',
           sourceBlueprintId: blueprint?._id,
-          files: {
+          ...getBlueprintDraftChanges(blueprint, {
             blueprint: blueprintFileMeta,
             design: effectiveDesignFileMeta,
             costing: costingFileMeta,
-          },
-          quotation: currentQuotation,
+          }, currentQuotation),
         }),
         () => finalizeDraftMutation.mutateAsync({ projectId, projectItemId }),
       );
@@ -1276,7 +1284,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         isCostingMode
           ? 'Quotation sent to the customer and cashier record.'
           : blueprint
-            ? 'Revision submitted. Your part is complete for now; waiting for customer approval of design and billing.'
+            ? 'Blueprint revision submitted. Waiting for customer review. Costing is unchanged.'
             : 'Blueprint and quotation sent to the customer.',
         { duration: 7000 },
       );
@@ -1502,12 +1510,19 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
               </p>
 
               {/* Revision upload (when revision requested) */}
-              {blueprint.status === 'revision_requested' && isAssigned && (
+              {isRevisionRequested && isAssigned && !canEditDraft && (
+                <p className={`rounded-xl border p-4 text-sm ${isDark ? 'border-slate-700 text-slate-300' : 'border-[#d2d2d7] text-[#6e6e73]'}`}>
+                  {revisionComponent === 'blueprint'
+                    ? 'Only the blueprint needs revision. Costing is unchanged. Submit the revision from the Blueprint tab.'
+                    : 'Only costing needs revision. Blueprint and design are unchanged. Submit the revision from the Costing tab.'}
+                </p>
+              )}
+              {isRevisionRequested && canEditDraft && (
                 <div className={`space-y-6 rounded-2xl border p-6 ${isDark ? 'border-slate-700 bg-slate-900/40' : 'border-[#d2d2d7] bg-[#f5f5f7]/45'}`}>
                   {isBlueprintMode && (
                     <div>
                       <p className={`border-l-4 pl-4 text-xl font-semibold ${isDark ? 'border-sky-400 text-slate-100' : 'border-sky-500 text-[#1d1d1f]'}`}>Upload Files</p>
-                      <p className={`mt-3 pl-5 text-base ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Upload clear and legible files for accurate review and estimation.</p>
+                      <p className={`mt-3 pl-5 text-base ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Upload the revised files. Existing files are kept when no replacement is selected. Costing stays unchanged.</p>
                     </div>
                   )}
                   <div className={cn('grid gap-4', isBlueprintMode ? 'lg:grid-cols-2' : 'sm:grid-cols-1')}>
@@ -1520,21 +1535,19 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                           onRemove={() => handleDraftFileRemove('blueprint')}
                           onPreview={handleOpenPreviewModal}
                           accept=".pdf,.png,.jpg,.jpeg,.dwg"
-                          label="Blueprint File *"
+                          label="Blueprint File"
+                          required={false}
                         />
-                        {approvedInitialDesignKey ? (
-                          <AutoLinkedDesignFileCard fileKey={approvedInitialDesignKey} onPreview={handleOpenPreviewModal} />
-                        ) : (
-                          <FilePickerWithPreview
-                            fileMeta={designFileMeta}
-                            isUploading={uploadingFile === 'design'}
-                            onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
-                            onRemove={() => handleDraftFileRemove('design')}
-                            onPreview={handleOpenPreviewModal}
-                            accept=".pdf,.png,.jpg,.jpeg"
-                            label="Design File *"
-                          />
-                        )}
+                        <FilePickerWithPreview
+                          fileMeta={designFileMeta}
+                          isUploading={uploadingFile === 'design'}
+                          onFileSelect={(f) => f && handleDraftFileUpload(f, 'design')}
+                          onRemove={() => handleDraftFileRemove('design')}
+                          onPreview={handleOpenPreviewModal}
+                          accept=".pdf,.png,.jpg,.jpeg"
+                          label="Design File"
+                          required={false}
+                        />
                       </>
                     )}
                   </div>
@@ -1555,15 +1568,15 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                         <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[#6e6e73]'}`}>Your changes are saved automatically.</p>
                       </div>
                     </div>
-                    {isCostingMode && (
+                    {canEditDraft && (
                       <button
                         type="button"
                         className={uploadActionButtonClass}
                         onClick={handleBlueprintUpload}
-                        disabled={uploading || !blueprintFileMeta || !effectiveDesignFileMeta || !hasValidMaterialCosts || isSavingDraft || !!uploadingFile}
+                        disabled={uploading || !effectiveBlueprintKey || !effectiveDesignKey || (isCostingMode && !hasValidMaterialCosts) || isSavingDraft || !!uploadingFile}
                       >
                         {uploading ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <Send className="mr-1.5 h-4 w-4" />}
-                        Send Quotation to Customer & Cashier
+                        {isBlueprintMode ? 'Submit Blueprint Revision' : 'Send Quotation to Customer & Cashier'}
                       </button>
                     )}
                   </div>
@@ -2218,9 +2231,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         >
         <DialogContent className="max-h-[90vh] overflow-y-auto rounded-2xl sm:max-w-[480px] dark:border-slate-700 dark:bg-slate-900">
           <DialogHeader>
-            <DialogTitle className="text-gray-900 dark:text-slate-100">Request Revision</DialogTitle>
+            <DialogTitle className="text-gray-900 dark:text-slate-100">Request {isBlueprintMode ? 'Blueprint' : 'Costing'} Revision</DialogTitle>
             <DialogDescription className="text-gray-500 dark:text-slate-400">
-              Provide detailed feedback for the engineering team regarding required changes.
+              {isBlueprintMode
+                ? 'Describe the blueprint changes needed. Existing costing will stay unchanged.'
+                : 'Describe the costing changes needed. Blueprint and design will stay unchanged.'}
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">

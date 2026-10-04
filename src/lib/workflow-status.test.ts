@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus } from './constants';
 import type { PaymentPlan } from './types';
-import { resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus } from './workflow-status';
+import { resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from './workflow-status';
 
 function paymentPlan(stages: PaymentPlan['stages']): PaymentPlan {
   return {
@@ -14,6 +14,15 @@ function paymentPlan(stages: PaymentPlan['stages']): PaymentPlan {
     createdAt: '2026-09-29T00:00:00.000Z',
   };
 }
+
+describe('revision workflow status', () => {
+  it('shows the revision request while the unchanged quotation remains sent to the customer', () => {
+    expect(resolveProjectWorkflowStatus({ blueprint: {
+      status: 'revision_requested', quotationReviewStatus: 'sent_to_customer',
+      blueprintApproved: false, costingApproved: true, quotation: { total: 3000 },
+    } })).toMatchObject({ label: 'Revision Requested', tone: 'orange' });
+  });
+});
 
 describe('resolvePaymentWorkflowStatus', () => {
   it('labels an incomplete downpayment with a recorded amount as partially paid', () => {

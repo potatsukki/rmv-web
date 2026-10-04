@@ -468,6 +468,7 @@ export interface Blueprint {
   costingApproved: boolean;
   status: string;
   revisionNotes?: string;
+  revisionComponent?: 'blueprint' | 'costing';
   revisionRefKeys: string[];
   quotationReviewStatus?: QuotationReviewStatus;
   quotationReviewedBy?: string;
