@@ -788,7 +788,7 @@ export function ProjectDetailPage() {
     isAssignedEngineer
     && project
     && activeWorkflowStatus === ProjectStatus.BLUEPRINT
-    && (!blueprint || blueprint.status === 'revision_requested'),
+    && (!blueprint || (blueprint.status === 'revision_requested' && blueprint.revisionComponent !== 'costing')),
   );
   const activeQuotationTotal = Number(blueprint?.quotation?.total || 0);
   const showCostingTabIndicator = Boolean(
@@ -796,7 +796,9 @@ export function ProjectDetailPage() {
     && project
     && activeWorkflowStatus === ProjectStatus.BLUEPRINT
     && activeProjectItemRecord
-    && (!blueprint?.costingKey || !blueprint?.quotation || activeQuotationTotal <= 0),
+    && (blueprint?.status === 'revision_requested'
+      ? blueprint.revisionComponent === 'costing'
+      : !blueprint?.quotation || activeQuotationTotal <= 0),
   );
   const blueprintReadyForCustomerReview = Boolean(
     isCustomer

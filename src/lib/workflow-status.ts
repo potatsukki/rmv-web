@@ -217,6 +217,7 @@ export function resolveProjectWorkflowStatus(input: {
 
   if (
     input.blueprint?.quotationReviewStatus === 'sent_to_customer'
+    && input.blueprint.status !== 'revision_requested'
     && (!input.blueprint.blueprintApproved || !input.blueprint.costingApproved)
   ) {
     return {

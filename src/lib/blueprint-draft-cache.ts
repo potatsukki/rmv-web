@@ -32,8 +32,9 @@ export function getBlueprintDraftCacheKey(
   projectId: string,
   projectItemId: string | undefined,
   mode: 'blueprint' | 'costing',
+  revisionScope?: string,
 ) {
-  return `blueprint-tab-cache:v2:${projectId}:${projectItemId || 'legacy'}:${mode}`;
+  return `blueprint-tab-cache:v2:${projectId}:${projectItemId || 'legacy'}:${mode}${revisionScope ? `:${revisionScope}` : ''}`;
 }
 
 export function resolveBlueprintDraftCache(

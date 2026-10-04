@@ -20,6 +20,11 @@ const defaults = {
 };
 
 describe('blueprint draft cache isolation', () => {
+  it('keeps revision drafts separate from the initial submission and earlier revisions', () => {
+    const revisionKey = getBlueprintDraftCacheKey('project-1', 'item-1', 'blueprint', 'bp-1:blueprint');
+    expect(revisionKey).not.toBe(getBlueprintDraftCacheKey('project-1', 'item-1', 'blueprint'));
+    expect(revisionKey).not.toBe(getBlueprintDraftCacheKey('project-1', 'item-1', 'blueprint', 'bp-2:blueprint'));
+  });
   it('uses a separate cache scope for every project item and workspace', () => {
     expect(getBlueprintDraftCacheKey('project-1', 'item-railings', 'blueprint'))
       .not.toBe(getBlueprintDraftCacheKey('project-1', 'item-grills', 'blueprint'));
