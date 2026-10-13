@@ -1,5 +1,4 @@
 import { useEffect, useState } from 'react';
-import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -24,8 +23,6 @@ export function GcashPayment({ target, allowCash = true }: { target: GcashTarget
   const qr = useAuthenticatedUrl(data?.settings.qrCodeKey);
   const [method, setMethod] = useState<'gcash' | 'cash'>('gcash');
   const [reference, setReference] = useState('');
-  const [amount, setAmount] = useState('');
-  const [date, setDate] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
   const [submissionError, setSubmissionError] = useState('');
@@ -50,9 +47,6 @@ export function GcashPayment({ target, allowCash = true }: { target: GcashTarget
         return;
       }
       if (!/^\d{13}$/.test(reference.trim())) throw new Error('Enter the 13-digit GCash reference number');
-      if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) throw new Error('Enter the amount paid');
-      if (!date || Number.isNaN(Date.parse(date))) throw new Error('Enter a valid payment date and time');
-      if (Date.parse(date) > Date.now()) throw new Error('Payment date cannot be in the future. Use the date and time on your GCash receipt.');
       let proofKey: string | undefined;
       if (file) {
         if (!['image/png', 'image/jpeg', 'image/webp'].includes(file.type) || file.size > 5 * 1024 * 1024) throw new Error('Use a PNG, JPEG, or WebP screenshot up to 5 MB');
@@ -60,9 +54,9 @@ export function GcashPayment({ target, allowCash = true }: { target: GcashTarget
         await uploadFileToR2(signed.uploadUrl, file);
         proofKey = signed.fileKey;
       }
-      await submit.mutateAsync({ ...target, referenceNumber: reference.trim(), amountPaid: Number(amount), paymentDate: new Date(date).toISOString(), proofKey });
+      await submit.mutateAsync({ ...target, referenceNumber: reference.trim(), proofKey });
       setResubmitting(false);
-      setReference(''); setAmount(''); setDate(''); setFile(null);
+      setReference(''); setFile(null);
       toast.success('Payment Submitted. Waiting for cashier verification.');
     } catch (error) {
       const message = extractErrorMessage(error, error instanceof Error ? error.message : 'Payment submission failed');
@@ -86,7 +80,7 @@ export function GcashPayment({ target, allowCash = true }: { target: GcashTarget
           {!allowCash || method === 'gcash' ? <>
             <div className="rounded-xl border p-4 space-y-2"><h3 className="font-bold">GCash</h3><p>Merchant: {data.merchant}</p>{data.settings.accountName && <p>Account Name: {data.settings.accountName}</p>}{data.settings.accountNumber && <p>GCash Number: {data.settings.accountNumber}</p>}{qr.url && <img src={qr.url} alt="Official RMV GCash payment QR code" className="mx-auto max-h-64 max-w-full rounded-lg bg-white p-3" />}{qr.error && <p className="text-destructive">QR could not load. Please retry or use the configured GCash number.</p>}{!configured && <p className="text-amber-600 dark:text-amber-300">RMV GCash information has not been configured. Please contact RMV{allowCash ? ' or choose Cash / Pay On-site' : ''}.</p>}</div>
             <ol className="list-decimal pl-5 space-y-1 text-sm"><li>Open your GCash app.</li><li>Scan the QR code or send the required amount.</li><li>Complete the payment in GCash.</li><li>Copy your GCash reference number.</li><li>Return to this page.</li><li>Submit your payment details for verification.</li></ol>
-            <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-reference">GCash Reference Number</Label><Input id="gcash-reference" inputMode="numeric" value={reference} onChange={(e) => setReference(e.target.value)} required pattern="[0-9]{13}" maxLength={13} /></div><div className="space-y-2"><Label htmlFor="gcash-amount">Amount Paid</Label><Input id="gcash-amount" type="number" step="0.01" min="0.01" max="999999999" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={String(data.amountRequired)} required /></div><div className="space-y-2"><Label htmlFor="gcash-date">Payment Date</Label><Input id="gcash-date" type="datetime-local" value={date} max={format(new Date(), "yyyy-MM-dd'T'HH:mm")} onChange={(e) => setDate(e.target.value)} aria-describedby="gcash-date-help" required /><p id="gcash-date-help" className="text-xs text-muted-foreground">Use the date and time on your GCash receipt. Future dates are not allowed.</p></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-proof">Payment Screenshot (optional, up to 5 MB)</Label><Input id="gcash-proof" type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div></div>
+            <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-reference">GCash Reference Number</Label><Input id="gcash-reference" inputMode="numeric" value={reference} onChange={(e) => setReference(e.target.value)} required pattern="[0-9]{13}" maxLength={13} aria-describedby="gcash-reference-help" /><p id="gcash-reference-help" className="text-xs text-muted-foreground">Each GCash reference number can only be used once. The amount ({money(data.amountRequired)}) and payment date are recorded automatically.</p></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-proof">Payment Screenshot (optional, up to 5 MB)</Label><Input id="gcash-proof" type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div></div>
           </> : <p className="text-sm text-muted-foreground">Pay at RMV or on-site. The cashier will record the payment after receiving your cash.</p>}
           {submissionError && <p role="alert" className="text-sm text-destructive">{submissionError}</p>}
           <Button type="submit" disabled={sending || ((!allowCash || method === 'gcash') && !configured)} className="w-full sm:w-auto">{sending ? 'Submitting…' : !allowCash || method === 'gcash' ? 'Submit Payment for Verification' : 'Choose Cash / Pay On-site'}</Button>

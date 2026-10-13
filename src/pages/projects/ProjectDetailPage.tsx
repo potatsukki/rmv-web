@@ -1651,7 +1651,7 @@ export function ProjectDetailPage() {
                 </DetailField>
               )}
               {!shouldHideAmount && selectedPaymentPlanTotal !== undefined && (
-                <DetailField label={projectServiceItems.length > 1 ? 'Selected Payment Plan — Selected Item' : 'Selected Payment Plan Total'}>
+                <DetailField label={projectServiceItems.length > 1 ? (paymentPlan?.projectItemId ? 'Selected Payment Plan — Selected Item' : 'Payment Plan Total — All Items') : 'Selected Payment Plan Total'}>
                   <p>{formatCurrency(selectedPaymentPlanTotal)}</p>
                   <p className="mt-1 text-xs font-medium text-slate-500 dark:text-slate-400">
                     This payable total may differ from the base quotation when an installment plan applies.
