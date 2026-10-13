@@ -26,7 +26,7 @@ import { extractErrorMessage, extractLocalDateValue, cn } from '@/lib/utils';
 
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
+import { cleanSalesNotes } from '@/lib/sales-notes';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -553,7 +553,9 @@ export function VisitReportPage() {
     setSpecifications(mergeSpecificationsWithDefaults(report.serviceType, report.specifications));
     setCustomerRequirements(report.customerRequirements || '');
     setNotes(report.notes || '');
-    setSalesNotes(combineSalesNotes(report.initialDesignNotes, appointmentRecord?.initialDesignNotes, ...(siblingReports || []).map((item) => item.initialDesignNotes)));
+    // Each stage keeps its own notes — a consultation report shows Sales Notes, an ocular
+    // report shows Ocular Notes. They're only combined later, when a project is created.
+    setSalesNotes(cleanSalesNotes(report.initialDesignNotes));
 
     // Consultation-specific fields
     setDiscussionNotes(report.discussionNotes || '');
@@ -1414,7 +1416,7 @@ export function VisitReportPage() {
                   />
                 )}
                 {cleanSalesNotes(report.initialDesignNotes) && (
-                  <InfoRow icon={Paintbrush} label="Sales Notes" value={cleanSalesNotes(report.initialDesignNotes)} />
+                  <InfoRow icon={Paintbrush} label={report.visitType === 'ocular' ? 'Ocular Notes' : 'Sales Notes'} value={cleanSalesNotes(report.initialDesignNotes)} />
                 )}
               </CardContent>
             </Card>
@@ -1541,9 +1543,9 @@ export function VisitReportPage() {
           )}
 
           <Card className={editSectionClassName}>
-            <CardHeader><CardTitle>Sales Notes</CardTitle></CardHeader>
+            <CardHeader><CardTitle>{visitType === 'ocular' ? 'Ocular Notes' : 'Sales Notes'}</CardTitle></CardHeader>
             <CardContent className="space-y-2">
-              <Label htmlFor="visit-sales-notes">Sales Notes (optional)</Label>
+              <Label htmlFor="visit-sales-notes">{visitType === 'ocular' ? 'Ocular Notes (optional)' : 'Sales Notes (optional)'}</Label>
               <Textarea id="visit-sales-notes" value={salesNotes} onChange={(event) => setSalesNotes(event.target.value)} maxLength={2000} rows={4} className={editInputClassName} placeholder="Update your notes and clarified customer requirements." />
             </CardContent>
           </Card>

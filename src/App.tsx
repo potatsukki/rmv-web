@@ -344,7 +344,7 @@ export default function App() {
               <Route
                 element={
                   <ProtectedRoute
-                    allowedRoles={[Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN]}
+                    allowedRoles={[Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.CASHIER, Role.ADMIN]}
                   />
                 }
               >

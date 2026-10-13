@@ -110,7 +110,7 @@ export function useAvailableSlots(date: string, type: string) {
     queryKey: KEYS.slots(date, type),
     queryFn: async () => {
       const { data } = await api.get<
-        ApiResponse<{ date: string; slots: { slotCode: SlotCode; available: boolean; remaining: number }[] }>
+        ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number }[] }>
       >('/appointments/slots', { params: { date, type } });
       return data.data;
     },
@@ -282,7 +282,7 @@ export function useUpdateConsultationAttendance() {
       ...body
     }: {
       id: string;
-      action: 'check_in' | 'test_start' | 'no_show' | 'reschedule' | 'customer_declined';
+      action: 'check_in' | 'test_start' | 'no_show' | 'customer_declined';
       actualArrivalAt?: string;
       notes?: string;
       overrideReason?: string;
@@ -336,7 +336,7 @@ export function useRequestReschedule() {
       id: string;
       newDate: string;
       newSlotCode: string;
-      reason?: string;
+      reason: string;
     }) => {
       const { data } = await api.post<ApiResponse<Appointment>>(
         `/appointments/${id}/reschedule-request`,

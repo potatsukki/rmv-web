@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
-import { useAvailableSlots, useRequestAppointment, useRequestReschedule } from '@/hooks/useAppointments';
+import { useAvailableSlots, useRequestAppointment } from '@/hooks/useAppointments';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useHolidays } from '@/hooks/useConfig';
 import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
@@ -98,7 +98,6 @@ const bookingSchema = z.object({
   type: z.literal('office'),
   date: z.string().min(1, 'Please select a date'),
   slotCode: z.string().min(1, 'Please select a time slot'),
-  purpose: z.string().max(500).optional(),
 });
 
 type BookingForm = z.infer<typeof bookingSchema>;
@@ -106,14 +105,12 @@ type BookingForm = z.infer<typeof bookingSchema>;
 export function BookAppointmentPage() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
-  const rescheduleId = searchParams.get('reschedule');
   const selectedServiceTypeParam = searchParams.get('serviceType');
   const selectedServiceIdParam = searchParams.get('serviceId');
   const initialSelectedDesign = useMemo(() => getInitialSelectedDesign(searchParams), [searchParams]);
   const initialBookingDate = useMemo(() => getNextValidBookingDate(), []);
 
   const {
-    register,
     watch,
     setValue,
     formState: { errors },
@@ -253,37 +250,25 @@ export function BookAppointmentPage() {
   const activeAppointmentsQuery = useAppointments();
 
   const requestMutation = useRequestAppointment();
-  const rescheduleMutation = useRequestReschedule();
-  const isPending = requestMutation.isPending || rescheduleMutation.isPending;
+  const isPending = requestMutation.isPending;
 
   // ── Step Wizard Logic ──
-  const steps = rescheduleId
-    ? [
-        { key: 'date', label: 'Date & Time', icon: Calendar },
-        { key: 'reason', label: 'Reason', icon: FileText },
-      ]
-    : [
-        { key: 'service', label: 'Design & Details', icon: FileText },
-        { key: 'date', label: 'Date & Time', icon: Calendar },
-        { key: 'review', label: 'Review', icon: CheckCircle },
-      ];
+  const steps = [
+    { key: 'service', label: 'Design & Details', icon: FileText },
+    { key: 'date', label: 'Date & Time', icon: Calendar },
+    { key: 'review', label: 'Review', icon: CheckCircle },
+  ];
 
   const [currentStep, setCurrentStep] = useState(0);
   const activeAppointment = useMemo(() => {
-    if (rescheduleId) return undefined;
-
-    return activeAppointmentsQuery.data?.items.find((appointment) => {
-      if (appointment._id === rescheduleId) return false;
-
-      return [
-        'requested',
-        'confirmed',
-        'preparing',
-        'on_the_way',
-        'reschedule_requested',
-      ].includes(appointment.status);
-    });
-  }, [activeAppointmentsQuery.data?.items, rescheduleId]);
+    return activeAppointmentsQuery.data?.items.find((appointment) => [
+      'requested',
+      'confirmed',
+      'preparing',
+      'on_the_way',
+      'reschedule_requested',
+    ].includes(appointment.status));
+  }, [activeAppointmentsQuery.data?.items]);
 
   const canProceed = useMemo(() => {
     const stepKey = steps[currentStep]?.key;
@@ -297,7 +282,6 @@ export function BookAppointmentPage() {
       return false;
     }
     if (stepKey === 'date') return !!selectedDate && !!selectedSlot;
-    if (stepKey === 'reason') return true;
     if (stepKey === 'review') return true;
     return false;
   }, [
@@ -322,52 +306,36 @@ export function BookAppointmentPage() {
 
   const onSubmit = async () => {
     try {
-      if (rescheduleId) {
-        const purpose = watch('purpose');
-        if (!purpose?.trim()) {
-          toast.error('Please provide a reason for rescheduling');
-          return;
-        }
-        await rescheduleMutation.mutateAsync({
-          id: rescheduleId,
-          newDate: selectedDate,
-          newSlotCode: selectedSlot,
-          reason: purpose,
-        });
-        toast.success('Reschedule request submitted!');
-        navigate('/appointments');
-      } else {
-        if (appointmentPurpose.length > 500) {
-          toast.error('Shorten the additional notes so the appointment request stays within 500 characters.');
-          return;
-        }
-        const result = await requestMutation.mutateAsync({
-          type: 'office',
-          date: selectedDate,
-          slotCode: selectedSlot,
-          purpose: appointmentPurpose || undefined,
-          serviceTypes: serviceTypes as import('@/lib/constants').ServiceType[],
-          serviceTypeCustom: serviceTypeCustom || undefined,
-          selectedDesignTemplateId: selectedDesigns[0]?.id,
-          selectedDesignTemplateName: selectedDesigns[0]?.name,
-          selectedDesignTemplateImageUrl: selectedDesigns[0]?.imageUrl,
-          selectedDesignTemplates: selectedDesigns.map((design) => ({
-            id: design.id,
-            name: design.name,
-            imageUrl: design.imageUrl,
-            serviceId: design.serviceId,
-            serviceLabel: design.serviceLabel,
-            serviceType: design.serviceType,
-          })),
-        });
-
-        toast.success('Appointment booked successfully!');
-        navigate(
-          bookingMode === 'custom'
-            ? `/appointments/${result._id}/site-details`
-            : `/appointments/${result._id}`,
-        );
+      if (appointmentPurpose.length > 500) {
+        toast.error('Shorten the additional notes so the appointment request stays within 500 characters.');
+        return;
       }
+      const result = await requestMutation.mutateAsync({
+        type: 'office',
+        date: selectedDate,
+        slotCode: selectedSlot,
+        purpose: appointmentPurpose || undefined,
+        serviceTypes: serviceTypes as import('@/lib/constants').ServiceType[],
+        serviceTypeCustom: serviceTypeCustom || undefined,
+        selectedDesignTemplateId: selectedDesigns[0]?.id,
+        selectedDesignTemplateName: selectedDesigns[0]?.name,
+        selectedDesignTemplateImageUrl: selectedDesigns[0]?.imageUrl,
+        selectedDesignTemplates: selectedDesigns.map((design) => ({
+          id: design.id,
+          name: design.name,
+          imageUrl: design.imageUrl,
+          serviceId: design.serviceId,
+          serviceLabel: design.serviceLabel,
+          serviceType: design.serviceType,
+        })),
+      });
+
+      toast.success('Appointment booked successfully!');
+      navigate(
+        bookingMode === 'custom'
+          ? `/appointments/${result._id}/site-details`
+          : `/appointments/${result._id}`,
+      );
     } catch (error: unknown) {
       const apiError = (error as {
         response?: {
@@ -385,7 +353,7 @@ export function BookAppointmentPage() {
           ? apiError.details.activeAppointmentId
           : undefined;
 
-      if (!rescheduleId && apiError?.code === 'DUPLICATE_ENTRY' && activeAppointmentId) {
+      if (apiError?.code === 'DUPLICATE_ENTRY' && activeAppointmentId) {
         toast.error(`${extractErrorMessage(error, 'Booking failed')} Redirecting you to that appointment now.`, {
           duration: 5000,
         });
@@ -403,9 +371,7 @@ export function BookAppointmentPage() {
   const nextButtonClassName =
     'rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#3a3a3e] disabled:opacity-50 dark:border dark:border-white/12 dark:[background-image:none] dark:bg-white dark:text-[#0f1923] dark:shadow-[0_8px_24px_rgba(0,0,0,0.38)] dark:hover:bg-slate-100 dark:hover:border-white/20 dark:disabled:border-white/10 dark:disabled:bg-white/[0.08] dark:disabled:text-slate-500 disabled:opacity-100';
 
-  const submitButtonClassName = rescheduleId
-    ? nextButtonClassName
-    : 'rounded-xl border border-[#d7b267] bg-[linear-gradient(135deg,#f5dfab_0%,#ddb66a_42%,#b88233_100%)] text-[#24180b] shadow-[0_20px_40px_rgba(165,118,44,0.28),inset_0_1px_0_rgba(255,248,225,0.7)] hover:bg-[linear-gradient(135deg,#f8e6bb_0%,#e4c078_42%,#c38c3d_100%)] hover:text-[#1f1509] disabled:opacity-50 dark:border-[#d8bb72] dark:bg-[linear-gradient(180deg,rgba(255,247,225,0.98)_0%,rgba(240,210,132,0.96)_52%,rgba(214,166,58,0.94)_100%)] dark:text-[#1f1404] dark:shadow-[0_0_0_1px_rgba(216,187,114,0.34),0_18px_38px_rgba(196,145,45,0.32),inset_0_1px_0_rgba(255,255,255,0.62)] dark:hover:bg-[linear-gradient(180deg,rgba(255,250,234,1)_0%,rgba(244,216,141,0.98)_52%,rgba(221,174,64,0.96)_100%)] dark:hover:text-[#160d02] disabled:opacity-50';
+  const submitButtonClassName = 'rounded-xl border border-[#d7b267] bg-[linear-gradient(135deg,#f5dfab_0%,#ddb66a_42%,#b88233_100%)] text-[#24180b] shadow-[0_20px_40px_rgba(165,118,44,0.28),inset_0_1px_0_rgba(255,248,225,0.7)] hover:bg-[linear-gradient(135deg,#f8e6bb_0%,#e4c078_42%,#c38c3d_100%)] hover:text-[#1f1509] disabled:opacity-50 dark:border-[#d8bb72] dark:bg-[linear-gradient(180deg,rgba(255,247,225,0.98)_0%,rgba(240,210,132,0.96)_52%,rgba(214,166,58,0.94)_100%)] dark:text-[#1f1404] dark:shadow-[0_0_0_1px_rgba(216,187,114,0.34),0_18px_38px_rgba(196,145,45,0.32),inset_0_1px_0_rgba(255,255,255,0.62)] dark:hover:bg-[linear-gradient(180deg,rgba(255,250,234,1)_0%,rgba(244,216,141,0.98)_52%,rgba(221,174,64,0.96)_100%)] dark:hover:text-[#160d02] disabled:opacity-50';
 
   return (
     <div className="mx-auto max-w-2xl space-y-6">
@@ -422,12 +388,10 @@ export function BookAppointmentPage() {
         </Button>
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-100">
-            {rescheduleId ? 'Reschedule Appointment' : 'Book Appointment'}
+            Book Appointment
           </h1>
           <p className="text-[#6e6e73] text-sm dark:text-slate-400">
-            {rescheduleId
-              ? 'Choose a new date and time'
-              : `Book your ${(APPOINTMENT_TYPE_LABELS.office || 'Consultation').toLowerCase()} first`}
+            {`Book your ${(APPOINTMENT_TYPE_LABELS.office || 'Consultation').toLowerCase()} first`}
           </p>
         </div>
       </div>
@@ -465,7 +429,7 @@ export function BookAppointmentPage() {
         })}
       </div>
 
-      {!rescheduleId && activeAppointment && (
+      {activeAppointment && (
         <Card className="rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm dark:border-red-900/40 dark:bg-[linear-gradient(135deg,rgba(40,20,25,0.9)_0%,rgba(25,12,15,0.85)_100%)]">
           <CardContent className="space-y-4 p-5">
             <div className="flex items-start gap-3">
@@ -480,7 +444,7 @@ export function BookAppointmentPage() {
                   </span>
                 </div>
                 <p className="text-sm leading-6 text-[#6e6e73] dark:text-slate-300">
-                  View or manage your current appointment before starting a new booking. This saves you from choosing dates and slots you cannot submit anyway.
+                  View your current appointment before starting a new booking. To change its date or time, contact an appointment agent.
                 </p>
                 <p className="text-xs text-[#86868b] dark:text-slate-400">
                   Current status: <span className="font-semibold capitalize text-[#1d1d1f] dark:text-slate-100">{activeAppointment.status.replace(/_/g, ' ')}</span>
@@ -495,14 +459,6 @@ export function BookAppointmentPage() {
               >
                 <button type="button" onClick={() => navigate(`/appointments/${activeAppointment._id}`)}>
                   View Active Appointment
-                </button>
-              </Button>
-              <Button
-                asChild
-                className="h-11 rounded-xl bg-[#1d1d1f] text-white shadow-sm hover:bg-[#2d2d2f] dark:bg-red-900/80 dark:text-red-50 dark:hover:bg-red-800"
-              >
-                <button type="button" onClick={() => navigate(`/appointments/book?reschedule=${activeAppointment._id}`)}>
-                  Reschedule Instead
                 </button>
               </Button>
             </div>
@@ -801,23 +757,6 @@ export function BookAppointmentPage() {
           </>
         )}
 
-        {/* Step: Reason (reschedule only) */}
-        {steps[currentStep]?.key === 'reason' && (
-          <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,23,30,0.9)_0%,rgba(8,12,18,0.96)_100%)]">
-            <CardHeader>
-              <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Reason for Reschedule</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <textarea
-                {...register('purpose')}
-                placeholder="Why are you rescheduling?"
-                className="w-full rounded-xl border border-[#d2d2d7] bg-[#f5f5f7]/50 px-4 py-3 text-sm placeholder:text-[#86868b] focus:border-[#c8c8cd] focus:outline-none focus:ring-2 focus:ring-[#6e6e73] dark:border-white/15 dark:bg-white/[0.03] dark:text-slate-100 dark:placeholder:text-slate-500 dark:focus:border-[#d6b36a]/35 dark:focus:ring-[#d6b36a]/25"
-                rows={3}
-              />
-            </CardContent>
-          </Card>
-        )}
-
         {/* Step: Review & Confirm */}
         {steps[currentStep]?.key === 'review' && (
           <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(180deg,rgba(17,23,30,0.9)_0%,rgba(8,12,18,0.96)_100%)]">
@@ -938,7 +877,7 @@ export function BookAppointmentPage() {
                 ) : (
                   <CheckCircle className="mr-2 h-4 w-4" />
                 )}
-                {rescheduleId ? 'Submit Reschedule Request' : 'Book Appointment'}
+                Book Appointment
               </Button>
             )}
           </div>

@@ -10,6 +10,7 @@ const source = vi.hoisted(() => ({
   reports: [] as Partial<VisitReport>[],
   reportsLoading: false,
   reportsError: false,
+  customerAppointments: [] as Partial<Appointment>[],
 }));
 
 vi.mock('@/hooks/useProjects', () => ({
@@ -18,6 +19,7 @@ vi.mock('@/hooks/useProjects', () => ({
 }));
 vi.mock('@/hooks/useAppointments', () => ({
   useAppointment: () => ({ data: source.appointment }),
+  useAppointments: () => ({ data: { items: source.customerAppointments }, isLoading: false }),
   useAvailableSlots: () => ({ data: undefined }),
 }));
 vi.mock('@/hooks/useUsers', () => ({ useCustomerSearch: () => ({ data: [] }) }));
@@ -34,6 +36,7 @@ beforeEach(() => {
   source.reports = [];
   source.reportsLoading = false;
   source.reportsError = false;
+  source.customerAppointments = [];
 });
 
 function renderPage(path = '/') {
@@ -109,4 +112,20 @@ it.each(['draft', 'returned', 'loading', 'error'])('lets sales click Create Proj
   const submitButton = html.match(/<button\b[^>]*type="submit"[^>]*>/)?.[0];
   expect(submitButton).toBeDefined();
   expect(submitButton).not.toMatch(/\sdisabled(?:=|\s|>)/);
+});
+
+it('offers to link a completed appointment when creating a project manually', () => {
+  source.customerAppointments = [
+    { _id: 'appt-1', appointmentNumber: 'APT-1', type: 'ocular', date: '2026-09-01' },
+  ];
+  const html = renderPage('/projects/create?customerId=customer-1');
+  expect(html).toContain('Link to Appointment');
+  expect(html).toContain('APT-1');
+  expect(html).toContain('No appointment — standalone project');
+});
+
+it('does not offer to link an appointment when one is already carried in the URL', () => {
+  source.customerAppointments = [{ _id: 'appt-1', appointmentNumber: 'APT-1', type: 'ocular', date: '2026-09-01' }];
+  const html = renderPage('/projects/create?customerId=customer-1&appointmentId=appt-1');
+  expect(html).not.toContain('Link to Appointment');
 });

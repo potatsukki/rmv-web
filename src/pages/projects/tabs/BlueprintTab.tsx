@@ -676,7 +676,9 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     && bp._id === blueprint?._id
     && bp.status === 'uploaded'
     && bp.version < 4
-    && !(isBlueprintMode ? bp.blueprintApproved : bp.costingApproved),
+    // Billing is auto-approved on send, but the customer can still flag a pricing
+    // issue, so costing mode stays open regardless of bp.costingApproved.
+    && !(isBlueprintMode ? bp.blueprintApproved : false),
   );
   const isRevisionRequested = blueprint?.status === 'revision_requested';
   const revisionComponent = blueprint?.revisionComponent || 'blueprint';
