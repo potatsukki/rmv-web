@@ -54,7 +54,8 @@ export function useUpdateUser() {
       id: string;
       firstName?: string;
       lastName?: string;
-      phone?: string;
+      email?: string;
+      phone?: string | null;
       roles?: string[];
       password?: string;
       expiresAt?: string | null;
