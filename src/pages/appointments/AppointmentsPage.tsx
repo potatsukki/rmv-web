@@ -33,17 +33,14 @@ const STATUS_FILTERS = [
     label: 'Appointment Request',
     value: AppointmentStatus.REQUESTED,
   },
+  { label: 'Confirmed', value: AppointmentStatus.CONFIRMED },
   { label: 'Completed', value: AppointmentStatus.COMPLETED },
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
   { label: 'No Show', value: AppointmentStatus.NO_SHOW },
 ];
 
-// Customers and sales staff only see appointments after a sales staff is assigned, so they filter by Confirmed.
-const CONFIRMED_STATUS_FILTERS = STATUS_FILTERS.map((filter) => (
-  filter.value === AppointmentStatus.REQUESTED
-    ? { label: 'Appointment Confirmed', value: AppointmentStatus.CONFIRMED }
-    : filter
-));
+// Customers and sales staff only see appointments after a sales staff is assigned, so the Request filter doesn't apply to them.
+const CONFIRMED_STATUS_FILTERS = STATUS_FILTERS.filter((filter) => filter.value !== AppointmentStatus.REQUESTED);
 
 const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
   requested: {

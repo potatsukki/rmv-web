@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link, useLocation } from 'react-router';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, CalendarIcon, CalendarX } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, CalendarX } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
@@ -17,15 +17,13 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { AppointmentSalesNotes } from '@/components/shared/AppointmentSalesNotes';
-import { combineSalesNotes } from '@/lib/sales-notes';
+import { RescheduleAppointment } from '@/components/shared/RescheduleAppointment';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
 import {
   useAppointment,
   useConfirmAppointment,
   useReassignAppointmentSales,
-  useReviewAssignedAppointment,
   useCancelAppointment,
   useCompleteReschedule,
   useRejectReschedule,
@@ -71,7 +69,6 @@ export function AppointmentDetailPage() {
 
   const confirmMutation = useConfirmAppointment();
   const reassignSalesMutation = useReassignAppointmentSales();
-  const salesDecisionMutation = useReviewAssignedAppointment();
   const completeRescheduleMutation = useCompleteReschedule();
   const rejectRescheduleMutation = useRejectReschedule();
   const cancelMutation = useCancelAppointment();
@@ -267,9 +264,6 @@ export function AppointmentDetailPage() {
     [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
       appt.status as AppointmentStatus,
     );
-  const customerCanReschedule =
-    customerCanManageAppointment && appt.rescheduleCount < appt.maxReschedules;
-
   const handleConfirm = async () => {
     const staff = salesStaffList.find(s => s._id === selectedSalesStaff);
     const isRescheduleAcceptance = appt.status === AppointmentStatus.RESCHEDULE_REQUESTED;
@@ -353,23 +347,6 @@ export function AppointmentDetailPage() {
     }
   };
 
-  const handleSalesDecision = async (decision: 'accept' | 'decline') => {
-    const reason = decision === 'decline'
-      ? window.prompt('Why can you not take this appointment?') || undefined
-      : undefined;
-    if (decision === 'decline' && !reason) return;
-
-    try {
-      await salesDecisionMutation.mutateAsync({ id: id!, decision, reason });
-      toast.success(
-        decision === 'accept'
-          ? 'Appointment confirmed. The customer and appointment agent have been notified.'
-          : 'Assignment declined. The appointment agent will assign another available staff member.',
-      );
-    } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to update appointment review'));
-    }
-  };
 
   const handleCancel = async () => {
     if (!cancelReason.trim()) {
@@ -452,28 +429,27 @@ export function AppointmentDetailPage() {
     AppointmentStatus.IN_PROGRESS,
     AppointmentStatus.RESCHEDULE_REQUESTED,
   ].includes(appt.status as AppointmentStatus);
-  const isAssignedSalesPendingReview = Boolean(
-    isSalesStaff
-    && appt.type === 'office'
-    && appt.status === AppointmentStatus.REQUESTED
-    && assignedSalesStaffId === user?._id,
-  );
   const canUpdateAttendance = Boolean(
     isOfficeConsultation &&
     appt.status === AppointmentStatus.CONFIRMED &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
   );
+  // Only the appointment agent (and admin) may reschedule — customers and sales staff
+  // contact the agent instead, so a reschedule always routes through one owner.
+  const canAgentReschedule = Boolean(
+    canConfirmAppointment
+    && [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(appt.status as AppointmentStatus)
+    && appt.rescheduleCount < appt.maxReschedules,
+  );
   const updateAttendance = async (
-    action: 'check_in' | 'test_start' | 'no_show' | 'reschedule' | 'customer_declined',
+    action: 'check_in' | 'test_start' | 'no_show' | 'customer_declined',
   ) => {
-    const notesRequired = action === 'no_show' || action === 'reschedule' || action === 'customer_declined';
+    const notesRequired = action === 'no_show' || action === 'customer_declined';
     const notes = notesRequired
       ? window.prompt(
           action === 'no_show'
             ? 'Enter no-show notes'
-            : action === 'customer_declined'
-              ? 'Enter the reason the customer declined to proceed'
-              : 'Enter reschedule reason',
+            : 'Enter the reason the customer declined to proceed',
         )
       : undefined;
     if (notesRequired && !notes?.trim()) {
@@ -631,24 +607,6 @@ export function AppointmentDetailPage() {
                     ? 'The assigned sales staff is reviewing this appointment.'
                     : 'Assign an available sales staff member for review.'}
               </p>
-            </div>
-          </CardContent>
-        </Card>
-      )}
-      {isAssignedSalesPendingReview && (
-        <Card className="rounded-xl border border-emerald-200 bg-emerald-50 shadow-sm dark:border-emerald-500/30 dark:bg-emerald-500/10">
-          <CardContent className="space-y-4 p-4">
-            <div>
-              <p className="text-sm font-semibold text-emerald-950 dark:text-emerald-100">Review assigned appointment</p>
-              <p className="mt-1 text-sm text-emerald-900 dark:text-emerald-200">Confirm that you are available for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')} at {formatSlotTime(appt.slotCode)}.</p>
-            </div>
-            <div className="grid gap-3 sm:grid-cols-2">
-              <Button type="button" onClick={() => handleSalesDecision('accept')} disabled={salesDecisionMutation.isPending} className="bg-emerald-600 text-white hover:bg-emerald-700">
-                {salesDecisionMutation.isPending ? 'Saving...' : 'Confirm Appointment'}
-              </Button>
-              <Button type="button" variant="outline" onClick={() => handleSalesDecision('decline')} disabled={salesDecisionMutation.isPending}>
-                Decline Assignment
-              </Button>
             </div>
           </CardContent>
         </Card>
@@ -900,7 +858,7 @@ export function AppointmentDetailPage() {
                   </div>
                 )}
                 {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
-                  <div className="grid gap-4 sm:grid-cols-3">
+                  <div className="grid gap-4 sm:grid-cols-2">
                     <button
                       type="button"
                       onClick={() => updateAttendance('check_in')}
@@ -909,15 +867,6 @@ export function AppointmentDetailPage() {
                     >
                       <Clock className="mr-2 h-4 w-4" />
                       Check In
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => updateAttendance('reschedule')}
-                      disabled={attendanceMutation.isPending}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-950 disabled:pointer-events-none disabled:opacity-50 dark:border-white/12 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/8 dark:hover:text-white"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      Request Reschedule
                     </button>
                     <button
                       type="button"
@@ -931,16 +880,7 @@ export function AppointmentDetailPage() {
                   </div>
                 )}
                 {[AppointmentAttendanceStatus.ON_TIME, AppointmentAttendanceStatus.LATE_ARRIVAL].includes(attendanceStatus as AppointmentAttendanceStatus) && (
-                  <div className="grid gap-4 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => updateAttendance('reschedule')}
-                      disabled={attendanceMutation.isPending}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 hover:text-slate-950 disabled:pointer-events-none disabled:opacity-50 dark:border-white/12 dark:bg-transparent dark:text-slate-100 dark:hover:bg-white/8 dark:hover:text-white"
-                    >
-                      <CalendarIcon className="mr-2 h-4 w-4" />
-                      Request Reschedule
-                    </button>
+                  <div className="grid gap-4">
                     <button
                       type="button"
                       onClick={() => updateAttendance('customer_declined')}
@@ -971,6 +911,17 @@ export function AppointmentDetailPage() {
         </Card>
       )}
 
+      {canAgentReschedule && (
+        <Card className="rounded-xl border-[#d7dce3] shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)]">
+          <CardHeader>
+            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Reschedule This Appointment</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <RescheduleAppointment appointmentId={appt._id} type={appt.type} onRescheduled={() => void refetch()} />
+          </CardContent>
+        </Card>
+      )}
+
       {customerCanManageAppointment && (
         <Card className="overflow-hidden rounded-2xl border border-[#d5d8de] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(247,249,251,0.98)_55%,rgba(240,244,248,0.98)_100%)] shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_55%,rgba(6,12,19,1)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.28)]">
           <CardContent className="space-y-4 p-4 sm:p-5">
@@ -994,17 +945,6 @@ export function AppointmentDetailPage() {
               </span>
             </div>
             <div className="grid gap-2 sm:flex sm:flex-wrap sm:justify-end">
-              {customerCanReschedule && (
-                <Button
-                  asChild
-                  variant="outline"
-                  className="h-11 w-full rounded-xl border-white/80 dark:border-slate-700 bg-white/80 dark:bg-slate-800 text-[#3a3a3e] dark:text-slate-200 shadow-sm hover:bg-white dark:hover:bg-slate-700 sm:w-auto"
-                >
-                  <Link to={`/appointments/book?reschedule=${appt._id}`}>
-                    Reschedule
-                  </Link>
-                </Button>
-              )}
               <Button
                 variant="destructive"
                 onClick={() => setCancelOpen(true)}
@@ -1013,6 +953,9 @@ export function AppointmentDetailPage() {
                 Cancel Appointment
               </Button>
             </div>
+            <p className="text-xs leading-5 text-[#6e6e73] dark:text-slate-400">
+              To change the date or time, contact an appointment agent.
+            </p>
           </CardContent>
         </Card>
       )}
@@ -1239,10 +1182,6 @@ export function AppointmentDetailPage() {
             </div>
           </CardContent>
         </Card>
-
-      {canSeeVisitReports && <AppointmentSalesNotes appointmentId={appt._id}
-        value={combineSalesNotes(appt.initialDesignNotes, ...(visitReports || []).map((report) => report.initialDesignNotes))}
-        canEdit={isAdmin || (isSalesStaff && String(appt.salesStaffId) === user?._id)} />}
 
       {/* Customer: Submit Location for Ocular Visit */}
       {canCustomerSubmitOcularLocation && (

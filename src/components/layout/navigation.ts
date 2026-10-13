@@ -57,7 +57,7 @@ export const sidebarNavGroups: NavGroup[] = [
         label: 'Projects',
         path: '/projects',
         icon: FolderKanban,
-        roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.ADMIN],
+        roles: [Role.CUSTOMER, Role.SALES_STAFF, Role.ENGINEER, Role.FABRICATION_STAFF, Role.CASHIER, Role.ADMIN],
       },
       {
         label: 'Create Project',

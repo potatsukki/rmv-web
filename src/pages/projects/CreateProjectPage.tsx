@@ -15,7 +15,7 @@ import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { PageError } from '@/components/shared/PageError';
 import { PageLoader } from '@/components/shared/PageLoader';
-import { useAppointment, useAvailableSlots } from '@/hooks/useAppointments';
+import { useAppointment, useAppointments, useAvailableSlots } from '@/hooks/useAppointments';
 import { useCreateProject, useProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
@@ -54,7 +54,13 @@ export function CreateProjectPage() {
   const [searchParams] = useSearchParams();
   const pendingProjectId = searchParams.get('pendingProjectId') || '';
   const pendingProject = useProject(pendingProjectId);
-  const appointmentId = pendingProject.data?.ocularAppointmentId || searchParams.get('appointmentId') || '';
+  const urlAppointmentId = pendingProject.data?.ocularAppointmentId || searchParams.get('appointmentId') || '';
+  // Plain "Create Project" (no appointment carried in the URL) — let the sales staff
+  // optionally link one of the customer's completed appointments, so its notes and
+  // design details still prefill the project.
+  const isManualFlow = !pendingProjectId && !urlAppointmentId;
+  const [manualAppointmentId, setManualAppointmentId] = useState('');
+  const appointmentId = urlAppointmentId || manualAppointmentId;
   const visitReportId = searchParams.get('visitReportId') || '';
   const [customerId, setCustomerId] = useState(searchParams.get('customerId') || '');
   const [selectedCustomer, setSelectedCustomer] = useState<CustomerSearchResult | null>(null);
@@ -98,6 +104,19 @@ export function CreateProjectPage() {
   }, [search]);
 
   const customerSearch = useCustomerSearch(debouncedSearch);
+  const customerAppointments = useAppointments(
+    { customerId, status: 'completed', sortBy: 'date', sortOrder: 'desc', limit: '20' },
+    isManualFlow && !!customerId,
+  );
+  const linkableAppointments = customerAppointments.data?.items || [];
+
+  // Default to the customer's most recent completed appointment, but the sales staff
+  // can still change it or pick "No appointment" below.
+  const mostRecentLinkableId = linkableAppointments[0]?._id;
+  useEffect(() => {
+    if (isManualFlow) setManualAppointmentId(mostRecentLinkableId || '');
+  }, [isManualFlow, customerId, mostRecentLinkableId]);
+
   const appointment = useAppointment(appointmentId);
   const visitReports = useVisitReportsByAppointment(appointmentId);
   const appointmentReports = visitReports.data || [];
@@ -348,6 +367,98 @@ export function CreateProjectPage() {
       >
         <fieldset disabled={createProject.isPending || isCheckingOcular} className="min-w-0 space-y-6">
           <Card>
+            <CardHeader>
+              <CardTitle>Select Customer</CardTitle>
+              <CardDescription>Search by name, email, or phone number.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {customerId ? (
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
+                  <div className="min-w-0">
+                    {customer ? (
+                      <>
+                        <p className="font-medium">{customer.firstName} {customer.lastName}</p>
+                        <p className="break-all text-sm text-muted-foreground">{customer.email}{customer.phone ? ` · ${customer.phone}` : ''}</p>
+                      </>
+                    ) : <p role="status" className="text-sm">{customerLookup.isError ? 'Unable to load customer. Please select a customer again.' : 'Loading customer…'}</p>}
+                  </div>
+                  {isManualFlow && <Button type="button" variant="outline" onClick={() => {
+                    setCustomerId('');
+                    setSelectedCustomer(null);
+                    setSearch('');
+                    setManualAppointmentId('');
+                  }}>Change Customer</Button>}
+                </div>
+              ) : (
+                <>
+                  <Label htmlFor="project-customer-search">Customer</Label>
+                  <div className="relative">
+                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                    <Input id="project-customer-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type at least 2 characters…" className="pl-10" autoComplete="off" />
+                  </div>
+                  {customerSearch.isFetching && <p role="status" className="text-sm text-muted-foreground">Searching customers…</p>}
+                  {customerSearch.isError && <p role="alert" className="text-sm text-destructive">Unable to search customers. <button type="button" className="underline" onClick={() => customerSearch.refetch()}>Retry</button></p>}
+                  {debouncedSearch.length >= 2 && !customerSearch.isFetching && customerSearch.data?.length === 0 && <p className="text-sm text-muted-foreground">No customers found. The customer needs a registered account.</p>}
+                  {debouncedSearch.length >= 2 && customerSearch.data && customerSearch.data.length > 0 && (
+                    <div className="max-h-64 divide-y overflow-y-auto rounded-xl border">
+                      {customerSearch.data.map((result) => (
+                        <button key={result._id} type="button" className="block w-full p-3 text-left hover:bg-muted focus-visible:bg-muted" onClick={() => {
+                          setSelectedCustomer(result);
+                          setCustomerId(result._id);
+                          setSearch('');
+                        }}>
+                          <p className="font-medium">{result.firstName} {result.lastName}</p>
+                          <p className="break-all text-xs text-muted-foreground">{result.email}{result.phone ? ` · ${result.phone}` : ''}</p>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          {isManualFlow && customerId && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Link to Appointment (optional)</CardTitle>
+                <CardDescription>Pick the completed appointment this project is for, so its notes and design details carry over.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-2">
+                {customerAppointments.isLoading ? (
+                  <p role="status" className="text-sm text-muted-foreground">Loading appointments…</p>
+                ) : linkableAppointments.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No completed appointments found for this customer.</p>
+                ) : (
+                  <div className="divide-y overflow-hidden rounded-xl border">
+                    {linkableAppointments.map((item) => (
+                      <button
+                        key={item._id}
+                        type="button"
+                        onClick={() => setManualAppointmentId(item._id)}
+                        className={`flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-muted focus-visible:bg-muted ${manualAppointmentId === item._id ? 'bg-muted' : ''}`}
+                      >
+                        <div className="min-w-0">
+                          <p className="font-medium">{item.appointmentNumber || item._id} · {item.type === 'ocular' ? 'Ocular' : 'Office'}</p>
+                          <p className="text-xs text-muted-foreground">{item.date} {serviceLabel(item.serviceTypes?.[0], item.serviceTypeCustom)}</p>
+                        </div>
+                        {manualAppointmentId === item._id && <span className="text-xs font-semibold text-foreground">Selected</span>}
+                      </button>
+                    ))}
+                    <button
+                      type="button"
+                      onClick={() => setManualAppointmentId('')}
+                      className={`w-full p-3 text-left text-sm hover:bg-muted focus-visible:bg-muted ${manualAppointmentId === '' ? 'bg-muted font-medium' : 'text-muted-foreground'}`}
+                    >
+                      No appointment — standalone project
+                    </button>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          <Card>
             <CardHeader><CardTitle>Sales Notes</CardTitle></CardHeader>
             <CardContent className="space-y-2">
               <Label htmlFor="project-sales-notes">Sales Notes (optional)</Label>
@@ -441,57 +552,6 @@ export function CreateProjectPage() {
               )}
             </CardContent>
           </Card>}
-
-          <Card>
-            <CardHeader>
-              <CardTitle>Select Customer</CardTitle>
-              <CardDescription>Search by name, email, or phone number.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {customerId ? (
-                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border p-4">
-                  <div className="min-w-0">
-                    {customer ? (
-                      <>
-                        <p className="font-medium">{customer.firstName} {customer.lastName}</p>
-                        <p className="break-all text-sm text-muted-foreground">{customer.email}{customer.phone ? ` · ${customer.phone}` : ''}</p>
-                      </>
-                    ) : <p role="status" className="text-sm">{customerLookup.isError ? 'Unable to load customer. Please select a customer again.' : 'Loading customer…'}</p>}
-                  </div>
-                  {!pendingProjectId && !appointmentId && <Button type="button" variant="outline" onClick={() => {
-                    setCustomerId('');
-                    setSelectedCustomer(null);
-                    setSearch('');
-                  }}>Change Customer</Button>}
-                </div>
-              ) : (
-                <>
-                  <Label htmlFor="project-customer-search">Customer</Label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                    <Input id="project-customer-search" value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Type at least 2 characters…" className="pl-10" autoComplete="off" />
-                  </div>
-                  {customerSearch.isFetching && <p role="status" className="text-sm text-muted-foreground">Searching customers…</p>}
-                  {customerSearch.isError && <p role="alert" className="text-sm text-destructive">Unable to search customers. <button type="button" className="underline" onClick={() => customerSearch.refetch()}>Retry</button></p>}
-                  {debouncedSearch.length >= 2 && !customerSearch.isFetching && customerSearch.data?.length === 0 && <p className="text-sm text-muted-foreground">No customers found. The customer needs a registered account.</p>}
-                  {debouncedSearch.length >= 2 && customerSearch.data && customerSearch.data.length > 0 && (
-                    <div className="max-h-64 divide-y overflow-y-auto rounded-xl border">
-                      {customerSearch.data.map((result) => (
-                        <button key={result._id} type="button" className="block w-full p-3 text-left hover:bg-muted focus-visible:bg-muted" onClick={() => {
-                          setSelectedCustomer(result);
-                          setCustomerId(result._id);
-                          setSearch('');
-                        }}>
-                          <p className="font-medium">{result.firstName} {result.lastName}</p>
-                          <p className="break-all text-xs text-muted-foreground">{result.email}{result.phone ? ` · ${result.phone}` : ''}</p>
-                        </button>
-                      ))}
-                    </div>
-                  )}
-                </>
-              )}
-            </CardContent>
-          </Card>
 
           {projectPath !== 'ocular' && <><Card>
             <CardHeader>
