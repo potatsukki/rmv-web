@@ -837,7 +837,7 @@ export function VisitReportPage() {
       await attendanceMutation.mutateAsync({ id: appointmentId, action });
       await refetch();
       toast.success(action === 'test_start'
-        ? 'Testing bypass active. The consultation is now In Progress.'
+        ? 'Testing bypass applied. The consultation is now Completed.'
         : 'Customer checked in.');
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Unable to update consultation attendance.'));
@@ -1527,14 +1527,14 @@ export function VisitReportPage() {
                       className="rounded-xl border-amber-400 bg-amber-50 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100"
                     >
                       <Clock className="mr-2 h-4 w-4" />
-                      Start Now (Testing Only)
+                      Start & Complete Now (Testing Only)
                     </Button>
                   </div>
                 )}
 
                 <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
                   Check-in records the customer's arrival. The status changes automatically to In Progress
-                  at the scheduled start and Completed after the one-hour consultation slot.
+                  at the scheduled start and Completed after the one-hour consultation slot. The testing bypass completes it right away.
                 </p>
               </CardContent>
             </Card>
