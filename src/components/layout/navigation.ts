@@ -102,6 +102,17 @@ export const sidebarNavGroups: NavGroup[] = [
   },
 ];
 
+// Each role's main workspace comes right after Overview: Administration for admins and
+// Financials for cashiers; every other role keeps the default order.
+export function getSidebarNavGroups(roles: Role[]): NavGroup[] {
+  const leadingTitle = roles.includes(Role.ADMIN) ? 'Administration' : roles.includes(Role.CASHIER) ? 'Financials' : undefined;
+  const leading = sidebarNavGroups.find((group) => group.title === leadingTitle);
+  if (!leading) return sidebarNavGroups;
+
+  const [overview, ...rest] = sidebarNavGroups.filter((group) => group !== leading);
+  return [overview!, leading, ...rest];
+}
+
 export const mobileBottomTabItems: NavItem[] = [
   { label: 'Home', path: '/dashboard', icon: Home, roles: Object.values(Role) },
   {
