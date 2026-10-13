@@ -73,7 +73,9 @@ function projectServiceLabel(project: any) {
       .map((value) => value.trim())
       .filter(Boolean);
 
-  return serviceTypes.map(serviceTypeLabel).join(', ') || String(project.title || '');
+  const label = serviceTypes.map(serviceTypeLabel).join(', ') || String(project.title || '');
+  // An ocular visit that has no project yet is labelled so it isn't mistaken for a project.
+  return project.isOcularVisit && label !== 'Ocular Visit' ? `Ocular Visit · ${label}` : label;
 }
 
 /** Derive the display status: if project is in blueprint phase and the latest
@@ -98,6 +100,11 @@ function deriveDisplayStatus(project: { status?: string; latestBlueprintStatus?:
 
 // Ocular visits that are still ahead; completed ones become part of the project.
 const ACTIVE_OCULAR_STATUSES = new Set(['requested', 'confirmed', 'preparing', 'on_the_way', 'arrived_at_site', 'in_progress']);
+
+// Ocular visits that don't have a project yet open their appointment instead.
+function projectHref(project: any) {
+  return project.isOcularVisit ? `/appointments/${project._id}` : `/projects/${project._id}`;
+}
 
 function getActionSortTime(project: any) {
   const value = project.createdAt;
@@ -124,14 +131,27 @@ export function ProjectsPage() {
 
   if (isError) return <PageError onRetry={refetch} />;
 
-  // The project is only created after the ocular visit, so show a customer's upcoming
-  // ocular visits here too instead of an empty Ocular tab.
+  // The project is only created after the ocular visit, so a customer's upcoming ocular visits
+  // are listed alongside their projects (labelled OCULAR) instead of leaving the list empty.
   const linkedOcularIds = new Set((data?.items || []).map((project: any) => String(project.ocularAppointmentId || '')).filter(Boolean));
-  const ocularVisits = isCustomer && !search && (statusFilter === '' || statusFilter === 'pending_ocular')
-    ? (ocularVisitsQuery.data?.items || []).filter((visit) => ACTIVE_OCULAR_STATUSES.has(String(visit.status)) && !linkedOcularIds.has(String(visit._id)))
+  const ocularVisitRows: any[] = isCustomer && !search
+    ? (ocularVisitsQuery.data?.items || [])
+      .filter((visit) => ACTIVE_OCULAR_STATUSES.has(String(visit.status)) && !linkedOcularIds.has(String(visit._id)))
+      .map((visit) => ({
+        _id: visit._id,
+        projectNumber: visit.appointmentNumber || 'Ocular visit',
+        title: 'Ocular Visit',
+        serviceTypes: visit.serviceTypes,
+        serviceType: visit.serviceTypes?.[0],
+        status: ProjectStatus.DRAFT,
+        ocularAppointmentId: visit._id,
+        createdAt: visit.createdAt,
+        updatedAt: visit.updatedAt,
+        isOcularVisit: true,
+      }))
     : [];
 
-  const projects = (data?.items || []).filter((project) => matchesProjectStage(project, statusFilter));
+  const projects = [...(data?.items || []), ...ocularVisitRows].filter((project) => matchesProjectStage(project as Project, statusFilter));
 
   const upcomingItems = projects
     .filter((p: any) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(p.status as ProjectStatus))
@@ -175,30 +195,6 @@ export function ProjectsPage() {
         ) : undefined}
       />
 
-      {ocularVisits.length > 0 && (
-        <div className="metal-panel space-y-3 rounded-[1.5rem] p-4 sm:p-5">
-          <div>
-            <h2 className="text-base font-semibold text-[var(--color-card-foreground)]">Upcoming Ocular Visits</h2>
-            <p className="text-xs text-[var(--text-metal-color)]">Your project is created after the ocular site visit.</p>
-          </div>
-          {ocularVisits.map((visit) => (
-            <Link
-              key={String(visit._id)}
-              to={`/appointments/${visit._id}`}
-              className="flex items-center justify-between gap-3 rounded-xl border border-[color:var(--color-border)] px-4 py-3 transition-colors hover:bg-[color:var(--color-muted)]/70"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">{visit.appointmentNumber || 'Ocular visit'}</p>
-                <p className="text-xs text-[var(--text-metal-color)]">
-                  {format(new Date(`${visit.date}T00:00:00`), 'MMM d, yyyy')} · {visit.slotCode}
-                </p>
-              </div>
-              <StatusBadge status={String(visit.status)} />
-            </Link>
-          ))}
-        </div>
-      )}
-
       {/* Loading skeleton */}
       {isLoading ? (
         <div className="metal-panel overflow-hidden rounded-[1.5rem]">
@@ -217,7 +213,7 @@ export function ProjectsPage() {
           </div>
         </div>
       ) : !projects.length ? (
-        ocularVisits.length > 0 ? null : <EmptyState
+        <EmptyState
           icon={<FolderOpen className="h-6 w-6" />}
           title="No projects found"
           description={search || statusFilter
@@ -283,7 +279,7 @@ export function ProjectsPage() {
                     <TableRow
                       key={String(project._id)}
                       className="group cursor-pointer border-b border-[color:var(--color-border)] transition-colors hover:bg-[color:var(--color-muted)]/70"
-                      onClick={() => navigate(`/projects/${project._id}`)}
+                      onClick={() => navigate(projectHref(project))}
                     >
                       {/* Project info */}
                       <TableCell className="pl-5 py-5">
@@ -359,7 +355,7 @@ export function ProjectsPage() {
                       {/* Arrow */}
                       <TableCell className="py-5 pr-5">
                         <Link
-                          to={`/projects/${project._id}`}
+                          to={projectHref(project)}
                           onClick={(e) => e.stopPropagation()}
                           className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-metal-muted-color)] transition-colors hover:bg-[color:var(--color-muted)]/85 hover:text-[var(--text-metal-color)]"
                         >
@@ -406,7 +402,7 @@ export function ProjectsPage() {
                   return (
                 <Link
                   key={String(project._id)}
-                  to={`/projects/${project._id}`}
+                  to={projectHref(project)}
                   className="metal-panel block rounded-[1.35rem] px-4 py-3.5 transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_32px_rgba(18,22,27,0.1)]"
                 >
                   <div className="flex items-start justify-between gap-2">
