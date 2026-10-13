@@ -1020,6 +1020,18 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-form-switch a:hover,
 .auth-field__label-row a:hover { color: #ffd047; text-decoration: underline; text-underline-offset: 4px; }
 
+.auth-form-footer-copy { margin: 18px 0 0; color: #aeb4ba; font: 400 0.92rem/1.55 'Inter', system-ui, sans-serif; text-align: center; }
+.auth-form-footer-copy a { color: #f5b400; text-decoration: none; }
+.auth-form-footer-copy a:hover { color: #ffd047; text-decoration: underline; text-underline-offset: 4px; }
+
+/* Live password checklist: icon and label on one row, two columns on wider screens. */
+.auth-password-rules { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 14px; }
+.auth-password-rules span { display: inline-flex; align-items: center; gap: 6px; min-width: 0; color: #9aa1a8; font: 500 0.8rem/1.4 'Inter', system-ui, sans-serif; }
+.auth-password-rules svg { flex: none; width: 14px; height: 14px; color: #e45858; }
+.auth-password-rules .is-valid { color: #d7f5e3; }
+.auth-password-rules .is-valid svg { color: #3fb07a; }
+@media (max-width: 420px) { .auth-password-rules { grid-template-columns: 1fr; } }
+
 .auth-server-alert {
   display: flex;
   align-items: flex-start;
