@@ -5,7 +5,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useDashboardSummary } from '@/hooks/useReports';
 import { cn } from '@/lib/utils';
-import { sidebarNavGroups } from './navigation';
+import { getSidebarNavGroups } from './navigation';
 import {
   LogOut,
   ChevronRight,
@@ -131,7 +131,7 @@ export function Sidebar() {
         </Link>
 
         <div className="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-          {sidebarNavGroups.map((group) => {
+          {getSidebarNavGroups(user.roles).map((group) => {
             const visibleItems = group.items.filter((item) =>
               item.roles.some((role) => user.roles.includes(role)),
             );
