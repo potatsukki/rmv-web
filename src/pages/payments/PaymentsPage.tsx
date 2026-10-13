@@ -381,6 +381,8 @@ export function PaymentsPage() {
     })),
     selectedProjectPlanQueries.map((query) => query.data),
   ), [selectedProject?.items, selectedProjectPlanQueries]);
+  // A multi-item project is paid once: one combined plan with no projectItemId, shared by every item.
+  const hasCombinedPlan = selectedProjectPlanQueries.some((query) => query.data && !query.data.projectItemId);
   const paymentReadyItems = useMemo(() => (
     (selectedProject?.items || []).filter((_item, index) => Boolean(selectedProjectPlanQueries[index]?.data))
   ), [selectedProject?.items, selectedProjectPlanQueries]);
@@ -857,7 +859,7 @@ export function PaymentsPage() {
             )}
           </div>
 
-          {selectedProject && selectedProjectPaymentSummary.rows.length > 1 && (
+          {selectedProject && !hasCombinedPlan && selectedProjectPaymentSummary.rows.length > 1 && (
             <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
               <CardHeader className="px-4 sm:px-6">
                 <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
@@ -898,7 +900,7 @@ export function PaymentsPage() {
           )}
 
           {/* Item Selector (if multi-item) */}
-          {(selectedProject?.items?.length || 0) > 1 && (
+          {(selectedProject?.items?.length || 0) > 1 && !hasCombinedPlan && (
             <div className="flex gap-2 mt-4 overflow-x-auto pb-1 no-scrollbar scroll-smooth">
               {(selectedProject?.items || []).map((item, index) => {
                 const hasPlan = Boolean(selectedProjectPlanQueries[index]?.data);

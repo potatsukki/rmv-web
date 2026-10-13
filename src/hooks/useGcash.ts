@@ -21,14 +21,16 @@ export function useGcashContext(target: GcashTarget) {
 }
 export function useGcashSubmission() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: async (body: GcashTarget & { referenceNumber: string; amountPaid: number; paymentDate: string; proofKey?: string }) =>
+  return useMutation({ mutationFn: async (body: GcashTarget & { referenceNumber: string; proofKey?: string }) =>
     (await api.post<ApiResponse<Payment>>('/payments/gcash/submit', body)).data.data,
     onSettled: () => { qc.invalidateQueries({ queryKey: ['payments'] }); qc.invalidateQueries({ queryKey: ['payment-plans'] }); qc.invalidateQueries({ queryKey: ['appointments'] }); },
   });
 }
-export function useFlaggedGcashPayments(enabled: boolean) {
-  return useQuery({ queryKey: ['payments', 'gcash', 'flagged'], enabled,
-    queryFn: async () => (await api.get<ApiResponse<GcashQueuePayment[]>>('/payments/gcash/flagged', { params: { limit: 100 } })).data.data,
+export type GcashQueueFilter = 'all' | 'pending' | 'verified' | 'rejected' | 'flagged';
+
+export function useGcashQueue(filter: GcashQueueFilter, enabled = true) {
+  return useQuery({ queryKey: ['payments', 'gcash', 'queue', filter], enabled,
+    queryFn: async () => (await api.get<ApiResponse<GcashQueuePayment[]>>('/payments/gcash/queue', { params: { filter, limit: 100 } })).data.data,
     refetchInterval: () => document.visibilityState === 'visible' ? 60000 : false,
   });
 }

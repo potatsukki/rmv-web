@@ -22,7 +22,6 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useSignature } from '@/hooks/useUsers';
 import { Role } from '@/lib/constants';
 import { GcashVerificationQueue } from './components/GcashVerificationQueue';
-import { useFlaggedGcashPayments } from '@/hooks/useGcash';
 import {
   Dialog,
   DialogContent,
@@ -52,7 +51,6 @@ export function CashierQueuePage() {
   const isDark = resolvedTheme === 'dark';
   const isCashier = Boolean(user?.roles?.includes(Role.CASHIER));
   const { data: payments, isLoading, isError, refetch } = usePendingPayments();
-  const flagged = useFlaggedGcashPayments(isCashier);
   const { data: overduePayments, isLoading: overdueLoading } = useOverduePayments();
   const { data: savedSignature } = useSignature();
   const verifyMutation = useVerifyPayment();
@@ -120,9 +118,7 @@ export function CashierQueuePage() {
         />
       )}
 
-      {isCashier && <GcashVerificationQueue payments={allPayments.filter((payment) => payment.method === 'gcash')} />}
-      {isCashier && flagged.isError && <PageError onRetry={flagged.refetch} />}
-      {isCashier && <GcashVerificationQueue payments={flagged.data || []} flaggedOnly />}
+      {isCashier && <GcashVerificationQueue />}
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
