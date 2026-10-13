@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
 import { useProjects } from '@/hooks/useProjects';
+import { useAppointments } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, BlueprintStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { formatPersonName } from '@/lib/address';
@@ -95,6 +96,9 @@ function deriveDisplayStatus(project: { status?: string; latestBlueprintStatus?:
   return { status: workflow.key, label: workflow.label, cfg, workflow };
 }
 
+// Ocular visits that are still ahead; completed ones become part of the project.
+const ACTIVE_OCULAR_STATUSES = new Set(['requested', 'confirmed', 'preparing', 'on_the_way', 'arrived_at_site', 'in_progress']);
+
 function getActionSortTime(project: any) {
   const value = project.createdAt;
   if (!value) return 0;
@@ -116,8 +120,16 @@ export function ProjectsPage() {
   if (search) params.search = search;
 
   const { data, isLoading, isError, refetch } = useProjects(params);
+  const ocularVisitsQuery = useAppointments({ type: 'ocular', limit: '20' }, Boolean(isCustomer));
 
   if (isError) return <PageError onRetry={refetch} />;
+
+  // The project is only created after the ocular visit, so show a customer's upcoming
+  // ocular visits here too instead of an empty Ocular tab.
+  const linkedOcularIds = new Set((data?.items || []).map((project: any) => String(project.ocularAppointmentId || '')).filter(Boolean));
+  const ocularVisits = isCustomer && !search && (statusFilter === '' || statusFilter === 'pending_ocular')
+    ? (ocularVisitsQuery.data?.items || []).filter((visit) => ACTIVE_OCULAR_STATUSES.has(String(visit.status)) && !linkedOcularIds.has(String(visit._id)))
+    : [];
 
   const projects = (data?.items || []).filter((project) => matchesProjectStage(project, statusFilter));
 
@@ -163,6 +175,30 @@ export function ProjectsPage() {
         ) : undefined}
       />
 
+      {ocularVisits.length > 0 && (
+        <div className="metal-panel space-y-3 rounded-[1.5rem] p-4 sm:p-5">
+          <div>
+            <h2 className="text-base font-semibold text-[var(--color-card-foreground)]">Upcoming Ocular Visits</h2>
+            <p className="text-xs text-[var(--text-metal-color)]">Your project is created after the ocular site visit.</p>
+          </div>
+          {ocularVisits.map((visit) => (
+            <Link
+              key={String(visit._id)}
+              to={`/appointments/${visit._id}`}
+              className="flex items-center justify-between gap-3 rounded-xl border border-[color:var(--color-border)] px-4 py-3 transition-colors hover:bg-[color:var(--color-muted)]/70"
+            >
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">{visit.appointmentNumber || 'Ocular visit'}</p>
+                <p className="text-xs text-[var(--text-metal-color)]">
+                  {format(new Date(`${visit.date}T00:00:00`), 'MMM d, yyyy')} · {visit.slotCode}
+                </p>
+              </div>
+              <StatusBadge status={String(visit.status)} />
+            </Link>
+          ))}
+        </div>
+      )}
+
       {/* Loading skeleton */}
       {isLoading ? (
         <div className="metal-panel overflow-hidden rounded-[1.5rem]">
@@ -181,7 +217,7 @@ export function ProjectsPage() {
           </div>
         </div>
       ) : !projects.length ? (
-        <EmptyState
+        ocularVisits.length > 0 ? null : <EmptyState
           icon={<FolderOpen className="h-6 w-6" />}
           title="No projects found"
           description={search || statusFilter
