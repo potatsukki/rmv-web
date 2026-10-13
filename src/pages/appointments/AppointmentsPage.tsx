@@ -38,6 +38,13 @@ const STATUS_FILTERS = [
   { label: 'No Show', value: AppointmentStatus.NO_SHOW },
 ];
 
+// Customers and sales staff only see appointments after a sales staff is assigned, so they filter by Confirmed.
+const CONFIRMED_STATUS_FILTERS = STATUS_FILTERS.map((filter) => (
+  filter.value === AppointmentStatus.REQUESTED
+    ? { label: 'Appointment Confirmed', value: AppointmentStatus.CONFIRMED }
+    : filter
+));
+
 const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
   requested: {
     label: 'Requested',
@@ -326,11 +333,13 @@ export function AppointmentsPage() {
       },
     ].filter((section) => section.items.length > 0);
   } else {
+    // Use the displayed workflow status so finished visits (e.g. "Appointment Done") do not push new bookings down.
+    const isFinished = (a: Appointment) => resolveAppointmentWorkflowStatus(a).isTerminal;
     const upcomingItems = visibleAppointments
-      .filter(a => !['completed', 'cancelled', 'no_show'].includes(a.status))
+      .filter(a => !isFinished(a))
       .sort(compareAppointmentAscending);
     const recentItems = visibleAppointments
-      .filter(a => ['completed', 'cancelled', 'no_show'].includes(a.status))
+      .filter(isFinished)
       .sort(compareAppointmentDescending);
 
     sections = [
@@ -509,7 +518,7 @@ export function AppointmentsPage() {
         searchPlaceholder={searchPlaceholder}
         searchValue={search}
         onSearchChange={setSearch}
-        filters={isSalesOnly ? STATUS_FILTERS.filter((filter) => filter.label !== 'Appointment Request') : STATUS_FILTERS}
+        filters={isSalesOnly || isCustomer ? CONFIRMED_STATUS_FILTERS : STATUS_FILTERS}
         activeFilter={statusFilter ?? ''}
         onFilterChange={setStatusFilter}
         action={toolbarActions}

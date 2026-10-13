@@ -489,7 +489,7 @@ export function AppointmentDetailPage() {
       });
       toast.success(
         action === 'test_start'
-          ? 'Testing bypass active. The consultation is now In Progress.'
+          ? 'Testing bypass applied. The consultation is now Completed.'
           : action === 'customer_declined'
           ? 'Consultation marked as customer declined. The workflow has been stopped.'
           : 'Consultation attendance updated',
@@ -885,7 +885,7 @@ export function AppointmentDetailPage() {
                 ].includes(attendanceStatus as AppointmentAttendanceStatus) && (
                   <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/35 dark:bg-amber-500/10">
                     <p className="mb-3 text-xs leading-5 text-amber-900 dark:text-amber-100">
-                      Testing only: bypass the scheduled start time so the consultation report flow can be checked now.
+                      Testing only: bypass the scheduled time. The consultation starts and auto-completes right away so the report flow can be checked now.
                     </p>
                     <Button
                       type="button"
@@ -895,7 +895,7 @@ export function AppointmentDetailPage() {
                       className="border-amber-400 bg-amber-100 text-amber-950 hover:bg-amber-200 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100 dark:hover:bg-amber-400/25"
                     >
                       <Clock className="mr-2 h-4 w-4" />
-                      Start Now (Testing Only)
+                      Start & Complete Now (Testing Only)
                     </Button>
                   </div>
                 )}
