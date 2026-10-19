@@ -1,10 +1,27 @@
-import { Camera, Video, PenTool, Image } from 'lucide-react';
+import { Camera, PenTool, Image } from 'lucide-react';
+import toast from 'react-hot-toast';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { FileUpload } from '@/components/shared/FileUpload';
 
 const IMAGE_ACCEPT = '.jpg,.jpeg,.png,.webp,.gif,.bmp,.tif,.tiff,.heic,.heif,.svg';
 const VIDEO_ACCEPT = '.mp4,.mov,.m4v,.webm,.avi,.mkv';
 const IMAGE_OR_PDF_ACCEPT = `${IMAGE_ACCEPT},.pdf`;
+const GALLERY_ACCEPT = `${IMAGE_ACCEPT},${VIDEO_ACCEPT}`;
+const MAX_GALLERY_PHOTOS = 20;
+const MAX_GALLERY_VIDEOS = 5;
+const VIDEO_KEY = /\.(mp4|mov|m4v|webm|avi|mkv)$/i;
+
+/** Splits one gallery upload back into the photo and video lists the reports store. */
+export function splitGalleryKeys(keys: string[]) {
+  const videoKeys = keys.filter((key) => VIDEO_KEY.test(key));
+  const photoKeys = keys.filter((key) => !VIDEO_KEY.test(key));
+  return {
+    photoKeys: photoKeys.slice(0, MAX_GALLERY_PHOTOS),
+    videoKeys: videoKeys.slice(0, MAX_GALLERY_VIDEOS),
+    droppedPhotos: Math.max(0, photoKeys.length - MAX_GALLERY_PHOTOS),
+    droppedVideos: Math.max(0, videoKeys.length - MAX_GALLERY_VIDEOS),
+  };
+}
 
 interface PhotoUploadGridProps {
   photoKeys: string[];
@@ -37,31 +54,17 @@ export function PhotoUploadGrid({
 
     return (
       <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-        {photoKeys.length > 0 && (
+        {photoKeys.length + videoKeys.length > 0 && (
           <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
                 <Camera className="h-4 w-4 text-[#6e6e73] dark:text-slate-400" />
-                Site Photos
+                Gallery
               </CardTitle>
             </CardHeader>
             <CardContent>
-              <FileUpload folder="visit-photos" accept={IMAGE_ACCEPT} maxSizeMB={10} maxFiles={20}
-                existingKeys={photoKeys} onUploadComplete={() => {}} readOnly />
-            </CardContent>
-          </Card>
-        )}
-        {videoKeys.length > 0 && (
-          <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
-                <Video className="h-4 w-4 text-blue-500 dark:text-blue-300" />
-                Videos
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <FileUpload folder="visit-videos" accept={VIDEO_ACCEPT} maxSizeMB={50} maxFiles={5}
-                existingKeys={videoKeys} onUploadComplete={() => {}} readOnly />
+              <FileUpload folder="visit-photos" accept={GALLERY_ACCEPT} maxSizeMB={50} maxFiles={MAX_GALLERY_PHOTOS + MAX_GALLERY_VIDEOS}
+                existingKeys={[...photoKeys, ...videoKeys]} onUploadComplete={() => {}} readOnly />
             </CardContent>
           </Card>
         )}
@@ -99,44 +102,33 @@ export function PhotoUploadGrid({
 
   return (
     <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-      {/* Site Photos */}
+      {/* Gallery: site photos (required) and videos (optional) in one upload */}
       <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
             <Camera className="h-4 w-4 text-[#6e6e73] dark:text-slate-400" />
-            Site Photos
+            Gallery
           </CardTitle>
+          <p className="text-xs text-muted-foreground">
+            Add site photos and videos from your gallery. At least one photo is required; videos are optional
+            (up to {MAX_GALLERY_PHOTOS} photos and {MAX_GALLERY_VIDEOS} videos).
+          </p>
         </CardHeader>
         <CardContent>
           <FileUpload
             folder="visit-photos"
-            accept={IMAGE_ACCEPT}
-            maxSizeMB={10}
-            maxFiles={20}
-            existingKeys={photoKeys}
-            onUploadComplete={onPhotoKeysChange}
-            label="Upload photos"
-          />
-        </CardContent>
-      </Card>
-
-      {/* Videos */}
-      <Card className="rounded-xl border-gray-100 dark:border-slate-700 dark:bg-slate-900/90 shadow-sm overflow-hidden">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-sm text-gray-700 dark:text-slate-200">
-            <Video className="h-4 w-4 text-blue-500 dark:text-blue-300" />
-            Videos
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <FileUpload
-            folder="visit-videos"
-            accept={VIDEO_ACCEPT}
+            accept={GALLERY_ACCEPT}
             maxSizeMB={50}
-            maxFiles={5}
-            existingKeys={videoKeys}
-            onUploadComplete={onVideoKeysChange}
-            label="Upload videos"
+            maxFiles={MAX_GALLERY_PHOTOS + MAX_GALLERY_VIDEOS}
+            existingKeys={[...photoKeys, ...videoKeys]}
+            onUploadComplete={(keys) => {
+              const gallery = splitGalleryKeys(keys);
+              if (gallery.droppedPhotos) toast.error(`Up to ${MAX_GALLERY_PHOTOS} photos. Extra photos were not added.`);
+              if (gallery.droppedVideos) toast.error(`Up to ${MAX_GALLERY_VIDEOS} videos. Extra videos were not added.`);
+              onPhotoKeysChange(gallery.photoKeys);
+              onVideoKeysChange(gallery.videoKeys);
+            }}
+            label="Upload photos and videos"
           />
         </CardContent>
       </Card>
