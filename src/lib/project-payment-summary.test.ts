@@ -6,6 +6,7 @@ import { summarizeProjectPaymentPlans } from './project-payment-summary';
 const plan = (totalAmount: number, status: string): PaymentPlan => ({
   _id: `plan-${totalAmount}`,
   projectId: 'project-1',
+  projectItemId: `item-${totalAmount}`,
   totalAmount,
   stages: [{
     stageId: 'stage-1',
@@ -24,6 +25,15 @@ const items = [
 ];
 
 describe('summarizeProjectPaymentPlans', () => {
+  it('counts a combined project plan once even though every item returns it', () => {
+    const combined = { ...plan(23_131, 'pending'), projectItemId: undefined };
+    const summary = summarizeProjectPaymentPlans(items, [combined, combined]);
+
+    expect(summary.combinedTotal).toBe(23_131);
+    expect(summary.hasAllPlans).toBe(true);
+    expect(summary.rows.map((row) => [row.inCombinedPlan, row.totalAmount])).toEqual([[true, undefined], [true, undefined]]);
+  });
+
   it('shows every item and combines their plan totals', () => {
     const summary = summarizeProjectPaymentPlans(items, [
       plan(70_000, 'verified'),

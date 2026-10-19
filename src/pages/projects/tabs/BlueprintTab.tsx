@@ -28,6 +28,7 @@ import { FileUpload } from '@/components/shared/FileUpload';
 import {
   useBlueprintsByProject,
   useLatestBlueprint,
+  useLatestBlueprints,
   useApproveComponent,
   useRequestBlueprintRevision,
   useBlueprintDraft,
@@ -601,6 +602,10 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const { data: blueprint, refetch: refetchBlueprint, isPending: isBlueprintPending } = useLatestBlueprint(projectId, projectItemId);
   const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId, projectItemId);
   const { data: paymentPlan } = usePaymentPlan(projectId, projectItemId);
+  // Multi-item projects: each item's billing is approved on its own, then billed and paid as one.
+  const projectItems = project?.items || [];
+  const isMultiItemProject = projectItems.length > 1;
+  const itemBlueprintQueries = useLatestBlueprints(projectId, isMultiItemProject ? projectItems.map((item) => item._id) : []);
 
   // Engineer-specific mutations
   const upsertDraftMutation = useUpsertBlueprintDraft();
@@ -1033,6 +1038,18 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   };
   const hasPayableQuotation = (bp?: Blueprint | null) => Boolean(bp?.quotation);
   const isQuotationSentToCustomer = (bp?: Blueprint | null) => Boolean(bp?.quotation && bp.quotationReviewStatus === 'sent_to_customer');
+  const isItemBillingApproved = (bp?: Blueprint | null) => Boolean(
+    bp && bp.blueprintApproved && bp.costingApproved && hasPayableQuotation(bp) && isQuotationSentToCustomer(bp),
+  );
+  const itemBillings = projectItems.map((item, index) => ({
+    id: item._id,
+    label: item.title || item.serviceType,
+    blueprint: itemBlueprintQueries[index]?.data,
+  }));
+  const allItemsBillingApproved = isMultiItemProject && itemBillings.every((item) => isItemBillingApproved(item.blueprint));
+  const itemsAwaitingBillingApproval = itemBillings.filter((item) => !isItemBillingApproved(item.blueprint));
+  const combinedBillingTotal = itemBillings.reduce((total, item) => total + getPayableQuotationTotal(item.blueprint), 0);
+  const payableTotal = (bp?: Blueprint | null) => (allItemsBillingApproved ? combinedBillingTotal : getPayableQuotationTotal(bp));
   const blueprintWorkflowStatus = resolveBlueprintWorkflowStatus(blueprint);
   const previewDialog = (
     <Dialog
@@ -2002,7 +2019,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
               <CardHeader className={`${isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/55'} flex flex-row items-center justify-between border-b border-[color:var(--color-border)]/55 px-4 pb-3 sm:rounded-t-xl sm:px-6 dark:border-slate-700`}>
                 <div className="flex items-center gap-2">
                   <Info className={`h-5 w-5 ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-muted-color)]'}`} />
-                  <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>{canReviewBlueprint || isCashier ? 'Billing Summary' : 'Costing Sheet'}</h3>
+                  <h3 className={`font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>{canReviewBlueprint || isCashier ? (allItemsBillingApproved ? 'Project Billing Summary' : 'Billing Summary') : 'Costing Sheet'}</h3>
                 </div>
                 {bp.costingApproved ? (
                   <Badge variant="outline" className="border-emerald-200 bg-emerald-50 text-emerald-700 shadow-none hover:bg-emerald-100/80 dark:border-emerald-500/40 dark:bg-emerald-500/20 dark:text-emerald-300 dark:hover:bg-emerald-500/25">
@@ -2021,7 +2038,30 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
               <CardContent className="pt-6 space-y-4 px-4 sm:px-6">
                   {canReviewBlueprint || isCashier ? (
                   <div className={`rounded-xl border border-[color:var(--color-border)]/50 p-4 ${isDark ? 'bg-slate-900/45 dark:border-slate-700' : 'bg-[color:var(--color-muted)]/55'}`}>
-                    {!isQuotationSentToCustomer(bp) ? (
+                    {allItemsBillingApproved ? (
+                      <div className="space-y-3">
+                        <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
+                          Every item's billing is approved, so the project is billed and paid as one.
+                        </p>
+                        <div className="divide-y divide-[color:var(--color-border)]/50 rounded-xl border border-[color:var(--color-border)]/50">
+                          {itemBillings.map((item) => (
+                            <div key={item.id} className="flex items-start justify-between gap-3 px-4 py-3">
+                              <div className="min-w-0">
+                                <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[var(--color-card-foreground)]'}`}>{item.label}</p>
+                                {item.blueprint?.quotation?.estimatedDuration && (
+                                  <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{QUOTATION_COPY.estimatedTimeLabel}: {item.blueprint.quotation.estimatedDuration}</p>
+                                )}
+                              </div>
+                              <p className={`shrink-0 text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(getPayableQuotationTotal(item.blueprint))}</p>
+                            </div>
+                          ))}
+                        </div>
+                        <div>
+                          <p className={`text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Combined Total Billing</p>
+                          <p className={`mt-1 text-2xl font-bold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>{formatCurrency(combinedBillingTotal)}</p>
+                        </div>
+                      </div>
+                    ) : !isQuotationSentToCustomer(bp) ? (
                       <p className={`text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                         The quotation has not been released to the customer yet.
                       </p>
@@ -2100,6 +2140,21 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                       Go to Payments
                     </Button>
                   </>
+                ) : isMultiItemProject && !allItemsBillingApproved ? (
+                  <div className="flex-1 text-center sm:text-left">
+                    <p className="text-sm font-semibold text-emerald-900 dark:text-emerald-200">Approve the billing of every item first</p>
+                    <p className="mt-0.5 text-xs text-emerald-700 dark:text-emerald-300">
+                      This project is paid as one. The combined billing and payment plan open once every item is approved.
+                    </p>
+                    <div className="mt-2 flex flex-wrap justify-center gap-2 sm:justify-start">
+                      {itemsAwaitingBillingApproval.map((item) => (
+                        <Button key={item.id} type="button" size="sm" variant="outline" onClick={() => navigate({ search: `?projectItemId=${item.id}` })}>
+                          Review {item.label}
+                          <ArrowRight className="ml-1 h-3.5 w-3.5" />
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
                 ) : (
                   /* No plan yet — show payment-plan CTA */
                   <>
@@ -2357,7 +2412,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
                   <span className="font-semibold text-gray-700 dark:text-slate-200">Total Billing</span>
                   <span className="text-right font-bold text-emerald-700 dark:text-emerald-300">
-                    {formatCurrency(getPayableQuotationTotal(acceptDialog.blueprint))}
+                    {formatCurrency(payableTotal(acceptDialog.blueprint))}
                   </span>
                 </div>
               </div>
@@ -2388,7 +2443,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                       Pay the full amount in one go — no surcharge.
                     </p>
                     <p className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300">
-                      {formatCurrency(getPayableQuotationTotal(acceptDialog.blueprint))}
+                      {formatCurrency(payableTotal(acceptDialog.blueprint))}
                     </p>
                   </div>
                 </label>
@@ -2416,7 +2471,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                     </p>
                     <p className="mt-1 text-sm font-bold text-blue-700 dark:text-blue-300">
                       {formatCurrency(
-                        getPayableQuotationTotal(acceptDialog.blueprint) *
+                        payableTotal(acceptDialog.blueprint) *
                           (1 + surchargePercent / 100),
                       )}{' '}
                       <span className="text-xs font-normal text-gray-400 dark:text-slate-500">
@@ -2426,7 +2481,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                     {/* Milestone breakdown */}
                     {paymentType === 'installment' && (() => {
                       const milestones = acceptDialog.blueprint?.quotation?.paymentMilestones;
-                      const installTotal = getPayableQuotationTotal(acceptDialog.blueprint) * (1 + surchargePercent / 100);
+                      const installTotal = payableTotal(acceptDialog.blueprint) * (1 + surchargePercent / 100);
                       return (
                         <div className="mt-2.5 space-y-1.5 border-t border-blue-200 pt-2">
                           {cfgSplit.map((pct, idx) => {

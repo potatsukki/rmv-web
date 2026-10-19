@@ -1,4 +1,4 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueries, useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import type {
   ApiResponse,
@@ -15,6 +15,26 @@ const KEYS = {
   draft: (projectId: string, projectItemId?: string) => [...KEYS.all, 'draft', projectId, projectItemId || 'legacy'] as const,
   quotationHistory: (id: string) => [...KEYS.all, id, 'quotation-history'] as const,
 };
+
+/** Latest blueprint of each item; shares the cache with useLatestBlueprint. */
+export function useLatestBlueprints(projectId: string, projectItemIds: string[]) {
+  return useQueries({
+    queries: projectItemIds.map((projectItemId) => ({
+      queryKey: KEYS.latest(projectId, projectItemId),
+      queryFn: async () => {
+        const { data } = await api.get<ApiResponse<Blueprint>>(
+          `/blueprints/project/${projectId}/latest`,
+          { params: { projectItemId } },
+        );
+        return data.data;
+      },
+      enabled: !!projectId,
+      staleTime: 1000 * 60 * 5,
+      gcTime: 1000 * 60 * 30,
+      refetchOnWindowFocus: false,
+    })),
+  });
+}
 
 export function useBlueprintsByProject(projectId: string, projectItemId?: string) {
   return useQuery({

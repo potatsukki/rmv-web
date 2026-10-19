@@ -2736,7 +2736,7 @@ export function ProjectDetailPage() {
                   <p className={`text-xs ${row.readiness === 'verified' ? 'text-emerald-700 dark:text-emerald-300' : 'text-amber-700 dark:text-amber-300'}`}>{row.readinessLabel}</p>
                 </div>
                 <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>
-                  {row.totalAmount === undefined ? 'Amount unavailable' : shouldHideAmount ? '***' : formatCurrency(row.totalAmount)}
+                  {row.inCombinedPlan ? 'Included in combined plan' : row.totalAmount === undefined ? 'Amount unavailable' : shouldHideAmount ? '***' : formatCurrency(row.totalAmount)}
                 </p>
               </div>
             ))}
