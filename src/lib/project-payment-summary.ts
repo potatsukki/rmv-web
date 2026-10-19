@@ -6,6 +6,8 @@ export type ProjectPaymentSummaryItem = {
   id: string;
   label: string;
   totalAmount?: number;
+  /** The item is paid through one project-level plan shared by every item. */
+  inCombinedPlan: boolean;
   readiness: ProjectPaymentReadiness;
   readinessLabel: string;
 };
@@ -37,8 +39,9 @@ export function summarizeProjectPaymentPlans(
 ) {
   const rows: ProjectPaymentSummaryItem[] = items.map((item, index) => {
     const plan = plans[index];
+    const inCombinedPlan = Boolean(plan && !plan.projectItemId && items.length > 1);
     const parsedTotal = Number(plan?.totalAmount);
-    const totalAmount = plan && Number.isFinite(parsedTotal) && parsedTotal >= 0
+    const totalAmount = plan && !inCombinedPlan && Number.isFinite(parsedTotal) && parsedTotal >= 0
       ? parsedTotal
       : undefined;
     const readiness = getReadiness(plan);
@@ -46,6 +49,7 @@ export function summarizeProjectPaymentPlans(
     return {
       ...item,
       totalAmount,
+      inCombinedPlan,
       readiness,
       readinessLabel: READINESS_LABELS[readiness],
     };
@@ -53,7 +57,9 @@ export function summarizeProjectPaymentPlans(
 
   return {
     rows,
-    combinedTotal: rows.reduce((total, row) => total + (row.totalAmount ?? 0), 0),
+    // Every item query returns the same combined plan, so count each plan once.
+    combinedTotal: [...new Map(plans.flatMap((plan) => plan ? [[plan._id, plan] as const] : [])).values()]
+      .reduce((total, plan) => total + (Number.isFinite(Number(plan.totalAmount)) ? Number(plan.totalAmount) : 0), 0),
     planCount: rows.filter((row) => row.readiness !== 'plan_missing').length,
     hasAllPlans: rows.length > 0 && rows.every((row) => row.readiness !== 'plan_missing'),
     allInitialPaymentsVerified: rows.length > 0 && rows.every((row) => row.readiness === 'verified'),
