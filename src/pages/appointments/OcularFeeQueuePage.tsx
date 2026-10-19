@@ -63,8 +63,13 @@ const statusBadge = (status?: string) => {
   }
 };
 
-export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolean }) {
-  const { data: appointments, isLoading, isError, refetch } = usePendingOcularFees();
+export function OcularFeeQueuePage({ isEmbedded = false, appointmentIds }: {
+  isEmbedded?: boolean;
+  /** Show only these bookings (e.g. the ocular visit of the project being viewed). */
+  appointmentIds?: string[];
+}) {
+  const { data: queue, isLoading, isError, refetch } = usePendingOcularFees();
+  const appointments = appointmentIds ? queue?.filter((appointment) => appointmentIds.includes(appointment._id)) : queue;
   const verifyMutation = useVerifyOcularFee();
   const qc = useQueryClient();
   const isCashier = useAuthStore((state) => state.user?.roles.includes(Role.CASHIER));
@@ -123,6 +128,8 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
   };
 
   if (isError) return <PageError onRetry={refetch} />;
+  // Inside a project, stay out of the way when its ocular fee is already settled.
+  if (appointmentIds && !isLoading && !appointments?.length) return null;
 
   return (
     <div className="space-y-6">
@@ -139,7 +146,7 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
       {isEmbedded && (
         <div className="flex items-center gap-2 pt-2">
           <QrCode className="h-5 w-5 text-[#6e6e73] dark:text-slate-300" />
-          <h2 className="text-lg font-semibold text-[var(--color-card-foreground)]">Ocular Fee Queue</h2>
+          <h2 className="text-lg font-semibold text-[var(--color-card-foreground)]">{appointmentIds ? 'Ocular Fee' : 'Ocular Fee Queue'}</h2>
         </div>
       )}
 
