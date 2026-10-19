@@ -861,6 +861,16 @@ export function PaymentsPage() {
             )}
           </div>
 
+          {selectedProject && isCashier && (selectedProject.ocularAppointmentId || selectedProject.appointmentId) && (
+            <OcularFeeQueuePage
+              isEmbedded
+              // appointmentId comes back populated ({ _id, date, slotCode }) in the project list
+              appointmentIds={[selectedProject.ocularAppointmentId, selectedProject.appointmentId]
+                .map((ref) => (ref && typeof ref === 'object' ? (ref as { _id?: string })._id : ref))
+                .filter((ref): ref is string => Boolean(ref))}
+            />
+          )}
+
           {selectedProject && !hasCombinedPlan && selectedProjectPaymentSummary.rows.length > 1 && (
             <Card className="rounded-none overflow-hidden border-x-0 sm:rounded-xl sm:border-x">
               <CardHeader className="px-4 sm:px-6">
