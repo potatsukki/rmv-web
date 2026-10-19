@@ -232,7 +232,6 @@ export function LoginPage() {
       <Link to="/" className="auth-back-link"><ArrowLeft aria-hidden="true" />Back to Home</Link>
       <p className="auth-form-eyebrow">Welcome Back</p>
       <h1 className="auth-form-title">Sign in to your account</h1>
-      <p className="auth-form-copy">Access your projects, manage quotes, and track progress.</p>
       {serverError ? (
         <div className="auth-server-alert" role="alert">
           <AlertCircle aria-hidden="true" />

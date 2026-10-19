@@ -1072,7 +1072,6 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-field { display: grid; gap: 8px; min-width: 0; }
 .auth-field__label-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-height: 20px; }
 .auth-field__label { color: #d4d7da; font: 700 0.74rem/1.2 'Inter', system-ui, sans-serif; letter-spacing: 0.11em; text-transform: uppercase; }
-.auth-field__label::before { content: '—'; margin-right: 5px; color: #f5b400; }
 .auth-field__label-row a { min-height: 32px; display: inline-flex; align-items: center; font: 600 0.8rem/1.2 'Inter', system-ui, sans-serif; }
 .auth-field__control { position: relative; }
 .auth-field__icon { position: absolute; z-index: 1; top: 50%; left: 15px; width: 18px; height: 18px; color: #8f969d; transform: translateY(-50%); pointer-events: none; }

@@ -82,6 +82,7 @@ export function useCreateProject() {
       appointmentId?: string;
       title?: string;
       serviceType?: string;
+      serviceTypes?: string[];
       deliveryType?: 'shop_fabricated' | 'on_site_installation';
       serviceTypeCustom?: string;
       measurementUnit?: string;
