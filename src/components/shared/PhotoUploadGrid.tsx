@@ -36,6 +36,32 @@ interface PhotoUploadGridProps {
   showSketches?: boolean;
 }
 
+/** One upload for site photos and videos; keeps them as separate key lists. */
+export function GalleryUpload({ photoKeys, videoKeys, onChange, onUploadingChange }: {
+  photoKeys: string[];
+  videoKeys: string[];
+  onChange: (photoKeys: string[], videoKeys: string[]) => void;
+  onUploadingChange?: (active: boolean) => void;
+}) {
+  return (
+    <FileUpload
+      folder="visit-photos"
+      accept={GALLERY_ACCEPT}
+      maxSizeMB={50}
+      maxFiles={MAX_GALLERY_PHOTOS + MAX_GALLERY_VIDEOS}
+      existingKeys={[...photoKeys, ...videoKeys]}
+      onUploadComplete={(keys) => {
+        const gallery = splitGalleryKeys(keys);
+        if (gallery.droppedPhotos) toast.error(`Up to ${MAX_GALLERY_PHOTOS} photos. Extra photos were not added.`);
+        if (gallery.droppedVideos) toast.error(`Up to ${MAX_GALLERY_VIDEOS} videos. Extra videos were not added.`);
+        onChange(gallery.photoKeys, gallery.videoKeys);
+      }}
+      onUploadingChange={onUploadingChange}
+      label="Upload photos and videos"
+    />
+  );
+}
+
 export function PhotoUploadGrid({
   photoKeys,
   videoKeys,
@@ -115,20 +141,13 @@ export function PhotoUploadGrid({
           </p>
         </CardHeader>
         <CardContent>
-          <FileUpload
-            folder="visit-photos"
-            accept={GALLERY_ACCEPT}
-            maxSizeMB={50}
-            maxFiles={MAX_GALLERY_PHOTOS + MAX_GALLERY_VIDEOS}
-            existingKeys={[...photoKeys, ...videoKeys]}
-            onUploadComplete={(keys) => {
-              const gallery = splitGalleryKeys(keys);
-              if (gallery.droppedPhotos) toast.error(`Up to ${MAX_GALLERY_PHOTOS} photos. Extra photos were not added.`);
-              if (gallery.droppedVideos) toast.error(`Up to ${MAX_GALLERY_VIDEOS} videos. Extra videos were not added.`);
-              onPhotoKeysChange(gallery.photoKeys);
-              onVideoKeysChange(gallery.videoKeys);
+          <GalleryUpload
+            photoKeys={photoKeys}
+            videoKeys={videoKeys}
+            onChange={(photos, videos) => {
+              onPhotoKeysChange(photos);
+              onVideoKeysChange(videos);
             }}
-            label="Upload photos and videos"
           />
         </CardContent>
       </Card>

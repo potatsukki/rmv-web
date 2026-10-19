@@ -25,6 +25,7 @@ import type { ApiResponse, LineItem, ServiceSpecifications, VisitReport } from '
 import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
 import { FINISH_OPTIONS, MATERIAL_OPTIONS, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 import { SuggestionInput } from '@/components/shared/SuggestionInput';
+import { GalleryUpload } from '@/components/shared/PhotoUploadGrid';
 import { extractErrorMessage } from '@/lib/utils';
 import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
 
@@ -109,9 +110,11 @@ function storableImageUrl(url?: string) {
   return url && !url.startsWith('data:') ? url : undefined;
 }
 
-function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, onChange, onUploadingChange, onRemove }: {
+function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, report, onChange, onUploadingChange, onRemove }: {
   idPrefix: string;
   heading?: string;
+  /** The ocular/visit report this item came from; every report must be submitted before a pending ocular is completed. */
+  report?: Pick<VisitReport, '_id' | 'status'>;
   draft: ItemDraft;
   fallbackTemplateId?: string;
   onChange: (patch: Partial<ItemDraft>) => void;
@@ -126,6 +129,14 @@ function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, onCha
           <div>
             {heading && <p className="text-xs font-semibold uppercase tracking-wider text-[#f5b400]">{heading}</p>}
             <CardTitle>{heading ? `${serviceLabel(serviceType, draft.serviceTypeCustom)} Details & Design` : 'Project Details & Design'}</CardTitle>
+            {report && (
+              <p className="mt-1 text-xs text-muted-foreground">
+                Visit report: <span className="capitalize">{String(report.status).replaceAll('_', ' ')}</span>
+                {report.status !== VisitReportStatus.SUBMITTED && report.status !== VisitReportStatus.COMPLETED && (
+                  <> · <Link to={`/visit-reports/${report._id}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#f5b400] underline underline-offset-4">Submit Visit Report</Link></>
+                )}
+              </p>
+            )}
           </div>
           {onRemove && <Button type="button" variant="outline" size="sm" onClick={onRemove}><Trash2 className="h-4 w-4" />Remove Item</Button>}
         </CardHeader>
@@ -172,7 +183,20 @@ function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, onCha
       <Card>
         <CardHeader><CardTitle>{heading ? `${serviceLabel(serviceType, draft.serviceTypeCustom)} Attachments` : 'Project Attachments'}</CardTitle></CardHeader>
         <CardContent className="grid min-w-0 gap-5 sm:grid-cols-2">
-          {attachmentGroups.map((group) => <div key={group.key} className="min-w-0"><FileUpload folder={group.folder} accept={group.accept} maxSizeMB={group.maxSizeMB} maxFiles={group.maxFiles} label={group.label} existingKeys={draft[group.key]} onUploadComplete={(keys) => onChange({ [group.key]: keys })} onUploadingChange={(active) => onUploadingChange(`${idPrefix}-${group.key}`, active)} /></div>)}
+          <div className="min-w-0 space-y-2">
+            <p className="text-sm font-medium">Gallery</p>
+            <p className="text-xs text-muted-foreground">Photos and videos from your gallery. Videos are optional (up to 20 photos and 5 videos).</p>
+            <GalleryUpload
+              photoKeys={draft.photoKeys}
+              videoKeys={draft.videoKeys}
+              onChange={(photoKeys, videoKeys) => onChange({ photoKeys, videoKeys })}
+              onUploadingChange={(active) => onUploadingChange(`${idPrefix}-gallery`, active)}
+            />
+          </div>
+          <div className="min-w-0 space-y-2">
+            <p className="text-sm font-medium">Reference Images</p>
+            <FileUpload folder="visit-references" accept="image/*,.pdf" maxSizeMB={10} maxFiles={10} label="Reference Images" existingKeys={draft.referenceImageKeys} onUploadComplete={(referenceImageKeys) => onChange({ referenceImageKeys })} onUploadingChange={(active) => onUploadingChange(`${idPrefix}-referenceImageKeys`, active)} />
+          </div>
         </CardContent>
       </Card>
     </>
@@ -348,8 +372,7 @@ export function CreateProjectPage() {
     setServiceTypeFromAppointment(true);
     setServiceTypeCustom(primaryReport?.serviceTypeCustom || appointment.data.serviceTypeCustom || siteDetails?.serviceTypeCustom || '');
     setCustomerRequirements((primaryReport || siteDetails)?.customerRequirements || '');
-    // A pending ocular project already has its items from the visit reports.
-    setExtraItems(pendingProjectId ? [] : linkedServiceTypes.filter((type) => type !== appointmentServiceType).map((type) => newItemDraft(
+    setExtraItems(linkedServiceTypes.filter((type) => type !== appointmentServiceType).map((type) => newItemDraft(
       type,
       appointmentReports.find((report) => report.serviceType === type),
       appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === type),
@@ -483,7 +506,7 @@ export function CreateProjectPage() {
         appointmentId: appointmentId || undefined,
         title,
         serviceType,
-        serviceTypes: pendingProjectId ? undefined : usedServiceTypes,
+        serviceTypes: usedServiceTypes,
         additionalItems: extraItems.map(({ selectedDesign: design, ...item }) => ({
           ...item,
           serviceTypeCustom: item.serviceTypeCustom || undefined,
@@ -743,7 +766,7 @@ export function CreateProjectPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {linkedServiceTypes.length > 1 && !pendingProjectId ? (
+              {linkedServiceTypes.length > 1 ? (
                 <div className="space-y-1">
                   <p className="text-sm font-medium">Primary Item</p>
                   <p className="text-sm">{serviceLabel(serviceType, serviceTypeCustom)}</p>
@@ -775,6 +798,7 @@ export function CreateProjectPage() {
             heading={extraItems.length ? 'Item 1 · Primary' : undefined}
             draft={primaryDraft}
             fallbackTemplateId={sourceSelectedDesignId}
+            report={extraItems.length ? appointmentReports.find((entry) => entry.serviceType === serviceType) : undefined}
             onChange={patchPrimary}
             onUploadingChange={trackUpload}
           />
@@ -785,9 +809,11 @@ export function CreateProjectPage() {
               idPrefix={`item-${item.serviceType}`}
               heading={`Item ${index + 2}`}
               draft={item}
+              report={appointmentReports.find((entry) => entry.serviceType === item.serviceType)}
               onChange={(patch) => setExtraItems((current) => current.map((entry) => entry.serviceType === item.serviceType ? { ...entry, ...patch } : entry))}
               onUploadingChange={trackUpload}
-              onRemove={() => {
+              // A pending ocular keeps every item measured during the visit.
+              onRemove={pendingProjectId ? undefined : () => {
                 setExtraItems((current) => current.filter((entry) => entry.serviceType !== item.serviceType));
                 setUploads((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`item-${item.serviceType}-`))));
               }}
