@@ -89,7 +89,7 @@ export function SuggestionInput({ value, options, onValueChange, className, disa
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-30 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border bg-popover p-1 text-sm text-popover-foreground shadow-lg"
+          className="absolute z-50 mt-1 max-h-60 w-full overflow-y-auto rounded-xl border border-border bg-card p-1 text-sm text-card-foreground shadow-[0_18px_36px_rgba(0,0,0,0.32)]"
         >
           {shown.map((option, index) => (
             <li
