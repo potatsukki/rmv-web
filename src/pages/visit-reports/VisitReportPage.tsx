@@ -506,6 +506,13 @@ export function VisitReportPage() {
     !(appointment as any).ocularFeePaid;
 
   const isSubmissionBlocked = isOcularFeeUnpaidOutsideNcr;
+  // An ocular visit with several items is one report to the user: one Submit sends every item.
+  const pendingOcularSiblings = effectiveVisitType === 'ocular'
+    ? (siblingReports || []).filter((sibling) => (
+      rawId(sibling._id) !== id
+      && [VisitReportStatus.DRAFT, VisitReportStatus.RETURNED].includes(sibling.status as VisitReportStatus)
+    ))
+    : [];
   const siblingScheduleSource = effectiveVisitType === 'consultation'
     ? siblingReports?.find((sibling) => Boolean(sibling.actualVisitDateTime))
     : undefined;
@@ -946,8 +953,41 @@ export function VisitReportPage() {
         }
       }
 
+      if (isOcular) {
+        for (const sibling of pendingOcularSiblings) {
+          const missingSiblingFields = getIncompleteOcularFields({
+            actualVisitDateTime: sibling.actualVisitDateTime || saved.actualVisitDateTime,
+            lineItems: sibling.lineItems,
+            measurements: sibling.measurements,
+            siteConditions: sibling.siteConditions,
+            specifications: sibling.specifications,
+            photoKeys: sibling.photoKeys,
+            selectedDesignTemplateId: sibling.selectedDesignTemplateId,
+            selectedDesignTemplateName: sibling.selectedDesignTemplateName,
+            selectedDesignTemplateImageUrl: sibling.selectedDesignTemplateImageUrl,
+          });
+          if (missingSiblingFields.length > 0) {
+            setSubmitOpen(false);
+            const itemLabel = getServiceTypeLabel(sibling.serviceType, sibling.serviceTypeCustom);
+            toast.error(`Complete the ${itemLabel} item before submitting. ${formatIncompleteOcularMessage(missingSiblingFields)}`, { duration: 8000 });
+            navigate(`/visit-reports/${rawId(sibling._id)}`, { state: location.state });
+            return;
+          }
+        }
+      }
+
       const savedReportId = rawId(saved._id);
       const submittedReport = await submitMutation.mutateAsync(savedReportId);
+
+      if (isOcular) {
+        for (const sibling of pendingOcularSiblings) {
+          const siblingId = rawId(sibling._id);
+          if (!sibling.actualVisitDateTime && saved.actualVisitDateTime) {
+            await updateMutation.mutateAsync({ id: siblingId, actualVisitDateTime: saved.actualVisitDateTime });
+          }
+          await submitMutation.mutateAsync(siblingId);
+        }
+      }
       const submittedReportId = rawId(submittedReport._id);
 
       if (submittedReportId && submittedReportId !== savedReportId) {
@@ -962,7 +1002,7 @@ export function VisitReportPage() {
 
       toast.success(
         isOcular
-          ? 'Ocular report submitted. The appointment is complete.'
+          ? `Ocular report submitted${pendingOcularSiblings.length ? ` for all ${pendingOcularSiblings.length + 1} items` : ''}. The appointment is complete.`
           : 'Consultation completed. Create the project to choose whether an ocular visit is needed.',
         { duration: 5000 },
       );
@@ -1696,7 +1736,9 @@ export function VisitReportPage() {
                     className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
                   >
                     <Send className="mr-2 h-4 w-4" />
-                    {effectiveVisitType === 'consultation' ? 'Complete Consultation' : 'Submit Visit Report'}
+                    {effectiveVisitType === 'consultation'
+                      ? 'Complete Consultation'
+                      : pendingOcularSiblings.length ? `Submit Visit Report (${pendingOcularSiblings.length + 1} items)` : 'Submit Visit Report'}
                   </Button>
                 </div>
               )}
@@ -1738,7 +1780,9 @@ export function VisitReportPage() {
         title={effectiveVisitType === 'consultation' ? 'Complete Consultation' : 'Submit Visit Report'}
         description={effectiveVisitType === 'consultation'
           ? 'Complete this consultation. The ocular visit decision is now made while creating the project.'
-          : 'Submit the on-site measurements and observations, and mark the appointment as completed.'}
+          : pendingOcularSiblings.length
+            ? `Submit the on-site measurements and observations for all ${pendingOcularSiblings.length + 1} items of this ocular visit, and mark the appointment as completed.`
+            : 'Submit the on-site measurements and observations, and mark the appointment as completed.'}
         confirmLabel={effectiveVisitType === 'consultation' ? 'Complete Consultation' : 'Submit Visit Report'}
         confirmClassName="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:border dark:border-emerald-700/45 dark:[background-image:none] dark:bg-[#1f7a5b] dark:text-white dark:shadow-[0_12px_24px_rgba(16,97,71,0.24)] dark:hover:bg-[#2aa77c]"
         isLoading={submitMutation.isPending || updateMutation.isPending}
