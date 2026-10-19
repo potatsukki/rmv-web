@@ -483,3 +483,66 @@ export function getMissingRequiredSpecificationFields(serviceType: string | unde
 
   return missing;
 }
+
+export const MATERIAL_OPTIONS = ['Stainless 304', 'Stainless 316', 'Stainless 201', 'Mild Steel', 'Galvanized Iron (GI)', 'Aluminum', 'Wrought Iron', 'Tempered Glass', 'Wood', 'Polycarbonate'];
+export const FINISH_OPTIONS = ['Hairline / Brushed', 'Mirror / Polished', 'Matte', 'Powder Coated', 'Painted', 'Sandblasted', 'Rose Gold (PVD)', 'Gold (PVD)', 'Black (PVD)'];
+const SURFACE_OPTIONS = ['Concrete', 'Hollow block wall', 'Steel structure', 'Wood', 'Tile', 'Needs site check'];
+const SITE_OPTIONS = ['Standard', 'Limited', 'Needs site check', 'Not applicable'];
+const LOCK_OPTIONS = ['Padlock', 'Mortise lock', 'Deadbolt', 'Slide bolt', 'Keyed lockset', 'None'];
+const PROVISION_OPTIONS = ['Required', 'Optional', 'Not required'];
+const EDGE_OPTIONS = ['Square edge', 'Rounded edge', 'Bullnose', 'Marine edge (raised)', 'With backsplash'];
+const FLOOR_OPTIONS = ['Concrete', 'Tile', 'Wood', 'Vinyl'];
+const LEVEL_OPTIONS = ['Level', 'Slightly uneven', 'Uneven', 'Needs site check'];
+const SINK_OPTIONS = ['Single bowl', 'Double bowl', 'Undermount', 'Top mount', 'No sink'];
+
+const FIELD_SUGGESTIONS: Record<string, string[]> = {
+  stainlessGrade: ['201', '304', '316'],
+  roofingMaterial: ['Polycarbonate', 'Tempered Glass', 'Long-span metal roofing', 'Rib-type metal roofing', 'Acrylic'],
+  railingStyle: ['Round tube', 'Square tube', 'Glass panel', 'Cable wire', 'Vertical baluster'],
+  handrailStyle: ['Round tube', 'Square tube', 'Flat bar', 'Wall-mounted', 'Wood top rail'],
+  balusterStyle: ['Vertical bars', 'Horizontal bars', 'Glass panel', 'Cable wire', 'None'],
+  grillPattern: ['Straight bars', 'Square grid', 'Diamond', 'Decorative scroll', 'Custom'],
+  panelStyle: ['Full panel', 'Vertical bars', 'Horizontal slats', 'Perforated sheet', 'Mixed'],
+  backrestStyle: ['Full back', 'Slatted', 'Low back', 'No backrest'],
+  handleType: ['Bar handle', 'Recessed handle', 'Knob', 'Edge pull', 'Handleless'],
+  doorType: ['Hinged', 'Sliding', 'Folding', 'Lift-up', 'Open shelving'],
+  roofConnectionType: ['Wall-mounted brackets', 'Post-supported', 'Roof-attached', 'Cantilever'],
+  wheelRequirement: ['Fixed (no wheels)', 'Swivel wheels', 'Locking wheels'],
+  loadRequirement: ['Light duty', 'Medium duty', 'Heavy duty'],
+  undershelfRequirement: ['With undershelf', 'Without undershelf', 'Two-tier undershelf'],
+  groundSlope: ['Flat', 'Slight slope', 'Steep slope', 'Needs site check'],
+  drainageStyle: ['Gutter with downspout', 'Open edge drip', 'Concealed gutter', 'None'],
+  drainageAccess: ['Floor drain present', 'Wall drain', 'Needs plumbing', 'Not applicable'],
+  sinkCutout: SINK_OPTIONS,
+  sinkConfiguration: SINK_OPTIONS,
+  appliancePlacement: ['Left side', 'Right side', 'Center', 'Island', 'Not applicable'],
+  existingCabinetLayout: ['None (new)', 'Straight / I-shape', 'L-shape', 'U-shape', 'Island'],
+  accessSide: ['Left', 'Right', 'Front', 'Both sides'],
+  accessRestriction: ['None', 'Narrow entry', 'Upper floor (stairs only)', 'Needs site check'],
+  wallOpeningCondition: ['Ready', 'Needs widening', 'Needs repair', 'Needs site check'],
+  waterproofingConcern: ['None', 'Needs sealant', 'Exposed to rain', 'Needs site check'],
+  shelfSpacing: ['Fixed', 'Adjustable', 'Custom per shelf'],
+  installationLocation: ['Indoor', 'Outdoor', 'Kitchen', 'Garage', 'Storefront', 'Needs site check'],
+  floorSupport: ['Concrete slab', 'Tile over concrete', 'Wood floor', 'Needs site check'],
+  floorType: FLOOR_OPTIONS,
+  floorSurface: FLOOR_OPTIONS,
+};
+
+const FIELD_SUGGESTION_RULES: Array<[RegExp, string[]]> = [
+  [/finish|coating/i, FINISH_OPTIONS],
+  [/material/i, MATERIAL_OPTIONS],
+  [/lock/i, LOCK_OPTIONS],
+  [/^edge/i, EDGE_OPTIONS],
+  [/level/i, LEVEL_OPTIONS],
+  [/provision/i, PROVISION_OPTIONS],
+  [/mounting|wall|support|connection|structure/i, SURFACE_OPTIONS],
+  [/clearance|condition|requirement|restriction|access/i, SITE_OPTIONS],
+];
+
+/** Choices offered on a free-text specification field; sales can still type their own. */
+export function getFieldSuggestions(field: Pick<SpecificationField, 'key' | 'type'>): string[] {
+  if (field.type !== 'text') return [];
+  return FIELD_SUGGESTIONS[field.key]
+    || FIELD_SUGGESTION_RULES.find(([pattern]) => pattern.test(field.key))?.[1]
+    || [];
+}

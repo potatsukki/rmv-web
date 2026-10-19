@@ -23,7 +23,8 @@ import { api } from '@/lib/api';
 import { DeliveryType, getDefaultDeliveryType, SERVICE_TYPE_LABELS, VisitReportStatus } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications, VisitReport } from '@/lib/types';
 import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
-import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
+import { FINISH_OPTIONS, MATERIAL_OPTIONS, mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
+import { SuggestionInput } from '@/components/shared/SuggestionInput';
 import { extractErrorMessage } from '@/lib/utils';
 import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
 
@@ -126,8 +127,8 @@ function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, onCha
         <CardContent className="min-w-0 space-y-5">
           {serviceType === 'custom' && <div className="space-y-2"><Label htmlFor={`${idPrefix}-custom-service`}>Custom Service</Label><Input id={`${idPrefix}-custom-service`} maxLength={200} value={draft.serviceTypeCustom} onChange={(event) => onChange({ serviceTypeCustom: event.target.value })} /></div>}
           <div className="grid gap-4 sm:grid-cols-2">
-            <div className="space-y-2"><Label htmlFor={`${idPrefix}-material`}>Material Type</Label><Input id={`${idPrefix}-material`} maxLength={1000} value={draft.materials} onChange={(event) => onChange({ materials: event.target.value })} list="project-material-options" /></div>
-            <div className="space-y-2"><Label htmlFor={`${idPrefix}-finish`}>Finish / Color</Label><Input id={`${idPrefix}-finish`} maxLength={500} value={draft.finishes} onChange={(event) => onChange({ finishes: event.target.value })} list="project-finish-options" /></div>
+            <div className="space-y-2"><Label htmlFor={`${idPrefix}-material`}>Material Type</Label><SuggestionInput id={`${idPrefix}-material`} maxLength={1000} value={draft.materials} options={MATERIAL_OPTIONS} onValueChange={(materials) => onChange({ materials })} /></div>
+            <div className="space-y-2"><Label htmlFor={`${idPrefix}-finish`}>Finish / Color</Label><SuggestionInput id={`${idPrefix}-finish`} maxLength={500} value={draft.finishes} options={FINISH_OPTIONS} onValueChange={(finishes) => onChange({ finishes })} /></div>
           </div>
           {serviceType && <DesignTemplateSelector serviceType={serviceType} selectedTemplateId={draft.selectedDesign?.id || fallbackTemplateId} onSelect={(template) => onChange(templatePatch(serviceType, template, draft.specifications))} />}
           <div className="space-y-3">
@@ -534,8 +535,6 @@ export function CreateProjectPage() {
           : 'Upload the signed contract, then enter the project details.'}</p>
       </div>
 
-      <datalist id="project-material-options">{['Stainless 201', 'Stainless 304', 'Stainless 316', 'Mild Steel', 'Galvanized Iron (GI)', 'Aluminum', 'Wrought Iron', 'Glass', 'Wood'].map((label) => <option key={label} value={label} />)}</datalist>
-      <datalist id="project-finish-options">{['Hairline / Brushed', 'Mirror / Polished', 'Matte', 'Powder Coated', 'Painted', 'Sandblasted', 'Rose Gold (PVD)', 'Gold (PVD)', 'Black (PVD)'].map((label) => <option key={label} value={label} />)}</datalist>
       <form
         key={primaryReport?._id || appointment.data?._id || 'new-project'}
         onSubmit={handleSubmit}
