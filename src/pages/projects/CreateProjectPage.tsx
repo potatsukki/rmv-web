@@ -68,6 +68,8 @@ export function CreateProjectPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const createProject = useCreateProject();
   const [serviceType, setServiceType] = useState('');
+  const [excludedServiceTypes, setExcludedServiceTypes] = useState<string[]>([]);
+  const [extraServiceTypes, setExtraServiceTypes] = useState<string[]>([]);
   const [serviceTypeFromAppointment, setServiceTypeFromAppointment] = useState(false);
   const deliveryType = getDefaultDeliveryType(serviceType) || DeliveryType.SHOP_FABRICATED;
   const [materialType, setMaterialType] = useState('');
@@ -136,6 +138,9 @@ export function CreateProjectPage() {
     type,
     appointmentReports.find((report) => report.serviceType === type)?.serviceTypeCustom,
   ));
+  const checkedServiceTypes = linkedServiceTypes.filter((type) => type === serviceType || !excludedServiceTypes.includes(type));
+  // Walk-in customers have no appointment, so sales picks any extra services by hand.
+  const manualExtraServiceTypes = extraServiceTypes.filter((type) => type !== serviceType);
   const detailsSource = primaryReport || appointment.data?.customerSiteDetails;
   const defaultTitle = linkedServiceLabels.length
     ? `${linkedServiceLabels.join(' & ')} Project`.slice(0, 100)
@@ -313,6 +318,9 @@ export function CreateProjectPage() {
         appointmentId: appointmentId || undefined,
         title,
         serviceType,
+        serviceTypes: linkedServiceTypes.length > 1
+          ? checkedServiceTypes
+          : !linkedServiceTypes.length && manualExtraServiceTypes.length ? [serviceType, ...manualExtraServiceTypes] : undefined,
         deliveryType,
         description: description || undefined,
         serviceTypeCustom: value('serviceTypeCustom') || undefined,
@@ -558,11 +566,40 @@ export function CreateProjectPage() {
               <CardTitle>Project Information</CardTitle>
               <CardDescription>
                 {linkedServiceTypes.length > 1
-                  ? `${linkedServiceTypes.length} service items and their appointment/ocular details will be linked automatically.`
+                  ? 'This appointment has more than one item. Each checked item becomes a separate item inside this project.'
                   : 'Project ID, delivery type, and appointment/ocular details are filled automatically.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
+              {linkedServiceTypes.length > 1 && (
+                <fieldset className="space-y-2">
+                  <legend className="text-sm font-medium">Service Items</legend>
+                  {linkedServiceTypes.map((type, index) => {
+                    const design = appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === type);
+                    const isPrimary = type === serviceType;
+                    return (
+                      <label key={type} className="flex items-center gap-3 rounded-lg border border-border p-3">
+                        <input
+                          type="checkbox"
+                          checked={checkedServiceTypes.includes(type)}
+                          disabled={isPrimary}
+                          onChange={(event) => setExcludedServiceTypes((current) => (
+                            event.target.checked ? current.filter((value) => value !== type) : [...current, type]
+                          ))}
+                          className="size-4 accent-[#f5b400]"
+                        />
+                        {design?.imageUrl && <img src={design.imageUrl} alt="" className="size-10 rounded object-cover" />}
+                        <span className="min-w-0 text-sm">
+                          <span className="font-medium">{linkedServiceLabels[index]}</span>
+                          {isPrimary && <span className="ml-2 text-xs text-muted-foreground">(primary)</span>}
+                          {design?.name && <span className="block truncate text-xs text-muted-foreground">{design.name}</span>}
+                        </span>
+                      </label>
+                    );
+                  })}
+                  <p className="text-xs text-muted-foreground">The Service Type below is the primary item. The form details and design on this page apply to it. Edit the other items on the project page after you create it.</p>
+                </fieldset>
+              )}
               <div className="space-y-2">
                 <Label htmlFor="project-service">Service Type</Label>
                 <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
@@ -574,6 +611,27 @@ export function CreateProjectPage() {
                   {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </select>
                 {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the appointment and visit report. You can change it if needed.</p>}
+                {!linkedServiceTypes.length && serviceType && (
+                  <fieldset className="space-y-2 pt-2">
+                    <legend className="text-sm font-medium">Additional Items (optional)</legend>
+                    <p className="text-xs text-muted-foreground">For a walk-in customer who orders more than one item. Each checked service becomes a separate item inside this project.</p>
+                    <div className="grid gap-2 sm:grid-cols-2">
+                      {Object.entries(SERVICE_TYPE_LABELS).filter(([value]) => value !== serviceType).map(([value, label]) => (
+                        <label key={value} className="flex items-center gap-2 rounded-lg border border-border p-2 text-sm">
+                          <input
+                            type="checkbox"
+                            checked={manualExtraServiceTypes.includes(value)}
+                            onChange={(event) => setExtraServiceTypes((current) => (
+                              event.target.checked ? [...current, value] : current.filter((type) => type !== value)
+                            ))}
+                            className="size-4 accent-[#f5b400]"
+                          />
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </fieldset>
+                )}
                 {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
               </div>
               <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work (optional)</Label><Textarea id="project-description" name="description" maxLength={2000} rows={3} defaultValue={pendingProject.data?.description} /></div>
