@@ -83,6 +83,7 @@ export function useCreateProject() {
       title?: string;
       serviceType?: string;
       serviceTypes?: string[];
+      additionalItems?: Array<{ serviceType: string } & Record<string, unknown>>;
       deliveryType?: 'shop_fabricated' | 'on_site_installation';
       serviceTypeCustom?: string;
       measurementUnit?: string;
