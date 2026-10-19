@@ -8,7 +8,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { getServiceSpecificationSchema, type SpecificationField, type SpecificationSectionKey } from '@/lib/service-specifications';
+import { getFieldSuggestions, getServiceSpecificationSchema, type SpecificationField, type SpecificationSectionKey } from '@/lib/service-specifications';
+import { SuggestionInput } from '@/components/shared/SuggestionInput';
 import type { ServiceSpecifications } from '@/lib/types';
 
 interface ServiceSpecificationFormProps {
@@ -131,6 +132,25 @@ function FieldControl({
   }
 
   const isNumber = field.type === 'number';
+  const suggestions = getFieldSuggestions(field);
+  if (suggestions.length) {
+    return (
+      <div className="space-y-1.5">
+        <Label htmlFor={id} className="text-[12px] font-medium text-gray-600 dark:text-slate-400">
+          {field.label}{field.required ? ' *' : ''}
+        </Label>
+        <SuggestionInput
+          id={id}
+          value={typeof raw === 'string' ? raw : ''}
+          options={suggestions}
+          onValueChange={(next) => onChange(updateSpecValue(value, section, field.key, next))}
+          placeholder={resolvePlaceholder(field)}
+          disabled={disabled}
+          className="h-10 rounded-lg border-gray-200 text-sm dark:border-white/15 dark:bg-white/[0.05] dark:text-slate-100 dark:placeholder:text-slate-500"
+        />
+      </div>
+    );
+  }
   return (
     <div className="space-y-1.5">
       <Label htmlFor={id} className="text-[12px] font-medium text-gray-600 dark:text-slate-400">
