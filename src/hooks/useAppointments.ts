@@ -544,9 +544,10 @@ export function useDeclineOcularFee() {
   });
 }
 
-export function usePendingOcularFees() {
+export function usePendingOcularFees(enabled = true) {
   return useQuery({
     queryKey: ['ocular-fee-queue'],
+    enabled,
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<Appointment[]>>(
         '/appointments/ocular-fee-queue',

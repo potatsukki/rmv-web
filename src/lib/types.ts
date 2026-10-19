@@ -226,6 +226,7 @@ export interface Appointment {
     total: number;
   };
   ocularFeeMethod?: string;
+  ocularFeePaymentMethod?: string;
   ocularFeePaymentChoice?: 'online' | 'cash';
   ocularFeePaid?: boolean;
   ocularFeeProofKey?: string;

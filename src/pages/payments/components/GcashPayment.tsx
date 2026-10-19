@@ -15,13 +15,20 @@ function actorName(actor: string | { firstName: string; lastName: string } | nul
   return actor && typeof actor === 'object' ? `${actor.firstName} ${actor.lastName}` : actor || '—';
 }
 
-export function GcashPayment({ target, allowCash = true }: { target: GcashTarget; allowCash?: boolean }) {
+export function GcashPayment({ target, allowCash = true, onQrPhCheckout }: {
+  target: GcashTarget;
+  allowCash?: boolean;
+  /** Offers PayMongo QR Ph next to GCash; the cashier verifies the payment afterwards. */
+  onQrPhCheckout?: () => Promise<void>;
+}) {
   const { data, isLoading, isError, refetch } = useGcashContext(target);
   const submit = useGcashSubmission();
   const cash = useSelectCash();
   const upload = useGetUploadUrl();
   const qr = useAuthenticatedUrl(data?.settings.qrCodeKey);
-  const [method, setMethod] = useState<'gcash' | 'cash'>('gcash');
+  const [method, setMethod] = useState<'gcash' | 'cash' | 'qrph'>('gcash');
+  const methods = onQrPhCheckout ? (['gcash', 'qrph'] as const) : allowCash ? (['gcash', 'cash'] as const) : null;
+  const methodLabels = { gcash: 'GCash', cash: 'Cash / Pay On-site', qrph: 'QR Ph (PayMongo)' } as const;
   const [reference, setReference] = useState('');
   const [file, setFile] = useState<File | null>(null);
   const [sending, setSending] = useState(false);
@@ -41,6 +48,10 @@ export function GcashPayment({ target, allowCash = true }: { target: GcashTarget
     setSubmissionError('');
     setSending(true);
     try {
+      if (onQrPhCheckout && method === 'qrph') {
+        await onQrPhCheckout();
+        return;
+      }
       if (allowCash && method === 'cash') {
         await cash.mutateAsync(target);
         toast.success('Cash / Pay On-site selected. Payment remains unpaid until the cashier records it.');
@@ -75,15 +86,15 @@ export function GcashPayment({ target, allowCash = true }: { target: GcashTarget
         {allowCash && !paid && !waiting && latest?.method === 'cash' && <p role="status">Cash / Pay On-site selected. Payment Status: Unpaid.</p>}
         {rejected && <div role="status" className="rounded-xl border border-red-500/30 bg-red-500/10 p-4 space-y-3"><h3 className="font-semibold">Payment Verification Failed</h3><p>Reason: {latest?.rejectionReason || latest?.declineReason}</p><Button onClick={() => setResubmitting(true)}>Submit Payment Again</Button></div>}
         {!waiting && !paid && !rejected && <form onSubmit={handleSubmit} className="space-y-5">
-          {allowCash ? <fieldset className="flex flex-wrap gap-4"><legend className="mb-2 font-semibold">Payment Method</legend>{(['gcash', 'cash'] as const).map((value) => <label key={value} className="flex items-center gap-2"><input type="radio" name="paymentMethod" value={value} checked={method === value} onChange={() => setMethod(value)} />{value === 'gcash' ? 'GCash' : 'Cash / Pay On-site'}</label>)}</fieldset> : <p className="font-semibold">Payment Method: GCash</p>}
+          {methods ? <fieldset className="flex flex-wrap gap-4"><legend className="mb-2 font-semibold">Payment Method</legend>{methods.map((value) => <label key={value} className="flex items-center gap-2"><input type="radio" name="paymentMethod" value={value} checked={method === value} onChange={() => setMethod(value)} />{methodLabels[value]}</label>)}</fieldset> : <p className="font-semibold">Payment Method: GCash</p>}
           <p className="text-lg font-semibold">Amount to Pay: {money(data.amountRequired)}</p>
-          {!allowCash || method === 'gcash' ? <>
+          {method === 'qrph' ? <p className="text-sm text-muted-foreground">Scan the PayMongo QR Ph code with GCash, Maya, or any bank app. After you pay, the cashier verifies your payment.</p> : method === 'gcash' ? <>
             <div className="rounded-xl border p-4 space-y-2"><h3 className="font-bold">GCash</h3><p>Merchant: {data.merchant}</p>{data.settings.accountName && <p>Account Name: {data.settings.accountName}</p>}{data.settings.accountNumber && <p>GCash Number: {data.settings.accountNumber}</p>}{qr.url && <img src={qr.url} alt="Official RMV GCash payment QR code" className="mx-auto max-h-64 max-w-full rounded-lg bg-white p-3" />}{qr.error && <p className="text-destructive">QR could not load. Please retry or use the configured GCash number.</p>}{!configured && <p className="text-amber-600 dark:text-amber-300">RMV GCash information has not been configured. Please contact RMV{allowCash ? ' or choose Cash / Pay On-site' : ''}.</p>}</div>
             <ol className="list-decimal pl-5 space-y-1 text-sm"><li>Open your GCash app.</li><li>Scan the QR code or send the required amount.</li><li>Complete the payment in GCash.</li><li>Copy your GCash reference number.</li><li>Return to this page.</li><li>Submit your payment details for verification.</li></ol>
             <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-reference">GCash Reference Number</Label><Input id="gcash-reference" inputMode="numeric" value={reference} onChange={(e) => setReference(e.target.value)} required pattern="[0-9]{13}" maxLength={13} aria-describedby="gcash-reference-help" /><p id="gcash-reference-help" className="text-xs text-muted-foreground">Each GCash reference number can only be used once. The amount ({money(data.amountRequired)}) and payment date are recorded automatically.</p></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-proof">Payment Screenshot (optional, up to 5 MB)</Label><Input id="gcash-proof" type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div></div>
           </> : <p className="text-sm text-muted-foreground">Pay at RMV or on-site. The cashier will record the payment after receiving your cash.</p>}
           {submissionError && <p role="alert" className="text-sm text-destructive">{submissionError}</p>}
-          <Button type="submit" disabled={sending || ((!allowCash || method === 'gcash') && !configured)} className="w-full sm:w-auto">{sending ? 'Submitting…' : !allowCash || method === 'gcash' ? 'Submit Payment for Verification' : 'Choose Cash / Pay On-site'}</Button>
+          <Button type="submit" disabled={sending || (method === 'gcash' && !configured)} className="w-full sm:w-auto">{sending ? (method === 'qrph' ? 'Opening QR Ph…' : 'Submitting…') : method === 'qrph' ? 'Pay with QR Ph' : method === 'gcash' ? 'Submit Payment for Verification' : 'Choose Cash / Pay On-site'}</Button>
         </form>}
       </CardContent>
     </Card>

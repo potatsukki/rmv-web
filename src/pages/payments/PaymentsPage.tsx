@@ -51,7 +51,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from '@/components/ui/dialog';
-import { useUnpaidOcularFees } from '@/hooks/useAppointments';
+import { usePendingOcularFees, useUnpaidOcularFees } from '@/hooks/useAppointments';
 import { resolvePaymentWorkflowStatus } from '@/lib/workflow-status';
 import { getProjectDisplaySiteAddress } from '@/lib/project-display';
 import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
@@ -287,6 +287,8 @@ export function PaymentsPage() {
   const isCashier = user?.roles.some((r: string) => [Role.CASHIER, Role.ADMIN].includes(r as Role));
   const shouldHideAmount = user?.roles.some((r: string) => [Role.ADMIN, Role.APPOINTMENT_AGENT].includes(r as Role));
   const { data: unpaidOcularFees } = useUnpaidOcularFees();
+  const { data: pendingOcularFees } = usePendingOcularFees(!!isCashier);
+  const pendingOcularFeeCount = (pendingOcularFees ?? []).filter((appt) => (appt.ocularFee ?? 0) > 0).length;
   const actionableOcularFees = useMemo(
     () => (unpaidOcularFees ?? []).filter((appt) => (appt.ocularFee ?? 0) > 0),
     [unpaidOcularFees],
@@ -565,7 +567,7 @@ export function PaymentsPage() {
             const availableTabs = [
               { key: 'payments', label: 'Payments', show: true },
               { key: 'cashier-queue', label: 'Cashier Queue', show: !!isCashier },
-              { key: 'ocular-fees', label: 'Ocular Fees', show: !!isCashier },
+              { key: 'ocular-fees', label: pendingOcularFeeCount ? `Ocular Fees (${pendingOcularFeeCount})` : 'Ocular Fees', show: !!isCashier },
             ].filter((tab) => tab.show);
 
             if (availableTabs.length <= 1) return null;
