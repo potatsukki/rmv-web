@@ -666,10 +666,10 @@ export function ProjectDetailPage() {
   const activeMeasurements = getItemScopedProjectValue(activeProjectItemRecord?.measurements, project?.measurements, hasMultipleProjectItems);
   const activeLineItems = getItemScopedProjectValue(activeProjectItemRecord?.lineItems, project?.lineItems, hasMultipleProjectItems) || [];
   const activeMeasurementUnit = getItemScopedProjectValue(activeProjectItemRecord?.measurementUnit, project?.measurementUnit, hasMultipleProjectItems) || 'cm';
-  const activePhotoKeys = getItemScopedProjectValue(visitReport?.photoKeys, project?.photoKeys, hasMultipleProjectItems) || [];
-  const activeVideoKeys = getItemScopedProjectValue(visitReport?.videoKeys, project?.videoKeys, hasMultipleProjectItems) || [];
-  const activeSketchKeys = getItemScopedProjectValue(visitReport?.sketchKeys, project?.sketchKeys, hasMultipleProjectItems) || [];
-  const activeReferenceImageKeys = getItemScopedProjectValue(visitReport?.referenceImageKeys, project?.referenceImageKeys, hasMultipleProjectItems) || [];
+  const activePhotoKeys = getItemScopedProjectValue(activeProjectItemRecord?.photoKeys?.length ? activeProjectItemRecord.photoKeys : visitReport?.photoKeys, project?.photoKeys, hasMultipleProjectItems) || [];
+  const activeVideoKeys = getItemScopedProjectValue(activeProjectItemRecord?.videoKeys?.length ? activeProjectItemRecord.videoKeys : visitReport?.videoKeys, project?.videoKeys, hasMultipleProjectItems) || [];
+  const activeSketchKeys = getItemScopedProjectValue(activeProjectItemRecord?.sketchKeys?.length ? activeProjectItemRecord.sketchKeys : visitReport?.sketchKeys, project?.sketchKeys, hasMultipleProjectItems) || [];
+  const activeReferenceImageKeys = getItemScopedProjectValue(activeProjectItemRecord?.referenceImageKeys?.length ? activeProjectItemRecord.referenceImageKeys : visitReport?.referenceImageKeys, project?.referenceImageKeys, hasMultipleProjectItems) || [];
 
   const activeProjectItemHasSpecifications = hasMeaningfulSpecifications(activeProjectItemRecord?.specifications);
   const visitReportHasSpecifications = hasMeaningfulSpecifications(visitReport?.specifications);

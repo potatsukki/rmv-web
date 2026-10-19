@@ -431,6 +431,10 @@ export interface ProjectItem {
   designReviewNotes?: string;
   installationConfirmedAt?: string;
   mediaKeys?: string[];
+  photoKeys?: string[];
+  videoKeys?: string[];
+  sketchKeys?: string[];
+  referenceImageKeys?: string[];
   createdAt: string;
   updatedAt: string;
 }

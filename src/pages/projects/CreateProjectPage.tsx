@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, FolderPlus, Loader2, MapPin, Search } from 'lucide-react';
+import { ArrowLeft, FolderPlus, Loader2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -21,7 +21,7 @@ import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { api } from '@/lib/api';
 import { DeliveryType, getDefaultDeliveryType, SERVICE_TYPE_LABELS, VisitReportStatus } from '@/lib/constants';
-import type { ApiResponse, LineItem, ServiceSpecifications } from '@/lib/types';
+import type { ApiResponse, LineItem, ServiceSpecifications, VisitReport } from '@/lib/types';
 import { getDesignTemplates, type DesignTemplate } from '@/lib/design-templates';
 import { mergeSpecificationsWithDefaults } from '@/lib/service-specifications';
 import { extractErrorMessage } from '@/lib/utils';
@@ -49,6 +49,130 @@ function localDateAfter(days: number) {
   return `${year}-${month}-${day}`;
 }
 
+type AttachmentKey = typeof attachmentGroups[number]['key'];
+
+type ItemDraft = {
+  serviceType: string;
+  serviceTypeCustom: string;
+  selectedDesign: DesignTemplate | null;
+  preferredDesign: string;
+  initialDesignKeys: string[];
+  customerRequirements: string;
+  materials: string;
+  finishes: string;
+  specifications: ServiceSpecifications;
+  lineItems: LineItem[];
+  measurementUnit: string;
+} & Record<AttachmentKey | 'sketchKeys', string[]>;
+
+function templatePatch(serviceType: string, template: DesignTemplate, specifications: ServiceSpecifications): Partial<ItemDraft> {
+  return {
+    selectedDesign: template,
+    materials: template.material,
+    finishes: template.finish,
+    preferredDesign: template.preferredDesign,
+    specifications: mergeSpecificationsWithDefaults(serviceType, template.suggestedSpecifications || specifications),
+    lineItems: template.suggestedLineItems.map((item) => ({ ...item })),
+  };
+}
+
+function newItemDraft(serviceType: string, report?: VisitReport, design?: { id?: string; name?: string }, custom?: string): ItemDraft {
+  const template = getDesignTemplates(serviceType).find((candidate) => (
+    candidate.id === design?.id || candidate.title.toLowerCase() === design?.name?.trim().toLowerCase()
+  ));
+  return {
+    serviceType,
+    serviceTypeCustom: report?.serviceTypeCustom || (serviceType === 'custom' ? custom || '' : ''),
+    selectedDesign: template || null,
+    preferredDesign: report?.preferredDesign || template?.preferredDesign || '',
+    initialDesignKeys: report?.initialDesignKeys || [],
+    customerRequirements: report?.customerRequirements || '',
+    materials: report?.materials || template?.material || '',
+    finishes: report?.finishes || template?.finish || '',
+    specifications: mergeSpecificationsWithDefaults(serviceType, report?.specifications || template?.suggestedSpecifications || {}),
+    lineItems: (report?.lineItems?.length ? report.lineItems : template?.suggestedLineItems || []).map((item) => ({ ...item })),
+    measurementUnit: report?.measurementUnit || 'cm',
+    photoKeys: report?.photoKeys || [],
+    videoKeys: report?.videoKeys || [],
+    sketchKeys: report?.sketchKeys || [],
+    referenceImageKeys: report?.referenceImageKeys || [],
+  };
+}
+
+function storableImageUrl(url?: string) {
+  return url && !url.startsWith('data:') ? url : undefined;
+}
+
+function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, onChange, onUploadingChange, onRemove }: {
+  idPrefix: string;
+  heading?: string;
+  draft: ItemDraft;
+  fallbackTemplateId?: string;
+  onChange: (patch: Partial<ItemDraft>) => void;
+  onUploadingChange: (key: string, active: boolean) => void;
+  onRemove?: () => void;
+}) {
+  const { serviceType } = draft;
+  return (
+    <>
+      <Card>
+        <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
+          <div>
+            {heading && <p className="text-xs font-semibold uppercase tracking-wider text-[#f5b400]">{heading}</p>}
+            <CardTitle>{heading ? `${serviceLabel(serviceType, draft.serviceTypeCustom)} Details & Design` : 'Project Details & Design'}</CardTitle>
+          </div>
+          {onRemove && <Button type="button" variant="outline" size="sm" onClick={onRemove}><Trash2 className="h-4 w-4" />Remove Item</Button>}
+        </CardHeader>
+        <CardContent className="min-w-0 space-y-5">
+          {serviceType === 'custom' && <div className="space-y-2"><Label htmlFor={`${idPrefix}-custom-service`}>Custom Service</Label><Input id={`${idPrefix}-custom-service`} maxLength={200} value={draft.serviceTypeCustom} onChange={(event) => onChange({ serviceTypeCustom: event.target.value })} /></div>}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-2"><Label htmlFor={`${idPrefix}-material`}>Material Type</Label><Input id={`${idPrefix}-material`} maxLength={1000} value={draft.materials} onChange={(event) => onChange({ materials: event.target.value })} list="project-material-options" /></div>
+            <div className="space-y-2"><Label htmlFor={`${idPrefix}-finish`}>Finish / Color</Label><Input id={`${idPrefix}-finish`} maxLength={500} value={draft.finishes} onChange={(event) => onChange({ finishes: event.target.value })} list="project-finish-options" /></div>
+          </div>
+          {serviceType && <DesignTemplateSelector serviceType={serviceType} selectedTemplateId={draft.selectedDesign?.id || fallbackTemplateId} onSelect={(template) => onChange(templatePatch(serviceType, template, draft.specifications))} />}
+          <div className="space-y-3">
+            <div>
+              <Label>Preferred Design</Label>
+              <p className="mt-1 text-xs text-muted-foreground">Upload the customer's preferred design images, then add a short description below.</p>
+            </div>
+            <FileUpload
+              folder="projects/initial-design"
+              accept="image/*"
+              maxSizeMB={5}
+              maxFiles={10}
+              label="Upload Preferred Design Images"
+              existingKeys={draft.initialDesignKeys}
+              onUploadComplete={(keys) => onChange({ initialDesignKeys: keys })}
+              onUploadingChange={(active) => onUploadingChange(`${idPrefix}-initialDesign`, active)}
+            />
+            <div className="space-y-2">
+              <Label htmlFor={`${idPrefix}-preferred-design`}>Description</Label>
+              <Textarea
+                id={`${idPrefix}-preferred-design`}
+                value={draft.preferredDesign}
+                onChange={(event) => onChange({ preferredDesign: event.target.value })}
+                maxLength={1000}
+                rows={3}
+                placeholder="Describe the preferred style, layout, finish, or other design details."
+              />
+            </div>
+          </div>
+          <div className="space-y-2"><Label htmlFor={`${idPrefix}-requirements`}>Customer Requirements</Label><Textarea id={`${idPrefix}-requirements`} maxLength={2000} value={draft.customerRequirements} onChange={(event) => onChange({ customerRequirements: event.target.value })} /></div>
+          {serviceType && <ServiceSpecificationForm serviceType={serviceType} value={draft.specifications} onChange={(specifications) => onChange({ specifications })} />}
+          <div className="space-y-3"><h2 className="font-semibold">Component Measurements</h2><LineItemsEditor items={draft.lineItems} unit={draft.measurementUnit} onItemsChange={(lineItems) => onChange({ lineItems })} onUnitChange={(measurementUnit) => onChange({ measurementUnit })} showNotes={false} /></div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader><CardTitle>{heading ? `${serviceLabel(serviceType, draft.serviceTypeCustom)} Attachments` : 'Project Attachments'}</CardTitle></CardHeader>
+        <CardContent className="grid min-w-0 gap-5 sm:grid-cols-2">
+          {attachmentGroups.map((group) => <div key={group.key} className="min-w-0"><FileUpload folder={group.folder} accept={group.accept} maxSizeMB={group.maxSizeMB} maxFiles={group.maxFiles} label={group.label} existingKeys={draft[group.key]} onUploadComplete={(keys) => onChange({ [group.key]: keys })} onUploadingChange={(active) => onUploadingChange(`${idPrefix}-${group.key}`, active)} /></div>)}
+        </CardContent>
+      </Card>
+    </>
+  );
+}
+
 export function CreateProjectPage() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -68,8 +192,10 @@ export function CreateProjectPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const createProject = useCreateProject();
   const [serviceType, setServiceType] = useState('');
-  const [excludedServiceTypes, setExcludedServiceTypes] = useState<string[]>([]);
-  const [extraServiceTypes, setExtraServiceTypes] = useState<string[]>([]);
+  const [extraItems, setExtraItems] = useState<ItemDraft[]>([]);
+  const [newItemServiceType, setNewItemServiceType] = useState('');
+  const [serviceTypeCustom, setServiceTypeCustom] = useState('');
+  const [customerRequirements, setCustomerRequirements] = useState('');
   const [serviceTypeFromAppointment, setServiceTypeFromAppointment] = useState(false);
   const deliveryType = getDefaultDeliveryType(serviceType) || DeliveryType.SHOP_FABRICATED;
   const [materialType, setMaterialType] = useState('');
@@ -91,13 +217,39 @@ export function CreateProjectPage() {
   const isUploading = Object.values(uploads).some(Boolean);
   const availableOcularSlots = useAvailableSlots(ocularVisitDate, 'ocular');
 
-  function selectDesign(template: DesignTemplate) {
-    setSelectedDesign(template);
-    setMaterialType(template.material);
-    setFinishColor(template.finish);
-    setPreferredDesign(template.preferredDesign);
-    setSpecifications(mergeSpecificationsWithDefaults(serviceType, template.suggestedSpecifications || specifications));
-    setLineItems(template.suggestedLineItems.map((item) => ({ ...item })));
+  const primaryDraft: ItemDraft = {
+    serviceType,
+    serviceTypeCustom,
+    selectedDesign,
+    preferredDesign,
+    initialDesignKeys,
+    customerRequirements,
+    materials: materialType,
+    finishes: finishColor,
+    specifications,
+    lineItems,
+    measurementUnit,
+    ...attachments,
+  };
+
+  function patchPrimary(patch: Partial<ItemDraft>) {
+    if ('serviceTypeCustom' in patch) setServiceTypeCustom(patch.serviceTypeCustom!);
+    if ('selectedDesign' in patch) setSelectedDesign(patch.selectedDesign!);
+    if ('preferredDesign' in patch) setPreferredDesign(patch.preferredDesign!);
+    if ('initialDesignKeys' in patch) setInitialDesignKeys(patch.initialDesignKeys!);
+    if ('customerRequirements' in patch) setCustomerRequirements(patch.customerRequirements!);
+    if ('materials' in patch) setMaterialType(patch.materials!);
+    if ('finishes' in patch) setFinishColor(patch.finishes!);
+    if ('specifications' in patch) setSpecifications(patch.specifications!);
+    if ('lineItems' in patch) setLineItems(patch.lineItems!);
+    if ('measurementUnit' in patch) setMeasurementUnit(patch.measurementUnit!);
+    for (const { key } of attachmentGroups) {
+      if (key in patch) setAttachments((current) => ({ ...current, [key]: patch[key]! }));
+    }
+  }
+
+  function trackUpload(key: string, active: boolean) {
+    setUploads((current) => current[key] === active ? current : { ...current, [key]: active });
   }
 
   useEffect(() => {
@@ -138,9 +290,7 @@ export function CreateProjectPage() {
     type,
     appointmentReports.find((report) => report.serviceType === type)?.serviceTypeCustom,
   ));
-  const checkedServiceTypes = linkedServiceTypes.filter((type) => type === serviceType || !excludedServiceTypes.includes(type));
-  // Walk-in customers have no appointment, so sales picks any extra services by hand.
-  const manualExtraServiceTypes = extraServiceTypes.filter((type) => type !== serviceType);
+  const usedServiceTypes = [serviceType, ...extraItems.map((item) => item.serviceType)];
   const detailsSource = primaryReport || appointment.data?.customerSiteDetails;
   const defaultTitle = linkedServiceLabels.length
     ? `${linkedServiceLabels.join(' & ')} Project`.slice(0, 100)
@@ -190,6 +340,15 @@ export function CreateProjectPage() {
 
     setServiceType(appointmentServiceType);
     setServiceTypeFromAppointment(true);
+    setServiceTypeCustom(primaryReport?.serviceTypeCustom || appointment.data.serviceTypeCustom || siteDetails?.serviceTypeCustom || '');
+    setCustomerRequirements((primaryReport || siteDetails)?.customerRequirements || '');
+    // A pending ocular project already has its items from the visit reports.
+    setExtraItems(pendingProjectId ? [] : linkedServiceTypes.filter((type) => type !== appointmentServiceType).map((type) => newItemDraft(
+      type,
+      appointmentReports.find((report) => report.serviceType === type),
+      appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === type),
+      appointment.data?.serviceTypeCustom || siteDetails?.serviceTypeCustom,
+    )));
     setSelectedDesign(sourceTemplate || null);
     setMaterialType(primaryReport?.materials || siteDetails?.materials || sourceTemplate?.material || '');
     setFinishColor(primaryReport?.finishes || siteDetails?.finishes || sourceTemplate?.finish || '');
@@ -260,13 +419,13 @@ export function CreateProjectPage() {
     const form = new FormData(event.currentTarget);
     const value = (name: string) => String(form.get(name) || '').trim();
     const title = defaultTitle
-      || `${serviceLabel(serviceType, value('serviceTypeCustom')) || 'Custom'} Project`.slice(0, 100);
+      || `${[serviceType, ...extraItems.map((item) => item.serviceType)].map((type, index) => serviceLabel(type, index ? extraItems[index - 1]!.serviceTypeCustom : serviceTypeCustom) || 'Custom').join(' & ')} Project`.slice(0, 100);
     const description = value('description');
     if (!serviceType || !deliveryType) {
       toast.error('Complete the required project information.');
       return;
     }
-    if (lineItems.some((item) => !item.label.trim() || item.quantity < 1)) {
+    if ([lineItems, ...extraItems.map((item) => item.lineItems)].flat().some((item) => !item.label.trim() || item.quantity < 1)) {
       toast.error('Complete the component name and quantity for each measurement item.');
       return;
     }
@@ -318,17 +477,26 @@ export function CreateProjectPage() {
         appointmentId: appointmentId || undefined,
         title,
         serviceType,
-        serviceTypes: linkedServiceTypes.length > 1
-          ? checkedServiceTypes
-          : !linkedServiceTypes.length && manualExtraServiceTypes.length ? [serviceType, ...manualExtraServiceTypes] : undefined,
+        serviceTypes: pendingProjectId ? undefined : usedServiceTypes,
+        additionalItems: extraItems.map(({ selectedDesign: design, ...item }) => ({
+          ...item,
+          serviceTypeCustom: item.serviceTypeCustom || undefined,
+          preferredDesign: item.preferredDesign || undefined,
+          customerRequirements: item.customerRequirements || undefined,
+          materials: item.materials || undefined,
+          finishes: item.finishes || undefined,
+          selectedDesignTemplateId: design?.id,
+          selectedDesignTemplateName: design?.title,
+          selectedDesignTemplateImageUrl: storableImageUrl(design?.imageUrl),
+        })),
         deliveryType,
         description: description || undefined,
-        serviceTypeCustom: value('serviceTypeCustom') || undefined,
+        serviceTypeCustom: serviceTypeCustom || undefined,
         measurementUnit,
         lineItems,
         specifications,
         preferredDesign: preferredDesign || undefined,
-        customerRequirements: value('customerRequirements') || undefined,
+        customerRequirements: customerRequirements || undefined,
         initialDesignKeys,
         initialDesignNotes: cleanSalesNotes(initialDesignNotes),
         selectedDesignTemplateId: selectedDesign?.id || sourceSelectedDesignId,
@@ -337,8 +505,8 @@ export function CreateProjectPage() {
           ? undefined
           : selectedDesign?.imageUrl || sourceSelectedDesignImage || undefined,
         ...attachments,
-        materialType: value('materialType') || undefined,
-        finishColor: value('finishColor') || undefined,
+        materialType: materialType || undefined,
+        finishColor: finishColor || undefined,
         notes: value('notes') || undefined,
         contractFileKey: contractFileKeys[0],
       });
@@ -565,128 +733,81 @@ export function CreateProjectPage() {
             <CardHeader>
               <CardTitle>Project Information</CardTitle>
               <CardDescription>
-                {linkedServiceTypes.length > 1
-                  ? 'This appointment has more than one item. Each checked item becomes a separate item inside this project.'
+                {extraItems.length
+                  ? `This project has ${extraItems.length + 1} items. Each item has its own details, design, and attachments below.`
                   : 'Project ID, delivery type, and appointment/ocular details are filled automatically.'}
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              {linkedServiceTypes.length > 1 && (
-                <fieldset className="space-y-2">
-                  <legend className="text-sm font-medium">Service Items</legend>
-                  {linkedServiceTypes.map((type, index) => {
-                    const design = appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === type);
-                    const isPrimary = type === serviceType;
-                    return (
-                      <label key={type} className="flex items-center gap-3 rounded-lg border border-border p-3">
-                        <input
-                          type="checkbox"
-                          checked={checkedServiceTypes.includes(type)}
-                          disabled={isPrimary}
-                          onChange={(event) => setExcludedServiceTypes((current) => (
-                            event.target.checked ? current.filter((value) => value !== type) : [...current, type]
-                          ))}
-                          className="size-4 accent-[#f5b400]"
-                        />
-                        {design?.imageUrl && <img src={design.imageUrl} alt="" className="size-10 rounded object-cover" />}
-                        <span className="min-w-0 text-sm">
-                          <span className="font-medium">{linkedServiceLabels[index]}</span>
-                          {isPrimary && <span className="ml-2 text-xs text-muted-foreground">(primary)</span>}
-                          {design?.name && <span className="block truncate text-xs text-muted-foreground">{design.name}</span>}
-                        </span>
-                      </label>
-                    );
-                  })}
-                  <p className="text-xs text-muted-foreground">The Service Type below is the primary item. The form details and design on this page apply to it. Edit the other items on the project page after you create it.</p>
-                </fieldset>
+              {linkedServiceTypes.length > 1 && !pendingProjectId ? (
+                <div className="space-y-1">
+                  <p className="text-sm font-medium">Primary Item</p>
+                  <p className="text-sm">{serviceLabel(serviceType, serviceTypeCustom)}</p>
+                  <p className="text-xs text-muted-foreground">Taken from the appointment. Each appointment item gets its own section below.</p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <Label htmlFor="project-service">Service Type</Label>
+                  <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
+                    setServiceType(event.target.value);
+                    setServiceTypeFromAppointment(false);
+                    setSelectedDesign(null);
+                    setExtraItems((current) => current.filter((item) => item.serviceType !== event.target.value));
+                  }} className={selectClassName}>
+                    <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
+                    {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                  </select>
+                  {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the appointment and visit report. You can change it if needed.</p>}
+                  {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
+                </div>
               )}
-              <div className="space-y-2">
-                <Label htmlFor="project-service">Service Type</Label>
-                <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
-                  setServiceType(event.target.value);
-                  setServiceTypeFromAppointment(false);
-                  setSelectedDesign(null);
-                }} className={selectClassName}>
-                  <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
-                  {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
-                {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the appointment and visit report. You can change it if needed.</p>}
-                {!linkedServiceTypes.length && serviceType && (
-                  <fieldset className="space-y-2 pt-2">
-                    <legend className="text-sm font-medium">Additional Items (optional)</legend>
-                    <p className="text-xs text-muted-foreground">For a walk-in customer who orders more than one item. Each checked service becomes a separate item inside this project.</p>
-                    <div className="grid gap-2 sm:grid-cols-2">
-                      {Object.entries(SERVICE_TYPE_LABELS).filter(([value]) => value !== serviceType).map(([value, label]) => (
-                        <label key={value} className="flex items-center gap-2 rounded-lg border border-border p-2 text-sm">
-                          <input
-                            type="checkbox"
-                            checked={manualExtraServiceTypes.includes(value)}
-                            onChange={(event) => setExtraServiceTypes((current) => (
-                              event.target.checked ? [...current, value] : current.filter((type) => type !== value)
-                            ))}
-                            className="size-4 accent-[#f5b400]"
-                          />
-                          {label}
-                        </label>
-                      ))}
-                    </div>
-                  </fieldset>
-                )}
-                {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
-              </div>
               <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work (optional)</Label><Textarea id="project-description" name="description" maxLength={2000} rows={3} defaultValue={pendingProject.data?.description} /></div>
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div className="space-y-2"><Label htmlFor="project-material">Material Type</Label><Input id="project-material" name="materialType" maxLength={1000} value={materialType} onChange={(event) => setMaterialType(event.target.value)} list="project-material-options" /></div>
-                <div className="space-y-2"><Label htmlFor="project-finish">Finish / Color</Label><Input id="project-finish" name="finishColor" maxLength={500} value={finishColor} onChange={(event) => setFinishColor(event.target.value)} list="project-finish-options" /></div>
-              </div>
               <div className="space-y-2"><Label htmlFor="project-notes">Project Notes</Label><Textarea id="project-notes" name="notes" maxLength={2000} rows={3} defaultValue={defaultNotes} /></div>
             </CardContent>
           </Card>
 
-          <Card>
-            <CardHeader><CardTitle>Project Details &amp; Design</CardTitle></CardHeader>
-            <CardContent className="min-w-0 space-y-5">
-              {serviceType === 'custom' && <div className="space-y-2"><Label htmlFor="project-custom-service">Custom Service</Label><Input id="project-custom-service" name="serviceTypeCustom" maxLength={200} defaultValue={primaryReport?.serviceTypeCustom || appointment.data?.serviceTypeCustom || appointment.data?.customerSiteDetails?.serviceTypeCustom} /></div>}
-              {serviceType && <DesignTemplateSelector serviceType={serviceType} selectedTemplateId={selectedDesign?.id || sourceSelectedDesignId} onSelect={selectDesign} />}
-              <div className="space-y-3">
-                <div>
-                  <Label>Preferred Design</Label>
-                  <p className="mt-1 text-xs text-muted-foreground">Upload the customer's preferred design images, then add a short description below.</p>
-                </div>
-                <FileUpload
-                  folder="projects/initial-design"
-                  accept="image/*"
-                  maxSizeMB={5}
-                  maxFiles={10}
-                  label="Upload Preferred Design Images"
-                  existingKeys={initialDesignKeys}
-                  onUploadComplete={setInitialDesignKeys}
-                  onUploadingChange={(active) => setUploads((current) => current.initialDesign === active ? current : { ...current, initialDesign: active })}
-                />
-                <div className="space-y-2">
-                  <Label htmlFor="project-preferred-design">Description</Label>
-                  <Textarea
-                    id="project-preferred-design"
-                    value={preferredDesign}
-                    onChange={(event) => setPreferredDesign(event.target.value)}
-                    maxLength={1000}
-                    rows={3}
-                    placeholder="Describe the preferred style, layout, finish, or other design details."
-                  />
-                </div>
-              </div>
-              <div className="space-y-2"><Label htmlFor="project-requirements">Customer Requirements</Label><Textarea id="project-requirements" name="customerRequirements" maxLength={2000} defaultValue={detailsSource?.customerRequirements} /></div>
-              {serviceType && <ServiceSpecificationForm serviceType={serviceType} value={specifications} onChange={setSpecifications} />}
-              <div className="space-y-3"><h2 className="font-semibold">Component Measurements</h2><LineItemsEditor items={lineItems} unit={measurementUnit} onItemsChange={setLineItems} onUnitChange={setMeasurementUnit} showNotes={false} /></div>
-            </CardContent>
-          </Card>
+          <ItemDetailsFields
+            idPrefix="project"
+            heading={extraItems.length ? 'Item 1 · Primary' : undefined}
+            draft={primaryDraft}
+            fallbackTemplateId={sourceSelectedDesignId}
+            onChange={patchPrimary}
+            onUploadingChange={trackUpload}
+          />
 
-          <Card>
-            <CardHeader><CardTitle>Project Attachments</CardTitle></CardHeader>
-            <CardContent className="grid min-w-0 gap-5 sm:grid-cols-2">
-              {attachmentGroups.map((group) => <div key={group.key} className="min-w-0"><FileUpload folder={group.folder} accept={group.accept} maxSizeMB={group.maxSizeMB} maxFiles={group.maxFiles} label={group.label} existingKeys={attachments[group.key]} onUploadComplete={(keys) => setAttachments((current) => ({ ...current, [group.key]: keys }))} onUploadingChange={(active) => setUploads((current) => current[group.key] === active ? current : { ...current, [group.key]: active })} /></div>)}
-            </CardContent>
-          </Card>
+          {extraItems.map((item, index) => (
+            <ItemDetailsFields
+              key={item.serviceType}
+              idPrefix={`item-${item.serviceType}`}
+              heading={`Item ${index + 2}`}
+              draft={item}
+              onChange={(patch) => setExtraItems((current) => current.map((entry) => entry.serviceType === item.serviceType ? { ...entry, ...patch } : entry))}
+              onUploadingChange={trackUpload}
+              onRemove={() => {
+                setExtraItems((current) => current.filter((entry) => entry.serviceType !== item.serviceType));
+                setUploads((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`item-${item.serviceType}-`))));
+              }}
+            />
+          ))}
+
+          {serviceType && !pendingProjectId && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Add Another Item</CardTitle>
+                <CardDescription>Use this when the customer orders more than one item, for example a walk-in customer who needs a gate and a railing.</CardDescription>
+              </CardHeader>
+              <CardContent className="flex flex-col gap-3 sm:flex-row">
+                <select aria-label="Service for the new item" value={newItemServiceType} onChange={(event) => setNewItemServiceType(event.target.value)} className={selectClassName}>
+                  <option value="">Select a service</option>
+                  {Object.entries(SERVICE_TYPE_LABELS).filter(([value]) => !usedServiceTypes.includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
+                </select>
+                <Button type="button" variant="outline" className="shrink-0" disabled={!newItemServiceType} onClick={() => {
+                  setExtraItems((current) => [...current, newItemDraft(newItemServiceType)]);
+                  setNewItemServiceType('');
+                }}><Plus className="h-4 w-4" />Add Item</Button>
+              </CardContent>
+            </Card>
+          )}
 
           </>}
 
