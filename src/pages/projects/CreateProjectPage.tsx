@@ -40,6 +40,11 @@ function serviceLabel(serviceType?: string, custom?: string) {
   return serviceType ? SERVICE_TYPE_LABELS[serviceType] || serviceType : '';
 }
 
+function formatSlotTime(slot: string) {
+  const [hour = 0, minute = 0] = slot.split(':').map(Number);
+  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
+}
+
 function localDateAfter(days: number) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -716,7 +721,7 @@ export function CreateProjectPage() {
                     >
                       <option value="">{availableOcularSlots.isLoading ? 'Checking slots…' : 'Select an available time'}</option>
                       {availableOcularSlots.data?.slots.filter((slot) => slot.available).map((slot) => (
-                        <option key={slot.slotCode} value={slot.slotCode}>{slot.slotCode}</option>
+                        <option key={slot.slotCode} value={slot.slotCode}>{formatSlotTime(slot.slotCode)}</option>
                       ))}
                     </select>
                     {ocularVisitDate && !availableOcularSlots.isLoading && availableOcularSlots.data?.slots.every((slot) => !slot.available) && (

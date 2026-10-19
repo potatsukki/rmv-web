@@ -80,11 +80,14 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
   const [proofImageUrl, setProofImageUrl] = useState('');
   const [proofViewOpen, setProofViewOpen] = useState(false);
 
+  // Anything not waiting on an online proof is an unpaid booking the cashier can collect cash for (walk-ins included).
+  const isRecordingCash = appointments?.find((appointment) => appointment._id === verifyId)?.ocularFeeStatus !== 'proof_submitted';
+
   const handleVerify = async () => {
     try {
-      if (appointments?.find((appointment) => appointment._id === verifyId)?.ocularFeeStatus === 'cash_pending') await recordCash.mutateAsync(verifyId);
+      if (isRecordingCash) await recordCash.mutateAsync(verifyId);
       else await verifyMutation.mutateAsync(verifyId);
-      toast.success('Ocular fee verified');
+      toast.success(isRecordingCash ? 'Cash payment recorded' : 'Ocular fee verified');
       setVerifyId('');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Verification failed'));
@@ -194,6 +197,14 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
                       )}
                     </span>
                   </div>
+                  {appt.ocularFeePaymentMethod && (
+                    <div>
+                      <span className="text-[#6e6e73] dark:text-slate-300">Method: </span>
+                      <span className="font-medium text-[#1d1d1f] dark:text-slate-100">
+                        {({ qrph: 'QR Ph (PayMongo)', cash: 'Cash', gcash: 'GCash' } as Record<string, string>)[appt.ocularFeePaymentMethod] || appt.ocularFeePaymentMethod}
+                      </span>
+                    </div>
+                  )}
                   {appt.ocularFeeReferenceNumber && (
                     <div>
                       <span className="text-[#6e6e73] dark:text-slate-300">Ref: </span>
@@ -226,7 +237,7 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
                       View Proof
                     </Button>
                   )}
-                  {isCashier && appt.ocularFeeStatus === 'cash_pending' && <Button size="sm" onClick={() => setVerifyId(appt._id)}>Record Cash Received</Button>}
+                  {isCashier && ['pending', 'declined', 'cash_pending'].includes(appt.ocularFeeStatus || '') && <Button size="sm" onClick={() => setVerifyId(appt._id)}>Record Cash Received</Button>}
                   {appt.ocularFeeStatus === 'proof_submitted' && (
                     <>
                       <Button
@@ -263,9 +274,11 @@ export function OcularFeeQueuePage({ isEmbedded = false }: { isEmbedded?: boolea
       <ConfirmDialog
         open={!!verifyId}
         onOpenChange={(open) => !open && setVerifyId('')}
-        title="Verify Ocular Fee"
-        description="Confirm that this customer's ocular fee payment has been received. The assigned sales staff can then finalize and proceed with the ocular visit."
-        confirmLabel="Verify"
+        title={isRecordingCash ? 'Record Cash Payment' : 'Verify Ocular Fee'}
+        description={isRecordingCash
+          ? 'Confirm that you received the full ocular fee in cash from this customer. The booking is then marked paid.'
+          : "Confirm that this customer's ocular fee payment has been received. The assigned sales staff can then finalize and proceed with the ocular visit."}
+        confirmLabel={isRecordingCash ? 'Record Cash' : 'Verify'}
         isLoading={verifyMutation.isPending || recordCash.isPending}
         onConfirm={handleVerify}
       />
