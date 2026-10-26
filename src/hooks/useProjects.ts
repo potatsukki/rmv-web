@@ -146,20 +146,6 @@ export function useUpdateProject() {
   });
 }
 
-export function useUpdateProjectSiteAddress() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, siteAddress }: { id: string; siteAddress: string }) => {
-      const { data } = await api.patch<ApiResponse<Project>>(`/projects/${id}/site-address`, { siteAddress });
-      return data.data;
-    },
-    onSuccess: (project) => {
-      syncProjectCaches(qc, project);
-      qc.invalidateQueries({ queryKey: KEYS.all });
-    },
-  });
-}
-
 export function useAssignEngineers() {
   const qc = useQueryClient();
   return useMutation({
