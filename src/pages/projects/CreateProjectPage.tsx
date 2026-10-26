@@ -250,9 +250,9 @@ export function CreateProjectPage() {
   const [ocularVisitDate, setOcularVisitDate] = useState('');
   const [ocularVisitSlot, setOcularVisitSlot] = useState('');
   const [isCheckingOcular, setIsCheckingOcular] = useState(false);
-  const [ocularPin, setOcularPin] = useState<MapPoint | null>(null);
-  const [ocularAddress, setOcularAddress] = useState('');
-  const [ocularPinFromProfile, setOcularPinFromProfile] = useState(false);
+  const [sitePin, setSitePin] = useState<MapPoint | null>(null);
+  const [siteAddress, setSiteAddress] = useState('');
+  const [sitePinFromProfile, setSitePinFromProfile] = useState(false);
   const [seededCustomerId, setSeededCustomerId] = useState<string>();
   const [ocularFee, setOcularFee] = useState<OcularFeePreview | null>(null);
   const [ocularFeeLoading, setOcularFeeLoading] = useState(false);
@@ -360,13 +360,13 @@ export function CreateProjectPage() {
     const saved = [customer.addressData, ...(customer.savedAddresses || [])]
       .find((address) => address?.lat != null && address?.lng != null);
     setSeededCustomerId(customer._id);
-    setOcularPin(saved ? { lat: saved.lat!, lng: saved.lng! } : null);
-    setOcularAddress(saved?.formattedAddress || '');
-    setOcularPinFromProfile(Boolean(saved));
+    setSitePin(saved ? { lat: saved.lat!, lng: saved.lng! } : null);
+    setSiteAddress(saved?.formattedAddress || '');
+    setSitePinFromProfile(Boolean(saved));
   }
 
   useEffect(() => {
-    if (projectPath !== 'ocular' || !ocularPin) {
+    if (projectPath !== 'ocular' || !sitePin) {
       setOcularFee(null);
       setOcularFeeError(null);
       return;
@@ -376,7 +376,7 @@ export function CreateProjectPage() {
       setOcularFeeLoading(true);
       setOcularFeeError(null);
       try {
-        const preview = await fetchOcularFeePreview(ocularPin);
+        const preview = await fetchOcularFeePreview(sitePin);
         if (!cancelled) setOcularFee(preview);
       } catch {
         if (!cancelled) {
@@ -388,7 +388,7 @@ export function CreateProjectPage() {
       }
     }, 500);
     return () => { cancelled = true; clearTimeout(timer); };
-  }, [projectPath, ocularPin]);
+  }, [projectPath, sitePin]);
 
   useEffect(() => {
     const sourceCustomer = pendingProject.data?.customerId || appointment.data?.customerId;
@@ -472,7 +472,7 @@ export function CreateProjectPage() {
         toast.error('Select an available ocular visit time.');
         return;
       }
-      if (!ocularPin) {
+      if (!sitePin) {
         toast.error('Pin the project site location.');
         return;
       }
@@ -485,8 +485,8 @@ export function CreateProjectPage() {
           ocularVisit: {
             date: ocularVisitDate,
             slotCode: ocularVisitSlot,
-            customerLocation: ocularPin,
-            formattedAddress: ocularAddress || undefined,
+            customerLocation: sitePin,
+            formattedAddress: siteAddress || undefined,
           },
           initialDesignNotes: cleanSalesNotes(initialDesignNotes),
         });
@@ -495,6 +495,11 @@ export function CreateProjectPage() {
       } catch (error) {
         toast.error(extractErrorMessage(error, 'Failed to save ocular visit.'));
       }
+      return;
+    }
+    // Complete Project keeps the ocular pin; a direct project needs its site pinned here.
+    if (!pendingProjectId && !sitePin) {
+      toast.error('Pin the project site location.');
       return;
     }
     if (!contractFileKeys[0]) {
@@ -577,6 +582,9 @@ export function CreateProjectPage() {
         })),
         deliveryType,
         description: description || undefined,
+        siteAddress: !pendingProjectId && sitePin
+          ? siteAddress || `${sitePin.lat.toFixed(6)}, ${sitePin.lng.toFixed(6)}`
+          : undefined,
         serviceTypeCustom: serviceTypeCustom || undefined,
         measurementUnit,
         lineItems,
@@ -607,6 +615,36 @@ export function CreateProjectPage() {
 
   if (pendingProjectId && pendingProject.isLoading) return <PageLoader />;
   if (pendingProjectId && (pendingProject.isError || !pendingProject.data)) return <PageError onRetry={pendingProject.refetch} />;
+
+  // Sales staff set the project site on both paths; fabricators only see it.
+  const sitePinField = (
+    <>
+      <div>
+        <Label>Project Site Map Pin</Label>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {sitePinFromProfile
+            ? "Auto-filled from the customer's profile. Move the pin if the project site is different."
+            : 'Search, use the current location, or tap the map to pin the project site.'}
+        </p>
+      </div>
+      <Suspense fallback={<div className="flex min-h-56 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
+        <LazyLocationPicker
+          value={sitePin}
+          address={siteAddress}
+          onChange={(nextLocation, nextAddress) => {
+            setSitePin(nextLocation);
+            setSiteAddress(nextAddress || '');
+          }}
+        />
+      </Suspense>
+      {siteAddress && (
+        <div className="rounded-lg border bg-background p-3">
+          <p className="text-xs font-medium text-muted-foreground">Project site address</p>
+          <p className="mt-1 break-words text-sm">{siteAddress}</p>
+        </div>
+      )}
+    </>
+  );
 
   return (
     <div className="mx-auto max-w-4xl space-y-6">
@@ -815,30 +853,7 @@ export function CreateProjectPage() {
                     )}
                   </div>
                   <div className="space-y-3 sm:col-span-2">
-                    <div>
-                      <Label>Project Site Map Pin</Label>
-                      <p className="mt-1 text-xs text-muted-foreground">
-                        {ocularPinFromProfile
-                          ? "Auto-filled from the customer's profile. Move the pin if the project site is different."
-                          : 'Search, use the current location, or tap the map to pin the project site.'}
-                      </p>
-                    </div>
-                    <Suspense fallback={<div className="flex min-h-56 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
-                      <LazyLocationPicker
-                        value={ocularPin}
-                        address={ocularAddress}
-                        onChange={(nextLocation, nextAddress) => {
-                          setOcularPin(nextLocation);
-                          setOcularAddress(nextAddress || '');
-                        }}
-                      />
-                    </Suspense>
-                    {ocularAddress && (
-                      <div className="rounded-lg border bg-background p-3">
-                        <p className="text-xs font-medium text-muted-foreground">Project site address</p>
-                        <p className="mt-1 break-words text-sm">{ocularAddress}</p>
-                      </div>
-                    )}
+                    {sitePinField}
                     {ocularFeeLoading && (
                       <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Calculating visit fee…</p>
                     )}
@@ -855,6 +870,12 @@ export function CreateProjectPage() {
                       </div>
                     )}
                   </div>
+                </div>
+              )}
+
+              {projectPath === 'direct' && (
+                <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
+                  {sitePinField}
                 </div>
               )}
             </CardContent>

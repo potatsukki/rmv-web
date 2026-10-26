@@ -16,7 +16,6 @@ const { state, mutation } = vi.hoisted(() => ({
 
 vi.mock('@/hooks/useProjects', () => ({
   useProject: () => ({ data: state.project }),
-  useUpdateProjectSiteAddress: () => mutation,
   useConfirmInstallation: () => mutation,
 }));
 vi.mock('@/hooks/useFabrication', () => ({
@@ -52,35 +51,24 @@ describe('FabricationTab project site address', () => {
     };
   });
 
-  it.each(['fabricator-1', 'assistant-1'])('shows the address editor to assigned member %s', (memberId) => {
-    state.user._id = memberId;
-    const html = renderTab();
-    expect(html).toContain('id="fabrication-site-address"');
-    expect(html).toContain('123 Project Street');
-    expect(html).toContain('Save Address');
-  });
-
-  it('allows the fabricator to add the first address', () => {
-    state.project.siteAddress = undefined;
-    expect(renderTab()).toContain('id="fabrication-site-address"');
-  });
-
-  it.each([Role.SALES_STAFF, Role.ENGINEER, Role.CUSTOMER])('shows a saved address without an editor to %s', (role) => {
+  // The site comes from the ocular pin or from Create Project; nobody edits it here.
+  it.each([Role.FABRICATION_STAFF, Role.ADMIN, Role.SALES_STAFF, Role.ENGINEER, Role.CUSTOMER])('shows the site address read only to %s', (role) => {
     state.user.roles = [role];
     const html = renderTab();
     expect(html).toContain('123 Project Street');
+    expect(html).toContain('Set by sales staff in Create Project.');
     expect(html).not.toContain('Save Address');
-    expect(html).not.toContain('id="fabrication-site-address"');
+    expect(html).not.toContain('<textarea id="fabrication-site-address"');
   });
 
-  it('hides the editor from an unassigned fabricator', () => {
-    state.user._id = 'other-fabricator';
-    expect(renderTab(false)).not.toContain('Save Address');
+  it('labels an address that comes from the ocular visit pin', () => {
+    state.project.ocularAppointmentId = 'ocular-1';
+    expect(renderTab()).toContain('From the ocular visit pin.');
   });
 
-  it('keeps completed projects read only', () => {
-    state.project.status = 'completed';
-    expect(renderTab()).not.toContain('Save Address');
+  it('says when no site address is set yet', () => {
+    state.project.siteAddress = undefined;
+    expect(renderTab()).toContain('No project site address yet.');
   });
 
   it.each([Role.CUSTOMER, Role.FABRICATION_STAFF, Role.SALES_STAFF, Role.ENGINEER])('shows the six on-site lifecycle markers in order to %s', (role) => {
