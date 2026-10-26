@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, FolderPlus, Loader2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
@@ -27,7 +27,13 @@ import { FINISH_OPTIONS, MATERIAL_OPTIONS, mergeSpecificationsWithDefaults } fro
 import { SuggestionInput } from '@/components/shared/SuggestionInput';
 import { GalleryUpload } from '@/components/shared/PhotoUploadGrid';
 import { extractErrorMessage } from '@/lib/utils';
+import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
+
+const LazyLocationPicker = lazy(() =>
+  import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
+);
+const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
 
 const selectClassName = 'h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring';
 const attachmentGroups = [
@@ -244,6 +250,13 @@ export function CreateProjectPage() {
   const [ocularVisitDate, setOcularVisitDate] = useState('');
   const [ocularVisitSlot, setOcularVisitSlot] = useState('');
   const [isCheckingOcular, setIsCheckingOcular] = useState(false);
+  const [ocularPin, setOcularPin] = useState<MapPoint | null>(null);
+  const [ocularAddress, setOcularAddress] = useState('');
+  const [ocularPinFromProfile, setOcularPinFromProfile] = useState(false);
+  const [seededCustomerId, setSeededCustomerId] = useState<string>();
+  const [ocularFee, setOcularFee] = useState<OcularFeePreview | null>(null);
+  const [ocularFeeLoading, setOcularFeeLoading] = useState(false);
+  const [ocularFeeError, setOcularFeeError] = useState<string | null>(null);
   const isUploading = Object.values(uploads).some(Boolean);
   const availableOcularSlots = useAvailableSlots(ocularVisitDate, 'ocular');
 
@@ -342,6 +355,41 @@ export function CreateProjectPage() {
   });
   const customer = selectedCustomer || customerLookup.data;
 
+  // Pre-fill the ocular site from the customer's saved profile address; sales can move the pin.
+  if (customer && customer._id !== seededCustomerId) {
+    const saved = [customer.addressData, ...(customer.savedAddresses || [])]
+      .find((address) => address?.lat != null && address?.lng != null);
+    setSeededCustomerId(customer._id);
+    setOcularPin(saved ? { lat: saved.lat!, lng: saved.lng! } : null);
+    setOcularAddress(saved?.formattedAddress || '');
+    setOcularPinFromProfile(Boolean(saved));
+  }
+
+  useEffect(() => {
+    if (projectPath !== 'ocular' || !ocularPin) {
+      setOcularFee(null);
+      setOcularFeeError(null);
+      return;
+    }
+    let cancelled = false;
+    const timer = setTimeout(async () => {
+      setOcularFeeLoading(true);
+      setOcularFeeError(null);
+      try {
+        const preview = await fetchOcularFeePreview(ocularPin);
+        if (!cancelled) setOcularFee(preview);
+      } catch {
+        if (!cancelled) {
+          setOcularFee(null);
+          setOcularFeeError('Unable to calculate the route to this location. Select a reachable land location.');
+        }
+      } finally {
+        if (!cancelled) setOcularFeeLoading(false);
+      }
+    }, 500);
+    return () => { cancelled = true; clearTimeout(timer); };
+  }, [projectPath, ocularPin]);
+
   useEffect(() => {
     const sourceCustomer = pendingProject.data?.customerId || appointment.data?.customerId;
     if (!sourceCustomer) return;
@@ -424,13 +472,22 @@ export function CreateProjectPage() {
         toast.error('Select an available ocular visit time.');
         return;
       }
+      if (!ocularPin) {
+        toast.error('Pin the project site location.');
+        return;
+      }
       try {
         await createProject.mutateAsync({
           customerId,
           appointmentId: appointmentId || undefined,
           title: defaultTitle || undefined,
           serviceType: serviceType || undefined,
-          ocularVisit: { date: ocularVisitDate, slotCode: ocularVisitSlot },
+          ocularVisit: {
+            date: ocularVisitDate,
+            slotCode: ocularVisitSlot,
+            customerLocation: ocularPin,
+            formattedAddress: ocularAddress || undefined,
+          },
           initialDesignNotes: cleanSalesNotes(initialDesignNotes),
         });
         toast.success('Ocular visit scheduled and saved.');
@@ -569,6 +626,12 @@ export function CreateProjectPage() {
         className="space-y-6"
       >
         <fieldset disabled={createProject.isPending || isCheckingOcular} className="min-w-0 space-y-6">
+          {projectPath !== 'ocular' && primaryReport?.visitType === 'ocular' && (
+            <div className="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
+              <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+              <p>Measurements and details were filled from the ocular visit report. Review them before creating the project.</p>
+            </div>
+          )}
           <Card>
             <CardHeader>
               <CardTitle>Select Customer</CardTitle>
@@ -714,7 +777,7 @@ export function CreateProjectPage() {
                 </button>
               </div>
 
-              {projectPath === 'ocular' && <p className="text-xs text-muted-foreground">Only the customer and visit schedule are required. A signed contract is needed when creating the final project.</p>}
+              {projectPath === 'ocular' && <p className="text-xs text-muted-foreground">Only the customer, visit schedule, and project site are required. A signed contract is needed when creating the final project.</p>}
 
               {projectPath === 'ocular' && (
                 <div className="grid gap-4 rounded-xl border bg-muted/30 p-4 sm:grid-cols-2">
@@ -749,6 +812,47 @@ export function CreateProjectPage() {
                     </select>
                     {ocularVisitDate && !availableOcularSlots.isLoading && availableOcularSlots.data?.slots.every((slot) => !slot.available) && (
                       <p className="text-xs text-destructive">No available ocular slots on this date.</p>
+                    )}
+                  </div>
+                  <div className="space-y-3 sm:col-span-2">
+                    <div>
+                      <Label>Project Site Map Pin</Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        {ocularPinFromProfile
+                          ? "Auto-filled from the customer's profile. Move the pin if the project site is different."
+                          : 'Search, use the current location, or tap the map to pin the project site.'}
+                      </p>
+                    </div>
+                    <Suspense fallback={<div className="flex min-h-56 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
+                      <LazyLocationPicker
+                        value={ocularPin}
+                        address={ocularAddress}
+                        onChange={(nextLocation, nextAddress) => {
+                          setOcularPin(nextLocation);
+                          setOcularAddress(nextAddress || '');
+                        }}
+                      />
+                    </Suspense>
+                    {ocularAddress && (
+                      <div className="rounded-lg border bg-background p-3">
+                        <p className="text-xs font-medium text-muted-foreground">Project site address</p>
+                        <p className="mt-1 break-words text-sm">{ocularAddress}</p>
+                      </div>
+                    )}
+                    {ocularFeeLoading && (
+                      <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Calculating visit fee…</p>
+                    )}
+                    {ocularFeeError && <p className="text-sm text-destructive">{ocularFeeError}</p>}
+                    {ocularFee && !ocularFeeLoading && (
+                      <div className="rounded-lg border bg-background p-3 text-sm">
+                        <p className="font-semibold">
+                          Ocular Visit Fee: {ocularFee.fee.isWithinNCR ? 'FREE (within Metro Manila)' : peso.format(ocularFee.fee.total)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          Distance: {ocularFee.route.distanceKm.toFixed(1)} km · ~{ocularFee.route.durationMinutes} min drive
+                          {!ocularFee.fee.isWithinNCR && ' · The customer pays this fee from their appointment page.'}
+                        </p>
+                      </div>
                     )}
                   </div>
                 </div>
@@ -841,7 +945,8 @@ export function CreateProjectPage() {
 
           </>}
 
-          <div className="flex flex-wrap justify-end gap-3">
+          {/* Sticky so the save button stays visible on long forms. */}
+          <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap justify-end gap-3 border-t bg-background/95 px-1 py-3 backdrop-blur">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
             <Button type="submit" disabled={isUploading || createProject.isPending || isCheckingOcular}>
               {createProject.isPending || isCheckingOcular ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}

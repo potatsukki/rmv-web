@@ -330,7 +330,7 @@ export function AppointmentsPage() {
       },
     ].filter((section) => section.items.length > 0);
   } else {
-    // Use the displayed workflow status so finished visits (e.g. "Appointment Done") do not push new bookings down.
+    // Use the displayed workflow status so finished visits (e.g. "Appointment Completed") do not push new bookings down.
     const isFinished = (a: Appointment) => resolveAppointmentWorkflowStatus(a).isTerminal;
     const upcomingItems = visibleAppointments
       .filter(a => !isFinished(a))

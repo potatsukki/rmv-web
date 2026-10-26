@@ -37,7 +37,7 @@ const APPOINTMENT_SLOT_DURATION_MS = 60 * 60 * 1000;
 type AppointmentWorkflowInput = Pick<
   Appointment,
   'status' | 'attendanceStatus' | 'ocularFeeStatus' | 'ocularFeePaid' | 'type'
-> & Partial<Pick<Appointment, 'date' | 'slotCode'>>;
+> & Partial<Pick<Appointment, 'date' | 'slotCode' | 'salesStaffId'>>;
 
 function hasElapsedAppointmentSlot(
   appointment: Pick<AppointmentWorkflowInput, 'date' | 'slotCode'>,
@@ -142,7 +142,7 @@ export function resolveAppointmentWorkflowStatus(
     appointment.type === 'office'
     && appointment.attendanceStatus === AppointmentAttendanceStatus.COMPLETED
   ) {
-    return { key: 'appointment_done', label: 'Appointment Done', tone: 'green', stage: 'completed', isTerminal: true };
+    return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
   }
   if (status === AppointmentStatus.COMPLETED) {
     return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
@@ -152,16 +152,16 @@ export function resolveAppointmentWorkflowStatus(
       || appointment.attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS)
     && hasElapsedAppointmentSlot(appointment, now)
   ) {
-    return { key: 'appointment_done', label: 'Appointment Done', tone: 'green', stage: 'completed', isTerminal: true };
+    return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
   }
   if (appointment.type === 'ocular' && appointment.ocularFeeStatus === 'pending' && !appointment.ocularFeePaid) {
     return { key: 'awaiting_ocular_fee', label: 'Awaiting Ocular Fee', tone: 'orange', stage: 'billing', isTerminal: false };
   }
-  if (status === AppointmentStatus.REQUESTED) {
-    return { key: 'appointment_requested', label: 'Appointment Requested', tone: 'yellow', stage: 'appointment', isTerminal: false };
-  }
-  if (status === AppointmentStatus.CONFIRMED) {
-    return { key: 'appointment_confirmed', label: 'Appointment Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false };
+  // Confirmed once the appointment agent assigns a sales staff; pending until then.
+  if (status === AppointmentStatus.REQUESTED || status === AppointmentStatus.CONFIRMED) {
+    return appointment.salesStaffId
+      ? { key: 'appointment_confirmed', label: 'Appointment Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false }
+      : { key: 'appointment_pending', label: 'Appointment Pending', tone: 'yellow', stage: 'appointment', isTerminal: false };
   }
   if (status === AppointmentStatus.RESCHEDULE_REQUESTED) {
     return { key: 'reschedule_requested', label: 'Reschedule Requested', tone: 'orange', stage: 'appointment', isTerminal: false };

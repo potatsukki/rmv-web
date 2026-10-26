@@ -51,7 +51,7 @@ describe('AppointmentsPage consultation status', () => {
 
     expect(html).toContain('APT-20261007-0002');
     // Both desktop and mobile badges must describe the completed consultation.
-    expect(html.match(/Appointment Done/g)).toHaveLength(2);
+    expect(html.match(/Appointment Completed/g)).toHaveLength(2);
     expect(html).not.toContain('Ready for Ocular');
   });
 });

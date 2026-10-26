@@ -69,7 +69,7 @@ describe('resolvePaymentWorkflowStatus', () => {
 });
 
 describe('resolveAppointmentWorkflowStatus', () => {
-  it('labels a finished office consultation as Appointment Done', () => {
+  it('labels a finished office consultation as Appointment Completed', () => {
     const completedConsultation = {
       status: AppointmentStatus.CONFIRMED,
       type: 'office',
@@ -79,10 +79,28 @@ describe('resolveAppointmentWorkflowStatus', () => {
     };
 
     expect(resolveAppointmentWorkflowStatus(completedConsultation)).toMatchObject({
-      key: 'appointment_done',
-      label: 'Appointment Done',
+      key: 'appointment_completed',
+      label: 'Appointment Completed',
       tone: 'green',
       isTerminal: true,
+    });
+  });
+
+  it('labels an appointment Pending until a sales staff is assigned, then Confirmed', () => {
+    const appointment = {
+      status: AppointmentStatus.CONFIRMED,
+      type: 'office',
+      ocularFeeStatus: undefined,
+      ocularFeePaid: false,
+    };
+
+    expect(resolveAppointmentWorkflowStatus(appointment)).toMatchObject({
+      key: 'appointment_pending',
+      label: 'Appointment Pending',
+    });
+    expect(resolveAppointmentWorkflowStatus({ ...appointment, salesStaffId: 'sales-1' })).toMatchObject({
+      key: 'appointment_confirmed',
+      label: 'Appointment Confirmed',
     });
   });
 
@@ -98,7 +116,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
   });
 
-  it('labels a stale in-progress appointment as Appointment Done after its slot', () => {
+  it('labels a stale in-progress appointment as Appointment Completed after its slot', () => {
     expect(resolveAppointmentWorkflowStatus({
       status: AppointmentStatus.IN_PROGRESS,
       type: 'ocular',
@@ -107,8 +125,8 @@ describe('resolveAppointmentWorkflowStatus', () => {
       ocularFeeStatus: undefined,
       ocularFeePaid: true,
     }, new Date('2026-10-01T08:40:00.000Z'))).toMatchObject({
-      key: 'appointment_done',
-      label: 'Appointment Done',
+      key: 'appointment_completed',
+      label: 'Appointment Completed',
       tone: 'green',
       isTerminal: true,
     });

@@ -81,7 +81,7 @@ const SHOP_FABRICATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
 ];
 
 const ON_SITE_INSTALLATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
-  { key: FabricationStatus.FABRICATION, label: 'Fabrication' },
+  { key: FabricationStatus.FABRICATION, label: 'Preparing Materials' },
   { key: FabricationStatus.WELDING_ASSEMBLY, label: 'Welding / Assembly' },
   { key: FabricationStatus.INSTALLATION, label: 'Installation' },
   { key: FabricationStatus.FINISHING, label: 'Finishing' },

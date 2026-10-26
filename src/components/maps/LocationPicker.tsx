@@ -195,7 +195,7 @@ export function LocationPicker({ value, address, onChange }: LocationPickerProps
   }, []);
 
   return (
-    <div className="space-y-3">
+    <div className="min-w-0 space-y-3">
       <div className="space-y-2">
         <div className="flex flex-col gap-2 sm:flex-row">
           <div className="relative flex-1">
@@ -297,7 +297,7 @@ export function LocationPicker({ value, address, onChange }: LocationPickerProps
                   zoom={13}
                   scrollWheelZoom
                   attributionControl={false}
-                  className="h-[320px] w-full"
+                  className="h-[clamp(220px,45vh,420px)] w-full"
                 >
                   <TileLayer
                     url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
@@ -341,7 +341,7 @@ export function LocationPicker({ value, address, onChange }: LocationPickerProps
         >
           <LocateFixed className="h-3.5 w-3.5 flex-shrink-0" />
           <span className="font-semibold whitespace-nowrap">Pinned Location</span>
-          <span className={`truncate ${isDark ? 'text-emerald-200/90' : 'text-emerald-600'}`}>
+          <span className={`min-w-0 truncate ${isDark ? 'text-emerald-200/90' : 'text-emerald-600'}`}>
             {isResolvingAddress ? 'Resolving address...' : address || 'Location selected on map'}
           </span>
         </div>
