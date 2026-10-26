@@ -1,5 +1,5 @@
 import { ServiceType } from './constants';
-import type { ServiceSpecifications } from './types';
+import type { ServiceSpecifications, VisitReport } from './types';
 
 export type SpecificationFieldType = 'text' | 'number' | 'textarea' | 'select' | 'checkbox';
 export type SpecificationSectionKey = keyof ServiceSpecifications;
@@ -414,6 +414,25 @@ export function hasMeaningfulSpecifications(specifications?: ServiceSpecificatio
     if (typeof value === 'number') return Number.isFinite(value);
     return value === true;
   }));
+}
+
+/**
+ * True when a visit report holds real measurements: measured line items, legacy dimensions,
+ * or numbers in the service-specific measurements form. Only numbers count there, since
+ * dropdowns like mount type are prefilled with defaults.
+ */
+export function visitReportHasMeasurements(report?: Pick<VisitReport, 'lineItems' | 'measurements' | 'specifications'> | null) {
+  if (!report) return false;
+  const hasLineItems = Boolean(report.lineItems?.some((item) =>
+    item.length != null || item.width != null || item.height != null || item.area != null || item.thickness != null,
+  ));
+  const legacy = report.measurements;
+  const hasLegacy = Boolean(legacy && (
+    legacy.length != null || legacy.width != null || legacy.height != null || legacy.area != null || legacy.thickness != null || legacy.raw
+  ));
+  const hasSpecs = Object.values(report.specifications?.measurements || {})
+    .some((value) => typeof value === 'number' && Number.isFinite(value));
+  return hasLineItems || hasLegacy || hasSpecs;
 }
 
 export function createDefaultSpecifications(serviceType?: string): ServiceSpecifications {

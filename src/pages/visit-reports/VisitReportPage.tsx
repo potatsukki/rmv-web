@@ -61,7 +61,7 @@ import {
 } from '@/lib/constants';
 import type { LineItem, ServiceSpecifications, SiteConditions, VisitReport } from '@/lib/types';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
-import { getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults, normalizeServiceSpecifications } from '@/lib/service-specifications';
+import { getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults, normalizeServiceSpecifications, visitReportHasMeasurements } from '@/lib/service-specifications';
 import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 
 
@@ -608,24 +608,7 @@ export function VisitReportPage() {
   const canEdit = isSalesStaff && (isDraft || isReturned);
   const canReturn =
     isEngineerOrAdmin && isSubmitted;
-  const reportHasMeasuredLineItems = Boolean(report.lineItems?.some((item) =>
-    item.length != null ||
-    item.width != null ||
-    item.height != null ||
-    item.area != null ||
-    item.thickness != null,
-  ));
-  const reportHasLegacyMeasurements = Boolean(
-    report.measurements && (
-      report.measurements.length != null ||
-      report.measurements.width != null ||
-      report.measurements.height != null ||
-      report.measurements.area != null ||
-      report.measurements.thickness != null ||
-      report.measurements.raw
-    ),
-  );
-  const reportHasMeasurements = reportHasMeasuredLineItems || reportHasLegacyMeasurements;
+  const reportHasMeasurements = visitReportHasMeasurements(report);
   const reportHasMeaningfulSpecifications = hasMeaningfulSpecifications(report.specifications);
   const canReopenForRepair = Boolean(
     effectiveVisitType === 'ocular' &&
@@ -1002,11 +985,23 @@ export function VisitReportPage() {
 
       toast.success(
         isOcular
-          ? `Ocular report submitted${pendingOcularSiblings.length ? ` for all ${pendingOcularSiblings.length + 1} items` : ''}. The appointment is complete.`
+          ? `Ocular report submitted${pendingOcularSiblings.length ? ` for all ${pendingOcularSiblings.length + 1} items` : ''}. Complete the project details next.`
           : 'Consultation completed. Create the project to choose whether an ocular visit is needed.',
         { duration: 5000 },
       );
       setSubmitOpen(false);
+
+      // A finished ocular visit goes straight to Create Project with the report's measurements prefilled.
+      if (isOcular && (isSalesStaff || isAdmin)) {
+        const projectId = submittedReport.linkedProjectId ? rawId(submittedReport.linkedProjectId) : linkedProjectId;
+        navigate(projectId
+          ? `/projects/create?pendingProjectId=${projectId}`
+          : `/projects/create?${new URLSearchParams({
+            customerId: rawId(report.customerId),
+            appointmentId,
+            visitReportId: savedReportId,
+          }).toString()}`);
+      }
     } catch (err) {
       setSubmitOpen(false);
       const message = extractErrorMessage(err, 'Failed to submit report');

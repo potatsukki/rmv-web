@@ -343,7 +343,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         roles: PROJECT_HELP_ROLES,
         body: [
           'Fabrication movement is sequential and guarded; not all statuses can be advanced if stage-payment prerequisites are unmet.',
-          'Quality check and later steps are especially sensitive to payment verification rules in mixed installment plans.',
+          'Installment plans unlock in three steps: the down payment starts fabrication, the second payment (During Installation, or Before Delivery for shop-fabricated orders) is needed before Installation or Ready for Delivery, and the final Upon Completion payment is needed before Done.',
           'If progression appears blocked, review payment stage status before investigating fabrication update permissions.',
         ],
         checklist: [

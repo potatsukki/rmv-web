@@ -17,7 +17,6 @@ import {
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/shared/StatusBadge';
-import { RescheduleAppointment } from '@/components/shared/RescheduleAppointment';
 import { PageLoader } from '@/components/shared/PageLoader';
 import { PageError } from '@/components/shared/PageError';
 import {
@@ -32,7 +31,8 @@ import {
   useAgentFinalizeOcular,
   useCustomerSubmitLocation,
 } from '@/hooks/useAppointments';
-import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
+import { useSubmitVisitReport, useVisitReportsByAppointment } from '@/hooks/useVisitReports';
+import { getVisitReportReferenceId } from '@/lib/visit-report-cache';
 
 import { useAuthStore } from '@/stores/auth.store';
 import { Role, AppointmentStatus, AppointmentAttendanceStatus, StaffAvailabilityStatus } from '@/lib/constants';
@@ -73,6 +73,7 @@ export function AppointmentDetailPage() {
   const rejectRescheduleMutation = useRejectReschedule();
   const cancelMutation = useCancelAppointment();
   const visitStatusMutation = useUpdateVisitStatus();
+  const submitReportMutation = useSubmitVisitReport();
   const attendanceMutation = useUpdateConsultationAttendance();
 
   const finalizeMutation = useAgentFinalizeOcular();
@@ -403,7 +404,7 @@ export function AppointmentDetailPage() {
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
   const appointmentWorkflowStatus = resolveAppointmentWorkflowStatus(appt);
-  const isConsultationDone = appointmentWorkflowStatus.key === 'appointment_done';
+  const isConsultationDone = appointmentWorkflowStatus.key === 'appointment_completed';
   const selectedDesignTemplates = appt.selectedDesignTemplates?.length
     ? appt.selectedDesignTemplates
     : appt.selectedDesignTemplateName
@@ -434,13 +435,27 @@ export function AppointmentDetailPage() {
     appt.status === AppointmentStatus.CONFIRMED &&
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
   );
-  // Only the appointment agent (and admin) may reschedule — customers and sales staff
-  // contact the agent instead, so a reschedule always routes through one owner.
-  const canAgentReschedule = Boolean(
-    canConfirmAppointment
-    && [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(appt.status as AppointmentStatus)
-    && appt.rescheduleCount < appt.maxReschedules,
-  );
+  // Submits every unsubmitted ocular report; the server validates each one and completes the
+  // appointment, then saves a draft project that sales finishes in Create Project.
+  const completeOcularVisit = async () => {
+    const pending = (visitReports || []).filter((report) => report.status === 'draft' || report.status === 'returned');
+    if (!pending.length) {
+      toast.error('Create the visit report with the measurements and photos first.');
+      return;
+    }
+    try {
+      let projectId = '';
+      for (const report of pending) {
+        const submitted = await submitReportMutation.mutateAsync(String(report._id));
+        projectId = getVisitReportReferenceId(submitted.linkedProjectId) || projectId;
+      }
+      toast.success('Ocular visit completed. Finish the project details next.');
+      navigate(projectId ? `/projects/create?pendingProjectId=${projectId}` : '/projects');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Complete the visit report before finishing the ocular visit.'), { duration: 7000 });
+    }
+  };
+
   const updateAttendance = async (
     action: 'check_in' | 'test_start' | 'no_show' | 'customer_declined',
   ) => {
@@ -709,7 +724,7 @@ export function AppointmentDetailPage() {
               <p className="text-xs text-cyan-700 dark:text-cyan-200 mt-0.5">
                 {isCustomer
                   ? 'The assigned sales staff has arrived at your location and will start the site visit shortly.'
-                  : 'You have arrived at the site. Start the site visit when inspection begins.'}
+                  : 'You have arrived at the site. The site visit has started.'}
               </p>
             </div>
           </CardContent>
@@ -907,17 +922,6 @@ export function AppointmentDetailPage() {
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
-      )}
-
-      {canAgentReschedule && (
-        <Card className="rounded-xl border-[#d7dce3] shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)]">
-          <CardHeader>
-            <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Reschedule This Appointment</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <RescheduleAppointment appointmentId={appt._id} type={appt.type} onRescheduled={() => void refetch()} />
           </CardContent>
         </Card>
       )}
@@ -1779,7 +1783,7 @@ export function AppointmentDetailPage() {
                     toast.error(customerSiteLocationRequiredMessage);
                     return;
                   }
-                  visitStatusMutation.mutateAsync({ id: id!, status: 'arrived_at_site' }).then(() => toast.success('Status updated: Arrived at Site.')).catch((err: unknown) => toast.error(extractErrorMessage(err, 'Failed to update')));
+                  visitStatusMutation.mutateAsync({ id: id!, status: 'arrived_at_site' }).then(() => toast.success('Arrived at Site. The site visit has started.')).catch((err: unknown) => toast.error(extractErrorMessage(err, 'Failed to update')));
                 }}
                 disabled={visitStatusMutation.isPending || !canStartOcularProgress}
                 className="rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:border dark:border-[#39577a] dark:[background-image:none] dark:bg-[#21364f] dark:text-[#e3efff] dark:shadow-[0_12px_24px_rgba(19,47,79,0.24)] dark:hover:bg-[#294465]"
@@ -1790,7 +1794,7 @@ export function AppointmentDetailPage() {
           </>
         )}
 
-        {/* Sales staff: ARRIVED_AT_SITE → Start Site Visit */}
+        {/* Sales staff: ARRIVED_AT_SITE (older visits; arrival now starts the visit) → Visit Report link */}
         {canCompleteAppointment && appt.status === AppointmentStatus.ARRIVED_AT_SITE && (
           <>
             {visitReports && visitReports.length > 0 ? (
@@ -1814,21 +1818,6 @@ export function AppointmentDetailPage() {
                   <FileText className="mr-2 h-4 w-4" />
                   Visit Reports
                 </Link>
-              </Button>
-            )}
-            {isOcularAppointment && (
-              <Button
-                onClick={() => {
-                  if (!canStartOcularProgress) {
-                    toast.error(customerSiteLocationRequiredMessage);
-                    return;
-                  }
-                  visitStatusMutation.mutateAsync({ id: id!, status: 'in_progress' }).then(() => toast.success('Status updated: Site Visit in Progress.')).catch((err: unknown) => toast.error(extractErrorMessage(err, 'Failed to update')));
-                }}
-                disabled={visitStatusMutation.isPending || !canStartOcularProgress}
-                className="rounded-xl [background-image:none] bg-[#1d1d1f] text-white hover:bg-[#2d2d2f] dark:border dark:border-[#39577a] dark:[background-image:none] dark:bg-[#21364f] dark:text-[#e3efff] dark:shadow-[0_12px_24px_rgba(19,47,79,0.24)] dark:hover:bg-[#294465]"
-              >
-                {visitStatusMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Updating...</> : 'Start Site Visit'}
               </Button>
             )}
           </>
@@ -1858,6 +1847,17 @@ export function AppointmentDetailPage() {
                   <FileText className="mr-2 h-4 w-4" />
                   Visit Reports
                 </Link>
+              </Button>
+            )}
+            {isOcularAppointment && (
+              <Button
+                onClick={() => void completeOcularVisit()}
+                disabled={submitReportMutation.isPending}
+                className="rounded-xl [background-image:none] bg-emerald-600 text-white hover:bg-emerald-500 dark:[background-image:none] dark:bg-[#1f7a5b] dark:hover:bg-[#2aa77c]"
+              >
+                {submitReportMutation.isPending
+                  ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Completing...</>
+                  : <><CheckCircle2 className="mr-2 h-4 w-4" />Complete Ocular Visit</>}
               </Button>
             )}
           </>

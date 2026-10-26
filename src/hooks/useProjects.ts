@@ -114,6 +114,8 @@ export function useCreateProject() {
       ocularVisit?: {
         date: string;
         slotCode: string;
+        customerLocation: { lat: number; lng: number };
+        formattedAddress?: string;
       };
     }) => {
       const { data } = await api.post<ApiResponse<Project>>(

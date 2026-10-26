@@ -9,7 +9,7 @@ import {
   RotateCcw, Fence, Grid3x3, DoorOpen, Armchair, ChefHat, Utensils,
   BookOpen, Frame, Umbrella, ArrowUpFromLine, Wrench, Layers, DoorClosed, Calculator,
   MessageSquare, LockKeyhole, CalendarDays, ShieldCheck, Maximize2,
-  User,
+  User, MapPin,
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -58,7 +58,7 @@ import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { ContractStatus, DELIVERY_TYPE_LABELS, DeliveryType, Role, StaffAvailabilityStatus, ProjectStatus, ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
-import { getServiceSpecificationSchema, hasMeaningfulSpecifications } from '@/lib/service-specifications';
+import { getServiceSpecificationSchema, hasMeaningfulSpecifications, visitReportHasMeasurements } from '@/lib/service-specifications';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { getItemScopedProjectValue, getProjectDisplaySiteAddress, getProjectSnapshotLabels } from '@/lib/project-display';
 import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
@@ -557,7 +557,7 @@ export function ProjectDetailPage() {
     project?.items?.find((item) => item._id === activeProjectItemId)
   ), [project?.items, activeProjectItemId]);
   const { data: blueprint } = useLatestBlueprint(id!, activeProjectItemRecord?._id);
-  const { data: paymentPlan } = usePaymentPlan(id!, activeProjectItemRecord?._id);
+  const { data: paymentPlan, isFetched: isPaymentPlanFetched } = usePaymentPlan(id!, activeProjectItemRecord?._id);
   const { data: payments } = usePaymentsByProject(id!, activeProjectItemRecord?._id);
   const hasPayablePaymentStage = Boolean(paymentPlan?.stages?.some((stage) => (
     ['pending', 'declined'].includes(String(stage.status))
@@ -730,21 +730,9 @@ export function ProjectDetailPage() {
     || project?.createdAt;
   const initialDesignUploaderName = project?.salesStaffName || currentSalesStaffName || 'Sales Team';
   const initialDesignFileSizeText = formatFileSize(initialDesignFileSizeBytes ?? undefined);
-  const hasVisitMeasurements = Boolean(
-    visitReport?.lineItems?.some((item) =>
-      item.length != null ||
-      item.width != null ||
-      item.height != null ||
-      item.area != null ||
-      item.thickness != null,
-    ) ||
-    visitReport?.measurements?.length != null ||
-    visitReport?.measurements?.width != null ||
-    visitReport?.measurements?.height != null ||
-    visitReport?.measurements?.area != null ||
-    visitReport?.measurements?.thickness != null ||
-    visitReport?.measurements?.raw,
-  );
+  const hasVisitMeasurements = visitReportHasMeasurements(visitReport);
+  const ocularVisitDateSource = visitReport?.actualVisitDateTime || ocularAppointment.data?.date;
+  const ocularVisitDateLabel = ocularVisitDateSource ? format(new Date(ocularVisitDateSource), 'MMM d, yyyy') : '';
   const canReviewInitialDesign = Boolean(
     (isAdmin || isAssignedEngineer)
     && hasInitialDesign
@@ -856,6 +844,23 @@ export function ProjectDetailPage() {
     paymentPlans: [paymentPlan as PaymentPlan | undefined],
     isCustomer,
   });
+  // Once design and billing are approved, take the customer straight to Costing, where the
+  // payment plan dialog opens. Only when no tab was chosen in the URL, and once per visit.
+  const landedOnCostingRef = useRef(false);
+  const customerReadyForPaymentPlan = Boolean(
+    isCustomer
+    && initialTab === 'details'
+    && isPaymentPlanFetched
+    && !paymentPlan
+    && blueprint?.blueprintApproved
+    && blueprint.costingApproved
+    && blueprint.quotationReviewStatus === 'sent_to_customer',
+  );
+  useEffect(() => {
+    if (!customerReadyForPaymentPlan || landedOnCostingRef.current) return;
+    landedOnCostingRef.current = true;
+    setActiveTab('costing');
+  }, [customerReadyForPaymentPlan]);
   const projectStatusBadgeStatus = workflowStatus.key || (isActivePaymentPlanFullyVerified ? 'verified' : activeWorkflowStatus);
   const projectStatusBadgeLabel = workflowStatus.label || (isActivePaymentPlanFullyVerified ? 'Paid' : undefined);
   const contractFileName = project?.contractFileName || (project?.contractFileKey ? getFileName(project.contractFileKey) : 'Signed contract');
@@ -1582,6 +1587,236 @@ export function ProjectDetailPage() {
           id="project-panel-details"
           aria-labelledby="project-tab-details"
         >
+          {/* ── Visit Report (Site Survey Data) — Staff only, shown first ── */}
+          {isStaff && visitReport && (
+            <DetailSectionCard
+              title={visitReport.visitType === 'ocular' ? 'Ocular Visit Details' : 'Site Visit Report'}
+              icon={Camera}
+              className={cn('lg:col-span-2', visitReport.visitType === 'ocular' && 'border-2 border-emerald-300 dark:border-emerald-500/50')}
+              action={visitReport.visitType === 'ocular' ? (
+                <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-200">
+                  <MapPin className="h-3.5 w-3.5" />
+                  From the ocular visit{ocularVisitDateLabel ? ` on ${ocularVisitDateLabel}` : ''}
+                </span>
+              ) : undefined}
+            >
+              <div className="space-y-5">
+                {(visitReport.initialDesignNotes || visitReport.discussionNotes) && (
+                  <div className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/70 px-4 py-3 dark:border-emerald-500/30 dark:bg-emerald-500/10">
+                    {visitReport.initialDesignNotes && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">{visitReport.visitType === 'ocular' ? 'Ocular Notes' : 'Sales Notes'}</p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-900 dark:text-slate-100">{visitReport.initialDesignNotes}</p>
+                      </div>
+                    )}
+                    {visitReport.discussionNotes && (
+                      <div>
+                        <p className="text-xs font-semibold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">Discussion Notes</p>
+                        <p className="mt-1 whitespace-pre-wrap text-sm text-slate-900 dark:text-slate-100">{visitReport.discussionNotes}</p>
+                      </div>
+                    )}
+                  </div>
+                )}
+                {visitReport.visitType === 'ocular' && !hasVisitMeasurements && (
+                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
+                      <div>
+                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Measurements Missing</p>
+                        <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
+                          This ocular report was submitted without measured line items or legacy dimensions. Engineering can only see the notes and attachments currently saved on the report.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {visitReport.status === 'returned' && visitReport.returnReason && (
+                  <div className="rounded-xl border border-orange-200 dark:border-orange-900/60 bg-orange-50 dark:bg-orange-950/40 px-4 py-3">
+                    <div className="flex items-start gap-3">
+                      <RotateCcw className="mt-0.5 h-5 w-5 shrink-0 text-orange-600 dark:text-orange-300" />
+                      <div>
+                        <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">Report Under Repair</p>
+                        <p className="mt-1 text-sm text-orange-800 dark:text-orange-200">{visitReport.returnReason}</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  <DetailField label="Report Status" value={visitReport.status} />
+                  {visitReport.actualVisitDateTime && (
+                    <DetailField label="Actual Visit Date" value={format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')} />
+                  )}
+                  {(visitReport.measurementUnit || visitReport.measurements?.unit) && (
+                    <DetailField label="Measurement Unit" value={visitReport.measurementUnit || visitReport.measurements?.unit} />
+                  )}
+                </div>
+
+                {/* Media Gallery */}
+                <CollapsibleSection title="Photos" icon={Camera} count={visitReport.photoKeys?.length || 0} defaultOpen>
+                  {visitReport.photoKeys?.map((key) => (
+                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
+                  ))}
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Videos" icon={Video} count={visitReport.videoKeys?.length || 0} defaultOpen>
+                  {visitReport.videoKeys?.map((key) => (
+                    <MediaThumbnail key={key} fileKey={key} type="video" />
+                  ))}
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Sketches" icon={PenTool} count={visitReport.sketchKeys?.length || 0}>
+                  {visitReport.sketchKeys?.map((key) => (
+                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
+                  ))}
+                </CollapsibleSection>
+
+                <CollapsibleSection title="Reference Images" icon={Image} count={visitReport.referenceImageKeys?.length || 0}>
+                  {visitReport.referenceImageKeys?.map((key) => (
+                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
+                  ))}
+                </CollapsibleSection>
+
+                {visitReportHasSpecifications && visitReport.specifications && (
+                  <div>
+                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
+                      Category Specifications
+                    </p>
+                    <div className="space-y-2">
+                      {getServiceSpecificationSchema(visitReport.serviceType).sections.map((section) => {
+                        const sectionValues = visitReport.specifications?.[section.key] || {};
+                        const visibleFields = section.fields.filter((field) => sectionValues[field.key] !== undefined && sectionValues[field.key] !== '');
+                        if (!visibleFields.length) return null;
+                        return (
+                          <div key={section.key} className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                            <p className={`mb-2 text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{section.label}</p>
+                            <div className="grid gap-1 sm:grid-cols-2">
+                              {visibleFields.map((field) => (
+                                <p key={field.key} className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
+                                  <span className="font-medium">{field.label}:</span> {String(sectionValues[field.key])}{field.unit ? ` ${field.unit}` : ''}
+                                </p>
+                              ))}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {/* Line Items */}
+                {!visitReportHasSpecifications && visitReport.lineItems && visitReport.lineItems.length > 0 && (
+                  <div>
+                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
+                      Line Items ({visitReport.measurementUnit || visitReport.measurements?.unit || 'cm'})
+                    </p>
+                    <div className="-mx-4 overflow-x-auto border-y border-[color:var(--color-border)]/45 sm:mx-0 sm:rounded-xl sm:border sm:border-[color:var(--color-border)]/45">
+                      <table className="min-w-full text-sm">
+                        <thead className={isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/75'}>
+                          <tr>
+                            <th className={`px-3 py-2 text-left text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Item</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Qty</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>L</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>W</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>H</th>
+                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Area</th>
+                            <th className={`px-3 py-2 text-left text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Notes</th>
+                          </tr>
+                        </thead>
+                        <tbody className={cn(
+                          'divide-y divide-[color:var(--color-border)]/35',
+                          isDark ? 'bg-slate-950/55' : 'bg-white/70'
+                        )}>
+                          {visitReport.lineItems.map((item, idx) => (
+                            <tr key={idx} className={isDark ? 'hover:bg-slate-900/45' : 'hover:bg-[color:var(--color-muted)]/65'}>
+                              <td className={`px-3 py-2 font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{item.label}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.quantity}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.length ?? '—'}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.width ?? '—'}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.height ?? '—'}</td>
+                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.area ?? '—'}</td>
+                              <td className={`px-3 py-2 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{item.notes || '—'}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                )}
+
+                {/* Site Conditions — ocular visits only */}
+                {!visitReportHasSpecifications && visitReport.visitType === 'ocular' && visitReport.siteConditions && (
+                  <div>
+                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Site Conditions</p>
+                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                      {visitReport.siteConditions.environment && (
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Environment</p>
+                          <p className={`text-sm capitalize ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.environment}</p>
+                        </div>
+                      )}
+                      {visitReport.siteConditions.floorType && (
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Floor Type</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.floorType}</p>
+                        </div>
+                      )}
+                      {visitReport.siteConditions.wallMaterial && (
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Wall Material</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.wallMaterial}</p>
+                        </div>
+                      )}
+                      {visitReport.siteConditions.hasElectrical !== undefined && (
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Electrical Access</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.hasElectrical ? 'Yes' : 'No'}</p>
+                        </div>
+                      )}
+                      {visitReport.siteConditions.hasPlumbing !== undefined && (
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Plumbing Access</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.hasPlumbing ? 'Yes' : 'No'}</p>
+                        </div>
+                      )}
+                      {visitReport.siteConditions.accessNotes && (
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3 sm:col-span-2 lg:col-span-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Access Notes</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.accessNotes}</p>
+                        </div>
+                      )}
+                      {visitReport.siteConditions.obstaclesOrConstraints && (
+                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3 sm:col-span-2 lg:col-span-3`}>
+                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Obstacles / Constraints</p>
+                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.obstaclesOrConstraints}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {/* Customer Requirements & other text fields */}
+                <div className="grid gap-3 sm:grid-cols-2">
+                  {visitReport.customerRequirements && (
+                    <DetailField label="Customer Requirements" value={visitReport.customerRequirements} />
+                  )}
+                  {visitReport.materials && (
+                    <DetailField label="Materials" value={visitReport.materials} />
+                  )}
+                  {visitReport.finishes && (
+                    <DetailField label="Finishes" value={visitReport.finishes} />
+                  )}
+                  {visitReport.preferredDesign && (
+                    <DetailField label="Preferred Design" value={visitReport.preferredDesign} />
+                  )}
+                  {visitReport.notes && (
+                    <DetailField label="Notes" value={visitReport.notes} className="sm:col-span-2" />
+                  )}
+                </div>
+              </div>
+            </DetailSectionCard>
+          )}
           {/* Project Info */}
           <DetailSectionCard
             title={projectSnapshotLabels.title}
@@ -1819,210 +2054,6 @@ export function ProjectDetailPage() {
                 )}
               </CardContent>
             </Card>
-          )}
-          {/* ── Visit Report (Site Survey Data) — Staff only ── */}
-          {isStaff && visitReport && (
-            <DetailSectionCard title="Site Visit Report" icon={Camera} className="lg:col-span-2">
-              <div className="space-y-5">
-                {visitReport.visitType === 'ocular' && !hasVisitMeasurements && (
-                  <div className="rounded-xl border border-amber-200 dark:border-amber-900/60 bg-amber-50 dark:bg-amber-950/40 px-4 py-3">
-                    <div className="flex items-start gap-3">
-                      <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
-                      <div>
-                        <p className="text-sm font-semibold text-amber-900 dark:text-amber-100">Measurements Missing</p>
-                        <p className="mt-1 text-sm text-amber-800 dark:text-amber-200">
-                          This ocular report was submitted without measured line items or legacy dimensions. Engineering can only see the notes and attachments currently saved on the report.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {visitReport.status === 'returned' && visitReport.returnReason && (
-                  <div className="rounded-xl border border-orange-200 dark:border-orange-900/60 bg-orange-50 dark:bg-orange-950/40 px-4 py-3">
-                    <div className="flex items-start gap-3">
-                      <RotateCcw className="mt-0.5 h-5 w-5 shrink-0 text-orange-600 dark:text-orange-300" />
-                      <div>
-                        <p className="text-sm font-semibold text-orange-900 dark:text-orange-100">Report Under Repair</p>
-                        <p className="mt-1 text-sm text-orange-800 dark:text-orange-200">{visitReport.returnReason}</p>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <DetailField label="Report Status" value={visitReport.status} />
-                  {visitReport.actualVisitDateTime && (
-                    <DetailField label="Actual Visit Date" value={format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')} />
-                  )}
-                  {(visitReport.measurementUnit || visitReport.measurements?.unit) && (
-                    <DetailField label="Measurement Unit" value={visitReport.measurementUnit || visitReport.measurements?.unit} />
-                  )}
-                </div>
-
-                {/* Media Gallery */}
-                <CollapsibleSection title="Photos" icon={Camera} count={visitReport.photoKeys?.length || 0} defaultOpen>
-                  {visitReport.photoKeys?.map((key) => (
-                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
-                  ))}
-                </CollapsibleSection>
-
-                <CollapsibleSection title="Videos" icon={Video} count={visitReport.videoKeys?.length || 0} defaultOpen>
-                  {visitReport.videoKeys?.map((key) => (
-                    <MediaThumbnail key={key} fileKey={key} type="video" />
-                  ))}
-                </CollapsibleSection>
-
-                <CollapsibleSection title="Sketches" icon={PenTool} count={visitReport.sketchKeys?.length || 0}>
-                  {visitReport.sketchKeys?.map((key) => (
-                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
-                  ))}
-                </CollapsibleSection>
-
-                <CollapsibleSection title="Reference Images" icon={Image} count={visitReport.referenceImageKeys?.length || 0}>
-                  {visitReport.referenceImageKeys?.map((key) => (
-                    <MediaThumbnail key={key} fileKey={key} type="image" onPreview={setLightboxKey} />
-                  ))}
-                </CollapsibleSection>
-
-                {visitReportHasSpecifications && visitReport.specifications && (
-                  <div>
-                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
-                      Category Specifications
-                    </p>
-                    <div className="space-y-2">
-                      {getServiceSpecificationSchema(visitReport.serviceType).sections.map((section) => {
-                        const sectionValues = visitReport.specifications?.[section.key] || {};
-                        const visibleFields = section.fields.filter((field) => sectionValues[field.key] !== undefined && sectionValues[field.key] !== '');
-                        if (!visibleFields.length) return null;
-                        return (
-                          <div key={section.key} className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                            <p className={`mb-2 text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{section.label}</p>
-                            <div className="grid gap-1 sm:grid-cols-2">
-                              {visibleFields.map((field) => (
-                                <p key={field.key} className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>
-                                  <span className="font-medium">{field.label}:</span> {String(sectionValues[field.key])}{field.unit ? ` ${field.unit}` : ''}
-                                </p>
-                              ))}
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-
-                {/* Line Items */}
-                {!visitReportHasSpecifications && visitReport.lineItems && visitReport.lineItems.length > 0 && (
-                  <div>
-                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>
-                      Line Items ({visitReport.measurementUnit || visitReport.measurements?.unit || 'cm'})
-                    </p>
-                    <div className="-mx-4 overflow-x-auto border-y border-[color:var(--color-border)]/45 sm:mx-0 sm:rounded-xl sm:border sm:border-[color:var(--color-border)]/45">
-                      <table className="min-w-full text-sm">
-                        <thead className={isDark ? 'bg-slate-900/70' : 'bg-[color:var(--color-muted)]/75'}>
-                          <tr>
-                            <th className={`px-3 py-2 text-left text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Item</th>
-                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Qty</th>
-                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>L</th>
-                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>W</th>
-                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>H</th>
-                            <th className={`px-3 py-2 text-center text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Area</th>
-                            <th className={`px-3 py-2 text-left text-xs font-medium ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Notes</th>
-                          </tr>
-                        </thead>
-                        <tbody className={cn(
-                          'divide-y divide-[color:var(--color-border)]/35',
-                          isDark ? 'bg-slate-950/55' : 'bg-white/70'
-                        )}>
-                          {visitReport.lineItems.map((item, idx) => (
-                            <tr key={idx} className={isDark ? 'hover:bg-slate-900/45' : 'hover:bg-[color:var(--color-muted)]/65'}>
-                              <td className={`px-3 py-2 font-medium ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{item.label}</td>
-                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.quantity}</td>
-                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.length ?? '—'}</td>
-                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.width ?? '—'}</td>
-                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.height ?? '—'}</td>
-                              <td className={`px-3 py-2 text-center ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{item.area ?? '—'}</td>
-                              <td className={`px-3 py-2 text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{item.notes || '—'}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                )}
-
-                {/* Site Conditions — ocular visits only */}
-                {!visitReportHasSpecifications && visitReport.visitType === 'ocular' && visitReport.siteConditions && (
-                  <div>
-                    <p className={`mb-2 text-xs font-medium uppercase tracking-wider ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Site Conditions</p>
-                    <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                      {visitReport.siteConditions.environment && (
-                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Environment</p>
-                          <p className={`text-sm capitalize ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.environment}</p>
-                        </div>
-                      )}
-                      {visitReport.siteConditions.floorType && (
-                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Floor Type</p>
-                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.floorType}</p>
-                        </div>
-                      )}
-                      {visitReport.siteConditions.wallMaterial && (
-                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Wall Material</p>
-                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.wallMaterial}</p>
-                        </div>
-                      )}
-                      {visitReport.siteConditions.hasElectrical !== undefined && (
-                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Electrical Access</p>
-                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.hasElectrical ? 'Yes' : 'No'}</p>
-                        </div>
-                      )}
-                      {visitReport.siteConditions.hasPlumbing !== undefined && (
-                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3`}>
-                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Plumbing Access</p>
-                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.hasPlumbing ? 'Yes' : 'No'}</p>
-                        </div>
-                      )}
-                      {visitReport.siteConditions.accessNotes && (
-                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3 sm:col-span-2 lg:col-span-3`}>
-                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Access Notes</p>
-                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.accessNotes}</p>
-                        </div>
-                      )}
-                      {visitReport.siteConditions.obstaclesOrConstraints && (
-                        <div className={`${isDark ? 'metal-panel' : 'bg-[color:var(--color-muted)]/55'} rounded-xl border border-[color:var(--color-border)]/45 p-3 sm:col-span-2 lg:col-span-3`}>
-                          <p className={`text-[10px] font-medium uppercase ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>Obstacles / Constraints</p>
-                          <p className={`text-sm ${isDark ? 'text-slate-200' : 'text-[var(--color-card-foreground)]'}`}>{visitReport.siteConditions.obstaclesOrConstraints}</p>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                {/* Customer Requirements & other text fields */}
-                <div className="grid gap-3 sm:grid-cols-2">
-                  {visitReport.customerRequirements && (
-                    <DetailField label="Customer Requirements" value={visitReport.customerRequirements} />
-                  )}
-                  {visitReport.materials && (
-                    <DetailField label="Materials" value={visitReport.materials} />
-                  )}
-                  {visitReport.finishes && (
-                    <DetailField label="Finishes" value={visitReport.finishes} />
-                  )}
-                  {visitReport.preferredDesign && (
-                    <DetailField label="Preferred Design" value={visitReport.preferredDesign} />
-                  )}
-                  {visitReport.notes && (
-                    <DetailField label="Notes" value={visitReport.notes} className="sm:col-span-2" />
-                  )}
-                </div>
-              </div>
-            </DetailSectionCard>
           )}
 
         </div>

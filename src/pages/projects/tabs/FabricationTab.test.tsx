@@ -89,7 +89,7 @@ describe('FabricationTab project site address', () => {
     state.fabricationStatus = { deliveryType: DeliveryType.ON_SITE_INSTALLATION, currentStatus: 'installation', allowedTransitions: ['finishing'], confirmationGateStatus: 'done' };
     const html = renderTab(true, role === Role.FABRICATION_STAFF || role === Role.ENGINEER);
     const labels = [...html.matchAll(/<span[^>]*>\d<\/span>([^<]+)<\/p>/g)].map((match) => match[1]);
-    expect(labels).toEqual(['Fabrication', 'Welding / Assembly', 'Installation', 'Finishing', 'Quality Check', 'Done']);
+    expect(labels).toEqual(['Preparing Materials', 'Welding / Assembly', 'Installation', 'Finishing', 'Quality Check', 'Done']);
     expect(html).toContain('Step 3 of 6');
     expect(html).toContain('grid-cols-6');
     expect(html).not.toMatch(/Site Preparation|Measurement \/ Layout|Material Prep|Fabrication \/ Installation|Turnover/);

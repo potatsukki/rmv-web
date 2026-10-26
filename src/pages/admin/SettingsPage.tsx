@@ -56,7 +56,7 @@ export function SettingsPage() {
   // Payment State
   const [surchargePercent, setSurchargePercent] = useState('10');
   const [splitValues, setSplitValues] = useState(['30', '40', '30']);
-  const [stageLabels, setStageLabels] = useState(['Down Payment', 'Mid-Project', 'Final Payment']);
+  const [stageLabels, setStageLabels] = useState(['Down Payment', 'During Installation', 'Upon Completion']);
   const [paymentLoaded, setPaymentLoaded] = useState(false);
 
   const maintenanceEnabled = configs?.find((c) => c.key === 'maintenance_mode')?.value === true;

@@ -601,7 +601,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const { data: project, refetch: refetchProject } = useProject(projectId);
   const { data: blueprint, refetch: refetchBlueprint, isPending: isBlueprintPending } = useLatestBlueprint(projectId, projectItemId);
   const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId, projectItemId);
-  const { data: paymentPlan } = usePaymentPlan(projectId, projectItemId);
+  const { data: paymentPlan, isFetched: isPaymentPlanFetched } = usePaymentPlan(projectId, projectItemId);
   // Multi-item projects: each item's billing is approved on its own, then billed and paid as one.
   const projectItems = project?.items || [];
   const isMultiItemProject = projectItems.length > 1;
@@ -855,11 +855,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   })();
   const cfgLabels: string[] = (() => {
     const c = configs?.find(cfg => cfg.key === 'installment_stage_labels');
-    return Array.isArray(c?.value) ? (c.value as string[]) : ['Down Payment', 'Mid-Project', 'Final Payment'];
+    return Array.isArray(c?.value) ? (c.value as string[]) : ['Down Payment', 'During Installation', 'Upon Completion'];
   })();
   const cfgDescriptions: string[] = (() => {
     const c = configs?.find(cfg => cfg.key === 'installment_stage_descriptions');
-    return Array.isArray(c?.value) ? (c.value as string[]) : ['Initial payment before fabrication', 'Due when fabrication is complete', 'Due after installation & acceptance'];
+    return Array.isArray(c?.value) ? (c.value as string[]) : ['Initial payment before fabrication', 'Due before installation starts', 'Due before the project is marked done'];
   })();
 
   // Hydrate from DB Draft
@@ -1051,6 +1051,30 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const combinedBillingTotal = itemBillings.reduce((total, item) => total + getPayableQuotationTotal(item.blueprint), 0);
   const payableTotal = (bp?: Blueprint | null) => (allItemsBillingApproved ? combinedBillingTotal : getPayableQuotationTotal(bp));
   const blueprintWorkflowStatus = resolveBlueprintWorkflowStatus(blueprint);
+
+  // Design and billing are approved when the quotation is sent, so open the payment plan
+  // dialog right away instead of waiting for the customer to find the button. Once per blueprint.
+  const autoOpenedPlanFor = useRef('');
+  const readyForPaymentPlan = Boolean(
+    isCostingMode
+    && canReviewBlueprint
+    && blueprint
+    && blueprint.blueprintApproved
+    && blueprint.costingApproved
+    && ['uploaded', 'revision_uploaded', 'approved'].includes(blueprint.status)
+    && isPaymentPlanFetched
+    && !hasActiveItemPaymentPlan
+    && hasPayableQuotation(blueprint)
+    && isQuotationSentToCustomer(blueprint)
+    && (!isMultiItemProject || allItemsBillingApproved),
+  );
+  useEffect(() => {
+    if (!readyForPaymentPlan || !blueprint || autoOpenedPlanFor.current === blueprint._id) return;
+    autoOpenedPlanFor.current = blueprint._id;
+    setBlockedAction(null);
+    setAcceptDialog({ open: true, blueprint });
+  }, [readyForPaymentPlan, blueprint]);
+
   const previewDialog = (
     <Dialog
       open={Boolean(previewFile)}
@@ -1974,7 +1998,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   </Badge>
                 ) : (
                   <Badge variant="outline" className="border-amber-200 bg-amber-50 text-amber-700 dark:border-amber-500/40 dark:bg-amber-500/15 dark:text-amber-300">
-                    Pending Review
+                    Awaiting Quotation
                   </Badge>
                 )}
               </CardHeader>
@@ -1984,31 +2008,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   label="Design Preview"
                   onClick={() => handleViewFile(bp.designKey || bp.blueprintKey)}
                 />
-                {canReviewBlueprint && !bp.blueprintApproved && (
-                  <div className="flex flex-col gap-2 sm:flex-row sm:gap-3">
-                    <Button
-                      className="flex-1 rounded-xl border border-emerald-500/70 bg-[linear-gradient(180deg,#22c55e_0%,#15803d_100%)] text-white shadow-[inset_0_1px_0_rgba(255,255,255,0.2),0_10px_24px_rgba(6,95,70,0.3)] hover:bg-[linear-gradient(180deg,#34d399_0%,#16a34a_100%)] hover:text-white dark:border-emerald-400/55 dark:bg-[linear-gradient(180deg,#34d399_0%,#15803d_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_12px_28px_rgba(6,78,59,0.34)] dark:hover:bg-[linear-gradient(180deg,#6ee7b7_0%,#16a34a_100%)]"
-                      onClick={() => setApproveConfirmDialog({ open: true, blueprintId: bp._id, component: 'blueprint' })}
-                      disabled={approveMutation.isPending}
-                    >
-                      {approvingComponent === 'blueprint' && approveMutation.isPending ? (
-                        <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Approving...</>
-                      ) : (
-                        <><CheckCircle className="mr-2 h-4 w-4" /> Approve</>
-                      )}
-                    </Button>
-                    {canRequestRevision(bp) && (
-                      <Button
-                        variant="destructive"
-                        className="flex-1 rounded-xl"
-                        onClick={() => setRevisionDialog({ open: true, blueprintId: bp._id })}
-                      >
-                        <AlertCircle className="mr-2 h-4 w-4" />
-                        Request Revision
-                      </Button>
-                    )}
-                  </div>
-                )}
+                {/* Customers no longer review the design; it is approved when the quotation is sent. */}
               </CardContent>
             </Card>
             )}
