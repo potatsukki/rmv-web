@@ -68,6 +68,17 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   in_review: 'blue',
   contract_required: 'yellow',
   review_design_billing: 'purple',
+  for_ocular: 'green',
+  for_review: 'blue',
+  for_blueprint_costing: 'blue',
+  for_down_payment: 'yellow',
+  for_fabrication: 'orange',
+
+  // Payment progress
+  no_payment: 'yellow',
+  down_payment_paid: 'cyan',
+  for_second_payment: 'orange',
+  for_final_payment: 'orange',
 
   // Blueprint
   uploaded: 'yellow',
@@ -128,6 +139,15 @@ const STATUS_LABEL_OVERRIDE: Record<string, string> = {
   in_review: 'In Review',
   contract_required: 'Contract Required',
   review_design_billing: 'Review Design & Billing',
+  for_ocular: 'For Ocular',
+  for_review: 'For Review',
+  for_blueprint_costing: 'For Blueprint & Costing',
+  for_down_payment: 'For Down Payment',
+  for_fabrication: 'For Fabrication',
+  no_payment: 'No Payment',
+  down_payment_paid: 'Down Payment Paid',
+  for_second_payment: 'For Second Payment',
+  for_final_payment: 'For Final Payment',
   cash_pending: 'Cash to Collect',
   awaiting_payment: 'Awaiting Ocular Fee',
   awaiting_ocular_fee: 'Awaiting Ocular Fee',

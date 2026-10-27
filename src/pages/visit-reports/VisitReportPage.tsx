@@ -62,7 +62,7 @@ import {
 import type { LineItem, ServiceSpecifications, SiteConditions, VisitReport } from '@/lib/types';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults, normalizeServiceSpecifications, visitReportHasMeasurements } from '@/lib/service-specifications';
-import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
+import { consultationAttendanceLabel, getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 
 
 const DEFAULT_SITE_CONDITIONS: SiteConditions = {
@@ -1525,7 +1525,7 @@ export function VisitReportPage() {
                       Current status
                     </p>
                     <div className="mt-2">
-                      <StatusBadge status={attendanceStatus} />
+                      <StatusBadge status={attendanceStatus} label={consultationAttendanceLabel(attendanceStatus)} />
                     </div>
                   </div>
                   <div className="text-right text-xs text-gray-500 dark:text-slate-400">
@@ -1533,7 +1533,7 @@ export function VisitReportPage() {
                       <p>Checked in: {format(new Date(appointmentRecord.actualArrivalAt), 'MMM d, yyyy h:mm a')}</p>
                     )}
                     {appointmentRecord?.consultationCompletedAt && (
-                      <p>Completed: {format(new Date(appointmentRecord.consultationCompletedAt), 'MMM d, yyyy h:mm a')}</p>
+                      <p>Marked present: {format(new Date(appointmentRecord.consultationCompletedAt), 'MMM d, yyyy h:mm a')}</p>
                     )}
                   </div>
                 </div>
@@ -1571,7 +1571,7 @@ export function VisitReportPage() {
 
                 <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
                   Check-in records the customer's arrival. The status changes automatically to In Progress
-                  at the scheduled start and Completed after the one-hour consultation slot. The testing bypass completes it right away.
+                  at the scheduled start and Present after the one-hour consultation slot. The testing bypass completes it right away.
                 </p>
               </CardContent>
             </Card>

@@ -103,15 +103,15 @@ it('does not show the removed panel while reports are loading, missing or failed
   expect(renderPage('/projects/create?pendingProjectId=project-1')).not.toContain('Unable to check ocular visit or reports');
 });
 
-it.each(['draft', 'returned', 'loading', 'error'])('lets sales click Create Project to validate the form when reports are %s', (status) => {
+it.each(['draft', 'returned', 'loading', 'error'])('asks for the signed contract before showing Create Project when reports are %s', (status) => {
   completedOcular();
   source.reports = [{ _id: 'report-1', status }];
   source.reportsLoading = status === 'loading';
   source.reportsError = status === 'error';
   const html = renderPage('/projects/create?pendingProjectId=project-1');
-  const submitButton = html.match(/<button\b[^>]*type="submit"[^>]*>/)?.[0];
-  expect(submitButton).toBeDefined();
-  expect(submitButton).not.toMatch(/\sdisabled(?:=|\s|>)/);
+  // Create Project appears inside the Signed Contract card only after a file is uploaded.
+  expect(html).toContain('Upload the signed contract to finish.');
+  expect(html).not.toMatch(/<button\b[^>]*type="submit"/);
 });
 
 it('offers to link a completed appointment when creating a project manually', () => {
@@ -119,13 +119,14 @@ it('offers to link a completed appointment when creating a project manually', ()
     { _id: 'appt-1', appointmentNumber: 'APT-1', type: 'ocular', date: '2026-09-01' },
   ];
   const html = renderPage('/projects/create?customerId=customer-1');
-  expect(html).toContain('Link to Appointment');
-  expect(html).toContain('APT-1');
-  expect(html).toContain('No appointment — standalone project');
+  expect(html).toContain('Appointment (optional)');
+  expect(html).toContain('APT-1 · Ocular');
+  // Starts unlinked so sales staff choose an appointment on purpose.
+  expect(html).toMatch(/<option value="" selected="">No appointment<\/option>/);
 });
 
 it('does not offer to link an appointment when one is already carried in the URL', () => {
   source.customerAppointments = [{ _id: 'appt-1', appointmentNumber: 'APT-1', type: 'ocular', date: '2026-09-01' }];
   const html = renderPage('/projects/create?customerId=customer-1&appointmentId=appt-1');
-  expect(html).not.toContain('Link to Appointment');
+  expect(html).not.toContain('Appointment (optional)');
 });

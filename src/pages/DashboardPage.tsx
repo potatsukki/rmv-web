@@ -38,9 +38,10 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, Role } from '@/lib/constants';
-import type { AuditLog } from '@/lib/types';
+import type { AuditLog, Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import { formatApiTimeAgo } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
@@ -49,6 +50,11 @@ import {
   type ServiceProjectReference,
 } from '@/lib/service-catalog';
 import { buildBookingIntentPath } from '@/lib/booking-intent';
+
+function ProjectStatusBadge({ project }: { project: { status: string } }) {
+  const status = resolveProjectWorkflowStatus({ project: project as unknown as Project });
+  return <StatusBadge status={status.key} label={status.label} />;
+}
 
 function formatCurrencyCompact(v: number) {
   const abs = Math.abs(v);
@@ -906,7 +912,7 @@ function CustomerDashboard({
             <div className="p-5 sm:p-6">
               <div className="flex items-start gap-4">
                 <div className="workspace-icon shrink-0"><FolderOpen className="h-5 w-5" /></div>
-                <div className="min-w-0 flex-1"><p className="truncate text-lg font-bold text-[#f7f7f5]">{activeProject.title}</p><p className="mt-1 text-sm text-slate-400">{activeProject.projectNumber || activeProject.serviceType || 'RMV project'}</p><div className="mt-4"><StatusBadge status={activeProject.status} /></div></div>
+                <div className="min-w-0 flex-1"><p className="truncate text-lg font-bold text-[#f7f7f5]">{activeProject.title}</p><p className="mt-1 text-sm text-slate-400">{activeProject.projectNumber || activeProject.serviceType || 'RMV project'}</p><div className="mt-4"><ProjectStatusBadge project={activeProject} /></div></div>
               </div>
               <Link to={`/projects/${activeProject._id}`} className="workspace-focus mt-6 inline-flex items-center gap-2 text-sm font-bold text-[#f5b400] hover:text-[#ffd047]">Open project <ArrowRight className="h-4 w-4" /></Link>
             </div>

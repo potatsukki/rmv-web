@@ -52,7 +52,8 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { usePendingOcularFees, useUnpaidOcularFees } from '@/hooks/useAppointments';
-import { resolvePaymentWorkflowStatus } from '@/lib/workflow-status';
+import { resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus, type WorkflowStatus } from '@/lib/workflow-status';
+import type { Project } from '@/lib/types';
 import { getProjectDisplaySiteAddress } from '@/lib/project-display';
 import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
 
@@ -156,7 +157,7 @@ const derivePaymentListStatus = (plans: any[]): PaymentListStatus => {
   const status = resolvePaymentWorkflowStatus(plans);
   if (status.key === 'paid') return 'paid';
   if (status.key === 'payment_for_verification') return 'for_verification';
-  if (status.key === 'partially_paid') return 'partially_paid';
+  if (['down_payment_paid', 'for_second_payment', 'partially_paid', 'for_final_payment'].includes(status.key)) return 'partially_paid';
   return 'payment_pending';
 };
 
@@ -181,19 +182,20 @@ const getPaymentPlanTargets = (project: PaymentListProject) => {
 
 function PaymentProjectRow({
   project,
-  projectStage,
   paymentStatus,
+  paymentDetail,
   onSelect,
 }: {
   project: PaymentListProject;
-  projectStage: string;
   paymentStatus: PaymentListStatus;
+  paymentDetail?: WorkflowStatus;
   onSelect: (projectId: string) => void;
 }) {
-  const paymentBadge = PAYMENT_STATUS_BADGES[paymentStatus];
-  const projectStageBadge = projectStage === 'paid'
-    ? { status: 'verified', label: 'Fully Paid' }
-    : { status: projectStage, label: formatStatusLabel(projectStage) };
+  const paymentBadge = paymentDetail
+    ? { status: paymentDetail.key, label: paymentDetail.label }
+    : PAYMENT_STATUS_BADGES[paymentStatus];
+  const projectWorkflow = resolveProjectWorkflowStatus({ project: project as unknown as Project });
+  const projectStageBadge = { status: projectWorkflow.key, label: projectWorkflow.label };
   const siteAddress = getProjectDisplaySiteAddress(project);
 
   return (
@@ -370,6 +372,10 @@ export function PaymentsPage() {
   const selectedProject = projects?.items?.find(
     (p) => String(p._id) === selectedProjectId,
   );
+  // Payment status once the selected project has a plan; its project status before that.
+  const selectedStatusBadge = plan?.stages?.length
+    ? resolvePaymentWorkflowStatus([plan])
+    : selectedProject ? resolveProjectWorkflowStatus({ project: selectedProject as unknown as Project }) : null;
   const selectedProjectItemIds = useMemo(
     () => (selectedProject?.items || []).map((item) => String(item._id)),
     [selectedProject?.items],
@@ -466,12 +472,13 @@ export function PaymentsPage() {
         let status: PaymentListStatus = derivePaymentListStatus(plans);
         if (failedProjects.has(projectId)) status = 'unavailable';
         if (loadingProjects.has(projectId)) status = 'loading';
-        return [projectId, status];
+        const detail = ['not_billed', 'unavailable', 'loading'].includes(status) ? undefined : resolvePaymentWorkflowStatus(plans);
+        return [projectId, { bucket: status, detail }];
       }),
     );
   }, [basePaymentProjects, paymentPlanQueries, paymentPlanTargets]);
   const getEffectiveProjectStageStatus = (project: PaymentListProject) => {
-    const paymentStatus = paymentStatusByProject.get(String(project._id));
+    const paymentStatus = paymentStatusByProject.get(String(project._id))?.bucket;
     return paymentStatus === 'paid' ? 'paid' : getProjectStageStatus(project);
   };
 
@@ -680,8 +687,8 @@ export function PaymentsPage() {
                   <PaymentProjectRow
                     key={String(p._id)}
                     project={p as PaymentListProject}
-                    projectStage={getEffectiveProjectStageStatus(p as PaymentListProject)}
-                    paymentStatus={paymentStatusByProject.get(String(p._id)) || 'not_billed'}
+                    paymentStatus={paymentStatusByProject.get(String(p._id))?.bucket || 'not_billed'}
+                    paymentDetail={paymentStatusByProject.get(String(p._id))?.detail}
                     onSelect={setSelectedProjectId}
                   />
                 ))
@@ -853,11 +860,8 @@ export function PaymentsPage() {
                   : isCustomer ? 'Submit and track your payments' : 'View payment details'}
               </p>
             </div>
-            {selectedProject && (
-              <StatusBadge
-                status={planSummary.allVerified ? 'verified' : String(selectedProject.status)}
-                label={planSummary.allVerified ? 'Fully Paid' : undefined}
-              />
+            {selectedStatusBadge && (
+              <StatusBadge status={selectedStatusBadge.key} label={selectedStatusBadge.label} />
             )}
           </div>
 

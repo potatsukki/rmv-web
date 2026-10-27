@@ -52,6 +52,14 @@ function formatSlotTime(slot: string) {
   return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
 }
 
+function formatAppointmentDate(date?: string) {
+  if (!date) return '';
+  const parsed = new Date(`${date.slice(0, 10)}T00:00:00`);
+  return Number.isNaN(parsed.getTime())
+    ? date
+    : parsed.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 function localDateAfter(days: number) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -301,18 +309,17 @@ export function CreateProjectPage() {
   }, [search]);
 
   const customerSearch = useCustomerSearch(debouncedSearch);
+  // Only completed appointments that no project uses yet can be linked.
   const customerAppointments = useAppointments(
-    { customerId, status: 'completed', sortBy: 'date', sortOrder: 'desc', limit: '20' },
+    { customerId, status: 'completed', withoutProject: 'true', sortBy: 'date', sortOrder: 'desc', limit: '20' },
     isManualFlow && !!customerId,
   );
   const linkableAppointments = customerAppointments.data?.items || [];
 
-  // Default to the customer's most recent completed appointment, but the sales staff
-  // can still change it or pick "No appointment" below.
-  const mostRecentLinkableId = linkableAppointments[0]?._id;
+  // Start at "No appointment" so sales staff link one on purpose.
   useEffect(() => {
-    if (isManualFlow) setManualAppointmentId(mostRecentLinkableId || '');
-  }, [isManualFlow, customerId, mostRecentLinkableId]);
+    if (isManualFlow) setManualAppointmentId('');
+  }, [isManualFlow, customerId]);
 
   const appointment = useAppointment(appointmentId);
   const visitReports = useVisitReportsByAppointment(appointmentId);
@@ -646,6 +653,21 @@ export function CreateProjectPage() {
     </>
   );
 
+  const submitButton = (
+    <Button type="submit" disabled={isUploading || createProject.isPending || isCheckingOcular}>
+      {createProject.isPending || isCheckingOcular ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
+      {createProject.isPending
+        ? 'Creating…'
+        : isCheckingOcular
+          ? 'Checking ocular…'
+        : isUploading
+          ? 'Uploading…'
+          : projectPath === 'ocular'
+            ? 'Save Ocular'
+            : 'Create Project'}
+    </Button>
+  );
+
   return (
     <div className="mx-auto max-w-4xl space-y-6">
       <Button asChild variant="ghost" size="sm">
@@ -725,38 +747,33 @@ export function CreateProjectPage() {
           {isManualFlow && customerId && (
             <Card>
               <CardHeader>
-                <CardTitle>Link to Appointment (optional)</CardTitle>
-                <CardDescription>Pick the completed appointment this project is for, so its notes and design details carry over.</CardDescription>
+                <CardTitle>Appointment (optional)</CardTitle>
+                <CardDescription>Pick the appointment this project came from to copy its notes and design.</CardDescription>
               </CardHeader>
               <CardContent className="space-y-2">
                 {customerAppointments.isLoading ? (
                   <p role="status" className="text-sm text-muted-foreground">Loading appointments…</p>
                 ) : linkableAppointments.length === 0 ? (
-                  <p className="text-sm text-muted-foreground">No completed appointments found for this customer.</p>
+                  <p className="text-sm text-muted-foreground">No appointments to link for this customer.</p>
                 ) : (
-                  <div className="divide-y overflow-hidden rounded-xl border">
+                  <select
+                    aria-label="Appointment"
+                    value={manualAppointmentId}
+                    onChange={(event) => setManualAppointmentId(event.target.value)}
+                    className={selectClassName}
+                  >
+                    <option value="">No appointment</option>
                     {linkableAppointments.map((item) => (
-                      <button
-                        key={item._id}
-                        type="button"
-                        onClick={() => setManualAppointmentId(item._id)}
-                        className={`flex w-full items-center justify-between gap-3 p-3 text-left hover:bg-muted focus-visible:bg-muted ${manualAppointmentId === item._id ? 'bg-muted' : ''}`}
-                      >
-                        <div className="min-w-0">
-                          <p className="font-medium">{item.appointmentNumber || item._id} · {item.type === 'ocular' ? 'Ocular' : 'Office'}</p>
-                          <p className="text-xs text-muted-foreground">{item.date} {serviceLabel(item.serviceTypes?.[0], item.serviceTypeCustom)}</p>
-                        </div>
-                        {manualAppointmentId === item._id && <span className="text-xs font-semibold text-foreground">Selected</span>}
-                      </button>
+                      <option key={item._id} value={item._id}>
+                        {[
+                          item.appointmentNumber || item._id,
+                          item.type === 'ocular' ? 'Ocular' : 'Office',
+                          formatAppointmentDate(item.date),
+                          serviceLabel(item.serviceTypes?.[0], item.serviceTypeCustom),
+                        ].filter(Boolean).join(' · ')}
+                      </option>
                     ))}
-                    <button
-                      type="button"
-                      onClick={() => setManualAppointmentId('')}
-                      className={`w-full p-3 text-left text-sm hover:bg-muted focus-visible:bg-muted ${manualAppointmentId === '' ? 'bg-muted font-medium' : 'text-muted-foreground'}`}
-                    >
-                      No appointment — standalone project
-                    </button>
-                  </div>
+                  </select>
                 )}
               </CardContent>
             </Card>
@@ -769,25 +786,6 @@ export function CreateProjectPage() {
               <Textarea id="project-sales-notes" value={initialDesignNotes} onChange={(event) => setInitialDesignNotes(event.target.value)} maxLength={2000} rows={4} placeholder="Enter your notes and clarified customer requirements." />
             </CardContent>
           </Card>
-          {projectPath !== 'ocular' && <Card>
-            <CardHeader>
-              <CardTitle>Signed Contract</CardTitle>
-              <CardDescription>A signed contract is required before the project can be created.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <FileUpload
-                folder="contracts"
-                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                maxSizeMB={10}
-                maxFiles={1}
-                label="Upload Signed Contract"
-                existingKeys={contractFileKeys}
-                onUploadComplete={setContractFileKeys}
-                onUploadingChange={(active) => setUploads((current) => current.contract === active ? current : { ...current, contract: active })}
-              />
-            </CardContent>
-          </Card>}
-
           {!pendingProjectId && <Card>
             <CardHeader>
               <CardTitle>Project Workflow</CardTitle>
@@ -964,23 +962,32 @@ export function CreateProjectPage() {
             </Card>
           )}
 
+          {/* The signed contract is the last step; Create Project appears once it is uploaded. */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Signed Contract</CardTitle>
+              <CardDescription>Upload the signed contract to finish.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FileUpload
+                folder="contracts"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                maxSizeMB={10}
+                maxFiles={1}
+                label="Upload Signed Contract"
+                existingKeys={contractFileKeys}
+                onUploadComplete={setContractFileKeys}
+                onUploadingChange={(active) => setUploads((current) => current.contract === active ? current : { ...current, contract: active })}
+              />
+              {contractFileKeys[0] && <div className="flex justify-end">{submitButton}</div>}
+            </CardContent>
+          </Card>
           </>}
 
-          {/* Sticky so the save button stays visible on long forms. */}
+          {/* Sticky so Cancel (and Save Ocular) stay visible on long forms. */}
           <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap justify-end gap-3 border-t bg-background/95 px-1 py-3 backdrop-blur">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            <Button type="submit" disabled={isUploading || createProject.isPending || isCheckingOcular}>
-              {createProject.isPending || isCheckingOcular ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
-              {createProject.isPending
-                ? 'Creating…'
-                : isCheckingOcular
-                  ? 'Checking ocular…'
-                : isUploading
-                  ? 'Uploading…'
-                  : projectPath === 'ocular'
-                    ? 'Save Ocular'
-                    : 'Create Project'}
-            </Button>
+            {projectPath === 'ocular' && submitButton}
           </div>
         </fieldset>
       </form>

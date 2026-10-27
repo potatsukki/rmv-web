@@ -16,6 +16,11 @@ const AUTOMATABLE_APPOINTMENT_STATUSES = new Set<string>([
   AppointmentStatus.READY_FOR_OCULAR,
 ]);
 
+/** A finished attendance only means the customer was there; the consultation is completed separately. */
+export function consultationAttendanceLabel(status?: string) {
+  return status === AppointmentAttendanceStatus.COMPLETED ? 'Present' : undefined;
+}
+
 export function getNextConsultationAttendanceBoundary(
   appointment: {
     type?: string;
