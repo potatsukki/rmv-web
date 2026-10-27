@@ -681,7 +681,6 @@ export function CreateProjectPage() {
       </div>
 
       <form
-        key={primaryReport?._id || appointment.data?._id || 'new-project'}
         onSubmit={handleSubmit}
         className="space-y-6"
       >
@@ -911,8 +910,8 @@ export function CreateProjectPage() {
                   {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
                 </div>
               )}
-              <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work (optional)</Label><Textarea id="project-description" name="description" maxLength={2000} rows={3} defaultValue={pendingProject.data?.description} /></div>
-              <div className="space-y-2"><Label htmlFor="project-notes">Project Notes</Label><Textarea id="project-notes" name="notes" maxLength={2000} rows={3} defaultValue={defaultNotes} /></div>
+              <div className="space-y-2"><Label htmlFor="project-description">Description / Scope of Work (optional)</Label><Textarea key={pendingProject.data?._id || 'new-project'} id="project-description" name="description" maxLength={2000} rows={3} defaultValue={pendingProject.data?.description} /></div>
+              <div className="space-y-2"><Label htmlFor="project-notes">Project Notes</Label>{/* Keyed so the notes refill when a different appointment or report is linked; the rest of the form keeps its state. */}<Textarea key={primaryReport?._id || appointment.data?._id || 'new-project'} id="project-notes" name="notes" maxLength={2000} rows={3} defaultValue={defaultNotes} /></div>
             </CardContent>
           </Card>
 
@@ -984,8 +983,7 @@ export function CreateProjectPage() {
           </Card>
           </>}
 
-          {/* Sticky so Cancel (and Save Ocular) stay visible on long forms. */}
-          <div className="sticky bottom-0 z-10 -mx-1 flex flex-wrap justify-end gap-3 border-t bg-background/95 px-1 py-3 backdrop-blur">
+          <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
             {projectPath === 'ocular' && submitButton}
           </div>
