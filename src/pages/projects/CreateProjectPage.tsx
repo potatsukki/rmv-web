@@ -465,6 +465,26 @@ export function CreateProjectPage() {
     visitReports.isLoading,
   ]);
 
+  // Unlinking or switching the appointment clears everything the previous one filled in.
+  function resetAppointmentDetails() {
+    setServiceType('');
+    setServiceTypeFromAppointment(false);
+    setServiceTypeCustom('');
+    setCustomerRequirements('');
+    setExtraItems([]);
+    setSelectedDesign(null);
+    setMaterialType('');
+    setFinishColor('');
+    setPreferredDesign('');
+    setSpecifications({});
+    setLineItems([]);
+    setMeasurementUnit('cm');
+    setInitialDesignKeys([]);
+    setInitialDesignNotes('');
+    setAttachments({ photoKeys: [], videoKeys: [], sketchKeys: [], referenceImageKeys: [] });
+    prefillKeyRef.current = '';
+  }
+
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (createProject.isPending || isUploading || isCheckingOcular) return;
@@ -715,6 +735,7 @@ export function CreateProjectPage() {
                     setSelectedCustomer(null);
                     setSearch('');
                     setManualAppointmentId('');
+                    resetAppointmentDetails();
                   }}>Change Customer</Button>}
                 </div>
               ) : (
@@ -760,7 +781,12 @@ export function CreateProjectPage() {
                 ) : (
                   <Select
                     value={manualAppointmentId}
-                    onValueChange={(next) => setManualAppointmentId(next === NO_APPOINTMENT ? '' : next)}
+                    onValueChange={(next) => {
+                      const nextId = next === NO_APPOINTMENT ? '' : next;
+                      if (nextId === manualAppointmentId) return;
+                      resetAppointmentDetails();
+                      setManualAppointmentId(nextId);
+                    }}
                   >
                     <SelectTrigger aria-label="Appointment" className="h-11">
                       <SelectValue placeholder="No appointment" />
