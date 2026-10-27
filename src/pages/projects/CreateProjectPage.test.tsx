@@ -120,9 +120,14 @@ it('offers to link a completed appointment when creating a project manually', ()
   ];
   const html = renderPage('/projects/create?customerId=customer-1');
   expect(html).toContain('Appointment (optional)');
-  expect(html).toContain('APT-1 · Ocular');
   // Starts unlinked so sales staff choose an appointment on purpose.
-  expect(html).toMatch(/<option value="" selected="">No appointment<\/option>/);
+  expect(html).toMatch(/aria-label="Appointment"><span[^>]*>No appointment<\/span>/);
+});
+
+it('says so when the customer has no appointment to link', () => {
+  const html = renderPage('/projects/create?customerId=customer-1');
+  expect(html).toContain('No appointments to link for this customer.');
+  expect(html).not.toContain('aria-label="Appointment"');
 });
 
 it('does not offer to link an appointment when one is already carried in the URL', () => {

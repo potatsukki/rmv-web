@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { DesignTemplateSelector } from '@/components/shared/DesignTemplateSelector';
 import { ServiceSpecificationForm } from '@/components/shared/ServiceSpecificationForm';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
@@ -35,7 +36,9 @@ const LazyLocationPicker = lazy(() =>
 );
 const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
 
-const selectClassName = 'h-11 w-full rounded-md border border-input bg-background px-3 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-ring';
+// The app's Select (not a native <select>): Brave on Linux closed native dropdowns on a plain click here.
+// Radix reserves '' for "no value", so the explicit "No appointment" choice needs its own value.
+const NO_APPOINTMENT = 'none';
 const attachmentGroups = [
   { key: 'photoKeys', label: 'Photos', folder: 'visit-photos', accept: 'image/*', maxFiles: 20, maxSizeMB: 10 },
   { key: 'videoKeys', label: 'Videos', folder: 'visit-videos', accept: 'video/*', maxFiles: 5, maxSizeMB: 50 },
@@ -677,7 +680,7 @@ export function CreateProjectPage() {
         <h1 className="text-2xl font-bold text-foreground">{pendingProjectId ? 'Complete Project' : 'Create Project'}</h1>
         <p className="text-sm text-muted-foreground">{projectPath === 'ocular'
           ? 'Schedule and save the ocular visit. Complete the project after the visit.'
-          : 'Upload the signed contract, then enter the project details.'}</p>
+          : 'Enter the project details, then upload the signed contract.'}</p>
       </div>
 
       <form
@@ -755,24 +758,27 @@ export function CreateProjectPage() {
                 ) : linkableAppointments.length === 0 ? (
                   <p className="text-sm text-muted-foreground">No appointments to link for this customer.</p>
                 ) : (
-                  <select
-                    aria-label="Appointment"
+                  <Select
                     value={manualAppointmentId}
-                    onChange={(event) => setManualAppointmentId(event.target.value)}
-                    className={selectClassName}
+                    onValueChange={(next) => setManualAppointmentId(next === NO_APPOINTMENT ? '' : next)}
                   >
-                    <option value="">No appointment</option>
-                    {linkableAppointments.map((item) => (
-                      <option key={item._id} value={item._id}>
-                        {[
-                          item.appointmentNumber || item._id,
-                          item.type === 'ocular' ? 'Ocular' : 'Office',
-                          formatAppointmentDate(item.date),
-                          serviceLabel(item.serviceTypes?.[0], item.serviceTypeCustom),
-                        ].filter(Boolean).join(' · ')}
-                      </option>
-                    ))}
-                  </select>
+                    <SelectTrigger aria-label="Appointment" className="h-11">
+                      <SelectValue placeholder="No appointment" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value={NO_APPOINTMENT}>No appointment</SelectItem>
+                      {linkableAppointments.map((item) => (
+                        <SelectItem key={item._id} value={item._id}>
+                          {[
+                            item.appointmentNumber || item._id,
+                            item.type === 'ocular' ? 'Ocular' : 'Office',
+                            formatAppointmentDate(item.date),
+                            serviceLabel(item.serviceTypes?.[0], item.serviceTypeCustom),
+                          ].filter(Boolean).join(' · ')}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 )}
               </CardContent>
             </Card>
@@ -832,19 +838,20 @@ export function CreateProjectPage() {
                   </div>
                   <div className="space-y-2">
                     <Label htmlFor="project-ocular-slot">Time Slot</Label>
-                    <select
-                      id="project-ocular-slot"
+                    <Select
                       value={ocularVisitSlot}
-                      onChange={(event) => setOcularVisitSlot(event.target.value)}
-                      className={selectClassName}
-                      required
+                      onValueChange={setOcularVisitSlot}
                       disabled={!ocularVisitDate || availableOcularSlots.isLoading}
                     >
-                      <option value="">{availableOcularSlots.isLoading ? 'Checking slots…' : 'Select an available time'}</option>
-                      {availableOcularSlots.data?.slots.filter((slot) => slot.available).map((slot) => (
-                        <option key={slot.slotCode} value={slot.slotCode}>{formatSlotTime(slot.slotCode)}</option>
-                      ))}
-                    </select>
+                      <SelectTrigger id="project-ocular-slot" className="h-11">
+                        <SelectValue placeholder={availableOcularSlots.isLoading ? 'Checking slots…' : 'Select an available time'} />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {availableOcularSlots.data?.slots.filter((slot) => slot.available).map((slot) => (
+                          <SelectItem key={slot.slotCode} value={slot.slotCode}>{formatSlotTime(slot.slotCode)}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     {ocularVisitDate && !availableOcularSlots.isLoading && availableOcularSlots.data?.slots.every((slot) => !slot.available) && (
                       <p className="text-xs text-destructive">No available ocular slots on this date.</p>
                     )}
@@ -897,15 +904,19 @@ export function CreateProjectPage() {
               ) : (
                 <div className="space-y-2">
                   <Label htmlFor="project-service">Service Type</Label>
-                  <select id="project-service" name="serviceType" required value={serviceType} onChange={(event) => {
-                    setServiceType(event.target.value);
+                  <Select value={serviceType} onValueChange={(next) => {
+                    setServiceType(next);
                     setServiceTypeFromAppointment(false);
                     setSelectedDesign(null);
-                    setExtraItems((current) => current.filter((item) => item.serviceType !== event.target.value));
-                  }} className={selectClassName}>
-                    <option value="" disabled>{appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'}</option>
-                    {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                  </select>
+                    setExtraItems((current) => current.filter((item) => item.serviceType !== next));
+                  }}>
+                    <SelectTrigger id="project-service" className="h-11">
+                      <SelectValue placeholder={appointmentId && appointment.isLoading ? 'Loading appointment service…' : 'Select a service'} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Object.entries(SERVICE_TYPE_LABELS).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                    </SelectContent>
+                  </Select>
                   {serviceTypeFromAppointment && <p className="text-xs text-muted-foreground">Auto-filled from the appointment and visit report. You can change it if needed.</p>}
                   {appointmentId && appointment.isError && <p className="text-xs text-muted-foreground">Unable to load the appointment service. Select it manually.</p>}
                 </div>
@@ -949,10 +960,14 @@ export function CreateProjectPage() {
                 <CardDescription>Use this when the customer orders more than one item, for example a walk-in customer who needs a gate and a railing.</CardDescription>
               </CardHeader>
               <CardContent className="flex flex-col gap-3 sm:flex-row">
-                <select aria-label="Service for the new item" value={newItemServiceType} onChange={(event) => setNewItemServiceType(event.target.value)} className={selectClassName}>
-                  <option value="">Select a service</option>
-                  {Object.entries(SERVICE_TYPE_LABELS).filter(([value]) => !usedServiceTypes.includes(value)).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
-                </select>
+                <Select value={newItemServiceType} onValueChange={setNewItemServiceType}>
+                  <SelectTrigger aria-label="Service for the new item" className="h-11">
+                    <SelectValue placeholder="Select a service" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Object.entries(SERVICE_TYPE_LABELS).filter(([value]) => !usedServiceTypes.includes(value)).map(([value, label]) => <SelectItem key={value} value={value}>{label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
                 <Button type="button" variant="outline" className="shrink-0" disabled={!newItemServiceType} onClick={() => {
                   setExtraItems((current) => [...current, newItemDraft(newItemServiceType)]);
                   setNewItemServiceType('');
