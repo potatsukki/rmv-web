@@ -1,70 +1,78 @@
 import { describe, expect, it } from 'vitest';
 
 import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus } from './constants';
-import type { PaymentPlan } from './types';
+import type { PaymentPlan, PaymentStage } from './types';
 import { resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from './workflow-status';
 
-describe('ocular project status', () => {
-  it('shows Ocular Completed while the draft still belongs to the Ocular stage', () => {
+describe('project status', () => {
+  it('shows For Review once the ocular visit is done, while the draft stays in the Ocular stage', () => {
     expect(resolveProjectWorkflowStatus({ project: {
       status: 'draft', ocularAppointmentId: 'ocular-1', ocularVisitStatus: 'completed',
-    } })).toMatchObject({ label: 'Ocular Completed', stage: 'pending_ocular', isTerminal: false });
+    } })).toMatchObject({ label: 'For Review', stage: 'pending_ocular', isTerminal: false });
   });
 
-  it.each(['requested', 'confirmed', 'in_progress', undefined])('keeps the Ocular label before visit completion (%s)', (ocularVisitStatus) => {
+  it.each(['requested', 'confirmed', 'in_progress', undefined])('shows For Ocular before visit completion (%s)', (ocularVisitStatus) => {
     expect(resolveProjectWorkflowStatus({ project: {
       status: 'draft', ocularAppointmentId: 'ocular-1', ocularVisitStatus,
-    } })).toMatchObject({ label: 'Ocular', stage: 'pending_ocular', isTerminal: false });
+    } })).toMatchObject({ label: 'For Ocular', stage: 'pending_ocular', isTerminal: false });
+  });
+
+  // Payment progress no longer changes the project status; it has its own badge.
+  it.each([
+    ['submitted', 'For Review', 'review'],
+    ['blueprint', 'For Blueprint & Costing', 'design'],
+    ['approved', 'For Down Payment', 'billing'],
+    ['payment_pending', 'For Down Payment', 'billing'],
+    ['fabrication', 'For Fabrication', 'fabrication'],
+    ['completed', 'Completed', 'completed'],
+  ])('labels a %s project as %s', (status, label, stage) => {
+    expect(resolveProjectWorkflowStatus({ project: { status, contractStatus: 'uploaded' } })).toMatchObject({ label, stage });
+  });
+
+  it('shows the revision request while engineering revises the quotation', () => {
+    expect(resolveProjectWorkflowStatus({ blueprint: { status: 'revision_requested' } }))
+      .toMatchObject({ label: 'Revision Requested', tone: 'orange' });
   });
 });
 
-function paymentPlan(stages: PaymentPlan['stages']): PaymentPlan {
+type StageInput = Partial<PaymentStage> & Pick<PaymentStage, 'status'>;
+
+function paymentPlan(stages: StageInput[]): PaymentPlan {
+  const fullStages = stages.map((stage, index) => ({
+    stageId: `stage-${index + 1}`, label: `Stage ${index + 1}`, percentage: 0, amount: 1000, ...stage,
+  }));
   return {
     _id: 'plan-1',
     projectId: 'project-1',
-    totalAmount: stages.reduce((total, stage) => total + stage.amount, 0),
-    stages,
+    totalAmount: fullStages.reduce((total, stage) => total + stage.amount, 0),
+    stages: fullStages,
     isImmutable: true,
     createdAt: '2026-09-29T00:00:00.000Z',
   };
 }
 
-describe('revision workflow status', () => {
-  it('shows the revision request while the unchanged quotation remains sent to the customer', () => {
-    expect(resolveProjectWorkflowStatus({ blueprint: {
-      status: 'revision_requested', quotationReviewStatus: 'sent_to_customer',
-      blueprintApproved: false, costingApproved: true, quotation: { total: 3000 },
-    } })).toMatchObject({ label: 'Revision Requested', tone: 'orange' });
-  });
-});
+const { PENDING, PROOF_SUBMITTED, VERIFIED } = PaymentStageStatus;
+const due = '2026-10-27T00:00:00.000Z';
 
 describe('resolvePaymentWorkflowStatus', () => {
-  it('labels an incomplete downpayment with a recorded amount as partially paid', () => {
-    const status = resolvePaymentWorkflowStatus([paymentPlan([{
-      stageId: 'downpayment',
-      label: 'Downpayment',
-      percentage: 50,
-      amount: 50_000,
-      amountPaid: 20_000,
-      remainingBalance: 30_000,
-      status: PaymentStageStatus.PENDING,
-    }])]);
-
-    expect(status).toMatchObject({ key: 'partially_paid', label: 'Partially Paid' });
+  it.each([
+    ['No Payment', [{ status: PENDING, activatedAt: due }, { status: PENDING }, { status: PENDING }]],
+    ['Payment Received, Awaiting Cashier Verification', [{ status: PROOF_SUBMITTED, activatedAt: due }, { status: PENDING }, { status: PENDING }]],
+    ['Down Payment Paid', [{ status: VERIFIED, activatedAt: due }, { status: PENDING }, { status: PENDING }]],
+    ['For Second Payment', [{ status: VERIFIED, activatedAt: due }, { status: PENDING, activatedAt: due }, { status: PENDING }]],
+    ['Partially Paid', [{ status: VERIFIED, activatedAt: due }, { status: VERIFIED, activatedAt: due }, { status: PENDING }]],
+    ['For Final Payment', [{ status: VERIFIED, activatedAt: due }, { status: VERIFIED, activatedAt: due }, { status: PENDING, activatedAt: due }]],
+    ['Fully Paid', [{ status: VERIFIED }, { status: VERIFIED }, { status: VERIFIED }]],
+    ['No Payment', [{ status: PENDING, activatedAt: due }]],
+    ['Fully Paid', [{ status: VERIFIED, activatedAt: due }]],
+  ] as Array<[string, StageInput[]]>)('labels the plan %s', (label, stages) => {
+    expect(resolvePaymentWorkflowStatus([paymentPlan(stages)])).toMatchObject({ label });
   });
 
-  it('labels a completed required payment as fully paid', () => {
-    const status = resolvePaymentWorkflowStatus([paymentPlan([{
-      stageId: 'downpayment',
-      label: 'Downpayment',
-      percentage: 100,
-      amount: 50_000,
-      amountPaid: 50_000,
-      remainingBalance: 0,
-      status: PaymentStageStatus.VERIFIED,
-    }])]);
-
-    expect(status).toMatchObject({ key: 'paid', label: 'Fully Paid' });
+  it('keeps a partial cash amount before any verified stage as partially paid', () => {
+    expect(resolvePaymentWorkflowStatus([paymentPlan([
+      { status: PENDING, amount: 50_000, amountPaid: 20_000, remainingBalance: 30_000 },
+    ])])).toMatchObject({ key: 'partially_paid', label: 'Partially Paid' });
   });
 });
 

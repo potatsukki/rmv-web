@@ -5,7 +5,7 @@ import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
-import { getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
+import { consultationAttendanceLabel, getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -790,13 +790,13 @@ export function AppointmentDetailPage() {
                 <div className="min-w-0">
                   <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Attendance Status</p>
                   <div className="mt-2">
-                    <StatusBadge status={attendanceStatus} />
+                    <StatusBadge status={attendanceStatus} label={consultationAttendanceLabel(attendanceStatus)} />
                   </div>
                   <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
                     {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS
                       ? 'Started automatically at the scheduled time'
                       : attendanceStatus === AppointmentAttendanceStatus.COMPLETED
-                        ? 'Completed automatically at the end of the time slot'
+                        ? 'Marked present automatically at the end of the time slot'
                         : 'Will start automatically at the scheduled time'}
                   </p>
                 </div>
@@ -818,7 +818,7 @@ export function AppointmentDetailPage() {
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Completed</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Marked Present</p>
                   <p className="mt-1 text-[17px] font-semibold text-slate-950 dark:text-slate-100">{formatDateTime(appt.consultationCompletedAt)}</p>
                   <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Updates automatically after the one-hour slot</p>
                 </div>

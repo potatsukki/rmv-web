@@ -63,8 +63,8 @@ import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { getItemScopedProjectValue, getProjectDisplaySiteAddress, getProjectSnapshotLabels } from '@/lib/project-display';
 import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
 import { cn, extractErrorMessage } from '@/lib/utils';
-import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
-import type { ApiResponse, PaymentPlan, ProjectItem, VisitReport } from '@/lib/types';
+import { resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from '@/lib/workflow-status';
+import type { ApiResponse, ProjectItem, VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
 
 const LazyBlueprintTab = lazy(() =>
@@ -841,9 +841,9 @@ export function ProjectDetailPage() {
     project,
     item: activeProjectItemRecord,
     blueprint,
-    paymentPlans: [paymentPlan as PaymentPlan | undefined],
-    isCustomer,
   });
+  // Payment progress has its own badge next to the project status once a plan exists.
+  const paymentWorkflowStatus = paymentPlan?.stages?.length ? resolvePaymentWorkflowStatus([paymentPlan]) : null;
   // Once design and billing are approved, take the customer straight to Costing, where the
   // payment plan dialog opens. Only when no tab was chosen in the URL, and once per visit.
   const landedOnCostingRef = useRef(false);
@@ -1233,6 +1233,9 @@ export function ProjectDetailPage() {
                 </span>
               )}
               <StatusBadge status={projectStatusBadgeStatus} label={projectStatusBadgeLabel} />
+              {paymentWorkflowStatus && (
+                <StatusBadge status={paymentWorkflowStatus.key} label={paymentWorkflowStatus.label} />
+              )}
             </div>
             <p className="mt-1.5 text-sm text-[var(--text-metal-color)] dark:text-slate-300">
               Created {format(new Date(project.createdAt), 'MMM d, yyyy')}
@@ -1358,7 +1361,7 @@ export function ProjectDetailPage() {
         <Card>
           <CardContent className="space-y-3 p-4">
             <div>
-              <p className="text-sm font-semibold">{ocularAppointment.data?.status === 'completed' ? 'Ocular Completed' : 'Ocular'}</p>
+              <p className="text-sm font-semibold">{ocularAppointment.data?.status === 'completed' ? 'For Review' : 'For Ocular'}</p>
               <p className="mt-1 text-xs text-muted-foreground">{isCustomer
                 ? ocularAppointment.data?.status === 'completed'
                   ? 'Your ocular visit is complete. Our sales staff will finish your project details and signed contract next.'
@@ -2964,7 +2967,7 @@ export function ProjectDetailPage() {
                 <div className="min-w-0 flex-1">
                   <p className={cn('text-sm font-semibold', isDark ? 'text-amber-100' : 'text-amber-900')}>Fabrication team assignment is not ready</p>
                   <p className={cn('mt-0.5 text-xs', isDark ? 'text-amber-200/80' : 'text-amber-800')}>
-                    The customer must approve the blueprint and costing before you can assign fabricators.
+                    Send the quotation first. The design and billing are approved when it is sent, and then you can assign fabricators.
                   </p>
                 </div>
               </CardContent>
