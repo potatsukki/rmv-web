@@ -120,10 +120,10 @@ export function SettingsPage() {
   }, [configs, paymentLoaded]);
 
   // Handlers
-  const handleToggleMaintenance = async () => {
+  const handleToggleMaintenance = async (enabled: boolean) => {
     try {
-      await toggleMaintenance.mutateAsync(!maintenanceEnabled);
-      toast.success(maintenanceEnabled ? 'System handles restored' : 'System paused for maintenance');
+      await toggleMaintenance.mutateAsync(enabled);
+      toast.success(enabled ? 'System paused for maintenance' : 'System traffic restored');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to toggle system states'));
     }
@@ -324,12 +324,12 @@ export function SettingsPage() {
 
                     <div className="flex flex-col gap-2">
                       {maintenanceEnabled ? (
-                        <Button variant="default" onClick={handleToggleMaintenance} disabled={toggleMaintenance.isPending} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
+                        <Button variant="default" onClick={() => handleToggleMaintenance(false)} disabled={toggleMaintenance.isPending} size="sm" className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold">
                           {toggleMaintenance.isPending && <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />}
                           Restore Traffic
                         </Button>
                       ) : isScheduled ? (
-                        <Button variant="outline" onClick={() => handleToggleMaintenance()} disabled={toggleMaintenance.isPending} size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
+                        <Button variant="outline" onClick={() => handleToggleMaintenance(false)} disabled={toggleMaintenance.isPending} size="sm" className="text-red-600 border-red-200 hover:bg-red-50">
                           {toggleMaintenance.isPending && <RefreshCw className="mr-2 h-3.5 w-3.5 animate-spin" />}
                           Cancel Schedule
                         </Button>
