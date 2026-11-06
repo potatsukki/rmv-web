@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useRef, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
 import { ArrowLeft, FolderPlus, Loader2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
@@ -16,7 +16,7 @@ import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { PageError } from '@/components/shared/PageError';
 import { PageLoader } from '@/components/shared/PageLoader';
-import { useAppointment, useAppointments, useAvailableSlots } from '@/hooks/useAppointments';
+import { useAppointment, useAppointments } from '@/hooks/useAppointments';
 import { useCreateProject, useProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
@@ -28,13 +28,9 @@ import { FINISH_OPTIONS, MATERIAL_OPTIONS, mergeSpecificationsWithDefaults } fro
 import { SuggestionInput } from '@/components/shared/SuggestionInput';
 import { GalleryUpload } from '@/components/shared/PhotoUploadGrid';
 import { extractErrorMessage } from '@/lib/utils';
-import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
+import { getReportItemKey } from '@/lib/design-selection';
 
-const LazyLocationPicker = lazy(() =>
-  import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
-);
-const peso = new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' });
 
 // The app's Select (not a native <select>): Brave on Linux closed native dropdowns on a plain click here.
 // Radix reserves '' for "no value", so the explicit "No appointment" choice needs its own value.
@@ -50,11 +46,6 @@ function serviceLabel(serviceType?: string, custom?: string) {
   return serviceType ? SERVICE_TYPE_LABELS[serviceType] || serviceType : '';
 }
 
-function formatSlotTime(slot: string) {
-  const [hour = 0, minute = 0] = slot.split(':').map(Number);
-  return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
-}
-
 function formatAppointmentDate(date?: string) {
   if (!date) return '';
   const parsed = new Date(`${date.slice(0, 10)}T00:00:00`);
@@ -63,15 +54,6 @@ function formatAppointmentDate(date?: string) {
     : parsed.toLocaleDateString('en-PH', { month: 'short', day: 'numeric', year: 'numeric' });
 }
 
-function localDateAfter(days: number) {
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  date.setDate(date.getDate() + days);
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
 
 type AttachmentKey = typeof attachmentGroups[number]['key'];
 
@@ -88,6 +70,15 @@ type ItemDraft = {
   lineItems: LineItem[];
   measurementUnit: string;
 } & Record<AttachmentKey | 'sketchKeys', string[]>;
+
+/** An extra project item: one per customer-selected design (or per service when there is no design). */
+type ExtraItemDraft = ItemDraft & {
+  key: string;
+  /** The visit report this item came from, so the server updates that exact item. */
+  visitReportId?: string;
+  /** The booked design name, shown as the item heading. */
+  label?: string;
+};
 
 function templatePatch(serviceType: string, template: DesignTemplate, specifications: ServiceSpecifications): Partial<ItemDraft> {
   return {
@@ -123,13 +114,31 @@ function newItemDraft(serviceType: string, report?: VisitReport, design?: { id?:
   };
 }
 
+function newExtraItemDraft(serviceType: string, report?: VisitReport, design?: { id?: string; name?: string }, custom?: string): ExtraItemDraft {
+  const reportDesign = report?.selectedDesignTemplateId
+    ? { id: report.selectedDesignTemplateId, name: report.selectedDesignTemplateName }
+    : design;
+  return {
+    ...newItemDraft(serviceType, report, reportDesign, custom),
+    key: report ? getReportItemKey(report) : `type:${serviceType}`,
+    visitReportId: report?._id ? String(report._id) : undefined,
+    label: report?.selectedDesignTemplateName?.trim() || undefined,
+  };
+}
+
+function itemDomKey(key: string) {
+  return key.replace(/[^a-zA-Z0-9_-]/g, '-');
+}
+
 function storableImageUrl(url?: string) {
   return url && !url.startsWith('data:') ? url : undefined;
 }
 
-function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, report, onChange, onUploadingChange, onRemove }: {
+function ItemDetailsFields({ idPrefix, heading, itemLabel, draft, fallbackTemplateId, report, onChange, onUploadingChange, onRemove }: {
   idPrefix: string;
   heading?: string;
+  /** Design name for a design-backed item; falls back to the service label. */
+  itemLabel?: string;
   /** The ocular/visit report this item came from; every report must be submitted before a pending ocular is completed. */
   report?: Pick<VisitReport, '_id' | 'status'>;
   draft: ItemDraft;
@@ -145,7 +154,7 @@ function ItemDetailsFields({ idPrefix, heading, draft, fallbackTemplateId, repor
         <CardHeader className="flex flex-row flex-wrap items-start justify-between gap-3">
           <div>
             {heading && <p className="text-xs font-semibold uppercase tracking-wider text-[#f5b400]">{heading}</p>}
-            <CardTitle>{heading ? `${serviceLabel(serviceType, draft.serviceTypeCustom)} Details & Design` : 'Project Details & Design'}</CardTitle>
+            <CardTitle>{heading ? `${itemLabel || serviceLabel(serviceType, draft.serviceTypeCustom)} Details & Design` : 'Project Details & Design'}</CardTitle>
             {report && (
               <p className="mt-1 text-xs text-muted-foreground">
                 Visit report: <span className="capitalize">{String(report.status).replaceAll('_', ' ')}</span>
@@ -239,7 +248,7 @@ export function CreateProjectPage() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const createProject = useCreateProject();
   const [serviceType, setServiceType] = useState('');
-  const [extraItems, setExtraItems] = useState<ItemDraft[]>([]);
+  const [extraItems, setExtraItems] = useState<ExtraItemDraft[]>([]);
   const [newItemServiceType, setNewItemServiceType] = useState('');
   const [serviceTypeCustom, setServiceTypeCustom] = useState('');
   const [customerRequirements, setCustomerRequirements] = useState('');
@@ -257,19 +266,8 @@ export function CreateProjectPage() {
   const [contractFileKeys, setContractFileKeys] = useState<string[]>([]);
   const [attachments, setAttachments] = useState({ photoKeys: [] as string[], videoKeys: [] as string[], sketchKeys: [] as string[], referenceImageKeys: [] as string[] });
   const [uploads, setUploads] = useState<Record<string, boolean>>({});
-  const [projectPath, setProjectPath] = useState<'direct' | 'ocular'>('direct');
-  const [ocularVisitDate, setOcularVisitDate] = useState('');
-  const [ocularVisitSlot, setOcularVisitSlot] = useState('');
   const [isCheckingOcular, setIsCheckingOcular] = useState(false);
-  const [sitePin, setSitePin] = useState<MapPoint | null>(null);
-  const [siteAddress, setSiteAddress] = useState('');
-  const [sitePinFromProfile, setSitePinFromProfile] = useState(false);
-  const [seededCustomerId, setSeededCustomerId] = useState<string>();
-  const [ocularFee, setOcularFee] = useState<OcularFeePreview | null>(null);
-  const [ocularFeeLoading, setOcularFeeLoading] = useState(false);
-  const [ocularFeeError, setOcularFeeError] = useState<string | null>(null);
   const isUploading = Object.values(uploads).some(Boolean);
-  const availableOcularSlots = useAvailableSlots(ocularVisitDate, 'ocular');
 
   const primaryDraft: ItemDraft = {
     serviceType,
@@ -365,41 +363,6 @@ export function CreateProjectPage() {
   });
   const customer = selectedCustomer || customerLookup.data;
 
-  // Pre-fill the ocular site from the customer's saved profile address; sales can move the pin.
-  if (customer && customer._id !== seededCustomerId) {
-    const saved = [customer.addressData, ...(customer.savedAddresses || [])]
-      .find((address) => address?.lat != null && address?.lng != null);
-    setSeededCustomerId(customer._id);
-    setSitePin(saved ? { lat: saved.lat!, lng: saved.lng! } : null);
-    setSiteAddress(saved?.formattedAddress || '');
-    setSitePinFromProfile(Boolean(saved));
-  }
-
-  useEffect(() => {
-    if (projectPath !== 'ocular' || !sitePin) {
-      setOcularFee(null);
-      setOcularFeeError(null);
-      return;
-    }
-    let cancelled = false;
-    const timer = setTimeout(async () => {
-      setOcularFeeLoading(true);
-      setOcularFeeError(null);
-      try {
-        const preview = await fetchOcularFeePreview(sitePin);
-        if (!cancelled) setOcularFee(preview);
-      } catch {
-        if (!cancelled) {
-          setOcularFee(null);
-          setOcularFeeError('Unable to calculate the route to this location. Select a reachable land location.');
-        }
-      } finally {
-        if (!cancelled) setOcularFeeLoading(false);
-      }
-    }, 500);
-    return () => { cancelled = true; clearTimeout(timer); };
-  }, [projectPath, sitePin]);
-
   useEffect(() => {
     const sourceCustomer = pendingProject.data?.customerId || appointment.data?.customerId;
     if (!sourceCustomer) return;
@@ -430,12 +393,31 @@ export function CreateProjectPage() {
     setServiceTypeFromAppointment(true);
     setServiceTypeCustom(primaryReport?.serviceTypeCustom || appointment.data.serviceTypeCustom || siteDetails?.serviceTypeCustom || '');
     setCustomerRequirements((primaryReport || siteDetails)?.customerRequirements || '');
-    setExtraItems(linkedServiceTypes.filter((type) => type !== appointmentServiceType).map((type) => newItemDraft(
-      type,
-      appointmentReports.find((report) => report.serviceType === type),
-      appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === type),
-      appointment.data?.serviceTypeCustom || siteDetails?.serviceTypeCustom,
-    )));
+    const customLabel = appointment.data?.serviceTypeCustom || siteDetails?.serviceTypeCustom;
+    const primaryItemKey = primaryReport ? getReportItemKey(primaryReport) : `type:${appointmentServiceType}`;
+    const seenItemKeys = new Set([primaryItemKey]);
+    const reportItems: ExtraItemDraft[] = [];
+    for (const report of appointmentReports) {
+      const itemKey = getReportItemKey(report);
+      if (!report.serviceType || seenItemKeys.has(itemKey)) continue;
+      seenItemKeys.add(itemKey);
+      reportItems.push(newExtraItemDraft(
+        report.serviceType,
+        report,
+        appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === report.serviceType),
+        customLabel,
+      ));
+    }
+    const servicesWithItems = new Set([appointmentServiceType, ...appointmentReports.map((report) => report.serviceType)]);
+    setExtraItems([
+      ...reportItems,
+      ...linkedServiceTypes.filter((type) => !servicesWithItems.has(type)).map((type) => newExtraItemDraft(
+        type,
+        undefined,
+        appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === type),
+        customLabel,
+      )),
+    ]);
     setSelectedDesign(sourceTemplate || null);
     setMaterialType(primaryReport?.materials || siteDetails?.materials || sourceTemplate?.material || '');
     setFinishColor(primaryReport?.finishes || siteDetails?.finishes || sourceTemplate?.finish || '');
@@ -492,47 +474,9 @@ export function CreateProjectPage() {
       toast.error('Select a customer first.');
       return;
     }
-    if (projectPath === 'ocular') {
-      if (!ocularVisitDate || !ocularVisitSlot) {
-        toast.error('Select the ocular visit date and time.');
-        return;
-      }
-      const selectedSlot = availableOcularSlots.data?.slots.find((slot) => slot.slotCode === ocularVisitSlot);
-      if (!selectedSlot?.available) {
-        toast.error('Select an available ocular visit time.');
-        return;
-      }
-      if (!sitePin) {
-        toast.error('Pin the project site location.');
-        return;
-      }
-      try {
-        await createProject.mutateAsync({
-          customerId,
-          appointmentId: appointmentId || undefined,
-          title: defaultTitle || undefined,
-          serviceType: serviceType || undefined,
-          ocularVisit: {
-            date: ocularVisitDate,
-            slotCode: ocularVisitSlot,
-            customerLocation: sitePin,
-            formattedAddress: siteAddress || undefined,
-          },
-          initialDesignNotes: cleanSalesNotes(initialDesignNotes),
-        });
-        toast.success('Ocular visit scheduled and saved.');
-        navigate('/projects');
-      } catch (error) {
-        toast.error(extractErrorMessage(error, 'Failed to save ocular visit.'));
-      }
-      return;
-    }
-    // Complete Project keeps the ocular pin; a direct project needs its site pinned here.
-    if (!pendingProjectId && !sitePin) {
-      toast.error('Pin the project site location.');
-      return;
-    }
-    if (!contractFileKeys[0]) {
+    // New projects start "For Ocular"; the signed contract and ocular visit are handled on the
+    // project page. Only the legacy Complete Project flow still uploads the contract here.
+    if (pendingProjectId && !contractFileKeys[0]) {
       toast.error('Upload the signed contract before creating the project.');
       return;
     }
@@ -599,7 +543,8 @@ export function CreateProjectPage() {
         title,
         serviceType,
         serviceTypes: usedServiceTypes,
-        additionalItems: extraItems.map(({ selectedDesign: design, ...item }) => ({
+        visitReportId: primaryReport?._id ? String(primaryReport._id) : undefined,
+        additionalItems: extraItems.map(({ selectedDesign: design, key: _key, label: _label, ...item }) => ({
           ...item,
           serviceTypeCustom: item.serviceTypeCustom || undefined,
           preferredDesign: item.preferredDesign || undefined,
@@ -612,9 +557,6 @@ export function CreateProjectPage() {
         })),
         deliveryType,
         description: description || undefined,
-        siteAddress: !pendingProjectId && sitePin
-          ? siteAddress || `${sitePin.lat.toFixed(6)}, ${sitePin.lng.toFixed(6)}`
-          : undefined,
         serviceTypeCustom: serviceTypeCustom || undefined,
         measurementUnit,
         lineItems,
@@ -632,9 +574,11 @@ export function CreateProjectPage() {
         materialType: materialType || undefined,
         finishColor: finishColor || undefined,
         notes: value('notes') || undefined,
-        contractFileKey: contractFileKeys[0],
+        contractFileKey: pendingProjectId ? contractFileKeys[0] : undefined,
       });
-      toast.success('Project created successfully.');
+      toast.success(pendingProjectId
+        ? 'Project created successfully.'
+        : 'Project created. Upload the signed contract and schedule the ocular visit next.');
       navigate(`/projects/${project._id}`);
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Failed to create project.'));
@@ -646,36 +590,6 @@ export function CreateProjectPage() {
   if (pendingProjectId && pendingProject.isLoading) return <PageLoader />;
   if (pendingProjectId && (pendingProject.isError || !pendingProject.data)) return <PageError onRetry={pendingProject.refetch} />;
 
-  // Sales staff set the project site on both paths; fabricators only see it.
-  const sitePinField = (
-    <>
-      <div>
-        <Label>Project Site Map Pin</Label>
-        <p className="mt-1 text-xs text-muted-foreground">
-          {sitePinFromProfile
-            ? "Auto-filled from the customer's profile. Move the pin if the project site is different."
-            : 'Search, use the current location, or tap the map to pin the project site.'}
-        </p>
-      </div>
-      <Suspense fallback={<div className="flex min-h-56 items-center justify-center"><Loader2 className="h-5 w-5 animate-spin" /></div>}>
-        <LazyLocationPicker
-          value={sitePin}
-          address={siteAddress}
-          onChange={(nextLocation, nextAddress) => {
-            setSitePin(nextLocation);
-            setSiteAddress(nextAddress || '');
-          }}
-        />
-      </Suspense>
-      {siteAddress && (
-        <div className="rounded-lg border bg-background p-3">
-          <p className="text-xs font-medium text-muted-foreground">Project site address</p>
-          <p className="mt-1 break-words text-sm">{siteAddress}</p>
-        </div>
-      )}
-    </>
-  );
-
   const submitButton = (
     <Button type="submit" disabled={isUploading || createProject.isPending || isCheckingOcular}>
       {createProject.isPending || isCheckingOcular ? <Loader2 className="h-4 w-4 animate-spin" /> : <FolderPlus className="h-4 w-4" />}
@@ -685,9 +599,7 @@ export function CreateProjectPage() {
           ? 'Checking ocular…'
         : isUploading
           ? 'Uploading…'
-          : projectPath === 'ocular'
-            ? 'Save Ocular'
-            : 'Create Project'}
+          : 'Create Project'}
     </Button>
   );
 
@@ -698,9 +610,9 @@ export function CreateProjectPage() {
       </Button>
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">{pendingProjectId ? 'Complete Project' : 'Create Project'}</h1>
-        <p className="text-sm text-muted-foreground">{projectPath === 'ocular'
-          ? 'Schedule and save the ocular visit. Complete the project after the visit.'
-          : 'Enter the project details, then upload the signed contract.'}</p>
+        <p className="text-sm text-muted-foreground">{pendingProjectId
+          ? 'Enter the project details, then upload the signed contract.'
+          : 'Enter the project details. The project starts as For Ocular; upload the signed contract and schedule the ocular visit from the project page.'}</p>
       </div>
 
       <form
@@ -708,7 +620,7 @@ export function CreateProjectPage() {
         className="space-y-6"
       >
         <fieldset disabled={createProject.isPending || isCheckingOcular} className="min-w-0 space-y-6">
-          {projectPath !== 'ocular' && primaryReport?.visitType === 'ocular' && (
+          {primaryReport?.visitType === 'ocular' && (
             <div className="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
               <p>Measurements and details were filled from the ocular visit report. Review them before creating the project.</p>
@@ -817,101 +729,7 @@ export function CreateProjectPage() {
               <Textarea id="project-sales-notes" value={initialDesignNotes} onChange={(event) => setInitialDesignNotes(event.target.value)} maxLength={2000} rows={4} placeholder="Enter your notes and clarified customer requirements." />
             </CardContent>
           </Card>
-          {!pendingProjectId && <Card>
-            <CardHeader>
-              <CardTitle>Project Workflow</CardTitle>
-              <CardDescription>Choose whether this project can proceed directly or needs an ocular site visit first.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="grid gap-3 sm:grid-cols-2">
-                <button
-                  type="button"
-                  aria-pressed={projectPath === 'direct'}
-                  onClick={() => setProjectPath('direct')}
-                  className={`rounded-xl border p-4 text-left transition-colors ${projectPath === 'direct' ? 'border-blue-400 bg-blue-50 text-blue-950 dark:border-blue-500/60 dark:bg-blue-500/10 dark:text-blue-100' : 'hover:bg-muted'}`}
-                >
-                  <p className="text-sm font-semibold">Create Project</p>
-                  <p className="mt-1 text-xs opacity-75">Send the completed project details to engineering.</p>
-                </button>
-                <button
-                  type="button"
-                  aria-pressed={projectPath === 'ocular'}
-                  onClick={() => setProjectPath('ocular')}
-                  className={`rounded-xl border p-4 text-left transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${projectPath === 'ocular' ? 'border-emerald-400 bg-emerald-50 text-emerald-950 dark:border-emerald-500/60 dark:bg-emerald-500/10 dark:text-emerald-100' : 'hover:bg-muted'}`}
-                >
-                  <p className="flex items-center gap-2 text-sm font-semibold"><MapPin className="h-4 w-4" />Ocular Visit</p>
-                  <p className="mt-1 text-xs opacity-75">Save the ocular visit. Complete the project details after the visit.</p>
-                </button>
-              </div>
-
-              {projectPath === 'ocular' && <p className="text-xs text-muted-foreground">Only the customer, visit schedule, and project site are required. A signed contract is needed when creating the final project.</p>}
-
-              {projectPath === 'ocular' && (
-                <div className="grid gap-4 rounded-xl border bg-muted/30 p-4 sm:grid-cols-2">
-                  <div className="space-y-2">
-                    <Label htmlFor="project-ocular-date">Ocular Visit Date</Label>
-                    <Input
-                      id="project-ocular-date"
-                      type="date"
-                      min={localDateAfter(3)}
-                      value={ocularVisitDate}
-                      onChange={(event) => {
-                        setOcularVisitDate(event.target.value);
-                        setOcularVisitSlot('');
-                      }}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="project-ocular-slot">Time Slot</Label>
-                    <Select
-                      value={ocularVisitSlot}
-                      onValueChange={setOcularVisitSlot}
-                      disabled={!ocularVisitDate || availableOcularSlots.isLoading}
-                    >
-                      <SelectTrigger id="project-ocular-slot" className="h-11">
-                        <SelectValue placeholder={availableOcularSlots.isLoading ? 'Checking slots…' : 'Select an available time'} />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableOcularSlots.data?.slots.filter((slot) => slot.available).map((slot) => (
-                          <SelectItem key={slot.slotCode} value={slot.slotCode}>{formatSlotTime(slot.slotCode)}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {ocularVisitDate && !availableOcularSlots.isLoading && availableOcularSlots.data?.slots.every((slot) => !slot.available) && (
-                      <p className="text-xs text-destructive">No available ocular slots on this date.</p>
-                    )}
-                  </div>
-                  <div className="space-y-3 sm:col-span-2">
-                    {sitePinField}
-                    {ocularFeeLoading && (
-                      <p className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" />Calculating visit fee…</p>
-                    )}
-                    {ocularFeeError && <p className="text-sm text-destructive">{ocularFeeError}</p>}
-                    {ocularFee && !ocularFeeLoading && (
-                      <div className="rounded-lg border bg-background p-3 text-sm">
-                        <p className="font-semibold">
-                          Ocular Visit Fee: {ocularFee.fee.isWithinNCR ? 'FREE (within Metro Manila)' : peso.format(ocularFee.fee.total)}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          Distance: {ocularFee.route.distanceKm.toFixed(1)} km · ~{ocularFee.route.durationMinutes} min drive
-                          {!ocularFee.fee.isWithinNCR && ' · The customer pays this fee from their appointment page.'}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
-
-              {projectPath === 'direct' && (
-                <div className="space-y-3 rounded-xl border bg-muted/30 p-4">
-                  {sitePinField}
-                </div>
-              )}
-            </CardContent>
-          </Card>}
-
-          {projectPath !== 'ocular' && <><Card>
+          <Card>
             <CardHeader>
               <CardTitle>Project Information</CardTitle>
               <CardDescription>
@@ -957,24 +775,28 @@ export function CreateProjectPage() {
             heading={extraItems.length ? 'Item 1 · Primary' : undefined}
             draft={primaryDraft}
             fallbackTemplateId={sourceSelectedDesignId}
-            report={extraItems.length ? appointmentReports.find((entry) => entry.serviceType === serviceType) : undefined}
+            itemLabel={primaryReport?.selectedDesignTemplateName?.trim() || undefined}
+            report={extraItems.length ? primaryReport || appointmentReports.find((entry) => entry.serviceType === serviceType) : undefined}
             onChange={patchPrimary}
             onUploadingChange={trackUpload}
           />
 
           {extraItems.map((item, index) => (
             <ItemDetailsFields
-              key={item.serviceType}
-              idPrefix={`item-${item.serviceType}`}
+              key={item.key}
+              idPrefix={`item-${itemDomKey(item.key)}`}
               heading={`Item ${index + 2}`}
+              itemLabel={item.label}
               draft={item}
-              report={appointmentReports.find((entry) => entry.serviceType === item.serviceType)}
-              onChange={(patch) => setExtraItems((current) => current.map((entry) => entry.serviceType === item.serviceType ? { ...entry, ...patch } : entry))}
+              report={item.visitReportId
+                ? appointmentReports.find((entry) => String(entry._id) === item.visitReportId)
+                : appointmentReports.find((entry) => entry.serviceType === item.serviceType)}
+              onChange={(patch) => setExtraItems((current) => current.map((entry) => entry.key === item.key ? { ...entry, ...patch } : entry))}
               onUploadingChange={trackUpload}
               // A pending ocular keeps every item measured during the visit.
               onRemove={pendingProjectId ? undefined : () => {
-                setExtraItems((current) => current.filter((entry) => entry.serviceType !== item.serviceType));
-                setUploads((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`item-${item.serviceType}-`))));
+                setExtraItems((current) => current.filter((entry) => entry.key !== item.key));
+                setUploads((current) => Object.fromEntries(Object.entries(current).filter(([key]) => !key.startsWith(`item-${itemDomKey(item.key)}-`))));
               }}
             />
           ))}
@@ -995,15 +817,15 @@ export function CreateProjectPage() {
                   </SelectContent>
                 </Select>
                 <Button type="button" variant="outline" className="shrink-0" disabled={!newItemServiceType} onClick={() => {
-                  setExtraItems((current) => [...current, newItemDraft(newItemServiceType)]);
+                  setExtraItems((current) => [...current, newExtraItemDraft(newItemServiceType)]);
                   setNewItemServiceType('');
                 }}><Plus className="h-4 w-4" />Add Item</Button>
               </CardContent>
             </Card>
           )}
 
-          {/* The signed contract is the last step; Create Project appears once it is uploaded. */}
-          <Card>
+          {/* Legacy Complete Project only; new projects upload the contract on the project page. */}
+          {pendingProjectId && <Card>
             <CardHeader>
               <CardTitle>Signed Contract</CardTitle>
               <CardDescription>Upload the signed contract to finish.</CardDescription>
@@ -1021,12 +843,11 @@ export function CreateProjectPage() {
               />
               {contractFileKeys[0] && <div className="flex justify-end">{submitButton}</div>}
             </CardContent>
-          </Card>
-          </>}
+          </Card>}
 
           <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            {projectPath === 'ocular' && submitButton}
+            {!pendingProjectId && submitButton}
           </div>
         </fieldset>
       </form>

@@ -29,6 +29,7 @@ import { FileUpload } from '@/components/shared/FileUpload';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { ProjectOcularSteps } from '@/components/shared/ProjectOcularSteps';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -1356,48 +1357,18 @@ export function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* ── Customer Status Guide Banner ── */}
-      {project.status === 'draft' && project.ocularAppointmentId && (
-        <Card>
-          <CardContent className="space-y-3 p-4">
-            <div>
-              <p className="text-sm font-semibold">{ocularAppointment.data?.status === 'completed' ? 'For Review' : 'For Ocular'}</p>
-              <p className="mt-1 text-xs text-muted-foreground">{isCustomer
-                ? ocularAppointment.data?.status === 'completed'
-                  ? 'Your ocular visit is complete. Our sales staff will finish your project details and signed contract next.'
-                  : 'Your ocular site visit is scheduled. Our sales staff will finish your project details and signed contract after the visit.'
-                : ocularAppointment.data?.status === 'completed'
-                  ? 'The ocular visit is complete. Submit any remaining reports, then complete the project details and upload the signed contract.'
-                  : 'Complete the ocular visit and submit its reports, then enter the final project details and upload the signed contract.'}</p>
-            </div>
-            {(isAssignedSales || isAdmin) && <div className="flex flex-wrap gap-2">
-              <Button type="button" variant="outline" onClick={() => navigate(`/appointments/${project.ocularAppointmentId}`)}>View Ocular Visit</Button>
-              <Button type="button" disabled={ocularAppointment.data?.status !== 'completed'} onClick={() => navigate(`/projects/create?pendingProjectId=${project._id}`)}>Complete Project</Button>
-            </div>}
-          </CardContent>
-        </Card>
-      )}
-      {project.status === 'draft' && !project.ocularAppointmentId && visitReport && (
-        <Card className={cn(
-          'rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x',
-          isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-blue-200 bg-blue-50/50'
-        )}>
-          <CardContent className="flex items-start gap-3 py-3 px-4">
-            <Info className={cn('mt-0.5 h-5 w-5 shrink-0', isDark ? 'text-slate-300' : 'text-blue-600')} />
-            <div>
-              <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-blue-900')}>
-                {visitReport.visitType === 'ocular' ? 'Awaiting ocular visit' : 'Complete project details'}
-              </p>
-              <p className={cn('mt-0.5 text-xs', isDark ? 'text-slate-400' : 'text-blue-700')}>
-                {visitReport.visitType !== 'ocular'
-                  ? 'Complete and review the project details before submitting it to engineering.'
-                  : isEngineer
-                    ? 'Engineering work starts after the ocular visit is finalized and its report moves this project into the submitted stage.'
-                    : 'This draft came from the consultation stage. The next step is to finalize the ocular visit before engineering begins.'}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+      {/* ── For Ocular steps: Sign Contract → Schedule Ocular Visit → Done Ocular ── */}
+      {project.status === 'draft' && (
+        <ProjectOcularSteps
+          projectId={project._id}
+          contractUploaded={project.contractStatus === ContractStatus.UPLOADED}
+          ocularAppointmentId={project.ocularAppointmentId}
+          ocularStatus={ocularAppointment.data?.status}
+          canManage={Boolean(isAssignedSales || isAdmin)}
+          isCustomer={Boolean(isCustomer)}
+          onSignContract={() => navigate(`/projects/${project._id}/contract`)}
+          onViewOcular={() => navigate(`/appointments/${project.ocularAppointmentId}`)}
+        />
       )}
       {isCustomer && project.status === 'submitted' && (
         <Card className={cn(
@@ -2685,10 +2656,10 @@ export function ProjectDetailPage() {
                         type="button"
                         variant="prominent"
                         className="w-full sm:w-auto"
-                        onClick={() => navigate(project.status === 'draft' && project.ocularAppointmentId ? `/projects/create?pendingProjectId=${id}` : `/projects/${id}/contract`)}
+                        onClick={() => navigate(`/projects/${id}/contract`)}
                       >
                         <Upload className="mr-1.5 h-4 w-4" />
-                        {project.status === 'draft' && project.ocularAppointmentId ? 'Complete Project' : 'Go to Contract Upload'}
+                        Go to Contract Upload
                       </Button>
                     )}
                   </div>

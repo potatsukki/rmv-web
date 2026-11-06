@@ -80,6 +80,7 @@ export function useCreateProject() {
       pendingProjectId?: string;
       customerId?: string;
       appointmentId?: string;
+      visitReportId?: string;
       title?: string;
       serviceType?: string;
       serviceTypes?: string[];
@@ -356,6 +357,44 @@ export function useUploadProjectContract() {
       syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
+    },
+  });
+}
+
+export interface ProjectOcularVisitInput {
+  date: string;
+  slotCode: string;
+  customerLocation: { lat: number; lng: number };
+  formattedAddress?: string;
+}
+
+/** Sales staff schedules the ocular visit after the signed contract is uploaded. */
+export function useScheduleProjectOcular() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...visit }: { id: string } & ProjectOcularVisitInput) => {
+      const { data } = await api.post<ApiResponse<Project>>(`/projects/${id}/schedule-ocular`, visit);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['appointments'] });
+      qc.invalidateQueries({ queryKey: ['visit-reports'] });
+    },
+  });
+}
+
+/** Sales staff marks the ocular visit done: "For Ocular" → "For Review". */
+export function useMarkOcularDone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<ApiResponse<Project>>(`/projects/${id}/done-ocular`);
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
 }

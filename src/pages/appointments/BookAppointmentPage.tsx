@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { addDays, format, getDay, startOfDay, startOfMonth } from 'date-fns';
+import { addDays, format, startOfDay, startOfMonth } from 'date-fns';
 import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Loader2, Calendar, FileText, Image as ImageIcon, Info, Wrench, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -84,13 +84,9 @@ function formatSlotTime(slotCode: string): string {
   return `${displayHour}:00 ${ampm}`;
 }
 
-/** Return the earliest bookable weekday (at least 3 days from today, skipping Sat/Sun). */
+/** Return the earliest bookable date (at least 3 days from today; every day of the week is open). */
 function getNextValidBookingDate(): Date {
-  let candidate = addDays(new Date(), 3);
-  while (getDay(candidate) === 0 || getDay(candidate) === 6) {
-    candidate = addDays(candidate, 1);
-  }
-  return candidate;
+  return addDays(new Date(), 3);
 }
 
 
@@ -136,10 +132,8 @@ export function BookAppointmentPage() {
     return new Set(holidays.map((h) => h.date.slice(0, 10)));
   }, [holidays]);
 
-  /** True when a calendar day should be disabled (too soon, weekend, or holiday). */
+  /** True when a calendar day should be disabled (too soon or holiday). */
   const isDateDisabled = (day: Date): boolean => {
-    const dow = getDay(day);
-    if (dow === 0 || dow === 6) return true;
     if (startOfDay(day) < startOfDay(addDays(new Date(), 3))) return true;
     const dateStr = format(day, 'yyyy-MM-dd');
     if (holidayDates.has(dateStr)) return true;
@@ -669,7 +663,7 @@ export function BookAppointmentPage() {
                     <p className="font-medium">Scheduling Rules</p>
                     <ul className="list-inside list-disc space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
                       <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least 3 days</span> in advance</li>
-                      <li>Weekends <span className="font-medium text-[#1d1d1f] dark:text-slate-100">(Saturday &amp; Sunday)</span> are not available</li>
+                      <li>Bookings are open <span className="font-medium text-[#1d1d1f] dark:text-slate-100">every day, including weekends</span> (holidays excluded)</li>
                     </ul>
                   </div>
                 </div>

@@ -125,9 +125,10 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
 
 const STATUS_LABEL_OVERRIDE: Record<string, string> = {
   proof_submitted: 'Awaiting Cashier Verification',
-  requested: 'Awaiting Confirmation',
+  requested: 'Pending',
+  confirmed: 'Staff Assigned',
   appointment_pending: 'Appointment Pending',
-  appointment_confirmed: 'Appointment Confirmed',
+  appointment_confirmed: 'Staff Assigned',
   appointment_completed: 'Appointment Completed',
   payment_pending: 'Payment Required',
   payment_required: 'Payment Required',

@@ -64,7 +64,9 @@ export function ProjectContractUploadPage() {
         contractFileKey,
         contractFileName: getFileName(contractFileKey),
       });
-      toast.success('Signed contract uploaded. The project is now ready for engineering.', { duration: 5000 });
+      toast.success(project?.status === ProjectStatus.DRAFT
+        ? 'Signed contract uploaded. Schedule the ocular visit next.'
+        : 'Signed contract uploaded. The project is now ready for engineering.', { duration: 5000 });
       navigate(`/projects/${id}`);
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to save signed contract'));
@@ -83,16 +85,6 @@ export function ProjectContractUploadPage() {
 
   if (isLoading) return <PageLoader />;
   if (isError || !project) return <PageError onRetry={refetch} />;
-
-  if (project.status === ProjectStatus.DRAFT && project.ocularAppointmentId) {
-    return <Card className="mx-auto max-w-4xl">
-      <CardContent className="space-y-3 p-6">
-        <h1 className="text-xl font-semibold">Ocular</h1>
-        <p className="text-sm text-muted-foreground">Complete the ocular visit first, then complete the project details and upload the signed contract together.</p>
-        <Button onClick={() => navigate(`/projects/create?pendingProjectId=${id}`)}>Complete Project</Button>
-      </CardContent>
-    </Card>;
-  }
 
   const isUploaded = project.contractStatus === ContractStatus.UPLOADED;
   const rawProjectCost = Number(project.totalCost);

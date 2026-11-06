@@ -146,10 +146,10 @@ export function resolveAppointmentWorkflowStatus(
   if (appointment.type === 'ocular' && appointment.ocularFeeStatus === 'pending' && !appointment.ocularFeePaid) {
     return { key: 'awaiting_ocular_fee', label: 'Awaiting Ocular Fee', tone: 'orange', stage: 'billing', isTerminal: false };
   }
-  // Confirmed once the appointment agent assigns a sales staff; pending until then.
+  // "Staff Assigned" once the appointment agent assigns a sales staff; pending until then.
   if (status === AppointmentStatus.REQUESTED || status === AppointmentStatus.CONFIRMED) {
     return appointment.salesStaffId
-      ? { key: 'appointment_confirmed', label: 'Appointment Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false }
+      ? { key: 'appointment_confirmed', label: 'Staff Assigned', tone: 'blue', stage: 'appointment', isTerminal: false }
       : { key: 'appointment_pending', label: 'Appointment Pending', tone: 'yellow', stage: 'appointment', isTerminal: false };
   }
   if (status === AppointmentStatus.RESCHEDULE_REQUESTED) {
@@ -185,10 +185,10 @@ export function resolveProjectWorkflowStatus(input: {
     return { key: 'cancelled', label: 'Cancelled', tone: 'red', stage: 'cancelled', isTerminal: true };
   }
 
-  if (input.project?.status === ProjectStatus.DRAFT && input.project.ocularAppointmentId) {
-    return input.project.ocularVisitStatus === AppointmentStatus.COMPLETED
-      ? { key: 'for_review', label: 'For Review', tone: 'blue', stage: 'pending_ocular', isTerminal: false }
-      : { key: 'for_ocular', label: 'For Ocular', tone: 'green', stage: 'pending_ocular', isTerminal: false };
+  // A new project stays "For Ocular" (contract → ocular visit) until sales presses Done Ocular,
+  // which submits it and shows "For Review".
+  if (input.project?.status === ProjectStatus.DRAFT) {
+    return { key: 'for_ocular', label: 'For Ocular', tone: 'green', stage: 'pending_ocular', isTerminal: false };
   }
 
   if (projectStatus === ProjectStatus.COMPLETED || allItemsCompleted) {

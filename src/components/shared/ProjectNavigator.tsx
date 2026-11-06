@@ -32,6 +32,7 @@ import {
   VisitReportStatus,
 } from '@/lib/constants';
 import type { VisitReport } from '@/lib/types';
+import { getReportItemCategory, getReportItemLabel } from '@/lib/design-selection';
 import {
   useVisitReportsByAppointment,
   useCreateVisitReport,
@@ -90,11 +91,7 @@ const STATUS_SHORT: Record<string, string> = {
 };
 
 function getLabel(report: VisitReport): string {
-  return (
-    report.serviceTypeCustom ||
-    SERVICE_TYPE_LABELS[report.serviceType] ||
-    'Untitled Item'
-  );
+  return getReportItemLabel(report);
 }
 
 /* ── Inline rename input ── */
@@ -378,6 +375,9 @@ export function ProjectNavigator({
             && [VisitReportStatus.DRAFT, VisitReportStatus.RETURNED].includes(report.status as VisitReportStatus);
           const Icon = SERVICE_ICONS[report.serviceType] ?? Wrench;
           const label = getLabel(report);
+          const hasDesign = Boolean(report.selectedDesignTemplateId?.trim());
+          // Renaming would turn the item into a Custom item and detach it from its booked design.
+          const canRename = !hasDesign;
           const style = STATUS_STYLES[report.status] ?? { dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-500' };
 
           return (
@@ -436,6 +436,11 @@ export function ProjectNavigator({
                       {label}
                     </p>
                   </div>
+                  {hasDesign && (
+                    <p className="mt-0.5 truncate text-[11px] text-gray-500 dark:text-slate-400">
+                      {getReportItemCategory(report)}
+                    </p>
+                  )}
                   {/* Status pill */}
                   <div className="flex items-center gap-1.5 mt-1">
                     <span
@@ -456,7 +461,7 @@ export function ProjectNavigator({
               {/* Action buttons — bottom-right, only on active + editable */}
               {canEdit && !isRenaming && (
                 <div className="absolute bottom-1.5 right-1.5 flex items-center gap-1">
-                  <button
+                  {canRename && <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
@@ -466,7 +471,7 @@ export function ProjectNavigator({
                     aria-label="Rename item"
                   >
                     <Pencil className="h-3.5 w-3.5" />
-                  </button>
+                  </button>}
                   {canDeleteThisReport && (
                     <button
                       type="button"

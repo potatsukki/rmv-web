@@ -436,7 +436,7 @@ export function AppointmentDetailPage() {
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
   );
   // Submits every unsubmitted ocular report; the server validates each one and completes the
-  // appointment, then saves a draft project that sales finishes in Create Project.
+  // appointment. Sales then presses Done Ocular on the project page to send it for review.
   const completeOcularVisit = async () => {
     const pending = (visitReports || []).filter((report) => report.status === 'draft' || report.status === 'returned');
     if (!pending.length) {
@@ -449,15 +449,15 @@ export function AppointmentDetailPage() {
         const submitted = await submitReportMutation.mutateAsync(String(report._id));
         projectId = getVisitReportReferenceId(submitted.linkedProjectId) || projectId;
       }
-      toast.success('Ocular visit completed. Finish the project details next.');
-      navigate(projectId ? `/projects/create?pendingProjectId=${projectId}` : '/projects');
+      toast.success('Ocular visit completed. Press Done Ocular on the project to send it for review.');
+      navigate(projectId ? `/projects/${projectId}` : '/projects');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Complete the visit report before finishing the ocular visit.'), { duration: 7000 });
     }
   };
 
   const updateAttendance = async (
-    action: 'check_in' | 'test_start' | 'no_show' | 'customer_declined',
+    action: 'check_in' | 'no_show' | 'customer_declined',
   ) => {
     const notesRequired = action === 'no_show' || action === 'customer_declined';
     const notes = notesRequired
@@ -479,10 +479,8 @@ export function AppointmentDetailPage() {
         notes: notes?.trim(),
       });
       toast.success(
-        action === 'test_start'
-          ? 'Testing bypass applied. The consultation is now Completed.'
-          : action === 'customer_declined'
-          ? 'Consultation marked as customer declined. The workflow has been stopped.'
+        action === 'customer_declined'
+          ? 'Consultation recorded as completed (customer declined). No further workflow will follow.'
           : 'Consultation attendance updated',
       );
     } catch (err) {
@@ -608,7 +606,7 @@ export function AppointmentDetailPage() {
               <Info className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#2f3740] dark:text-slate-100">Awaiting Confirmation</p>
+              <p className="text-sm font-semibold text-[#2f3740] dark:text-slate-100">Pending</p>
               <p className="mt-0.5 text-xs text-[#69737d] dark:text-slate-400">
                 {isCustomer
                   ? isOcularAppointment && !hasCustomerSiteLocation
@@ -666,7 +664,7 @@ export function AppointmentDetailPage() {
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-300 mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                {isOcularAppointment ? 'Confirmed - Ready for Ocular Visit' : 'Confirmed - Office Consultation Scheduled'}
+                {isOcularAppointment ? 'Staff Assigned - Ready for Ocular Visit' : 'Staff Assigned - Office Consultation Scheduled'}
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-200 mt-0.5">
                 {isCustomer
@@ -841,7 +839,7 @@ export function AppointmentDetailPage() {
             )}
             {attendanceStatus === AppointmentAttendanceStatus.CUSTOMER_DECLINED && (
               <div className="rounded-xl border border-rose-200 bg-rose-50 p-3 text-sm leading-6 text-rose-900 dark:border-rose-500/25 dark:bg-rose-500/10 dark:text-rose-100">
-                Customer declined to proceed during consultation. This appointment is cancelled and will not continue to the report workflow.
+                Customer declined to proceed during consultation. The appointment is recorded as completed and will not continue to the report workflow.
               </div>
             )}
             {isOutsideConsultationWindow(appt.actualArrivalAt) && (
@@ -851,27 +849,6 @@ export function AppointmentDetailPage() {
             )}
             {canUpdateAttendance && (
               <div className="pt-1">
-                {[
-                  AppointmentAttendanceStatus.SCHEDULED,
-                  AppointmentAttendanceStatus.ON_TIME,
-                  AppointmentAttendanceStatus.LATE_ARRIVAL,
-                ].includes(attendanceStatus as AppointmentAttendanceStatus) && (
-                  <div className="mb-4 rounded-xl border border-amber-300 bg-amber-50 p-3 dark:border-amber-500/35 dark:bg-amber-500/10">
-                    <p className="mb-3 text-xs leading-5 text-amber-900 dark:text-amber-100">
-                      Testing only: bypass the scheduled time. The consultation starts and auto-completes right away so the report flow can be checked now.
-                    </p>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => updateAttendance('test_start')}
-                      disabled={attendanceMutation.isPending}
-                      className="border-amber-400 bg-amber-100 text-amber-950 hover:bg-amber-200 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100 dark:hover:bg-amber-400/25"
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      Start & Complete Now (Testing Only)
-                    </Button>
-                  </div>
-                )}
                 {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
                   <div className="grid gap-4 sm:grid-cols-2">
                     <button
