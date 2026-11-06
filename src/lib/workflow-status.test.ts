@@ -5,16 +5,18 @@ import type { PaymentPlan, PaymentStage } from './types';
 import { resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from './workflow-status';
 
 describe('project status', () => {
-  it('shows For Review once the ocular visit is done, while the draft stays in the Ocular stage', () => {
-    expect(resolveProjectWorkflowStatus({ project: {
-      status: 'draft', ocularAppointmentId: 'ocular-1', ocularVisitStatus: 'completed',
-    } })).toMatchObject({ label: 'For Review', stage: 'pending_ocular', isTerminal: false });
-  });
+  it.each(['requested', 'confirmed', 'in_progress', 'completed', undefined])(
+    'keeps a draft For Ocular until Done Ocular is pressed (ocular: %s)',
+    (ocularVisitStatus) => {
+      expect(resolveProjectWorkflowStatus({ project: {
+        status: 'draft', ocularAppointmentId: 'ocular-1', ocularVisitStatus,
+      } })).toMatchObject({ label: 'For Ocular', stage: 'pending_ocular', isTerminal: false });
+    },
+  );
 
-  it.each(['requested', 'confirmed', 'in_progress', undefined])('shows For Ocular before visit completion (%s)', (ocularVisitStatus) => {
-    expect(resolveProjectWorkflowStatus({ project: {
-      status: 'draft', ocularAppointmentId: 'ocular-1', ocularVisitStatus,
-    } })).toMatchObject({ label: 'For Ocular', stage: 'pending_ocular', isTerminal: false });
+  it('shows For Ocular for a new project before the contract and ocular are done', () => {
+    expect(resolveProjectWorkflowStatus({ project: { status: 'draft', contractStatus: 'missing' } }))
+      .toMatchObject({ label: 'For Ocular', stage: 'pending_ocular' });
   });
 
   // Payment progress no longer changes the project status; it has its own badge.
@@ -108,7 +110,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
     expect(resolveAppointmentWorkflowStatus({ ...appointment, salesStaffId: 'sales-1' })).toMatchObject({
       key: 'appointment_confirmed',
-      label: 'Appointment Confirmed',
+      label: 'Staff Assigned',
     });
   });
 

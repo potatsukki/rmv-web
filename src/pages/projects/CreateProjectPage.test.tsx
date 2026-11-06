@@ -135,3 +135,11 @@ it('does not offer to link an appointment when one is already carried in the URL
   const html = renderPage('/projects/create?customerId=customer-1&appointmentId=appt-1');
   expect(html).not.toContain('Appointment (optional)');
 });
+
+it('creates a For Ocular project without asking for the contract or ocular schedule', () => {
+  const html = renderPage('/projects/create?customerId=customer-1');
+  expect(html).not.toContain('Upload the signed contract to finish.');
+  expect(html).not.toContain('Ocular Visit Date');
+  expect(html).not.toContain('Project Workflow');
+  expect(html).toMatch(/<button\b[^>]*type="submit"/);
+});

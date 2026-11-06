@@ -1,5 +1,5 @@
 import { useState, useMemo, useCallback } from 'react';
-import { format, addDays, parse, isWeekend } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import {
   Calendar,
   CalendarOff,
@@ -318,8 +318,6 @@ export function SlotManagementPage() {
     });
   };
 
-  const selectedDateObj = parse(selectedDate, 'yyyy-MM-dd', new Date());
-  const isWeekendDate = isWeekend(selectedDateObj);
 
   const hasAvailableSelected = selectedAvailable.size > 0;
   const hasBlockedSelected = selectedBlockedIds.size > 0;
@@ -368,11 +366,6 @@ export function SlotManagementPage() {
               ))}
             </div>
           </div>
-          {isWeekendDate && (
-            <p className="text-sm font-medium text-amber-600">
-              ⚠ This date falls on a weekend. Appointments are not available on weekends.
-            </p>
-          )}
         </CardContent>
       </Card>
 

@@ -466,12 +466,16 @@ export function VisitReportPage() {
   const customerSelectedDesignName = appointmentRecord?.selectedDesignTemplateName || '';
   const customerSelectedDesignImageUrl = appointmentRecord?.selectedDesignTemplateImageUrl || '';
   const customerSelectedDesignServiceType = appointmentRecord?.serviceTypes?.[0];
+  // Each booked design is its own item: never fall back to a design another item already owns.
+  const customerSelectedDesignOwnedBySibling = Boolean(customerSelectedDesignId) && (siblingReports || []).some((sibling) => (
+    rawId(sibling._id) !== rawId(report?._id) && sibling.selectedDesignTemplateId === customerSelectedDesignId
+  ));
   const hasCustomerSelectedDesign = Boolean(
     customerSelectedDesignId || customerSelectedDesignName || customerSelectedDesignImageUrl,
   ) && (
     !customerSelectedDesignServiceType
     || customerSelectedDesignServiceType === report?.serviceType
-  );
+  ) && !report?.selectedDesignTemplateId && !customerSelectedDesignOwnedBySibling;
   const customerSelectedDesignIdForReport = hasCustomerSelectedDesign ? customerSelectedDesignId : '';
   const customerSelectedDesignNameForReport = hasCustomerSelectedDesign ? customerSelectedDesignName : '';
   const customerSelectedDesignImageUrlForReport = hasCustomerSelectedDesign
@@ -823,14 +827,12 @@ export function VisitReportPage() {
     navigate(sourcePath || '/appointments?tab=visit-reports');
   };
 
-  const updateConsultationAttendance = async (action: 'check_in' | 'test_start') => {
+  const updateConsultationAttendance = async () => {
     if (!appointmentId) return;
     try {
-      await attendanceMutation.mutateAsync({ id: appointmentId, action });
+      await attendanceMutation.mutateAsync({ id: appointmentId, action: 'check_in' });
       await refetch();
-      toast.success(action === 'test_start'
-        ? 'Testing bypass applied. The consultation is now Completed.'
-        : 'Customer checked in.');
+      toast.success('Customer checked in.');
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Unable to update consultation attendance.'));
     }
@@ -985,17 +987,17 @@ export function VisitReportPage() {
 
       toast.success(
         isOcular
-          ? `Ocular report submitted${pendingOcularSiblings.length ? ` for all ${pendingOcularSiblings.length + 1} items` : ''}. Complete the project details next.`
-          : 'Consultation completed. Create the project to choose whether an ocular visit is needed.',
+          ? `Ocular report submitted${pendingOcularSiblings.length ? ` for all ${pendingOcularSiblings.length + 1} items` : ''}. Press Done Ocular on the project to send it for review.`
+          : 'Consultation completed. Create the project next.',
         { duration: 5000 },
       );
       setSubmitOpen(false);
 
-      // A finished ocular visit goes straight to Create Project with the report's measurements prefilled.
+      // A finished ocular visit goes back to its project, where sales presses Done Ocular.
       if (isOcular && (isSalesStaff || isAdmin)) {
         const projectId = submittedReport.linkedProjectId ? rawId(submittedReport.linkedProjectId) : linkedProjectId;
         navigate(projectId
-          ? `/projects/create?pendingProjectId=${projectId}`
+          ? `/projects/${projectId}`
           : `/projects/create?${new URLSearchParams({
             customerId: rawId(report.customerId),
             appointmentId,
@@ -1539,39 +1541,23 @@ export function VisitReportPage() {
                 </div>
 
                 {canUpdateConsultationAttendance
-                  && [
-                    AppointmentAttendanceStatus.SCHEDULED,
-                    AppointmentAttendanceStatus.ON_TIME,
-                    AppointmentAttendanceStatus.LATE_ARRIVAL,
-                  ].includes(attendanceStatus as AppointmentAttendanceStatus) && (
+                  && attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
                   <div className="flex flex-wrap gap-3">
-                    {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
-                      <Button
-                        type="button"
-                        onClick={() => updateConsultationAttendance('check_in')}
-                        disabled={attendanceMutation.isPending}
-                        className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
-                      >
-                        <Clock className="mr-2 h-4 w-4" />
-                        Check In Customer
-                      </Button>
-                    )}
                     <Button
                       type="button"
-                      variant="outline"
-                      onClick={() => updateConsultationAttendance('test_start')}
+                      onClick={() => updateConsultationAttendance()}
                       disabled={attendanceMutation.isPending}
-                      className="rounded-xl border-amber-400 bg-amber-50 text-amber-950 hover:bg-amber-100 dark:border-amber-400/50 dark:bg-amber-400/15 dark:text-amber-100"
+                      className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
                     >
                       <Clock className="mr-2 h-4 w-4" />
-                      Start & Complete Now (Testing Only)
+                      Check In Customer
                     </Button>
                   </div>
                 )}
 
                 <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
                   Check-in records the customer's arrival. The status changes automatically to In Progress
-                  at the scheduled start and Present after the one-hour consultation slot. The testing bypass completes it right away.
+                  at the scheduled start and Present after the one-hour consultation slot.
                 </p>
               </CardContent>
             </Card>
