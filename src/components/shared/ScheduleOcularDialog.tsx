@@ -11,6 +11,7 @@ import { useAvailableSlots } from '@/hooks/useAppointments';
 import { useScheduleProjectOcular } from '@/hooks/useProjects';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { extractErrorMessage } from '@/lib/utils';
+import { MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
 
 const LazyLocationPicker = lazy(() =>
   import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
@@ -22,7 +23,7 @@ export function formatSlotTime(slot: string) {
   return `${hour % 12 || 12}:${String(minute).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
 }
 
-/** Local yyyy-MM-dd for today + `days` (bookings must be at least 3 days ahead). */
+/** Local yyyy-MM-dd for today + `days`. */
 export function localDateAfter(days: number) {
   const date = new Date();
   date.setHours(0, 0, 0, 0);
@@ -121,7 +122,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange }: Schedule
             <Input
               id="schedule-ocular-date"
               type="date"
-              min={localDateAfter(3)}
+              min={localDateAfter(MIN_BOOKING_LEAD_DAYS)}
               value={date}
               onChange={(event) => {
                 setDate(event.target.value);

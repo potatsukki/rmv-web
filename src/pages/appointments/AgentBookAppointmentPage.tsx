@@ -23,7 +23,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAvailableSlots, useAgentCreateAppointment } from '@/hooks/useAppointments';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
-import { AppointmentType, Role, SLOT_CODES, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
+import { AppointmentType, Role, SLOT_CODES, APPOINTMENT_TYPE_LABELS, MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/stores/auth.store';
 
@@ -70,7 +70,7 @@ export function AgentBookAppointmentPage() {
   const { data: customers, isLoading: isSearching } = useCustomerSearch(debouncedSearch);
 
   /* ── Step 2: Booking Form ── */
-  const defaultDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
+  const defaultDate = format(addDays(new Date(), MIN_BOOKING_LEAD_DAYS), 'yyyy-MM-dd');
 
   const {
     register,
@@ -89,7 +89,7 @@ export function AgentBookAppointmentPage() {
   const selectedType = watch('type');
   const selectedDate = watch('date');
   const selectedSlot = watch('slotCode');
-  const minDate = format(addDays(new Date(), 3), 'yyyy-MM-dd');
+  const minDate = format(addDays(new Date(), MIN_BOOKING_LEAD_DAYS), 'yyyy-MM-dd');
 
   const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(selectedDate, selectedType);
 

@@ -17,7 +17,7 @@ import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
 import { useAvailableSlots, useRequestAppointment } from '@/hooks/useAppointments';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useHolidays } from '@/hooks/useConfig';
-import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
+import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS, MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import {
   hasDesignSelection,
@@ -84,9 +84,9 @@ function formatSlotTime(slotCode: string): string {
   return `${displayHour}:00 ${ampm}`;
 }
 
-/** Return the earliest bookable date (at least 3 days from today; every day of the week is open). */
+/** Return the earliest bookable date (MIN_BOOKING_LEAD_DAYS from today; every day of the week is open). */
 function getNextValidBookingDate(): Date {
-  return addDays(new Date(), 3);
+  return addDays(new Date(), MIN_BOOKING_LEAD_DAYS);
 }
 
 
@@ -134,7 +134,7 @@ export function BookAppointmentPage() {
 
   /** True when a calendar day should be disabled (too soon or holiday). */
   const isDateDisabled = (day: Date): boolean => {
-    if (startOfDay(day) < startOfDay(addDays(new Date(), 3))) return true;
+    if (startOfDay(day) < startOfDay(addDays(new Date(), MIN_BOOKING_LEAD_DAYS))) return true;
     const dateStr = format(day, 'yyyy-MM-dd');
     if (holidayDates.has(dateStr)) return true;
     return false;
@@ -662,7 +662,7 @@ export function BookAppointmentPage() {
                   <div className="space-y-0.5 text-sm text-[#3a3a3e] dark:text-slate-300">
                     <p className="font-medium">Scheduling Rules</p>
                     <ul className="list-inside list-disc space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
-                      <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least 3 days</span> in advance</li>
+                      <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least {MIN_BOOKING_LEAD_DAYS} days</span> in advance</li>
                       <li>Bookings are open <span className="font-medium text-[#1d1d1f] dark:text-slate-100">every day, including weekends</span> (holidays excluded)</li>
                     </ul>
                   </div>
