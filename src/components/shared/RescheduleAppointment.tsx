@@ -8,10 +8,11 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAvailableSlots, useRequestReschedule } from '@/hooks/useAppointments';
 import { extractErrorMessage } from '@/lib/utils';
+import { MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
 
 // Rescheduling applies immediately once a date, time, and reason are given — there is
 // no agent approval step, so this matches the 3-day minimum advance rule the backend enforces.
-const MIN_RESCHEDULE_DATE = format(addDays(new Date(), 3), 'yyyy-MM-dd');
+const MIN_RESCHEDULE_DATE = format(addDays(new Date(), MIN_BOOKING_LEAD_DAYS), 'yyyy-MM-dd');
 
 export function RescheduleAppointment({
   appointmentId,
