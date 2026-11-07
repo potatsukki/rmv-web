@@ -49,6 +49,7 @@ import {
   useBackfillInitialDesign,
   useSubmitProjectReview,
   useSkipProjectReview,
+  useProjectFeeSummary,
 } from '@/hooks/useProjects';
 import { useLatestBlueprint } from '@/hooks/useBlueprints';
 import { usePaymentPlan, usePaymentsByProject, useProjectPaymentPlans } from '@/hooks/usePayments';
@@ -594,6 +595,23 @@ export function ProjectDetailPage() {
   const isCashier = user?.roles?.some((r: string) => r === Role.CASHIER);
   const isSalesStaffUser = user?.roles?.some((r: string) => r === Role.SALES_STAFF);
   const canViewFeeBreakdown = Boolean(isCustomer || isCashier || isAdmin || isSalesStaffUser);
+  // The design fee is a separate payment the customer makes before the blueprint starts.
+  const customerFeeSummary = useProjectFeeSummary(id, Boolean(isCustomer));
+  const designFeeDue = Boolean(isCustomer && customerFeeSummary.data?.designFee.status === 'pending');
+  const designFeeAmount = customerFeeSummary.data?.designFee.amount ?? 0;
+  const [designFeePromptOpen, setDesignFeePromptOpen] = useState(false);
+  useEffect(() => {
+    if (!designFeeDue || !id) return;
+    // Show the reminder once per browser session for each project.
+    const key = `design-fee-prompt:${id}`;
+    try {
+      if (window.sessionStorage.getItem(key)) return;
+      window.sessionStorage.setItem(key, '1');
+    } catch {
+      // Storage can be blocked; the popup still shows.
+    }
+    setDesignFeePromptOpen(true);
+  }, [designFeeDue, id]);
   const shouldHideAmount = user?.roles?.some((r: string) => [Role.ADMIN, Role.APPOINTMENT_AGENT, Role.ENGINEER, Role.FABRICATION_STAFF].includes(r as Role));
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
   const isStaff = !isCustomer; // any non-customer role
@@ -1351,7 +1369,7 @@ export function ProjectDetailPage() {
                   {!showCustomerCostingApprovalIndicator ? '1' : null}
                 </span>
               )}
-              {tab.key === 'payments' && showPaymentsTabIndicator && (
+              {tab.key === 'payments' && (showPaymentsTabIndicator || designFeeDue) && (
                 <span
                   aria-label="Payments require attention"
                   className={cn(
@@ -1528,6 +1546,38 @@ export function ProjectDetailPage() {
           </CardContent>
         </Card>
       )}
+
+      {/* ── Design fee due (customer) ── */}
+      {designFeeDue && activeTab !== 'payments' && (
+        <Card className="rounded-none sm:rounded-xl -mx-3 sm:mx-0 border-x-0 sm:border-x border-amber-300 bg-amber-50 dark:border-amber-500/40 dark:bg-amber-500/10">
+          <CardContent className="p-4 flex flex-col sm:flex-row sm:items-center gap-4">
+            <div className="flex items-start gap-3 flex-1 min-w-0">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-700 dark:text-amber-300" />
+              <div>
+                <p className="text-sm font-semibold text-amber-950 dark:text-amber-100">Design fee due: {formatCurrency(designFeeAmount)}</p>
+                <p className="text-xs mt-0.5 text-amber-800 dark:text-amber-200">Pay the non-refundable design fee so the engineer can start your blueprint.</p>
+              </div>
+            </div>
+            <Button size="sm" className="w-full sm:w-auto" onClick={() => setActiveTab('payments')}>
+              <CreditCard className="mr-1.5 h-4 w-4" />
+              Pay Design Fee
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      <ConfirmDialog
+        open={designFeePromptOpen}
+        onOpenChange={setDesignFeePromptOpen}
+        title="Design fee payment needed"
+        description={`Your project is ready for its blueprint. Pay the ${formatCurrency(designFeeAmount)} non-refundable design fee first so the engineer can start. You can pay with GCash here, or in cash at the RMV cashier.`}
+        confirmLabel="Pay Design Fee"
+        cancelLabel="Later"
+        onConfirm={() => {
+          setDesignFeePromptOpen(false);
+          setActiveTab('payments');
+        }}
+      />
 
       {/* ── Contextual Action Banner (engineer) ── */}
       {isEngineer && (
@@ -2773,7 +2823,7 @@ export function ProjectDetailPage() {
           </CardContent>
         </Card>
       )}
-      {activeTab === 'payments' && isCustomer && !paymentPlan && (
+      {activeTab === 'payments' && isCustomer && !paymentPlan && !designFeeDue && (
         <div
           className="w-full"
           role="tabpanel"
