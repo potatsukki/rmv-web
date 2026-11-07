@@ -900,9 +900,13 @@ export function VisitReportPage() {
         toast.error('Consultation report cannot be submitted because the customer declined to proceed. Save notes only.');
         return;
       }
-      if (![AppointmentAttendanceStatus.IN_PROGRESS, AppointmentAttendanceStatus.COMPLETED]
-        .includes(attendanceStatus as AppointmentAttendanceStatus)) {
-        toast.error('Wait until the scheduled consultation begins before submitting the consultation report.');
+      if (![
+        AppointmentAttendanceStatus.ON_TIME,
+        AppointmentAttendanceStatus.LATE_ARRIVAL,
+        AppointmentAttendanceStatus.IN_PROGRESS,
+        AppointmentAttendanceStatus.COMPLETED,
+      ].includes(attendanceStatus as AppointmentAttendanceStatus)) {
+        toast.error('Check in the customer before submitting the consultation report.');
         return;
       }
     }
@@ -1556,8 +1560,9 @@ export function VisitReportPage() {
                 )}
 
                 <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
-                  Check-in records the customer's arrival. The status changes automatically to In Progress
-                  at the scheduled start and Present after the one-hour consultation slot.
+                  Check-in records the customer's arrival and unlocks Complete Consultation. The status
+                  changes automatically to In Progress at the scheduled start and Present after the
+                  one-hour consultation slot.
                 </p>
               </CardContent>
             </Card>
