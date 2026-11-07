@@ -1,13 +1,9 @@
 import { useState } from 'react';
-import { CalendarClock, CheckCircle2, FileSignature, Info, Loader2, MapPin } from 'lucide-react';
-import toast from 'react-hot-toast';
+import { CalendarClock, CheckCircle2, FileSignature, Info, MapPin } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { ScheduleOcularDialog } from '@/components/shared/ScheduleOcularDialog';
-import { useMarkOcularDone } from '@/hooks/useProjects';
-import { extractErrorMessage } from '@/lib/utils';
 
 interface ProjectOcularStepsProps {
   projectId: string;
@@ -23,7 +19,7 @@ interface ProjectOcularStepsProps {
 
 /**
  * "For Ocular" project steps: Sign Contract → Schedule Ocular Visit (blocked until the contract is
- * uploaded) → ocular visit + report → Done Ocular ("For Review").
+ * uploaded) → ocular visit + report. Submitting the ocular report moves the project to "For Review".
  */
 export function ProjectOcularSteps({
   projectId,
@@ -35,9 +31,7 @@ export function ProjectOcularSteps({
   onSignContract,
   onViewOcular,
 }: ProjectOcularStepsProps) {
-  const markOcularDone = useMarkOcularDone();
   const [scheduleOpen, setScheduleOpen] = useState(false);
-  const [ocularNeededOpen, setOcularNeededOpen] = useState(false);
   const ocularScheduled = Boolean(ocularAppointmentId);
   const ocularCompleted = ocularStatus === 'completed';
 
@@ -51,21 +45,8 @@ export function ProjectOcularSteps({
       : !ocularScheduled
         ? 'The signed contract is uploaded. Schedule the ocular visit next.'
         : !ocularCompleted
-          ? 'Complete the ocular visit and submit its report, then press Done Ocular.'
-          : 'The ocular visit is finished. Press Done Ocular to send the project for review.';
-
-  async function handleDoneOcular() {
-    if (!ocularScheduled || !ocularCompleted) {
-      setOcularNeededOpen(true);
-      return;
-    }
-    try {
-      await markOcularDone.mutateAsync(projectId);
-      toast.success('Ocular visit done. The project is now For Review.');
-    } catch (error) {
-      toast.error(extractErrorMessage(error, 'Unable to mark the ocular visit as done.'), { duration: 7000 });
-    }
-  }
+          ? 'Complete the ocular visit and submit its report. The project moves to For Review automatically.'
+          : 'The ocular visit is finished. Submit any remaining ocular report and the project moves to For Review automatically.';
 
   return (
     <Card>
@@ -104,10 +85,6 @@ export function ProjectOcularSteps({
                   <MapPin className="h-4 w-4" />
                   View Ocular Visit
                 </Button>
-                <Button type="button" onClick={handleDoneOcular} disabled={markOcularDone.isPending}>
-                  {markOcularDone.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : <CheckCircle2 className="h-4 w-4" />}
-                  Done Ocular
-                </Button>
               </div>
             )}
           </>
@@ -118,26 +95,6 @@ export function ProjectOcularSteps({
         <ScheduleOcularDialog projectId={projectId} open={scheduleOpen} onOpenChange={setScheduleOpen} />
       )}
 
-      <Dialog open={ocularNeededOpen} onOpenChange={setOcularNeededOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>An ocular visit is needed</DialogTitle>
-            <DialogDescription>
-              {ocularScheduled
-                ? 'Finish the ocular visit and submit its report before marking it as done.'
-                : 'Schedule and finish the ocular visit before this project can go for review.'}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            {ocularScheduled && (
-              <Button type="button" variant="outline" onClick={() => { setOcularNeededOpen(false); onViewOcular(); }}>
-                View Ocular Visit
-              </Button>
-            )}
-            <Button type="button" onClick={() => setOcularNeededOpen(false)}>OK</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </Card>
   );
 }
