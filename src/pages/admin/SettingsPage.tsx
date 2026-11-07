@@ -533,7 +533,7 @@ export function SettingsPage() {
                         <Input value={simpleValues.design_fee_amount || ''} onChange={e => setSimpleValues({...simpleValues, design_fee_amount: e.target.value})} className={`w-full ${inputClasses}`} />
                         <span className="text-xs font-semibold text-gray-500 shrink-0">₱</span>
                       </div>
-                      <p className="text-[11px] text-gray-500 dark:text-slate-400">Paid separately before the blueprint starts. Not deducted from the project cost.</p>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">Paid before the blueprint starts, then deducted from the final payment.</p>
                       {isSimpleChanged('design_fee_amount') && (
                         <Button onClick={() => handleSaveSimpleConfig('design_fee_amount', 'Design fee')} disabled={savingKey === 'design_fee_amount'} size="sm" variant="secondary" className="h-6 text-[10px] w-full mt-1">
                           Apply changes

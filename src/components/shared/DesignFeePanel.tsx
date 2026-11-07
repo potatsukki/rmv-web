@@ -160,7 +160,7 @@ export function DesignFeePanel({
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
                 {isCustomer
-                  ? `A non-refundable design fee of ${formatCurrency(summary.designFee.amount)} is due before the blueprint starts. Pay it below with GCash, or in cash at the RMV cashier. It is a separate fee and is not deducted from your project cost.`
+                  ? `A non-refundable design fee of ${formatCurrency(summary.designFee.amount)} is due before the blueprint starts. Pay it below with GCash, or in cash at the RMV cashier. It will be deducted from your final payment.`
                   : `Design fee of ${formatCurrency(summary.designFee.amount)} is unpaid. The blueprint cannot start until the cashier records it.`}
               </p>
             </div>
