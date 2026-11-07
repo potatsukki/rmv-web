@@ -454,7 +454,7 @@ export function AppointmentDetailPage() {
     (isAdmin || (isSalesStaff && assignedSalesStaffId === user?._id)),
   );
   // Submits every unsubmitted ocular report; the server validates each one and completes the
-  // appointment. Sales then presses Done Ocular on the project page to send it for review.
+  // appointment. Submitting the ocular report then sends the project for review.
   const completeOcularVisit = async () => {
     const pending = (visitReports || []).filter((report) => report.status === 'draft' || report.status === 'returned');
     if (!pending.length) {
@@ -467,7 +467,7 @@ export function AppointmentDetailPage() {
         const submitted = await submitReportMutation.mutateAsync(String(report._id));
         projectId = getVisitReportReferenceId(submitted.linkedProjectId) || projectId;
       }
-      toast.success('Ocular visit completed. Press Done Ocular on the project to send it for review.');
+      toast.success('Ocular visit completed. Submit the ocular report to send the project for review.');
       navigate(projectId ? `/projects/${projectId}` : '/projects');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Complete the visit report before finishing the ocular visit.'), { duration: 7000 });

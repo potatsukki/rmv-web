@@ -1369,7 +1369,7 @@ export function ProjectDetailPage() {
         </div>
       </div>
 
-      {/* ── For Ocular steps: Sign Contract → Schedule Ocular Visit → Done Ocular ── */}
+      {/* ── For Ocular steps: Sign Contract → Schedule Ocular Visit → ocular report (auto For Review) ── */}
       {project.status === 'draft' && (
         <ProjectOcularSteps
           projectId={project._id}

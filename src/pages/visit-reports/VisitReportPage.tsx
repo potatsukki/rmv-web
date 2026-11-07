@@ -991,13 +991,13 @@ export function VisitReportPage() {
 
       toast.success(
         isOcular
-          ? `Ocular report submitted${pendingOcularSiblings.length ? ` for all ${pendingOcularSiblings.length + 1} items` : ''}. Press Done Ocular on the project to send it for review.`
+          ? `Ocular report submitted${pendingOcularSiblings.length ? ` for all ${pendingOcularSiblings.length + 1} items` : ''}. The project moves to For Review once every ocular report is in.`
           : 'Consultation completed. Create the project next.',
         { duration: 5000 },
       );
       setSubmitOpen(false);
 
-      // A finished ocular visit goes back to its project, where sales presses Done Ocular.
+      // A finished ocular visit goes back to its project, which moves to For Review on its own.
       if (isOcular && (isSalesStaff || isAdmin)) {
         const projectId = submittedReport.linkedProjectId ? rawId(submittedReport.linkedProjectId) : linkedProjectId;
         navigate(projectId
