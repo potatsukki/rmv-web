@@ -724,6 +724,14 @@ export function ProjectDetailPage() {
   const activeSelectedDesignTemplateName = activeProjectItemRecord?.selectedDesignTemplateName;
   const activeSelectedDesignTemplateImageUrl = activeProjectItemRecord?.selectedDesignTemplateImageUrl;
   const activeSelectedDesignTemplateServiceType = activeProjectItemRecord?.serviceType;
+  // The design can come from a sales upload, a selected template, or the item specs/sketches.
+  const hasDesignReference = Boolean(
+    hasInitialDesign
+    || activeSelectedDesignTemplateName
+    || activeProjectItemHasSpecifications
+    || activeSketchKeys.length
+    || activeReferenceImageKeys.length,
+  );
   const initialDesignBackfill = project?.initialDesignBackfill;
   const hasBackfilledInitialDesign = Boolean(initialDesignBackfill?.backfilledAt);
   const primaryInitialDesignKey = activeInitialDesignKeys[0];
@@ -1951,7 +1959,7 @@ export function ProjectDetailPage() {
             </DetailSectionCard>
           )}
 
-          {isStaff && !hasInitialDesign && project.status !== 'draft' && (
+          {isStaff && !hasDesignReference && project.status !== 'draft' && (
             <Card className="rounded-none sm:rounded-xl border-x-0 sm:border-x border-amber-200 dark:border-amber-900/60 bg-amber-50/60 dark:bg-amber-950/40 lg:col-span-2">
               <CardHeader className="px-4 sm:px-6">
                 <CardTitle className="flex items-center gap-2 text-base sm:text-lg text-amber-900 dark:text-amber-100">
@@ -1964,7 +1972,7 @@ export function ProjectDetailPage() {
                   No initial design package was submitted by sales staff for this project.
                 </p>
                 <p className="text-sm text-amber-800 dark:text-amber-200">
-                  Because there was nothing to review, engineering approval for the initial design was skipped on this record.
+                  No design reference is attached yet. The engineer will work from the project details and visit report.
                 </p>
                 {canBackfillInitialDesign && (
                   <div className="space-y-3 rounded-xl border border-amber-200 dark:border-amber-900/60 bg-white/80 dark:bg-slate-900/90 p-4">
