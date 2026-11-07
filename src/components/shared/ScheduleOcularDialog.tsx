@@ -65,10 +65,10 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange }: Schedule
       try {
         const preview = await fetchOcularFeePreview(sitePin);
         if (!cancelled) setFee(preview);
-      } catch {
+      } catch (error) {
         if (!cancelled) {
           setFee(null);
-          setFeeError('Unable to calculate the route to this location. Select a reachable land location.');
+          setFeeError(extractErrorMessage(error, 'Unable to calculate the route to this location. Select a reachable location on mainland Luzon.'));
         }
       } finally {
         if (!cancelled) setFeeLoading(false);

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getBlueprintDraftChanges, getRevisionQuotation } from './blueprint-revision';
+import { getBlueprintDraftChanges, getRevisionAllowance, getRevisionQuotation } from './blueprint-revision';
 import type { Blueprint, BlueprintDraft } from './types';
 
 const file = (key: string) => ({ key, name: key, size: 1, type: 'application/pdf', uploadedAt: '2026-10-04' });
@@ -36,3 +36,13 @@ describe('blueprint revision draft changes', () => {
     });
   });
 });
+
+describe('getRevisionAllowance', () => {
+  it('keeps revisions 1 to 3 free and charges from revision 4', () => {
+    expect(getRevisionAllowance(1)).toEqual({ revisionNumber: 1, freeRemaining: 3, isPaid: false });
+    expect(getRevisionAllowance(3)).toEqual({ revisionNumber: 3, freeRemaining: 1, isPaid: false });
+    expect(getRevisionAllowance(4)).toEqual({ revisionNumber: 4, freeRemaining: 0, isPaid: true });
+    expect(getRevisionAllowance(6, 3)).toMatchObject({ revisionNumber: 6, isPaid: true });
+  });
+});
+

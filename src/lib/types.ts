@@ -478,6 +478,7 @@ export interface Blueprint {
   revisionNotes?: string;
   revisionComponent?: 'blueprint' | 'costing';
   revisionRefKeys: string[];
+  revisionFee?: RevisionFee;
   quotationReviewStatus?: QuotationReviewStatus;
   quotationReviewedBy?: string;
   quotationReviewedAt?: string;
@@ -600,7 +601,8 @@ export interface PaymentPlan {
   projectId: string;
   projectItemId?: string;
   totalAmount: number;
-  grossAmount?: number;
+  baseAmount?: number;
+  surchargePercent?: number;
   designFeeCredit?: number;
   ocularFeeCredit?: number;
   stages: PaymentStage[];
@@ -619,11 +621,23 @@ export interface ProjectDesignFee {
   method?: string;
   referenceNumber?: string;
   receiptNumber?: string;
+  acknowledgedAt?: string;
+  acknowledgedVia?: 'customer' | 'in_person';
+}
+
+export interface RevisionFee {
+  amount: number;
+  status: 'pending' | 'verified';
+  revisionNumber: number;
+  acknowledgedAt?: string;
+  paidAt?: string;
+  receiptNumber?: string;
 }
 
 export interface ProjectFeeSummary {
   projectId: string;
   projectCost: number | null;
+  installmentSurcharge: number;
   designFee: {
     amount: number;
     status: DesignFeeStatus;
@@ -631,6 +645,7 @@ export interface ProjectFeeSummary {
     method: string | null;
     referenceNumber: string | null;
     receiptNumber: string | null;
+    acknowledgedAt: string | null;
   };
   designFeeCredit: number;
   ocularFee: {
@@ -642,6 +657,13 @@ export interface ProjectFeeSummary {
     tollNote: string;
   };
   ocularFeeCredit: number;
+  revisionFees: {
+    count: number;
+    amount: number;
+    paid: number;
+    pending: number;
+    items: Array<{ blueprintId: string; revisionNumber: number; amount: number; status: 'pending' | 'verified'; receiptNumber: string | null }>;
+  };
   totalCharges: number;
   totalCredits: number;
   totalAmountDue: number;
@@ -649,6 +671,17 @@ export interface ProjectFeeSummary {
   planPaymentsReceived: number;
   remainingBalance: number;
   hasPaymentPlan: boolean;
+  revisionPolicy: { freeRevisionLimit: number; revisionFeeAmount: number };
+}
+
+export interface PendingFees {
+  designFees: PendingDesignFeeProject[];
+  revisionFees: Array<{
+    blueprintId: string;
+    version: number;
+    revisionFee: RevisionFee;
+    project: Omit<PendingDesignFeeProject, 'designFee' | 'createdAt'>;
+  }>;
 }
 
 export interface PendingDesignFeeProject {

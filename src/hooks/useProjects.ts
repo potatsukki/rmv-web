@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingDesignFeeProject } from '@/lib/types';
+import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingFees } from '@/lib/types';
 
 const KEYS = {
   all: ['projects'] as const,
@@ -500,28 +500,72 @@ export function useProjectFeeSummary(id: string | undefined, enabled = true) {
   });
 }
 
-export function usePendingDesignFees(enabled = true) {
+export function usePendingFees(enabled = true) {
   return useQuery({
-    queryKey: [...KEYS.all, 'design-fees', 'pending'] as const,
+    queryKey: [...KEYS.all, 'fees', 'pending'] as const,
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<PendingDesignFeeProject[]>>('/projects/design-fees/pending');
+      const { data } = await api.get<ApiResponse<PendingFees>>('/projects/fees/pending');
       return data.data;
     },
     enabled,
   });
 }
 
-export function useRecordDesignFee() {
+export function useAcknowledgeDesignFee() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, method, referenceNumber }: {
-      id: string;
-      method: 'cash' | 'gcash' | 'bank_transfer';
+    mutationFn: async (id: string) => {
+      const { data } = await api.post<ApiResponse<Project>>(`/projects/${id}/design-fee/acknowledge`, {});
+      return data.data;
+    },
+    onSuccess: (_data, id) => {
+      qc.invalidateQueries({ queryKey: KEYS.detail(id) });
+      qc.invalidateQueries({ queryKey: [...KEYS.all, id, 'fee-summary'] });
+    },
+  });
+}
+
+export type FeePaymentMethod = 'cash' | 'gcash' | 'bank_transfer';
+
+/** Cashier records a paid revision fee (blueprint revision beyond the free ones). */
+export function useRecordRevisionFee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ blueprintId, method, referenceNumber }: {
+      blueprintId: string;
+      method: FeePaymentMethod;
       referenceNumber?: string;
     }) => {
       const { data } = await api.post<ApiResponse<{ receiptNumber: string }>>(
-        `/projects/${id}/design-fee/record`,
+        `/blueprints/${blueprintId}/revision-fee/record`,
         { method, ...(referenceNumber?.trim() ? { referenceNumber: referenceNumber.trim() } : {}) },
+      );
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['blueprints'] });
+      qc.invalidateQueries({ queryKey: ['payments'] });
+    },
+  });
+}
+
+export function useRecordDesignFee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, method, referenceNumber, customerAcknowledgedInPerson }: {
+      id: string;
+      method: 'cash' | 'gcash' | 'bank_transfer';
+      referenceNumber?: string;
+      customerAcknowledgedInPerson?: boolean;
+    }) => {
+      const { data } = await api.post<ApiResponse<{ receiptNumber: string }>>(
+        `/projects/${id}/design-fee/record`,
+        {
+          method,
+          ...(referenceNumber?.trim() ? { referenceNumber: referenceNumber.trim() } : {}),
+          ...(customerAcknowledgedInPerson ? { customerAcknowledgedInPerson: true } : {}),
+        },
       );
       return data.data;
     },

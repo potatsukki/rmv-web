@@ -34,3 +34,18 @@ export function getRevisionQuotation(blueprint: Blueprint): BlueprintDraft['quot
     validityDays: String(quotation.validityDays ?? 30),
   };
 }
+
+export const DEFAULT_FREE_REVISIONS = 3;
+
+/**
+ * Revision numbering: a request on version N is revision N. The first `freeRevisionLimit`
+ * revisions are free; each one after that needs a paid, non-refundable revision fee.
+ */
+export function getRevisionAllowance(version: number, freeRevisionLimit = DEFAULT_FREE_REVISIONS) {
+  const revisionNumber = Math.max(1, Math.floor(version));
+  return {
+    revisionNumber,
+    freeRemaining: Math.max(0, freeRevisionLimit - revisionNumber + 1),
+    isPaid: revisionNumber > freeRevisionLimit,
+  };
+}

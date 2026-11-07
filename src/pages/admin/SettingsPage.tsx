@@ -89,7 +89,8 @@ export function SettingsPage() {
     // 2. Sync Fees & Durations (Simple values)
     const trackedKeys = [
       'baseFee', 'baseCoveredKm', 'perKmRate', 'maxDistanceKm', 
-      'paymentReminderDays', 'paymentEscalationAfterReminders', 'design_fee_amount'
+      'paymentReminderDays', 'paymentEscalationAfterReminders', 'design_fee_amount',
+      'revision_fee_amount', 'free_revision_limit'
     ];
     const ocularPolicy = configs.find((c) => c.key === 'ocular_fee_on_proceed');
     if (ocularPolicy && typeof ocularPolicy.value === 'string') setOcularFeeOnProceed(ocularPolicy.value);
@@ -538,6 +539,26 @@ export function SettingsPage() {
                           Apply changes
                         </Button>
                       )}
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {[
+                        { key: 'free_revision_limit', lbl: 'Free revisions', u: '', hint: 'Per item, before the revision fee applies.' },
+                        { key: 'revision_fee_amount', lbl: 'Revision fee', u: '₱', hint: 'Each revision after the free ones. Non-refundable.' },
+                      ].map((cfg) => (
+                        <div key={cfg.key} className="space-y-1.5">
+                          <Label className="text-xs text-gray-600 dark:text-slate-400">{cfg.lbl}</Label>
+                          <div className="flex items-center gap-2">
+                            <Input value={simpleValues[cfg.key] || ''} onChange={e => setSimpleValues({...simpleValues, [cfg.key]: e.target.value})} className={`w-full ${inputClasses}`} />
+                            {cfg.u && <span className="text-xs font-semibold text-gray-500 shrink-0">{cfg.u}</span>}
+                          </div>
+                          <p className="text-[11px] text-gray-500 dark:text-slate-400">{cfg.hint}</p>
+                          {isSimpleChanged(cfg.key) && (
+                            <Button onClick={() => handleSaveSimpleConfig(cfg.key, cfg.lbl)} disabled={savingKey === cfg.key} size="sm" variant="secondary" className="h-6 text-[10px] w-full mt-1">
+                              Apply changes
+                            </Button>
+                          )}
+                        </div>
+                      ))}
                     </div>
                     <div className="space-y-1.5">
                       <Label className="text-xs text-gray-600 dark:text-slate-400">Ocular fee when the project continues</Label>

@@ -576,7 +576,7 @@ export function PaymentsPage() {
               { key: 'payments', label: 'Payments', show: true },
               { key: 'cashier-queue', label: 'Cashier Queue', show: !!isCashier },
               { key: 'ocular-fees', label: pendingOcularFeeCount ? `Ocular Fees (${pendingOcularFeeCount})` : 'Ocular Fees', show: !!isCashier },
-              { key: 'design-fees', label: 'Design Fees', show: !!isCashier },
+              { key: 'design-fees', label: 'Project Fees', show: !!isCashier },
             ].filter((tab) => tab.show);
 
             if (availableTabs.length <= 1) return null;

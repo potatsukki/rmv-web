@@ -271,11 +271,13 @@ export function useRequestBlueprintRevision() {
       revisionNotes,
       revisionRefKeys,
       component,
+      acknowledgeRevisionFee,
     }: {
       id: string;
       revisionNotes: string;
       revisionRefKeys?: string[];
       component: 'blueprint' | 'costing';
+      acknowledgeRevisionFee?: boolean;
     }) => {
       const { data } = await api.post<ApiResponse<Blueprint>>(
         `/blueprints/${id}/request-revision`,
@@ -283,6 +285,7 @@ export function useRequestBlueprintRevision() {
           notes: revisionNotes,
           component,
           refKeys: revisionRefKeys || [],
+          ...(acknowledgeRevisionFee ? { acknowledgeRevisionFee: true } : {}),
         },
       );
       return data.data;
