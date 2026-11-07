@@ -1535,8 +1535,8 @@ export function ProjectDetailPage() {
                     <UserPlus className="h-5 w-5" />
                   </div>
                   <div className="flex-1 min-w-0 mt-0.5">
-                    <p className={cn("text-sm font-semibold", isDark ? "text-sky-50" : "text-sky-950")}>This project needs an engineer</p>
-                    <p className={cn("text-xs mt-0.5", isDark ? "text-sky-200/80" : "text-sky-700")}>Take it over to start working on the blueprint.</p>
+                    <p className={cn("text-sm font-semibold", isDark ? "text-sky-50" : "text-sky-950")}>New project available</p>
+                    <p className={cn("text-xs mt-0.5", isDark ? "text-sky-200/80" : "text-sky-700")}>No engineer is assigned yet. Pick it up to start the blueprint and costing.</p>
                   </div>
                 </div>
                 <Button
@@ -1549,7 +1549,7 @@ export function ProjectDetailPage() {
                   disabled={assignEngineers.isPending}
                 >
                   {assignEngineers.isPending ? <Loader2 className="mr-1.5 h-4 w-4 animate-spin" /> : <UserPlus className="mr-1.5 h-4 w-4" />}
-                  Take Over this Project
+                  Work on this Project
                 </Button>
               </CardContent>
             </Card>
