@@ -1089,6 +1089,14 @@ export function PaymentsPage() {
 
                   // Remaining balance for partial payments
                   const hasPartialPayment = !isVerified && (stage.amountPaid ?? 0) > 0 && (stage.remainingBalance ?? 0) > 0;
+                  // Customers see one action per stage: pay, view their payment, Paid, or Locked.
+                  const hasStagePayment = Boolean(payments?.some((payment) => String(payment.stageId) === String(stage.stageId)));
+                  const customerStageNote = isCustomer && !showPayButtons && !hasStagePayment
+                    ? (isVerified ? 'Paid' : 'Locked')
+                    : null;
+                  const viewPaymentButton = isCustomer && !showPayButtons && hasStagePayment && (
+                    <Button size="sm" variant="outline" className="h-8 rounded-lg px-3 text-xs" onClick={() => setGcashStageId(String(stage.stageId))}>View Payment</Button>
+                  );
                   
                   return (
                     <div
@@ -1186,7 +1194,8 @@ export function PaymentsPage() {
                             </Button>
                           </div>
                         )}
-                        {isCustomer && !showPayButtons && <Button size="sm" variant="outline" onClick={() => setGcashStageId(String(stage.stageId))}>View Payment Status</Button>}
+                        {viewPaymentButton}
+                        {customerStageNote && <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">{customerStageNote}</span>}
                         {isCashier && isProofSubmitted && (
                           <div className="pt-1">
                             <Button
@@ -1281,7 +1290,7 @@ export function PaymentsPage() {
                             </Button>
                           )}
 
-                          {isCustomer && !showPayButtons && <Button size="sm" variant="outline" onClick={() => setGcashStageId(String(stage.stageId))}>View Payment Status</Button>}
+                          {viewPaymentButton}
                           {isCashier && isProofSubmitted && (
                             <Button
                               size="sm"
@@ -1304,8 +1313,8 @@ export function PaymentsPage() {
                             </Button>
                           )}
 
-                          {!showPayButtons && !isCashier && (
-                            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">Locked</span>
+                          {customerStageNote && (
+                            <span className="text-[10px] text-muted-foreground uppercase tracking-widest font-medium">{customerStageNote}</span>
                           )}
                         </div>
                       </div>
