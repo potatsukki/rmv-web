@@ -79,26 +79,34 @@ describe('resolvePaymentWorkflowStatus', () => {
 });
 
 describe('resolveAppointmentWorkflowStatus', () => {
-  it('labels a finished office consultation as Appointment Completed', () => {
-    const completedConsultation = {
+  it('does not label an office consultation Completed from attendance alone', () => {
+    expect(resolveAppointmentWorkflowStatus({
       status: AppointmentStatus.CONFIRMED,
       type: 'office',
       attendanceStatus: AppointmentAttendanceStatus.COMPLETED,
       ocularFeeStatus: undefined,
       ocularFeePaid: false,
-    };
+    })).toMatchObject({ key: 'appointment_confirmed', isTerminal: false });
+  });
 
-    expect(resolveAppointmentWorkflowStatus(completedConsultation)).toMatchObject({
+  it('labels an office consultation Completed once the appointment is completed', () => {
+    expect(resolveAppointmentWorkflowStatus({
+      status: AppointmentStatus.COMPLETED,
+      type: 'office',
+      attendanceStatus: AppointmentAttendanceStatus.COMPLETED,
+      ocularFeeStatus: undefined,
+      ocularFeePaid: false,
+    })).toMatchObject({
       key: 'appointment_completed',
-      label: 'Appointment Completed',
+      label: 'Completed',
       tone: 'green',
       isTerminal: true,
     });
   });
 
-  it('labels an appointment Pending until a sales staff is assigned, then Confirmed', () => {
+  it('labels office appointments Requested, Assigned, then Confirmed', () => {
     const appointment = {
-      status: AppointmentStatus.CONFIRMED,
+      status: AppointmentStatus.REQUESTED,
       type: 'office',
       ocularFeeStatus: undefined,
       ocularFeePaid: false,
@@ -106,11 +114,39 @@ describe('resolveAppointmentWorkflowStatus', () => {
 
     expect(resolveAppointmentWorkflowStatus(appointment)).toMatchObject({
       key: 'appointment_pending',
-      label: 'Appointment Pending',
+      label: 'Requested',
     });
-    expect(resolveAppointmentWorkflowStatus({ ...appointment, salesStaffId: 'sales-1' })).toMatchObject({
+    expect(resolveAppointmentWorkflowStatus({
+      ...appointment,
+      status: AppointmentStatus.ASSIGNED,
+      salesStaffId: 'sales-1',
+    })).toMatchObject({
+      key: 'appointment_assigned',
+      label: 'Assigned',
+    });
+    expect(resolveAppointmentWorkflowStatus({
+      ...appointment,
+      status: AppointmentStatus.CONFIRMED,
+      salesStaffId: 'sales-1',
+    })).toMatchObject({
       key: 'appointment_confirmed',
-      label: 'Staff Assigned',
+      label: 'Confirmed',
+    });
+  });
+
+  it('shows a no-show consultation as Completed with a No Show badge', () => {
+    expect(resolveAppointmentWorkflowStatus({
+      status: AppointmentStatus.COMPLETED,
+      attendanceStatus: AppointmentAttendanceStatus.NO_SHOW,
+      type: 'office',
+      ocularFeeStatus: undefined,
+      ocularFeePaid: false,
+    })).toMatchObject({
+      key: 'appointment_completed',
+      label: 'Completed',
+      isTerminal: true,
+      secondaryKey: 'no_show',
+      secondaryLabel: 'No Show',
     });
   });
 
@@ -122,11 +158,11 @@ describe('resolveAppointmentWorkflowStatus', () => {
       ocularFeePaid: true,
     })).toMatchObject({
       key: 'appointment_completed',
-      label: 'Appointment Completed',
+      label: 'Completed',
     });
   });
 
-  it('labels a stale in-progress appointment as Appointment Completed after its slot', () => {
+  it('keeps an appointment In Progress even after its slot time has passed', () => {
     expect(resolveAppointmentWorkflowStatus({
       status: AppointmentStatus.IN_PROGRESS,
       type: 'ocular',
@@ -134,23 +170,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
       slotCode: '15:00',
       ocularFeeStatus: undefined,
       ocularFeePaid: true,
-    }, new Date('2026-10-01T08:40:00.000Z'))).toMatchObject({
-      key: 'appointment_completed',
-      label: 'Appointment Completed',
-      tone: 'green',
-      isTerminal: true,
-    });
-  });
-
-  it('keeps an appointment In Progress until its one-hour slot ends', () => {
-    expect(resolveAppointmentWorkflowStatus({
-      status: AppointmentStatus.IN_PROGRESS,
-      type: 'ocular',
-      date: '2026-10-01',
-      slotCode: '16:00',
-      ocularFeeStatus: undefined,
-      ocularFeePaid: true,
-    }, new Date('2026-10-01T08:40:00.000Z'))).toMatchObject({
+    })).toMatchObject({
       key: 'in_progress',
       label: 'Appointment In Progress',
       isTerminal: false,

@@ -14,6 +14,7 @@ import { api } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { CollectionToolbar } from '@/components/shared/CollectionToolbar';
+import { DesignFeePanel, DesignFeeQueue } from '@/components/shared/DesignFeePanel';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { BlockedActionPrompt } from '@/components/shared/BlockedActionPrompt';
@@ -575,6 +576,7 @@ export function PaymentsPage() {
               { key: 'payments', label: 'Payments', show: true },
               { key: 'cashier-queue', label: 'Cashier Queue', show: !!isCashier },
               { key: 'ocular-fees', label: pendingOcularFeeCount ? `Ocular Fees (${pendingOcularFeeCount})` : 'Ocular Fees', show: !!isCashier },
+              { key: 'design-fees', label: 'Design Fees', show: !!isCashier },
             ].filter((tab) => tab.show);
 
             if (availableTabs.length <= 1) return null;
@@ -830,6 +832,11 @@ export function PaymentsPage() {
             <OcularFeeQueuePage isEmbedded />
           )}
 
+          {/* ── TAB: Design Fees ── */}
+          {activeTab === 'design-fees' && isCashier && (
+            <DesignFeeQueue />
+          )}
+
 
         </>
       ) : (
@@ -864,6 +871,10 @@ export function PaymentsPage() {
               <StatusBadge status={selectedStatusBadge.key} label={selectedStatusBadge.label} />
             )}
           </div>
+
+          {selectedProjectId && (
+            <DesignFeePanel projectId={selectedProjectId} isCustomer={Boolean(isCustomer)} canRecord={Boolean(isCashier)} />
+          )}
 
           {selectedProject && isCashier && (selectedProject.ocularAppointmentId || selectedProject.appointmentId) && (
             <OcularFeeQueuePage

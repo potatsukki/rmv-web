@@ -86,7 +86,7 @@ export function CustomerSiteDetailsPage() {
       appt.siteDetailsStatus === 'submitted'
       || appt.siteDetailsStatus === 'skipped'
       || consultationHasStarted
-      || !['requested', 'confirmed'].includes(appt.status)
+      || !['requested', 'assigned', 'confirmed'].includes(appt.status)
     ) {
       navigate(`/appointments/${appt._id}`, { replace: true });
     }
@@ -102,7 +102,7 @@ export function CustomerSiteDetailsPage() {
     appt.siteDetailsStatus === 'submitted'
     || appt.siteDetailsStatus === 'skipped'
     || consultationHasStarted
-    || !['requested', 'confirmed'].includes(appt.status)
+    || !['requested', 'assigned', 'confirmed'].includes(appt.status)
   ) {
     return null;
   }

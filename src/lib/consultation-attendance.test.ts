@@ -21,11 +21,11 @@ describe('getNextConsultationAttendanceBoundary', () => {
     )).toEqual(new Date('2026-09-10T01:00:00.000Z'));
   });
 
-  it('uses the one-hour slot end while the consultation is active', () => {
+  it('stops scheduling refreshes once the consultation is in progress', () => {
     expect(getNextConsultationAttendanceBoundary(
       { ...consultation, attendanceStatus: AppointmentAttendanceStatus.IN_PROGRESS },
-      new Date('2026-09-10T01:30:00.000Z'),
-    )).toEqual(new Date('2026-09-10T02:00:00.000Z'));
+      new Date('2026-09-10T03:30:00.000Z'),
+    )).toBeUndefined();
   });
 
   it('does not schedule automatic refreshes for terminal or unconfirmed attendance', () => {

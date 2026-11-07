@@ -1561,8 +1561,8 @@ export function VisitReportPage() {
 
                 <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
                   Check-in records the customer's arrival and unlocks Complete Consultation. The status
-                  changes automatically to In Progress at the scheduled start and Present after the
-                  one-hour consultation slot.
+                  changes automatically to In Progress at the scheduled start. The consultation is only
+                  completed when you submit this report with Complete Consultation.
                 </p>
               </CardContent>
             </Card>

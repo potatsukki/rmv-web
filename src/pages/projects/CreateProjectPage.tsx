@@ -16,6 +16,7 @@ import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { FileUpload } from '@/components/shared/FileUpload';
 import { PageError } from '@/components/shared/PageError';
 import { PageLoader } from '@/components/shared/PageLoader';
+import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { useAppointment, useAppointments } from '@/hooks/useAppointments';
 import { useCreateProject, useProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
@@ -324,6 +325,16 @@ export function CreateProjectPage() {
 
   const appointment = useAppointment(appointmentId);
   const visitReports = useVisitReportsByAppointment(appointmentId);
+  // Warn (but do not block) when the customer has no finished ocular visit yet.
+  const completedOculars = useAppointments(
+    { customerId, type: 'ocular', status: 'completed', limit: '1' },
+    !pendingProjectId && !!customerId,
+  );
+  const hasCompletedOcular = Boolean(completedOculars.data?.items.length)
+    || (appointment.data?.type === 'ocular' && appointment.data.status === 'completed');
+  const [ocularWarningOpen, setOcularWarningOpen] = useState(false);
+  const ocularWarningAcceptedRef = useRef(false);
+  const formRef = useRef<HTMLFormElement>(null);
   const appointmentReports = visitReports.data || [];
   const primaryReport = appointmentReports.find((report) => String(report._id) === visitReportId)
     || appointmentReports.find((report) => report.visitType === 'ocular')
@@ -494,6 +505,11 @@ export function CreateProjectPage() {
       toast.error('Complete the component name and quantity for each measurement item.');
       return;
     }
+    if (!pendingProjectId && !hasCompletedOcular && !ocularWarningAcceptedRef.current) {
+      setOcularWarningOpen(true);
+      return;
+    }
+    ocularWarningAcceptedRef.current = false;
 
     try {
       if (pendingProjectId) {
@@ -616,6 +632,7 @@ export function CreateProjectPage() {
       </div>
 
       <form
+        ref={formRef}
         onSubmit={handleSubmit}
         className="space-y-6"
       >
@@ -851,6 +868,20 @@ export function CreateProjectPage() {
           </div>
         </fieldset>
       </form>
+
+      <ConfirmDialog
+        open={ocularWarningOpen}
+        onOpenChange={setOcularWarningOpen}
+        title="No ocular visit yet"
+        description='This customer has no completed ocular visit. The project will start as "For Ocular": upload the signed contract, then schedule the ocular visit before it can move forward. Create the project anyway?'
+        confirmLabel="Create Project Anyway"
+        cancelLabel="Cancel"
+        onConfirm={() => {
+          ocularWarningAcceptedRef.current = true;
+          setOcularWarningOpen(false);
+          formRef.current?.requestSubmit();
+        }}
+      />
     </div>
   );
 }

@@ -29,6 +29,7 @@ import { FileUpload } from '@/components/shared/FileUpload';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
+import { DesignFeePanel } from '@/components/shared/DesignFeePanel';
 import { ProjectOcularSteps } from '@/components/shared/ProjectOcularSteps';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -590,6 +591,9 @@ export function ProjectDetailPage() {
   const isEngineer = user?.roles?.some((r: string) => r === Role.ENGINEER);
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isAdmin = user?.roles?.some((r: string) => r === Role.ADMIN);
+  const isCashier = user?.roles?.some((r: string) => r === Role.CASHIER);
+  const isSalesStaffUser = user?.roles?.some((r: string) => r === Role.SALES_STAFF);
+  const canViewFeeBreakdown = Boolean(isCustomer || isCashier || isAdmin || isSalesStaffUser);
   const shouldHideAmount = user?.roles?.some((r: string) => [Role.ADMIN, Role.APPOINTMENT_AGENT, Role.ENGINEER, Role.FABRICATION_STAFF].includes(r as Role));
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
   const isStaff = !isCustomer; // any non-customer role
@@ -2677,6 +2681,16 @@ export function ProjectDetailPage() {
         id="project-panel-blueprint"
         aria-labelledby="project-tab-blueprint"
       >
+        {activeTab === 'blueprint' && project?.designFee?.status === 'pending' && (
+          <div className="mb-4 flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+            <p>
+              {isCustomer
+                ? 'Pay the design fee at the RMV cashier so the engineer can start your blueprint.'
+                : 'Waiting for the design fee. The blueprint can be uploaded once the cashier records the payment.'}
+            </p>
+          </div>
+        )}
         {activeTab === 'blueprint' && (
           <Suspense fallback={<TabPanelFallback message="Loading the blueprint workspace." />}>
             <LazyBlueprintTab
@@ -2709,6 +2723,9 @@ export function ProjectDetailPage() {
       </div>
 
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
+      {activeTab === 'payments' && canViewFeeBreakdown && id && (
+        <DesignFeePanel projectId={id} isCustomer={Boolean(isCustomer)} canRecord={Boolean(isCashier || isAdmin)} />
+      )}
       {activeTab === 'payments' && projectServiceItems.length > 1 && (
         <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
           <CardHeader className="px-4 sm:px-6">

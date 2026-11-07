@@ -29,27 +29,16 @@ export interface WorkflowStatus {
   stage: WorkflowStatusStage;
   isTerminal: boolean;
   secondaryLabel?: string;
+  /** Status key for an extra badge, e.g. the no-show outcome of a completed consultation. */
+  secondaryKey?: string;
 }
 
 const terminalStatuses = new Set(['completed', 'cancelled', 'no_show', 'done']);
-const APPOINTMENT_SLOT_DURATION_MS = 60 * 60 * 1000;
 
 type AppointmentWorkflowInput = Pick<
   Appointment,
   'status' | 'attendanceStatus' | 'ocularFeeStatus' | 'ocularFeePaid' | 'type'
 > & Partial<Pick<Appointment, 'date' | 'slotCode' | 'salesStaffId'>>;
-
-function hasElapsedAppointmentSlot(
-  appointment: Pick<AppointmentWorkflowInput, 'date' | 'slotCode'>,
-  now: Date,
-) {
-  if (!appointment.date || !appointment.slotCode) return false;
-
-  const start = new Date(`${appointment.date.slice(0, 10)}T${appointment.slotCode}:00+08:00`);
-  if (Number.isNaN(start.getTime())) return false;
-
-  return now.getTime() >= start.getTime() + APPOINTMENT_SLOT_DURATION_MS;
-}
 
 export function formatWorkflowStatusLabel(status?: string) {
   if (!status) return 'In Review';
@@ -114,7 +103,6 @@ export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | u
 
 export function resolveAppointmentWorkflowStatus(
   appointment: AppointmentWorkflowInput,
-  now = new Date(),
 ): WorkflowStatus {
   const status = String(appointment.status || '');
 
@@ -124,33 +112,42 @@ export function resolveAppointmentWorkflowStatus(
   if (status === AppointmentStatus.NO_SHOW) {
     return { key: 'no_show', label: 'No Show', tone: 'gray', stage: 'cancelled', isTerminal: true };
   }
+  // No-show and declined consultations close as completed; the attendance outcome becomes a second badge.
+  if (
+    status === AppointmentStatus.COMPLETED
+    && (appointment.attendanceStatus === AppointmentAttendanceStatus.NO_SHOW
+      || appointment.attendanceStatus === AppointmentAttendanceStatus.CUSTOMER_DECLINED)
+  ) {
+    const secondaryKey = String(appointment.attendanceStatus);
+    return {
+      key: 'appointment_completed',
+      label: 'Completed',
+      tone: 'green',
+      stage: 'completed',
+      isTerminal: true,
+      secondaryKey,
+      secondaryLabel: secondaryKey === AppointmentAttendanceStatus.NO_SHOW ? 'No Show' : 'Customer Declined',
+    };
+  }
   if (status === AppointmentStatus.READY_FOR_OCULAR) {
     return { key: 'ready_for_ocular', label: 'Ready for Ocular', tone: 'purple', stage: 'appointment', isTerminal: false };
   }
-  if (
-    appointment.type === 'office'
-    && appointment.attendanceStatus === AppointmentAttendanceStatus.COMPLETED
-  ) {
-    return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
-  }
+  // Only the appointment status says a consultation is finished; elapsed time or attendance alone does not.
   if (status === AppointmentStatus.COMPLETED) {
-    return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
-  }
-  if (
-    (status === AppointmentStatus.IN_PROGRESS
-      || appointment.attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS)
-    && hasElapsedAppointmentSlot(appointment, now)
-  ) {
-    return { key: 'appointment_completed', label: 'Appointment Completed', tone: 'green', stage: 'completed', isTerminal: true };
+    return { key: 'appointment_completed', label: 'Completed', tone: 'green', stage: 'completed', isTerminal: true };
   }
   if (appointment.type === 'ocular' && appointment.ocularFeeStatus === 'pending' && !appointment.ocularFeePaid) {
     return { key: 'awaiting_ocular_fee', label: 'Awaiting Ocular Fee', tone: 'orange', stage: 'billing', isTerminal: false };
   }
-  // "Staff Assigned" once the appointment agent assigns a sales staff; pending until then.
-  if (status === AppointmentStatus.REQUESTED || status === AppointmentStatus.CONFIRMED) {
-    return appointment.salesStaffId
-      ? { key: 'appointment_confirmed', label: 'Staff Assigned', tone: 'blue', stage: 'appointment', isTerminal: false }
-      : { key: 'appointment_pending', label: 'Appointment Pending', tone: 'yellow', stage: 'appointment', isTerminal: false };
+  // Requested -> Assigned (sales staff assigned) -> Confirmed (sales staff accepted).
+  if (status === AppointmentStatus.CONFIRMED) {
+    return { key: 'appointment_confirmed', label: 'Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false };
+  }
+  if (status === AppointmentStatus.ASSIGNED || (status === AppointmentStatus.REQUESTED && appointment.salesStaffId)) {
+    return { key: 'appointment_assigned', label: 'Assigned', tone: 'cyan', stage: 'appointment', isTerminal: false };
+  }
+  if (status === AppointmentStatus.REQUESTED) {
+    return { key: 'appointment_pending', label: 'Requested', tone: 'yellow', stage: 'appointment', isTerminal: false };
   }
   if (status === AppointmentStatus.RESCHEDULE_REQUESTED) {
     return { key: 'reschedule_requested', label: 'Reschedule Requested', tone: 'orange', stage: 'appointment', isTerminal: false };

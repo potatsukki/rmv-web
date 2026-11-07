@@ -30,10 +30,11 @@ import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader'
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
   {
-    label: 'Pending',
+    label: 'Requested',
     value: AppointmentStatus.REQUESTED,
   },
-  { label: 'Staff Assigned', value: AppointmentStatus.CONFIRMED },
+  { label: 'Assigned', value: AppointmentStatus.ASSIGNED },
+  { label: 'Confirmed', value: AppointmentStatus.CONFIRMED },
   { label: 'Completed', value: AppointmentStatus.COMPLETED },
   { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
   { label: 'No Show', value: AppointmentStatus.NO_SHOW },
@@ -44,12 +45,17 @@ const CONFIRMED_STATUS_FILTERS = STATUS_FILTERS.filter((filter) => filter.value 
 
 const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
   requested: {
-    label: 'Pending',
+    label: 'Requested',
     dot: 'bg-[#a97d49]',
     badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]',
   },
+  [AppointmentStatus.ASSIGNED]: {
+    label: 'Assigned',
+    dot: 'bg-[#5f8f9c]',
+    badge: 'border-[#8eafbb] text-[#4f6d78] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)]',
+  },
   confirmed: {
-    label: 'Staff Assigned',
+    label: 'Confirmed',
     dot: 'bg-[#708ca6]',
     badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]',
   },
@@ -601,6 +607,9 @@ export function AppointmentsPage() {
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="h-5 px-1.5 py-0 text-[10px]" />
+                            {workflowStatus.secondaryKey && (
+                              <StatusBadge status={workflowStatus.secondaryKey} className="h-5 px-1.5 py-0 text-[10px]" />
+                            )}
                             <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500" />
                           </div>
                         </div>
@@ -824,7 +833,12 @@ export function AppointmentsPage() {
 
                           {/* Status */}
                           <TableCell className="py-5">
-                            <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="text-[11px]" />
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="text-[11px]" />
+                              {workflowStatus.secondaryKey && (
+                                <StatusBadge status={workflowStatus.secondaryKey} className="text-[11px]" />
+                              )}
+                            </div>
                           </TableCell>
 
                           {/* Arrow */}

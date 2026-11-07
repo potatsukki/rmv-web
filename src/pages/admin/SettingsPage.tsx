@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { extractErrorMessage } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -41,6 +42,7 @@ export function SettingsPage() {
 
   const [simpleValues, setSimpleValues] = useState<Record<string, string>>({});
   const [savingKey, setSavingKey] = useState<string | null>(null);
+  const [ocularFeeOnProceed, setOcularFeeOnProceed] = useState('separate');
 
   // Scheduling State
   const [isScheduleDialogOpen, setIsScheduleDialogOpen] = useState(false);
@@ -87,8 +89,10 @@ export function SettingsPage() {
     // 2. Sync Fees & Durations (Simple values)
     const trackedKeys = [
       'baseFee', 'baseCoveredKm', 'perKmRate', 'maxDistanceKm', 
-      'paymentReminderDays', 'paymentEscalationAfterReminders'
+      'paymentReminderDays', 'paymentEscalationAfterReminders', 'design_fee_amount'
     ];
+    const ocularPolicy = configs.find((c) => c.key === 'ocular_fee_on_proceed');
+    if (ocularPolicy && typeof ocularPolicy.value === 'string') setOcularFeeOnProceed(ocularPolicy.value);
     const nextValues: Record<string, string> = {};
     for (const c of configs) {
       if (trackedKeys.includes(c.key)) {
@@ -193,6 +197,21 @@ export function SettingsPage() {
       toast.error(extractErrorMessage(err, 'Failed to anchor service area'));
     } finally {
       setLocationSaving(false);
+    }
+  };
+
+  const handleSaveOcularFeePolicy = async (value: string) => {
+    const previous = ocularFeeOnProceed;
+    setOcularFeeOnProceed(value);
+    try {
+      setSavingKey('ocular_fee_on_proceed');
+      await updateConfig.mutateAsync({ key: 'ocular_fee_on_proceed', value });
+      toast.success('Ocular fee policy updated');
+    } catch (err) {
+      setOcularFeeOnProceed(previous);
+      toast.error(extractErrorMessage(err, 'Failed to update the ocular fee policy'));
+    } finally {
+      setSavingKey(null);
     }
   };
 
@@ -498,6 +517,38 @@ export function SettingsPage() {
                           )}
                         </div>
                       ))}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="rounded-xl">
+                  <CardHeader>
+                    <CardTitle className="text-md">Project Fees</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-4 pt-0">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-gray-600 dark:text-slate-400">Design Fee (layout &amp; blueprint)</Label>
+                      <div className="flex items-center gap-2">
+                        <Input value={simpleValues.design_fee_amount || ''} onChange={e => setSimpleValues({...simpleValues, design_fee_amount: e.target.value})} className={`w-full ${inputClasses}`} />
+                        <span className="text-xs font-semibold text-gray-500 shrink-0">₱</span>
+                      </div>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">Paid before the blueprint starts and deducted once from the project cost.</p>
+                      {isSimpleChanged('design_fee_amount') && (
+                        <Button onClick={() => handleSaveSimpleConfig('design_fee_amount', 'Design fee')} disabled={savingKey === 'design_fee_amount'} size="sm" variant="secondary" className="h-6 text-[10px] w-full mt-1">
+                          Apply changes
+                        </Button>
+                      )}
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-gray-600 dark:text-slate-400">Ocular fee when the project continues</Label>
+                      <Select value={ocularFeeOnProceed} onValueChange={handleSaveOcularFeePolicy} disabled={savingKey === 'ocular_fee_on_proceed'}>
+                        <SelectTrigger className={inputClasses}><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="separate">Charged separately (not deducted)</SelectItem>
+                          <SelectItem value="credit">Deducted from the project amount due</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <p className="text-[11px] text-gray-500 dark:text-slate-400">Applies to paid outside-Metro-Manila ocular fees when a payment plan is created.</p>
                     </div>
                   </CardContent>
                 </Card>

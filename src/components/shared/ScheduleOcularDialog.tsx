@@ -183,6 +183,11 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange }: Schedule
                   Distance: {fee.route.distanceKm.toFixed(1)} km · ~{fee.route.durationMinutes} min drive
                   {!fee.fee.isWithinNCR && ' · The customer pays this fee from their appointment page.'}
                 </p>
+                {!fee.fee.isWithinNCR && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    ₱{fee.fee.baseFee} covers the first {fee.fee.baseCoveredKm} km, then ₱{fee.fee.perKmRate}/km. {fee.fee.tollNote || 'Toll fees are shouldered by RMV.'}
+                  </p>
+                )}
               </div>
             )}
           </div>
