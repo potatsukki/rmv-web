@@ -11,8 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FeeBreakdownCard } from '@/components/shared/FeeBreakdownCard';
+import { GcashPayment } from '@/pages/payments/components/GcashPayment';
 import {
-  useAcknowledgeDesignFee,
   usePendingFees,
   useProjectFeeSummary,
   useRecordDesignFee,
@@ -131,33 +131,6 @@ export function RecordFeeDialog({
   );
 }
 
-function CustomerDesignFeeAcknowledgment({ projectId, amount }: { projectId: string; amount: number }) {
-  const acknowledge = useAcknowledgeDesignFee();
-  const [checked, setChecked] = useState(false);
-
-  const submit = async () => {
-    try {
-      await acknowledge.mutateAsync(projectId);
-      toast.success('Thank you. You can now pay the design fee at the RMV cashier.');
-    } catch (error) {
-      toast.error(extractErrorMessage(error, 'Failed to save your confirmation'));
-    }
-  };
-
-  return (
-    <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-      <label className="flex items-start gap-2 text-sm">
-        <input type="checkbox" className="mt-0.5" checked={checked} onChange={(event) => setChecked(event.target.checked)} />
-        <span>I understand the {formatCurrency(amount)} design fee is non-refundable once paid.</span>
-      </label>
-      <Button type="button" size="sm" onClick={submit} disabled={!checked || acknowledge.isPending} className="shrink-0">
-        {acknowledge.isPending && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-        Confirm
-      </Button>
-    </div>
-  );
-}
-
 /** Payments-tab fee section: breakdown for customer/cashier/admin/sales, plus the cashier's record actions. */
 export function DesignFeePanel({
   projectId,
@@ -187,7 +160,7 @@ export function DesignFeePanel({
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
                 {isCustomer
-                  ? `A non-refundable design fee of ${formatCurrency(summary.designFee.amount)} is due before the blueprint starts. Pay at the RMV cashier (cash, GCash, or bank transfer). It is deducted once from your project cost.`
+                  ? `A non-refundable design fee of ${formatCurrency(summary.designFee.amount)} is due before the blueprint starts. Pay it below with GCash, or in cash at the RMV cashier. It is a separate fee and is not deducted from your project cost.`
                   : `Design fee of ${formatCurrency(summary.designFee.amount)} is unpaid. The blueprint cannot start until the cashier records it.`}
               </p>
             </div>
@@ -210,10 +183,15 @@ export function DesignFeePanel({
               <CheckCircle2 className="h-3.5 w-3.5" />
               Customer acknowledged the fee is non-refundable on {format(new Date(acknowledgedAt), 'MMM d, yyyy h:mm a')}.
             </p>
-          ) : isCustomer ? (
-            <CustomerDesignFeeAcknowledgment projectId={projectId} amount={summary.designFee.amount} />
-          ) : (
+          ) : isCustomer ? null : (
             <p className="text-xs">The customer has not confirmed the non-refundable notice in the app yet.</p>
+          )}
+          {isCustomer && (
+            <GcashPayment
+              target={{ stageId: `design-fee-${projectId}` }}
+              requireNonRefundableAck={!acknowledgedAt}
+              nonRefundableNotice={`I understand the ${formatCurrency(summary.designFee.amount)} design fee is non-refundable once paid.`}
+            />
           )}
         </div>
       )}

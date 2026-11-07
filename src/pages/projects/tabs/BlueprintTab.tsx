@@ -600,7 +600,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
 
   const { data: project, refetch: refetchProject } = useProject(projectId);
   const { data: feeSummary } = useProjectFeeSummary(projectId, Boolean(isCustomer));
-  // Paid design fee (and ocular fee when the policy credits it) is deducted once from the first plan.
+  // Only the ocular fee (when the policy credits it) is deducted from the first plan; the design fee is paid separately.
   const upcomingFeeCredit = feeSummary && !feeSummary.hasPaymentPlan
     ? feeSummary.designFeeCredit + (feeSummary.ocularFee.treatment === 'credit' ? feeSummary.ocularFeeCredit : 0)
     : 0;
@@ -2476,7 +2476,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   {upcomingFeeCredit > 0 && (
                     <>
                       <span className="text-gray-600 dark:text-slate-300">
-                        {feeSummary?.ocularFee.treatment === 'credit' && feeSummary.ocularFeeCredit > 0 ? 'Design & ocular fee credit' : 'Design fee credit'}
+                        Ocular fee credit
                       </span>
                       <span className="text-right font-semibold text-emerald-700 dark:text-emerald-300">
                         −{formatCurrency(upcomingFeeCredit)}
@@ -2486,7 +2486,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 </div>
                 {upcomingFeeCredit > 0 && (
                   <p className="text-xs text-gray-500 dark:text-slate-400">
-                    Your paid design fee is deducted once from the project cost, before any installment surcharge. The amounts below already include it.
+                    Your paid ocular fee is deducted once from the project cost, before any installment surcharge. The amounts below already include it.
                   </p>
                 )}
               </div>
