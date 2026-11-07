@@ -110,8 +110,8 @@ export function FeeBreakdownCard({ summary, className }: { summary: ProjectFeeSu
               label="Design Fee Credit"
               value={`−${formatCurrency(summary.designFeeCredit)}`}
               hint={summary.hasPaymentPlan
-                ? 'Deducted once from your payment plan.'
-                : 'Will be deducted once from your payment plan.'}
+                ? 'Deducted from your final payment.'
+                : 'Will be deducted from your final payment.'}
               tone="credit"
             />
           )}

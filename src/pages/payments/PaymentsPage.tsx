@@ -1122,7 +1122,7 @@ export function PaymentsPage() {
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <p className="text-sm font-bold text-[var(--color-card-foreground)]">
-                              {shouldHideAmount ? '***' : formatCurrency(Number(stage.amount))}
+                              {shouldHideAmount ? '***' : formatCurrency(Number(stage.amount))}{!shouldHideAmount && Number(stage.designFeeCredit) > 0 && <span className="block text-[10px] font-normal text-emerald-700 dark:text-emerald-300">{formatCurrency(Number(stage.amount) + Number(stage.designFeeCredit))} less {formatCurrency(Number(stage.designFeeCredit))} design fee</span>}
                             </p>
                             <span className="text-xs text-[var(--text-metal-muted-color)]">{String(stage.percentage)}%</span>
                           </div>
@@ -1234,7 +1234,7 @@ export function PaymentsPage() {
                           )}
                         </div>
                         <p className="text-sm font-bold text-[var(--color-card-foreground)] text-right">
-                          {shouldHideAmount ? '***' : formatCurrency(Number(stage.amount))}
+                          {shouldHideAmount ? '***' : formatCurrency(Number(stage.amount))}{!shouldHideAmount && Number(stage.designFeeCredit) > 0 && <span className="block text-[10px] font-normal text-emerald-700 dark:text-emerald-300">{formatCurrency(Number(stage.amount) + Number(stage.designFeeCredit))} less {formatCurrency(Number(stage.designFeeCredit))} design fee</span>}
                         </p>
                         <div className="flex justify-center">
                           <StatusBadge status={gcashStageStatus || String(stage.status)} />

@@ -600,13 +600,17 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
 
   const { data: project, refetch: refetchProject } = useProject(projectId);
   const { data: feeSummary } = useProjectFeeSummary(projectId, Boolean(isCustomer));
-  // Only the ocular fee (when the policy credits it) is deducted from the first plan; the design fee is paid separately.
-  const upcomingFeeCredit = feeSummary && !feeSummary.hasPaymentPlan
-    ? feeSummary.designFeeCredit + (feeSummary.ocularFee.treatment === 'credit' ? feeSummary.ocularFeeCredit : 0)
+  // The paid design fee is deducted from the FINAL payment; an ocular credit (when the policy
+  // credits it) comes off the quotation before the installment surcharge.
+  const upcomingDesignCredit = feeSummary && !feeSummary.hasPaymentPlan ? feeSummary.designFeeCredit : 0;
+  const upcomingOcularCredit = feeSummary && !feeSummary.hasPaymentPlan && feeSummary.ocularFee.treatment === 'credit'
+    ? feeSummary.ocularFeeCredit
     : 0;
-  const netOfFeeCredit = (amount: number) => Math.max(0, Math.round((amount - upcomingFeeCredit) * 100) / 100);
-  // The credit comes off the quotation total BEFORE the installment surcharge is added.
-  const installmentTotalAfterCredit = (amount: number) => Math.round(netOfFeeCredit(amount) * (1 + surchargePercent / 100) * 100) / 100;
+  const upcomingFeeCredit = upcomingDesignCredit + upcomingOcularCredit;
+  const roundPeso = (value: number) => Math.max(0, Math.round(value * 100) / 100);
+  const netOfFeeCredit = (amount: number) => roundPeso(amount - upcomingFeeCredit);
+  const installmentBase = (amount: number) => roundPeso((amount - upcomingOcularCredit) * (1 + surchargePercent / 100));
+  const installmentTotalAfterCredit = (amount: number) => roundPeso(installmentBase(amount) - upcomingDesignCredit);
   const freeRevisionLimit = feeSummary?.revisionPolicy.freeRevisionLimit ?? DEFAULT_FREE_REVISIONS;
   const revisionFeeAmount = feeSummary?.revisionPolicy.revisionFeeAmount ?? 1000;
   const { data: blueprint, refetch: refetchBlueprint, isPending: isBlueprintPending } = useLatestBlueprint(projectId, projectItemId);
@@ -2473,20 +2477,26 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   <span className="text-right font-bold text-emerald-700 dark:text-emerald-300">
                     {formatCurrency(payableTotal(acceptDialog.blueprint))}
                   </span>
-                  {upcomingFeeCredit > 0 && (
+                  {upcomingDesignCredit > 0 && (
                     <>
-                      <span className="text-gray-600 dark:text-slate-300">
-                        Ocular fee credit
-                      </span>
+                      <span className="text-gray-600 dark:text-slate-300">Design fee credit</span>
                       <span className="text-right font-semibold text-emerald-700 dark:text-emerald-300">
-                        −{formatCurrency(upcomingFeeCredit)}
+                        −{formatCurrency(upcomingDesignCredit)}
+                      </span>
+                    </>
+                  )}
+                  {upcomingOcularCredit > 0 && (
+                    <>
+                      <span className="text-gray-600 dark:text-slate-300">Ocular fee credit</span>
+                      <span className="text-right font-semibold text-emerald-700 dark:text-emerald-300">
+                        −{formatCurrency(upcomingOcularCredit)}
                       </span>
                     </>
                   )}
                 </div>
-                {upcomingFeeCredit > 0 && (
+                {upcomingDesignCredit > 0 && (
                   <p className="text-xs text-gray-500 dark:text-slate-400">
-                    Your paid ocular fee is deducted once from the project cost, before any installment surcharge. The amounts below already include it.
+                    Your paid design fee is deducted from your final payment. The amounts below already include it.
                   </p>
                 )}
               </div>
@@ -2552,18 +2562,25 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                     {/* Milestone breakdown */}
                     {paymentType === 'installment' && (() => {
                       const milestones = acceptDialog.blueprint?.quotation?.paymentMilestones;
-                      const installTotal = installmentTotalAfterCredit(payableTotal(acceptDialog.blueprint));
+                      const installBase = installmentBase(payableTotal(acceptDialog.blueprint));
                       return (
                         <div className="mt-2.5 space-y-1.5 border-t border-blue-200 pt-2">
                           {cfgSplit.map((pct, idx) => {
                             const stageLabel = milestones?.[idx]?.label || cfgLabels[idx] || `Stage ${idx + 1}`;
                             const stageDesc = milestones?.[idx]?.description || cfgDescriptions[idx] || '';
-                            const stageAmount = Math.round(installTotal * pct / 100 * 100) / 100;
+                            const fullStageAmount = Math.round(installBase * pct / 100 * 100) / 100;
+                            const isFinalStage = idx === cfgSplit.length - 1;
+                            const stageAmount = isFinalStage ? roundPeso(fullStageAmount - upcomingDesignCredit) : fullStageAmount;
                             return (
                               <div key={idx} className="flex items-start gap-2">
                                 <span className="mt-0.5 shrink-0 rounded bg-blue-100 px-1.5 py-0.5 text-[10px] font-semibold text-blue-600 dark:bg-blue-500/20 dark:text-blue-300">{pct}%</span>
                                 <div className="flex-1 min-w-0">
                                   <p className="text-xs font-medium text-gray-800 dark:text-slate-200">{stageLabel} — {formatCurrency(stageAmount)}</p>
+                                  {isFinalStage && upcomingDesignCredit > 0 && (
+                                    <p className="text-[10px] text-emerald-700 dark:text-emerald-300">
+                                      {formatCurrency(fullStageAmount)} less {formatCurrency(upcomingDesignCredit)} design fee
+                                    </p>
+                                  )}
                                   {stageDesc && <p className="text-[10px] text-gray-500 dark:text-slate-400">{stageDesc}</p>}
                                 </div>
                               </div>

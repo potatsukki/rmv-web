@@ -588,6 +588,8 @@ export interface PaymentStage {
   status: string;
   amountPaid?: number;
   remainingBalance?: number;
+  /** Design fee deducted from this (final) stage. */
+  designFeeCredit?: number;
   // Payment activation (fabrication-driven)
   activatedAt?: string | null;
   headsUpSentAt?: string | null;
