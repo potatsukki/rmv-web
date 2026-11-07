@@ -15,13 +15,15 @@ function actorName(actor: string | { firstName: string; lastName: string } | nul
   return actor && typeof actor === 'object' ? `${actor.firstName} ${actor.lastName}` : actor || '—';
 }
 
-export function GcashPayment({ target, allowCash = true, onQrPhCheckout, requireNonRefundableAck = false }: {
+export function GcashPayment({ target, allowCash = true, onQrPhCheckout, requireNonRefundableAck = false, nonRefundableNotice }: {
   target: GcashTarget;
   allowCash?: boolean;
   /** Offers PayMongo QR Ph next to GCash; the cashier verifies the payment afterwards. */
   onQrPhCheckout?: () => Promise<void>;
-  /** Ocular fee: the customer must confirm the fee is non-refundable before paying. */
+  /** Ocular or design fee: the customer must confirm the fee is non-refundable before paying. */
   requireNonRefundableAck?: boolean;
+  /** Checkbox text; defaults to the ocular fee wording. */
+  nonRefundableNotice?: string;
 }) {
   const { data, isLoading, isError, refetch } = useGcashContext(target);
   const submit = useGcashSubmission();
@@ -51,7 +53,7 @@ export function GcashPayment({ target, allowCash = true, onQrPhCheckout, require
     event.preventDefault();
     setSubmissionError('');
     if (requireNonRefundableAck && !nonRefundableAck) {
-      setSubmissionError('Please confirm that the ocular fee is non-refundable before paying.');
+      setSubmissionError('Please confirm that this fee is non-refundable before paying.');
       return;
     }
     setSending(true);
@@ -101,7 +103,7 @@ export function GcashPayment({ target, allowCash = true, onQrPhCheckout, require
             <ol className="list-decimal pl-5 space-y-1 text-sm"><li>Open your GCash app.</li><li>Scan the QR code or send the required amount.</li><li>Complete the payment in GCash.</li><li>Copy your GCash reference number.</li><li>Return to this page.</li><li>Submit your payment details for verification.</li></ol>
             <div className="grid gap-4 sm:grid-cols-2"><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-reference">GCash Reference Number</Label><Input id="gcash-reference" inputMode="numeric" value={reference} onChange={(e) => setReference(e.target.value)} required pattern="[0-9]{13}" maxLength={13} aria-describedby="gcash-reference-help" /><p id="gcash-reference-help" className="text-xs text-muted-foreground">Each GCash reference number can only be used once. The amount ({money(data.amountRequired)}) and payment date are recorded automatically.</p></div><div className="space-y-2 sm:col-span-2"><Label htmlFor="gcash-proof">Payment Screenshot (optional, up to 5 MB)</Label><Input id="gcash-proof" type="file" accept="image/png,image/jpeg,image/webp" onChange={(e) => setFile(e.target.files?.[0] || null)} /></div></div>
           </> : <p className="text-sm text-muted-foreground">Pay at RMV or on-site. The cashier will record the payment after receiving your cash.</p>}
-          {requireNonRefundableAck && <label className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"><input type="checkbox" className="mt-0.5" checked={nonRefundableAck} onChange={(e) => setNonRefundableAck(e.target.checked)} /><span>I understand the ocular visit fee of {money(data.amountRequired)} is non-refundable, even if I do not continue with the project. Toll fees are shouldered by RMV.</span></label>}
+          {requireNonRefundableAck && <label className="flex items-start gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100"><input type="checkbox" className="mt-0.5" checked={nonRefundableAck} onChange={(e) => setNonRefundableAck(e.target.checked)} /><span>{nonRefundableNotice || `I understand the ocular visit fee of ${money(data.amountRequired)} is non-refundable, even if I do not continue with the project. Toll fees are shouldered by RMV.`}</span></label>}
           {submissionError && <p role="alert" className="text-sm text-destructive">{submissionError}</p>}
           <Button type="submit" disabled={sending || (method === 'gcash' && !configured) || (requireNonRefundableAck && !nonRefundableAck)} className="w-full sm:w-auto">{sending ? (method === 'qrph' ? 'Opening QR Ph…' : 'Submitting…') : method === 'qrph' ? 'Pay with QR Ph' : method === 'gcash' ? 'Submit Payment for Verification' : 'Choose Cash / Pay On-site'}</Button>
         </form>}
