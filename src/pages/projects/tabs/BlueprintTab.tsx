@@ -53,7 +53,7 @@ import {
 } from '@/lib/blueprint-draft-cache';
 import { QUOTATION_COPY } from '@/lib/quotation-copy';
 import { submitLatestBlueprintDraft } from '@/lib/blueprint-draft-submission';
-import { getBlueprintDraftChanges, getRevisionQuotation } from '@/lib/blueprint-revision';
+import { DEFAULT_FREE_REVISIONS, getBlueprintDraftChanges, getRevisionAllowance, getRevisionQuotation } from '@/lib/blueprint-revision';
 import type { Blueprint, BlueprintDraft, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
 import { resolveBlueprintWorkflowStatus } from '@/lib/workflow-status';
 
@@ -605,8 +605,14 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     ? feeSummary.designFeeCredit + (feeSummary.ocularFee.treatment === 'credit' ? feeSummary.ocularFeeCredit : 0)
     : 0;
   const netOfFeeCredit = (amount: number) => Math.max(0, Math.round((amount - upcomingFeeCredit) * 100) / 100);
+  // The credit comes off the quotation total BEFORE the installment surcharge is added.
+  const installmentTotalAfterCredit = (amount: number) => Math.round(netOfFeeCredit(amount) * (1 + surchargePercent / 100) * 100) / 100;
+  const freeRevisionLimit = feeSummary?.revisionPolicy.freeRevisionLimit ?? DEFAULT_FREE_REVISIONS;
+  const revisionFeeAmount = feeSummary?.revisionPolicy.revisionFeeAmount ?? 1000;
   const { data: blueprint, refetch: refetchBlueprint, isPending: isBlueprintPending } = useLatestBlueprint(projectId, projectItemId);
   const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId, projectItemId);
+  // Paid revisions wait for the cashier before the engineer can work on them.
+  const revisionFeePending = blueprint?.revisionFee?.status === 'pending';
   const { data: paymentPlan, isFetched: isPaymentPlanFetched } = usePaymentPlan(projectId, projectItemId);
   // Multi-item projects: each item's billing is approved on its own, then billed and paid as one.
   const projectItems = project?.items || [];
@@ -686,14 +692,13 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     canReviewBlueprint
     && bp._id === blueprint?._id
     && bp.status === 'uploaded'
-    && bp.version < 4
     // Billing is auto-approved on send, but the customer can still flag a pricing
     // issue, so costing mode stays open regardless of bp.costingApproved.
     && !(isBlueprintMode ? bp.blueprintApproved : false),
   );
   const isRevisionRequested = blueprint?.status === 'revision_requested';
   const revisionComponent = blueprint?.revisionComponent || 'blueprint';
-  const canEditDraft = Boolean(isAssigned && !isBlueprintPending && (
+  const canEditDraft = Boolean(isAssigned && !isBlueprintPending && !revisionFeePending && (
     blueprint ? isRevisionRequested && mode === revisionComponent : canUploadInitialBlueprint
   ));
   const revisionScope = isRevisionRequested ? `${blueprint._id}:${revisionComponent}` : undefined;
@@ -711,6 +716,11 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     component: 'blueprint' | 'costing' | null;
   }>({ open: false, blueprintId: '', component: null });
   const [revisionNotes, setRevisionNotes] = useState('');
+  const [revisionFeeAcknowledged, setRevisionFeeAcknowledged] = useState(false);
+  // Revision number for the dialog: a request on the latest version N is revision N.
+  const requestedRevisionAllowance = revisionDialog.open && blueprint
+    ? getRevisionAllowance(blueprint.version, freeRevisionLimit)
+    : null;
   const [revisionRefKeys, setRevisionRefKeys] = useState<string[]>([]);
   const [acceptDialog, setAcceptDialog] = useState<{ open: boolean; blueprint: Blueprint | null }>({
     open: false,
@@ -1272,10 +1282,13 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         component: mode,
         revisionNotes,
         revisionRefKeys: revisionRefKeys.length > 0 ? revisionRefKeys : undefined,
+        acknowledgeRevisionFee: Boolean(requestedRevisionAllowance?.isPaid && revisionFeeAcknowledged),
       },
       {
         onSuccess: () => {
-          toast.success('Revision requested — the engineer has been notified and will upload a revised version.', { duration: 5000 });
+          toast.success(requestedRevisionAllowance?.isPaid
+            ? 'Revision requested. Pay the revision fee at the RMV cashier so the engineer can start.'
+            : 'Revision requested — the engineer has been notified and will upload a revised version.', { duration: 5000 });
           setRevisionDialog({ open: false, blueprintId: '' });
           setRevisionNotes('');
           setRevisionRefKeys([]);
@@ -1582,8 +1595,15 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 Uploaded {format(new Date(blueprint.createdAt), 'MMM d, yyyy h:mm a')}
               </p>
 
+              {isRevisionRequested && revisionFeePending && (
+                <p className="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+                  {isCustomer
+                    ? `Pay the ${formatCurrency(blueprint?.revisionFee?.amount ?? revisionFeeAmount)} revision fee at the RMV cashier so the engineer can start this revision.`
+                    : `Waiting for the ${formatCurrency(blueprint?.revisionFee?.amount ?? revisionFeeAmount)} revision fee. The revision can start once the cashier records it.`}
+                </p>
+              )}
               {/* Revision upload (when revision requested) */}
-              {isRevisionRequested && isAssigned && !canEditDraft && (
+              {isRevisionRequested && isAssigned && !canEditDraft && !revisionFeePending && (
                 <p className={`rounded-xl border p-4 text-sm ${isDark ? 'border-slate-700 text-slate-300' : 'border-[#d2d2d7] text-[#6e6e73]'}`}>
                   {revisionComponent === 'blueprint'
                     ? 'Only the blueprint needs revision. Costing is unchanged. Submit the revision from the Blueprint tab.'
@@ -2255,11 +2275,22 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
               <Button
                 variant="destructive"
                 className="rounded-xl"
-                onClick={() => setRevisionDialog({ open: true, blueprintId: bp._id })}
+                onClick={() => {
+                  setRevisionFeeAcknowledged(false);
+                  setRevisionDialog({ open: true, blueprintId: bp._id });
+                }}
               >
                 <AlertCircle className="mr-2 h-4 w-4" />
                 Request Revision
               </Button>
+              <p className="self-center text-xs text-gray-500 dark:text-slate-400">
+                {(() => {
+                  const allowance = getRevisionAllowance(bp.version, freeRevisionLimit);
+                  return allowance.isPaid
+                    ? `Free revisions used. Each new revision costs ${formatCurrency(revisionFeeAmount)}.`
+                    : `${allowance.freeRemaining} of ${freeRevisionLimit} free revision${freeRevisionLimit === 1 ? '' : 's'} left.`;
+                })()}
+              </p>
             </div>
           )}
           </div>
@@ -2369,6 +2400,27 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 label="Upload reference files"
               />
             </div>
+            {requestedRevisionAllowance && (requestedRevisionAllowance.isPaid ? (
+              <div className="space-y-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-100">
+                <p className="font-semibold">Revision {requestedRevisionAllowance.revisionNumber} has a {formatCurrency(revisionFeeAmount)} fee</p>
+                <p className="text-xs">
+                  You have used your {freeRevisionLimit} free revisions. Pay the fee at the RMV cashier; the engineer starts this revision once it is recorded.
+                </p>
+                <label className="flex items-start gap-2 text-xs font-medium">
+                  <input
+                    type="checkbox"
+                    className="mt-0.5"
+                    checked={revisionFeeAcknowledged}
+                    onChange={(event) => setRevisionFeeAcknowledged(event.target.checked)}
+                  />
+                  <span>I understand this {formatCurrency(revisionFeeAmount)} revision fee is non-refundable.</span>
+                </label>
+              </div>
+            ) : (
+              <p className="rounded-xl bg-gray-50 p-3 text-xs text-gray-600 dark:bg-slate-800 dark:text-slate-300">
+                This is revision {requestedRevisionAllowance.revisionNumber} of {freeRevisionLimit} free. After that, each revision costs {formatCurrency(revisionFeeAmount)}.
+              </p>
+            ))}
           </div>
           <DialogFooter>
             <Button
@@ -2383,6 +2435,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
             </Button>
             <Button
               onClick={handleRequestRevision}
+              disabled={Boolean(requestedRevisionAllowance?.isPaid && !revisionFeeAcknowledged)}
               className="bg-red-600 hover:bg-red-700 text-white rounded-lg"
             >
               Submit Request
@@ -2433,7 +2486,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                 </div>
                 {upcomingFeeCredit > 0 && (
                   <p className="text-xs text-gray-500 dark:text-slate-400">
-                    Your paid design fee is deducted once from the plan you choose below. The amounts shown already include it.
+                    Your paid design fee is deducted once from the project cost, before any installment surcharge. The amounts below already include it.
                   </p>
                 )}
               </div>
@@ -2491,10 +2544,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                       Split into multiple stages with a {surchargePercent}% surcharge.
                     </p>
                     <p className="mt-1 text-sm font-bold text-blue-700 dark:text-blue-300">
-                      {formatCurrency(netOfFeeCredit(
-                        payableTotal(acceptDialog.blueprint) *
-                          (1 + surchargePercent / 100),
-                      ))}{' '}
+                      {formatCurrency(installmentTotalAfterCredit(payableTotal(acceptDialog.blueprint)))}{' '}
                       <span className="text-xs font-normal text-gray-400 dark:text-slate-500">
                         (+{surchargePercent}%)
                       </span>
@@ -2502,7 +2552,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                     {/* Milestone breakdown */}
                     {paymentType === 'installment' && (() => {
                       const milestones = acceptDialog.blueprint?.quotation?.paymentMilestones;
-                      const installTotal = netOfFeeCredit(payableTotal(acceptDialog.blueprint) * (1 + surchargePercent / 100));
+                      const installTotal = installmentTotalAfterCredit(payableTotal(acceptDialog.blueprint));
                       return (
                         <div className="mt-2.5 space-y-1.5 border-t border-blue-200 pt-2">
                           {cfgSplit.map((pct, idx) => {

@@ -21,7 +21,7 @@ export function useGcashContext(target: GcashTarget) {
 }
 export function useGcashSubmission() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: async (body: GcashTarget & { referenceNumber: string; proofKey?: string }) =>
+  return useMutation({ mutationFn: async (body: GcashTarget & { referenceNumber: string; proofKey?: string; acknowledgeNonRefundable?: boolean }) =>
     (await api.post<ApiResponse<Payment>>('/payments/gcash/submit', body)).data.data,
     onSettled: () => { qc.invalidateQueries({ queryKey: ['payments'] }); qc.invalidateQueries({ queryKey: ['payment-plans'] }); qc.invalidateQueries({ queryKey: ['appointments'] }); },
   });
@@ -36,7 +36,7 @@ export function useGcashQueue(filter: GcashQueueFilter, enabled = true) {
 }
 export function useSelectCash() {
   const qc = useQueryClient();
-  return useMutation({ mutationFn: async (body: GcashTarget) => (await api.post('/payments/gcash/cash', body)).data.data,
+  return useMutation({ mutationFn: async (body: GcashTarget & { acknowledgeNonRefundable?: boolean }) => (await api.post('/payments/gcash/cash', body)).data.data,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['payments'] }); qc.invalidateQueries({ queryKey: ['appointments'] }); },
   });
 }

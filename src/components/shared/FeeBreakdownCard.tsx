@@ -87,13 +87,20 @@ export function FeeBreakdownCard({ summary, className }: { summary: ProjectFeeSu
             hint={summary.projectCost === null ? 'Shown after the engineer\'s quotation is approved.' : undefined}
             tone={summary.projectCost === null ? 'muted' : 'default'}
           />
+          {summary.installmentSurcharge > 0 && (
+            <Row
+              label="Installment Surcharge"
+              value={formatCurrency(summary.installmentSurcharge)}
+              hint="Applied to the project cost after the design fee credit."
+            />
+          )}
           {showDesignFee && (
             <Row
               label="Design Fee"
               value={designFee.status === 'not_charged' ? formatCurrency(0) : formatCurrency(designFee.amount)}
               hint={designFee.status === 'not_charged'
                 ? 'Not charged because the project did not continue.'
-                : `Layout and blueprint preparation. Paid before the blueprint starts.${designFee.receiptNumber ? ` Receipt ${designFee.receiptNumber}.` : ''}`}
+                : `Layout and blueprint preparation. Paid before the blueprint starts. Non-refundable.${designFee.receiptNumber ? ` Receipt ${designFee.receiptNumber}.` : ''}`}
               status={designFee.status}
               statusLabel={DESIGN_FEE_STATUS_LABEL[designFee.status]}
             />
@@ -112,7 +119,7 @@ export function FeeBreakdownCard({ summary, className }: { summary: ProjectFeeSu
             <Row
               label="Ocular Fee"
               value={formatCurrency(ocularFee.amount)}
-              hint={`Outside Metro Manila travel fee. ${ocularFee.tollNote}`}
+              hint={`Outside Metro Manila travel fee, non-refundable. ${ocularFee.tollNote}`}
               status={ocularFee.status}
               statusLabel={OCULAR_FEE_STATUS_LABEL[ocularFee.status]}
             />
@@ -125,6 +132,15 @@ export function FeeBreakdownCard({ summary, className }: { summary: ProjectFeeSu
               value={`−${formatCurrency(summary.ocularFeeCredit)}`}
               hint="Deducted once from your payment plan."
               tone="credit"
+            />
+          )}
+          {summary.revisionFees.count > 0 && (
+            <Row
+              label="Revision Fees"
+              value={formatCurrency(summary.revisionFees.amount)}
+              hint={`${summary.revisionFees.count} paid revision${summary.revisionFees.count === 1 ? '' : 's'} beyond the free ones. Non-refundable.`}
+              status={summary.revisionFees.pending > 0 ? 'pending' : 'verified'}
+              statusLabel={summary.revisionFees.pending > 0 ? `${formatCurrency(summary.revisionFees.pending)} unpaid` : 'Paid'}
             />
           )}
           <Row label="Total Amount Due" value={formatCurrency(summary.totalAmountDue)} emphasized />

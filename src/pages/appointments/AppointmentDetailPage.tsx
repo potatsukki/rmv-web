@@ -159,10 +159,11 @@ export function AppointmentDetailPage() {
       try {
         const preview = await fetchOcularFeePreview(customerLocationPin);
         if (!cancelled) setFeePreview(preview);
-      } catch {
+      } catch (error) {
         if (!cancelled) {
           setFeePreview(null);
-          setFeeError('Unable to calculate route to this location. Please select a reachable land location.');
+          // Shows the server reason, e.g. locations outside mainland Luzon are not accepted.
+          setFeeError(extractErrorMessage(error, 'Unable to calculate route to this location. Please select a reachable location on mainland Luzon.'));
         }
       } finally {
         if (!cancelled) setFeeLoading(false);
@@ -1211,7 +1212,7 @@ export function AppointmentDetailPage() {
                         <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Ocular Fee Required</p>
                         <p className="text-lg font-bold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Pay before your appointment can be confirmed.</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Pay before your appointment can be confirmed. This fee is non-refundable; toll fees are shouldered by RMV.</p>
                       <div className="grid grid-cols-1 gap-2 rounded-lg border border-blue-200/70 bg-blue-50/70 p-3 sm:grid-cols-2 dark:border-blue-400/20 dark:bg-blue-500/10">
                         <div>
                           <p className="text-xs font-semibold text-blue-700 dark:text-[#8dbcf2]">Ocular Visit Date</p>

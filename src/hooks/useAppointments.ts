@@ -421,7 +421,7 @@ export function useCreateOcularFeeCheckout() {
     mutationFn: async (id: string) => {
       const { data } = await api.post<
         ApiResponse<{ checkoutUrl: string; sessionId: string }>
-      >(`/appointments/${id}/ocular-fee-checkout`, {});
+      >(`/appointments/${id}/ocular-fee-checkout`, { acknowledgeNonRefundable: true });
       return data.data;
     },
   });
@@ -433,7 +433,7 @@ export function useRequestOcularCashPayment() {
     mutationFn: async (id: string) => {
       const { data } = await api.post<ApiResponse<Appointment>>(
         `/appointments/${id}/request-cash`,
-        {},
+        { acknowledgeNonRefundable: true },
       );
       return data.data;
     },

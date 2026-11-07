@@ -6,10 +6,13 @@ import type { ProjectFeeSummary } from '@/lib/types';
 const baseSummary: ProjectFeeSummary = {
   projectId: 'project-1',
   projectCost: 55000,
-  designFee: { amount: 1000, status: 'verified', paidAt: null, method: 'cash', referenceNumber: null, receiptNumber: 'RMV-2026-00001' },
+  designFee: { amount: 1000, status: 'verified', paidAt: null, method: 'cash', referenceNumber: null, receiptNumber: 'RMV-2026-00001', acknowledgedAt: null },
   designFeeCredit: 1000,
   ocularFee: { applies: true, amount: 590, status: 'verified', treatment: 'separate', isWithinNCR: false, tollNote: 'Toll fees are shouldered by RMV.' },
   ocularFeeCredit: 0,
+  installmentSurcharge: 0,
+  revisionFees: { count: 0, amount: 0, paid: 0, pending: 0, items: [] },
+  revisionPolicy: { freeRevisionLimit: 3, revisionFeeAmount: 1000 },
   totalCharges: 56590,
   totalCredits: 1000,
   totalAmountDue: 55590,
@@ -59,5 +62,19 @@ describe('FeeBreakdownCard', () => {
 
     expect(html).toContain('Ocular Fee Credit');
     expect(html).toContain('−₱590.00');
+  });
+
+  it('shows the installment surcharge and paid revision fees', () => {
+    const html = text(renderToStaticMarkup(<FeeBreakdownCard summary={{
+      ...baseSummary,
+      projectCost: 50000,
+      installmentSurcharge: 4900,
+      revisionFees: { count: 1, amount: 1000, paid: 0, pending: 1000, items: [] },
+    }} />));
+
+    expect(html).toMatch(/Installment Surcharge .* ₱4,900.00/);
+    expect(html).toContain('Revision Fees');
+    expect(html).toContain('₱1,000.00 unpaid');
+    expect(html).toContain('Non-refundable');
   });
 });
