@@ -785,6 +785,9 @@ export function CreateProjectPage() {
                 <div className="space-y-2">
                   <Label htmlFor="project-service">Service Type</Label>
                   <Select value={serviceType} onValueChange={(next) => {
+                    // Radix can fire an empty change from its hidden form <select> right after the
+                    // value is set programmatically; ignoring it keeps the auto-filled service.
+                    if (!next) return;
                     setServiceType(next);
                     setServiceTypeFromAppointment(false);
                     setSelectedDesign(null);
