@@ -22,6 +22,7 @@ import { PageError } from '@/components/shared/PageError';
 import {
   useAppointment,
   useConfirmAppointment,
+  useReviewAssignedAppointment,
   useReassignAppointmentSales,
   useCancelAppointment,
   useCompleteReschedule,
@@ -69,6 +70,9 @@ export function AppointmentDetailPage() {
 
   const confirmMutation = useConfirmAppointment();
   const reassignSalesMutation = useReassignAppointmentSales();
+  const reviewAssignmentMutation = useReviewAssignedAppointment();
+  const [declineAssignmentOpen, setDeclineAssignmentOpen] = useState(false);
+  const [declineAssignmentReason, setDeclineAssignmentReason] = useState('');
   const completeRescheduleMutation = useCompleteReschedule();
   const rejectRescheduleMutation = useRejectReschedule();
   const cancelMutation = useCancelAppointment();
@@ -201,7 +205,7 @@ export function AppointmentDetailPage() {
     if (
       canConfirmAppointment
       && appt?.salesStaffId
-      && appt.status === AppointmentStatus.REQUESTED
+      && (appt.status === AppointmentStatus.REQUESTED || appt.status === AppointmentStatus.ASSIGNED)
       && salesStaffList.length > 0
       && !selectedSalesStaff
     ) {
@@ -262,7 +266,7 @@ export function AppointmentDetailPage() {
   const customerSiteLocationRequiredMessage = 'Customer map pin and complete site address are required before starting the ocular visit.';
   const customerCanManageAppointment =
     isCustomer &&
-    [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
+    [AppointmentStatus.REQUESTED, AppointmentStatus.ASSIGNED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
       appt.status as AppointmentStatus,
     );
   const handleConfirm = async () => {
@@ -312,6 +316,29 @@ export function AppointmentDetailPage() {
     }
   };
 
+  const handleReviewAssignment = async (decision: 'accept' | 'decline') => {
+    const reason = declineAssignmentReason.trim();
+    if (decision === 'decline' && !reason) {
+      toast.error('Please enter the reason for declining');
+      return;
+    }
+    try {
+      await reviewAssignmentMutation.mutateAsync({
+        id: id!,
+        decision,
+        reason: decision === 'decline' ? reason : undefined,
+      });
+      toast.success(decision === 'accept'
+        ? 'Appointment confirmed.'
+        : 'Appointment declined. An agent will assign another sales staff.');
+      setDeclineAssignmentOpen(false);
+      setDeclineAssignmentReason('');
+      if (decision === 'decline') navigate('/appointments');
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to update the appointment'));
+    }
+  };
+
   const handleAssignSalesStaff = async () => {
     if (!selectedSalesStaff) {
       toast.error('Please select a sales staff member');
@@ -339,7 +366,7 @@ export function AppointmentDetailPage() {
       toast.success(
         currentSalesStaffId
           ? 'Customer appointment transferred to the selected sales staff.'
-          : 'Sales staff assigned. They will review and confirm the appointment.',
+          : 'Sales staff assigned. The appointment stays Assigned until they accept it.',
       );
       setSelectedSalesStaff('');
       setReassignmentReason('');
@@ -423,6 +450,7 @@ export function AppointmentDetailPage() {
     : appt.salesStaffId?._id;
   const canAssignOrReassignSales = canConfirmAppointment && [
     AppointmentStatus.REQUESTED,
+    AppointmentStatus.ASSIGNED,
     AppointmentStatus.CONFIRMED,
     AppointmentStatus.PREPARING,
     AppointmentStatus.ON_THE_WAY,
@@ -430,6 +458,11 @@ export function AppointmentDetailPage() {
     AppointmentStatus.IN_PROGRESS,
     AppointmentStatus.RESCHEDULE_REQUESTED,
   ].includes(appt.status as AppointmentStatus);
+  const isAssignedSalesForReview = Boolean(
+    isSalesStaff
+    && appt.status === AppointmentStatus.ASSIGNED
+    && assignedSalesStaffId === user?._id,
+  );
   const canUpdateAttendance = Boolean(
     isOfficeConsultation &&
     appt.status === AppointmentStatus.CONFIRMED &&
@@ -591,10 +624,15 @@ export function AppointmentDetailPage() {
             Awaiting Payment
           </span>
         ) : (
-          <StatusBadge
-            status={isConsultationDone ? appointmentWorkflowStatus.key : appt.status}
-            label={isConsultationDone ? appointmentWorkflowStatus.label : undefined}
-          />
+          <div className="flex flex-wrap items-center gap-2">
+            <StatusBadge
+              status={isConsultationDone ? appointmentWorkflowStatus.key : appt.status}
+              label={isConsultationDone ? appointmentWorkflowStatus.label : undefined}
+            />
+            {appointmentWorkflowStatus.secondaryKey && (
+              <StatusBadge status={appointmentWorkflowStatus.secondaryKey} />
+            )}
+          </div>
         )}
       </div>
 
@@ -658,13 +696,92 @@ export function AppointmentDetailPage() {
           </CardContent>
         </Card>
       )}
+      {appt.status === AppointmentStatus.ASSIGNED && (
+        <Card className="rounded-xl border-cyan-200 bg-cyan-50/50 dark:border-cyan-900/60 dark:bg-cyan-950/40">
+          <CardContent className="space-y-3 px-4 py-3">
+            <div className="flex items-start gap-3">
+              <Info className="mt-0.5 h-5 w-5 shrink-0 text-cyan-700 dark:text-cyan-300" />
+              <div>
+                <p className="text-sm font-semibold text-cyan-950 dark:text-cyan-100">
+                  {isAssignedSalesForReview ? 'Assigned to you - Please accept or decline' : 'Assigned - Waiting for sales staff confirmation'}
+                </p>
+                <p className="mt-0.5 text-xs text-cyan-800 dark:text-cyan-200">
+                  {isCustomer
+                    ? 'A sales staff member has been assigned to your consultation. We will notify you once it is confirmed.'
+                    : isAssignedSalesForReview
+                      ? 'Review the schedule and customer details. Accepting confirms the consultation; declining sends it back to the agent for reassignment.'
+                      : 'The assigned sales staff needs to accept this appointment before it becomes Confirmed.'}
+                </p>
+              </div>
+            </div>
+            {isAssignedSalesForReview && (
+              <div className="space-y-3">
+                {declineAssignmentOpen && (
+                  <div className="space-y-1.5">
+                    <Label htmlFor="decline-assignment-reason">Reason for declining</Label>
+                    <Textarea
+                      id="decline-assignment-reason"
+                      value={declineAssignmentReason}
+                      onChange={(event) => setDeclineAssignmentReason(event.target.value)}
+                      placeholder="e.g. Not available at this schedule"
+                      rows={2}
+                    />
+                  </div>
+                )}
+                <div className="flex flex-wrap gap-2">
+                  {declineAssignmentOpen ? (
+                    <>
+                      <Button
+                        type="button"
+                        variant="destructive"
+                        onClick={() => handleReviewAssignment('decline')}
+                        disabled={reviewAssignmentMutation.isPending}
+                      >
+                        {reviewAssignmentMutation.isPending ? 'Declining...' : 'Confirm Decline'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setDeclineAssignmentOpen(false)}
+                        disabled={reviewAssignmentMutation.isPending}
+                      >
+                        Back
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Button
+                        type="button"
+                        onClick={() => handleReviewAssignment('accept')}
+                        disabled={reviewAssignmentMutation.isPending}
+                        className="bg-emerald-600 text-white hover:bg-emerald-700"
+                      >
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        {reviewAssignmentMutation.isPending ? 'Accepting...' : 'Accept Appointment'}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        onClick={() => setDeclineAssignmentOpen(true)}
+                        disabled={reviewAssignmentMutation.isPending}
+                      >
+                        Decline
+                      </Button>
+                    </>
+                  )}
+                </div>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      )}
       {appt.status === AppointmentStatus.CONFIRMED && (
         <Card className="rounded-xl border-blue-200 bg-blue-50/50 dark:border-blue-900/60 dark:bg-blue-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-300 mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                {isOcularAppointment ? 'Staff Assigned - Ready for Ocular Visit' : 'Staff Assigned - Office Consultation Scheduled'}
+                {isOcularAppointment ? 'Confirmed - Ready for Ocular Visit' : 'Confirmed - Office Consultation Scheduled'}
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-200 mt-0.5">
                 {isCustomer
@@ -818,7 +935,7 @@ export function AppointmentDetailPage() {
                 <div className="min-w-0">
                   <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Marked Present</p>
                   <p className="mt-1 text-[17px] font-semibold text-slate-950 dark:text-slate-100">{formatDateTime(appt.consultationCompletedAt)}</p>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Updates automatically after the one-hour slot</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Set when the consultation report is submitted</p>
                 </div>
               </div>
             </div>
@@ -943,7 +1060,7 @@ export function AppointmentDetailPage() {
 
       {isCustomer
         && appt.type === 'office'
-        && [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(appt.status as AppointmentStatus)
+        && [AppointmentStatus.REQUESTED, AppointmentStatus.ASSIGNED, AppointmentStatus.CONFIRMED].includes(appt.status as AppointmentStatus)
         && appt.siteDetailsStatus === 'pending'
         && !appt.consultationStartedAt
         && ![
@@ -1263,6 +1380,7 @@ export function AppointmentDetailPage() {
                       {feePreview.fee.additionalDistanceKm > 0 && (
                         <p>Additional: ₱{feePreview.fee.perKmRate}/km × {feePreview.fee.additionalDistanceKm.toFixed(1)} km = ₱{feePreview.fee.additionalFee}</p>
                       )}
+                      <p>{feePreview.fee.tollNote || 'Toll fees are shouldered by RMV and are not added to the ocular fee.'}</p>
                       <p className="mt-1 font-semibold text-amber-700 dark:text-amber-300">Payment required before your appointment can be confirmed.</p>
                     </>
                   )}
@@ -1870,7 +1988,7 @@ export function AppointmentDetailPage() {
         )}
 
         {isAdmin &&
-          [AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
+          [AppointmentStatus.REQUESTED, AppointmentStatus.ASSIGNED, AppointmentStatus.CONFIRMED, AppointmentStatus.PREPARING].includes(
             appt.status as AppointmentStatus,
           ) && (
             <>

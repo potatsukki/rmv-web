@@ -324,6 +324,7 @@ export interface Project {
   projectNumber?: string;
   title: string;
   totalCost?: number;
+  designFee?: ProjectDesignFee;
   serviceType?: string;
   serviceTypes?: string[];
   description?: string;
@@ -599,9 +600,64 @@ export interface PaymentPlan {
   projectId: string;
   projectItemId?: string;
   totalAmount: number;
+  grossAmount?: number;
+  designFeeCredit?: number;
+  ocularFeeCredit?: number;
   stages: PaymentStage[];
   isPayInFull?: boolean;
   isImmutable: boolean;
+  createdAt: string;
+}
+
+export type DesignFeeStatus = 'not_required' | 'pending' | 'verified' | 'not_charged';
+
+export interface ProjectDesignFee {
+  amount: number;
+  status: DesignFeeStatus;
+  dueAt?: string;
+  paidAt?: string;
+  method?: string;
+  referenceNumber?: string;
+  receiptNumber?: string;
+}
+
+export interface ProjectFeeSummary {
+  projectId: string;
+  projectCost: number | null;
+  designFee: {
+    amount: number;
+    status: DesignFeeStatus;
+    paidAt: string | null;
+    method: string | null;
+    referenceNumber: string | null;
+    receiptNumber: string | null;
+  };
+  designFeeCredit: number;
+  ocularFee: {
+    applies: boolean;
+    amount: number;
+    status: string;
+    treatment: 'separate' | 'credit';
+    isWithinNCR: boolean;
+    tollNote: string;
+  };
+  ocularFeeCredit: number;
+  totalCharges: number;
+  totalCredits: number;
+  totalAmountDue: number;
+  paymentsReceived: number;
+  planPaymentsReceived: number;
+  remainingBalance: number;
+  hasPaymentPlan: boolean;
+}
+
+export interface PendingDesignFeeProject {
+  _id: string;
+  projectNumber?: string;
+  title: string;
+  status: string;
+  designFee: ProjectDesignFee;
+  customerId?: { _id: string; firstName: string; lastName: string; customerNumber?: string; email?: string; phone?: string } | string;
   createdAt: string;
 }
 

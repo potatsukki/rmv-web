@@ -39,7 +39,7 @@ import {
 import { useConfigs } from '@/hooks/useConfig';
 import { usePaymentPlan } from '@/hooks/usePayments';
 import { uploadFileToR2 } from '@/hooks/useUploads';
-import { useProject, useSelectProjectPaymentPlan } from '@/hooks/useProjects';
+import { useProject, useProjectFeeSummary, useSelectProjectPaymentPlan } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
@@ -599,6 +599,12 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
 
   const { data: project, refetch: refetchProject } = useProject(projectId);
+  const { data: feeSummary } = useProjectFeeSummary(projectId, Boolean(isCustomer));
+  // Paid design fee (and ocular fee when the policy credits it) is deducted once from the first plan.
+  const upcomingFeeCredit = feeSummary && !feeSummary.hasPaymentPlan
+    ? feeSummary.designFeeCredit + (feeSummary.ocularFee.treatment === 'credit' ? feeSummary.ocularFeeCredit : 0)
+    : 0;
+  const netOfFeeCredit = (amount: number) => Math.max(0, Math.round((amount - upcomingFeeCredit) * 100) / 100);
   const { data: blueprint, refetch: refetchBlueprint, isPending: isBlueprintPending } = useLatestBlueprint(projectId, projectItemId);
   const { data: blueprints, isLoading, isError, refetch } = useBlueprintsByProject(projectId, projectItemId);
   const { data: paymentPlan, isFetched: isPaymentPlanFetched } = usePaymentPlan(projectId, projectItemId);
@@ -2414,7 +2420,22 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                   <span className="text-right font-bold text-emerald-700 dark:text-emerald-300">
                     {formatCurrency(payableTotal(acceptDialog.blueprint))}
                   </span>
+                  {upcomingFeeCredit > 0 && (
+                    <>
+                      <span className="text-gray-600 dark:text-slate-300">
+                        {feeSummary?.ocularFee.treatment === 'credit' && feeSummary.ocularFeeCredit > 0 ? 'Design & ocular fee credit' : 'Design fee credit'}
+                      </span>
+                      <span className="text-right font-semibold text-emerald-700 dark:text-emerald-300">
+                        −{formatCurrency(upcomingFeeCredit)}
+                      </span>
+                    </>
+                  )}
                 </div>
+                {upcomingFeeCredit > 0 && (
+                  <p className="text-xs text-gray-500 dark:text-slate-400">
+                    Your paid design fee is deducted once from the plan you choose below. The amounts shown already include it.
+                  </p>
+                )}
               </div>
 
               {/* Payment Type Selection */}
@@ -2443,7 +2464,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                       Pay the full amount in one go — no surcharge.
                     </p>
                     <p className="mt-1 text-sm font-bold text-emerald-700 dark:text-emerald-300">
-                      {formatCurrency(payableTotal(acceptDialog.blueprint))}
+                      {formatCurrency(netOfFeeCredit(payableTotal(acceptDialog.blueprint)))}
                     </p>
                   </div>
                 </label>
@@ -2470,10 +2491,10 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                       Split into multiple stages with a {surchargePercent}% surcharge.
                     </p>
                     <p className="mt-1 text-sm font-bold text-blue-700 dark:text-blue-300">
-                      {formatCurrency(
+                      {formatCurrency(netOfFeeCredit(
                         payableTotal(acceptDialog.blueprint) *
                           (1 + surchargePercent / 100),
-                      )}{' '}
+                      ))}{' '}
                       <span className="text-xs font-normal text-gray-400 dark:text-slate-500">
                         (+{surchargePercent}%)
                       </span>
@@ -2481,7 +2502,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                     {/* Milestone breakdown */}
                     {paymentType === 'installment' && (() => {
                       const milestones = acceptDialog.blueprint?.quotation?.paymentMilestones;
-                      const installTotal = payableTotal(acceptDialog.blueprint) * (1 + surchargePercent / 100);
+                      const installTotal = netOfFeeCredit(payableTotal(acceptDialog.blueprint) * (1 + surchargePercent / 100));
                       return (
                         <div className="mt-2.5 space-y-1.5 border-t border-blue-200 pt-2">
                           {cfgSplit.map((pct, idx) => {

@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications } from '@/lib/types';
+import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingDesignFeeProject } from '@/lib/types';
 
 const KEYS = {
   all: ['projects'] as const,
@@ -486,3 +486,51 @@ export function useSkipProjectReview() {
     },
   });
 }
+
+// ── Fees: design fee + ocular fee breakdown ──
+
+export function useProjectFeeSummary(id: string | undefined, enabled = true) {
+  return useQuery({
+    queryKey: [...KEYS.all, id, 'fee-summary'] as const,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<ProjectFeeSummary>>(`/projects/${id}/fee-summary`);
+      return data.data;
+    },
+    enabled: Boolean(id) && enabled,
+  });
+}
+
+export function usePendingDesignFees(enabled = true) {
+  return useQuery({
+    queryKey: [...KEYS.all, 'design-fees', 'pending'] as const,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<PendingDesignFeeProject[]>>('/projects/design-fees/pending');
+      return data.data;
+    },
+    enabled,
+  });
+}
+
+export function useRecordDesignFee() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, method, referenceNumber }: {
+      id: string;
+      method: 'cash' | 'gcash' | 'bank_transfer';
+      referenceNumber?: string;
+    }) => {
+      const { data } = await api.post<ApiResponse<{ receiptNumber: string }>>(
+        `/projects/${id}/design-fee/record`,
+        { method, ...(referenceNumber?.trim() ? { referenceNumber: referenceNumber.trim() } : {}) },
+      );
+      return data.data;
+    },
+    onSuccess: (_data, variables) => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
+      qc.invalidateQueries({ queryKey: ['payment-plans'] });
+      qc.invalidateQueries({ queryKey: ['payments'] });
+    },
+  });
+}
+

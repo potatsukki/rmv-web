@@ -27,6 +27,7 @@ export interface OcularFeePreview {
     additionalDistanceKm: number;
     additionalFee: number;
     total: number;
+    tollNote?: string;
   };
   config: {
     shopLatitude: number;

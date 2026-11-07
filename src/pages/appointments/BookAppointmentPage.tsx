@@ -257,6 +257,7 @@ export function BookAppointmentPage() {
   const activeAppointment = useMemo(() => {
     return activeAppointmentsQuery.data?.items.find((appointment) => [
       'requested',
+      'assigned',
       'confirmed',
       'preparing',
       'on_the_way',
