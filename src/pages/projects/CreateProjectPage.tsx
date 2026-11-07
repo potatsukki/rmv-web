@@ -21,6 +21,7 @@ import { useAppointment, useAppointments } from '@/hooks/useAppointments';
 import { useCreateProject, useProject } from '@/hooks/useProjects';
 import { useCustomerSearch, type CustomerSearchResult } from '@/hooks/useUsers';
 import { useVisitReportsByAppointment } from '@/hooks/useVisitReports';
+import { pickServiceType, serviceTypeOfDesign, toServiceTypeKey } from '@/lib/service-type-key';
 import { api } from '@/lib/api';
 import { DeliveryType, getDefaultDeliveryType, SERVICE_TYPE_LABELS, VisitReportStatus } from '@/lib/constants';
 import type { ApiResponse, LineItem, ServiceSpecifications, VisitReport } from '@/lib/types';
@@ -346,8 +347,8 @@ export function CreateProjectPage() {
       : [appointment.data?.serviceType || appointment.data?.customerSiteDetails?.serviceType].filter(Boolean) as string[];
   const linkedServiceTypes = [...new Set([
     ...appointmentServiceTypes,
-    ...appointmentReports.map((report) => report.serviceType).filter(Boolean),
-  ])];
+    ...appointmentReports.map((report) => report.serviceType),
+  ].map(toServiceTypeKey).filter((type): type is string => Boolean(type)))];
   const linkedServiceLabels = linkedServiceTypes.map((type) => serviceLabel(
     type,
     appointmentReports.find((report) => report.serviceType === type)?.serviceTypeCustom,
@@ -385,12 +386,29 @@ export function CreateProjectPage() {
     const sourceKey = primaryReport?._id || appointment.data._id;
     if (prefillKeyRef.current === sourceKey) return;
     const siteDetails = appointment.data.customerSiteDetails;
-    const appointmentServiceType = primaryReport?.serviceType
-      || appointment.data.serviceTypes?.[0]
-      || siteDetails?.serviceTypes?.[0]
-      || appointment.data.serviceType
-      || siteDetails?.serviceType;
-    if (!appointmentServiceType || !SERVICE_TYPE_LABELS[appointmentServiceType]) return;
+    const appointmentServiceType = pickServiceType([
+      primaryReport?.serviceType,
+      serviceTypeOfDesign(primaryReport?.selectedDesignTemplateId),
+      appointment.data.selectedDesignTemplates?.[0]?.serviceType,
+      serviceTypeOfDesign(appointment.data.selectedDesignTemplateId),
+      appointment.data.serviceTypes?.[0],
+      siteDetails?.serviceTypes?.[0],
+      appointment.data.serviceType,
+      siteDetails?.serviceType,
+    ]);
+    // An unknown service no longer skips the whole prefill; only the service-specific fields stay empty.
+    if (!appointmentServiceType) {
+      setCustomerRequirements((primaryReport || siteDetails)?.customerRequirements || '');
+      setInitialDesignNotes(combineSalesNotes(...appointmentReports.map((report) => report.initialDesignNotes), appointment.data.initialDesignNotes, pendingProject.data?.initialDesignNotes));
+      setAttachments({
+        photoKeys: primaryReport?.photoKeys || siteDetails?.photoKeys || [],
+        videoKeys: primaryReport?.videoKeys || siteDetails?.videoKeys || [],
+        sketchKeys: primaryReport?.sketchKeys || siteDetails?.sketchKeys || [],
+        referenceImageKeys: primaryReport?.referenceImageKeys || siteDetails?.referenceImageKeys || [],
+      });
+      prefillKeyRef.current = sourceKey;
+      return;
+    }
 
     const sourceTemplate = getDesignTemplates(appointmentServiceType).find((template) => (
       template.id === sourceSelectedDesignId
@@ -410,16 +428,17 @@ export function CreateProjectPage() {
     const reportItems: ExtraItemDraft[] = [];
     for (const report of appointmentReports) {
       const itemKey = getReportItemKey(report);
-      if (!report.serviceType || seenItemKeys.has(itemKey)) continue;
+      const reportServiceType = toServiceTypeKey(report.serviceType);
+      if (!reportServiceType || seenItemKeys.has(itemKey)) continue;
       seenItemKeys.add(itemKey);
       reportItems.push(newExtraItemDraft(
-        report.serviceType,
+        reportServiceType,
         report,
-        appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === report.serviceType),
+        appointment.data?.selectedDesignTemplates?.find((template) => template.serviceType === reportServiceType),
         customLabel,
       ));
     }
-    const servicesWithItems = new Set([appointmentServiceType, ...appointmentReports.map((report) => report.serviceType)]);
+    const servicesWithItems = new Set([appointmentServiceType, ...appointmentReports.map((report) => toServiceTypeKey(report.serviceType))]);
     setExtraItems([
       ...reportItems,
       ...linkedServiceTypes.filter((type) => !servicesWithItems.has(type)).map((type) => newExtraItemDraft(
