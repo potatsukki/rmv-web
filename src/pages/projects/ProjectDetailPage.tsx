@@ -2836,18 +2836,21 @@ export function ProjectDetailPage() {
                 <CreditCard className="h-7 w-7 text-[#33414d] dark:text-[#33414d]" />
               </div>
               <h3 className={`mb-1 text-base font-semibold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
-                Choose Payment Plan First
+                {blueprintReadyForCustomerReview ? 'Choose Payment Plan First' : 'Payment plan not available yet'}
               </h3>
               <p className={`mb-6 max-w-sm text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
-                Choose your payment plan in the Costing tab first. After that, you can continue directly to payment.
+                {blueprintReadyForCustomerReview
+                  ? 'Choose your payment plan in the Costing tab first. After that, you can continue directly to payment.'
+                  : "Your payment plan opens once the engineer sends your blueprint and quotation. We'll notify you when it's ready."}
               </p>
-              <Button
+              {/* A plan can only be chosen once the quotation has been sent to the customer. */}
+              {blueprintReadyForCustomerReview && <Button
                 className="rounded-xl border border-emerald-300/70 !bg-emerald-600 !bg-none px-6 !text-white shadow-[0_12px_28px_rgba(16,185,129,0.28)] hover:!bg-emerald-500 dark:border-emerald-300/55 dark:!bg-emerald-500 dark:!text-slate-950 dark:hover:!bg-emerald-400"
                 onClick={() => setActiveTab('costing')}
               >
                 <CreditCard className="mr-2 h-4 w-4" />
                 Choose Payment Plan
-              </Button>
+              </Button>}
             </CardContent>
           </Card>
         </div>
