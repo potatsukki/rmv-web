@@ -139,7 +139,7 @@ export function resolveAppointmentWorkflowStatus(
   if (appointment.type === 'ocular' && appointment.ocularFeeStatus === 'pending' && !appointment.ocularFeePaid) {
     return { key: 'awaiting_ocular_fee', label: 'Awaiting Ocular Fee', tone: 'orange', stage: 'billing', isTerminal: false };
   }
-  // Requested -> Assigned (sales staff assigned) -> Confirmed (sales staff accepted).
+  // Requested -> Confirmed (agent assigns sales staff). Assigned only remains on older records.
   if (status === AppointmentStatus.CONFIRMED) {
     return { key: 'appointment_confirmed', label: 'Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false };
   }

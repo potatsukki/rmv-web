@@ -222,15 +222,13 @@ export function useReviewAssignedAppointment() {
     mutationFn: async ({
       id,
       decision,
-      reason,
     }: {
       id: string;
-      decision: 'accept' | 'decline';
-      reason?: string;
+      decision: 'accept';
     }) => {
       const { data } = await api.post<ApiResponse<Appointment>>(
         `/appointments/${id}/sales-decision`,
-        { decision, reason },
+        { decision },
       );
       return data.data;
     },

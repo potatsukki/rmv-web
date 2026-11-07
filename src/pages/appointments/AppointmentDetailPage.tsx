@@ -71,8 +71,6 @@ export function AppointmentDetailPage() {
   const confirmMutation = useConfirmAppointment();
   const reassignSalesMutation = useReassignAppointmentSales();
   const reviewAssignmentMutation = useReviewAssignedAppointment();
-  const [declineAssignmentOpen, setDeclineAssignmentOpen] = useState(false);
-  const [declineAssignmentReason, setDeclineAssignmentReason] = useState('');
   const completeRescheduleMutation = useCompleteReschedule();
   const rejectRescheduleMutation = useRejectReschedule();
   const cancelMutation = useCancelAppointment();
@@ -317,24 +315,11 @@ export function AppointmentDetailPage() {
     }
   };
 
-  const handleReviewAssignment = async (decision: 'accept' | 'decline') => {
-    const reason = declineAssignmentReason.trim();
-    if (decision === 'decline' && !reason) {
-      toast.error('Please enter the reason for declining');
-      return;
-    }
+  // Only older "assigned" records still wait for the staff; new assignments are confirmed by the agent.
+  const handleConfirmAssignment = async () => {
     try {
-      await reviewAssignmentMutation.mutateAsync({
-        id: id!,
-        decision,
-        reason: decision === 'decline' ? reason : undefined,
-      });
-      toast.success(decision === 'accept'
-        ? 'Appointment confirmed.'
-        : 'Appointment declined. An agent will assign another sales staff.');
-      setDeclineAssignmentOpen(false);
-      setDeclineAssignmentReason('');
-      if (decision === 'decline') navigate('/appointments');
+      await reviewAssignmentMutation.mutateAsync({ id: id!, decision: 'accept' });
+      toast.success('Appointment confirmed.');
     } catch (err) {
       toast.error(extractErrorMessage(err, 'Failed to update the appointment'));
     }
@@ -367,7 +352,7 @@ export function AppointmentDetailPage() {
       toast.success(
         currentSalesStaffId
           ? 'Customer appointment transferred to the selected sales staff.'
-          : 'Sales staff assigned. The appointment stays Assigned until they accept it.',
+          : 'Sales staff assigned. The appointment is now confirmed on their schedule.',
       );
       setSelectedSalesStaff('');
       setReassignmentReason('');
@@ -704,74 +689,27 @@ export function AppointmentDetailPage() {
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-cyan-700 dark:text-cyan-300" />
               <div>
                 <p className="text-sm font-semibold text-cyan-950 dark:text-cyan-100">
-                  {isAssignedSalesForReview ? 'Assigned to you - Please accept or decline' : 'Assigned - Waiting for sales staff confirmation'}
+                  {isAssignedSalesForReview ? 'Assigned to you - Please confirm' : 'Assigned - Waiting for sales staff confirmation'}
                 </p>
                 <p className="mt-0.5 text-xs text-cyan-800 dark:text-cyan-200">
                   {isCustomer
                     ? 'A sales staff member has been assigned to your consultation. We will notify you once it is confirmed.'
                     : isAssignedSalesForReview
-                      ? 'Review the schedule and customer details. Accepting confirms the consultation; declining sends it back to the agent for reassignment.'
+                      ? 'This appointment was assigned before automatic confirmation. Confirm it to add it to your schedule.'
                       : 'The assigned sales staff needs to accept this appointment before it becomes Confirmed.'}
                 </p>
               </div>
             </div>
             {isAssignedSalesForReview && (
-              <div className="space-y-3">
-                {declineAssignmentOpen && (
-                  <div className="space-y-1.5">
-                    <Label htmlFor="decline-assignment-reason">Reason for declining</Label>
-                    <Textarea
-                      id="decline-assignment-reason"
-                      value={declineAssignmentReason}
-                      onChange={(event) => setDeclineAssignmentReason(event.target.value)}
-                      placeholder="e.g. Not available at this schedule"
-                      rows={2}
-                    />
-                  </div>
-                )}
-                <div className="flex flex-wrap gap-2">
-                  {declineAssignmentOpen ? (
-                    <>
-                      <Button
-                        type="button"
-                        variant="destructive"
-                        onClick={() => handleReviewAssignment('decline')}
-                        disabled={reviewAssignmentMutation.isPending}
-                      >
-                        {reviewAssignmentMutation.isPending ? 'Declining...' : 'Confirm Decline'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setDeclineAssignmentOpen(false)}
-                        disabled={reviewAssignmentMutation.isPending}
-                      >
-                        Back
-                      </Button>
-                    </>
-                  ) : (
-                    <>
-                      <Button
-                        type="button"
-                        onClick={() => handleReviewAssignment('accept')}
-                        disabled={reviewAssignmentMutation.isPending}
-                        className="bg-emerald-600 text-white hover:bg-emerald-700"
-                      >
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        {reviewAssignmentMutation.isPending ? 'Accepting...' : 'Accept Appointment'}
-                      </Button>
-                      <Button
-                        type="button"
-                        variant="outline"
-                        onClick={() => setDeclineAssignmentOpen(true)}
-                        disabled={reviewAssignmentMutation.isPending}
-                      >
-                        Decline
-                      </Button>
-                    </>
-                  )}
-                </div>
-              </div>
+              <Button
+                type="button"
+                onClick={handleConfirmAssignment}
+                disabled={reviewAssignmentMutation.isPending}
+                className="bg-emerald-600 text-white hover:bg-emerald-700"
+              >
+                <CheckCircle2 className="mr-2 h-4 w-4" />
+                {reviewAssignmentMutation.isPending ? 'Confirming...' : 'Confirm Appointment'}
+              </Button>
             )}
           </CardContent>
         </Card>
@@ -1624,7 +1562,7 @@ export function AppointmentDetailPage() {
         <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm dark:border-white/10 dark:bg-[linear-gradient(135deg,rgba(17,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.04),0_18px_36px_rgba(0,0,0,0.26)] lg:col-span-2">
           <CardHeader>
             <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">
-              {assignedSalesStaffId ? 'Transfer Customer to Another Sales Staff' : 'Assign Sales Staff for Review'}
+              {assignedSalesStaffId ? 'Transfer Customer to Another Sales Staff' : 'Assign Sales Staff'}
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-5">
@@ -1707,7 +1645,7 @@ export function AppointmentDetailPage() {
                   })}
                 </div>
                 <p className="text-xs text-[#6e6e73] dark:text-slate-500">
-                  Availability and schedule conflicts are checked for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}.
+                  Availability and schedule conflicts are checked for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}. Staff who still have an active appointment can be assigned again once it is completed.
                 </p>
               </div>
             )}
@@ -1737,7 +1675,7 @@ export function AppointmentDetailPage() {
                 ? (assignedSalesStaffId ? 'Transferring...' : 'Assigning...')
                 : assignedSalesStaffId
                   ? 'Transfer Customer Appointment'
-                  : 'Assign & Send for Review'}
+                  : 'Assign & Confirm'}
             </Button>
           </CardContent>
         </Card>
