@@ -262,7 +262,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         summary: 'Understand REQUESTED to COMPLETED paths, including exceptions.',
         roles: APPOINTMENT_HELP_ROLES,
         body: [
-          'Office consultations move Requested → Assigned (agent assigns a sales staff) → Confirmed (the sales staff accepts) → Completed. No-show and customer-declined consultations also end as Completed, with the outcome shown as an extra badge.',
+          'Office consultations move Requested → Confirmed (the agent assigns a sales staff) → Completed. A sales staff member takes one active appointment at a time and can be assigned again once it is completed. No-show and customer-declined consultations also end as Completed, with the outcome shown as an extra badge.',
           'Office consultation attendance starts automatically at the scheduled time. The consultation is completed only when the sales staff submits the consultation report; arrival and exception statuses are still tracked.',
           'Each state affects what actions remain available to customer, agent, and assigned staff in the page UI.',
           'When troubleshooting, first confirm the current status before attempting follow-up actions like payments or report submission.',
