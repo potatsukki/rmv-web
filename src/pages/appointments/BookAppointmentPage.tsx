@@ -19,6 +19,7 @@ import { useAppointments } from '@/hooks/useAppointments';
 import { useHolidays } from '@/hooks/useConfig';
 import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS, MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
 import { cn } from '@/lib/utils';
+import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import {
   hasDesignSelection,
   MAX_SELECTED_DESIGNS,
@@ -442,7 +443,7 @@ export function BookAppointmentPage() {
                   View your current appointment before starting a new booking. To change its date or time, contact an appointment agent.
                 </p>
                 <p className="text-xs text-[#86868b] dark:text-slate-400">
-                  Current status: <span className="font-semibold capitalize text-[#1d1d1f] dark:text-slate-100">{activeAppointment.status.replace(/_/g, ' ')}</span>
+                  Current status: <span className="font-semibold text-[#1d1d1f] dark:text-slate-100">{resolveAppointmentWorkflowStatus(activeAppointment).label}</span>
                 </p>
               </div>
             </div>

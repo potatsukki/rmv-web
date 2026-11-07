@@ -13,6 +13,7 @@ import { Label } from '@/components/ui/label';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
 import {
@@ -228,7 +229,7 @@ export function CashCollectionsPage() {
                       <div className="flex items-center gap-3 shrink-0">
                         <div className="text-right hidden sm:block">
                           <p className="font-semibold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
-                          <StatusBadge status={appt.status} />
+                          <StatusBadge status={resolveAppointmentWorkflowStatus(appt).key} label={resolveAppointmentWorkflowStatus(appt).label} />
                         </div>
                         {isExpanded ? (
                           <ChevronUp className="h-5 w-5 text-[#6e6e73] dark:text-slate-300" />
@@ -240,7 +241,7 @@ export function CashCollectionsPage() {
                     {/* Mobile: show amount + status below */}
                     <div className="flex items-center gap-2 mt-2 sm:hidden">
                       <p className="font-semibold text-[#1d1d1f] dark:text-slate-100 text-sm">{formatCurrency(appt.ocularFee)}</p>
-                      <StatusBadge status={appt.status} />
+                      <StatusBadge status={resolveAppointmentWorkflowStatus(appt).key} label={resolveAppointmentWorkflowStatus(appt).label} />
                     </div>
                   </button>
 

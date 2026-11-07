@@ -162,7 +162,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
   });
 
-  it('keeps an appointment In Progress even after its slot time has passed', () => {
+  it('shows an unfinished visit as Confirmed even after its slot time has passed', () => {
     expect(resolveAppointmentWorkflowStatus({
       status: AppointmentStatus.IN_PROGRESS,
       type: 'ocular',
@@ -171,9 +171,46 @@ describe('resolveAppointmentWorkflowStatus', () => {
       ocularFeeStatus: undefined,
       ocularFeePaid: true,
     })).toMatchObject({
-      key: 'in_progress',
-      label: 'Appointment In Progress',
+      key: 'appointment_confirmed',
+      label: 'Confirmed',
       isTerminal: false,
     });
+  });
+
+  it.each([
+    [AppointmentStatus.REQUESTED, undefined, 'Requested', undefined],
+    [AppointmentStatus.REQUESTED, 'sales-1', 'Assigned', undefined],
+    [AppointmentStatus.ASSIGNED, 'sales-1', 'Assigned', undefined],
+    [AppointmentStatus.CONFIRMED, 'sales-1', 'Confirmed', undefined],
+    [AppointmentStatus.PREPARING, 'sales-1', 'Confirmed', undefined],
+    [AppointmentStatus.ON_THE_WAY, 'sales-1', 'Confirmed', undefined],
+    [AppointmentStatus.ARRIVED_AT_SITE, 'sales-1', 'Confirmed', undefined],
+    [AppointmentStatus.IN_PROGRESS, 'sales-1', 'Confirmed', undefined],
+    [AppointmentStatus.RESCHEDULE_REQUESTED, 'sales-1', 'Confirmed', undefined],
+    [AppointmentStatus.RESCHEDULE_REQUESTED, undefined, 'Requested', undefined],
+    [AppointmentStatus.READY_FOR_OCULAR, 'sales-1', 'Completed', undefined],
+    [AppointmentStatus.COMPLETED, 'sales-1', 'Completed', undefined],
+    [AppointmentStatus.CANCELLED, undefined, 'Completed', 'Cancelled'],
+    [AppointmentStatus.NO_SHOW, 'sales-1', 'Completed', 'No Show'],
+  ])('shows %s (sales staff: %s) as %s', (status, salesStaffId, label, secondaryLabel) => {
+    const result = resolveAppointmentWorkflowStatus({ status, salesStaffId });
+    expect(result.label).toBe(label);
+    expect(result.secondaryLabel).toBe(secondaryLabel);
+    expect(['Requested', 'Assigned', 'Confirmed', 'Completed']).toContain(result.label);
+  });
+
+  it('keeps a ready-for-ocular consultation in the upcoming list', () => {
+    expect(resolveAppointmentWorkflowStatus({ status: AppointmentStatus.READY_FOR_OCULAR }))
+      .toMatchObject({ label: 'Completed', isTerminal: false });
+  });
+
+  it('no longer replaces the status with Awaiting Ocular Fee', () => {
+    expect(resolveAppointmentWorkflowStatus({
+      status: AppointmentStatus.REQUESTED,
+      type: 'ocular',
+      salesStaffId: 'sales-1',
+      ocularFeeStatus: 'pending',
+      ocularFeePaid: false,
+    })).toMatchObject({ key: 'appointment_assigned', label: 'Assigned' });
   });
 });

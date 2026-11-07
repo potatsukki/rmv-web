@@ -1,5 +1,5 @@
 import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus, ProjectStatus } from '@/lib/constants';
-import type { Appointment, Blueprint, PaymentPlan, PaymentStage, Project, ProjectItem } from '@/lib/types';
+import type { Blueprint, PaymentPlan, PaymentStage, Project, ProjectItem } from '@/lib/types';
 
 export type WorkflowStatusStage =
   | 'appointment'
@@ -35,10 +35,29 @@ export interface WorkflowStatus {
 
 const terminalStatuses = new Set(['completed', 'cancelled', 'no_show', 'done']);
 
-type AppointmentWorkflowInput = Pick<
-  Appointment,
-  'status' | 'attendanceStatus' | 'ocularFeeStatus' | 'ocularFeePaid' | 'type'
-> & Partial<Pick<Appointment, 'date' | 'slotCode' | 'salesStaffId'>>;
+// Loose on purpose: list, search, and cash views all pass their own appointment shapes.
+type AppointmentWorkflowInput = {
+  status?: string | null;
+  attendanceStatus?: string | null;
+  salesStaffId?: unknown;
+  type?: string;
+  ocularFeeStatus?: string;
+  ocularFeePaid?: boolean;
+  date?: string;
+  slotCode?: string;
+};
+
+/** The four appointment statuses the UI shows; the database keeps the detailed ones. */
+export const APPOINTMENT_STATUS_GROUPS = ['requested', 'assigned', 'confirmed', 'completed'] as const;
+export type AppointmentStatusGroup = (typeof APPOINTMENT_STATUS_GROUPS)[number];
+
+const CONFIRMED_APPOINTMENT_STATUSES = new Set<string>([
+  AppointmentStatus.CONFIRMED,
+  AppointmentStatus.PREPARING,
+  AppointmentStatus.ON_THE_WAY,
+  AppointmentStatus.ARRIVED_AT_SITE,
+  AppointmentStatus.IN_PROGRESS,
+]);
 
 export function formatWorkflowStatusLabel(status?: string) {
   if (!status) return 'In Review';
@@ -101,65 +120,62 @@ export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | u
     : billingStatus('partially_paid', 'Partially Paid', 'cyan');
 }
 
+const STATUS_GROUP_BY_KEY: Record<string, AppointmentStatusGroup> = {
+  appointment_pending: 'requested',
+  appointment_assigned: 'assigned',
+  appointment_confirmed: 'confirmed',
+  appointment_completed: 'completed',
+};
+
+/** Which of the four displayed statuses an appointment falls under. */
+export function resolveAppointmentStatusGroup(appointment: AppointmentWorkflowInput): AppointmentStatusGroup {
+  return STATUS_GROUP_BY_KEY[resolveAppointmentWorkflowStatus(appointment).key] ?? 'requested';
+}
+
+/**
+ * Every role sees four appointment statuses: Requested, Assigned, Confirmed, Completed.
+ * Visit steps (preparing, on the way, in progress) show as Confirmed; cancelled and no-show
+ * close as Completed with an outcome badge. Keep in sync with the server's status groups.
+ */
 export function resolveAppointmentWorkflowStatus(
   appointment: AppointmentWorkflowInput,
 ): WorkflowStatus {
   const status = String(appointment.status || '');
+  const hasSalesStaff = Boolean(appointment.salesStaffId);
+  const completed = (extra: Partial<WorkflowStatus> = {}): WorkflowStatus => ({
+    key: 'appointment_completed', label: 'Completed', tone: 'green', stage: 'completed', isTerminal: true, ...extra,
+  });
 
   if (status === AppointmentStatus.CANCELLED) {
-    return { key: 'cancelled', label: 'Cancelled', tone: 'red', stage: 'cancelled', isTerminal: true };
+    return completed({ secondaryKey: 'cancelled', secondaryLabel: 'Cancelled' });
   }
   if (status === AppointmentStatus.NO_SHOW) {
-    return { key: 'no_show', label: 'No Show', tone: 'gray', stage: 'cancelled', isTerminal: true };
+    return completed({ secondaryKey: 'no_show', secondaryLabel: 'No Show' });
   }
-  // No-show and declined consultations close as completed; the attendance outcome becomes a second badge.
-  if (
-    status === AppointmentStatus.COMPLETED
-    && (appointment.attendanceStatus === AppointmentAttendanceStatus.NO_SHOW
-      || appointment.attendanceStatus === AppointmentAttendanceStatus.CUSTOMER_DECLINED)
-  ) {
-    const secondaryKey = String(appointment.attendanceStatus);
-    return {
-      key: 'appointment_completed',
-      label: 'Completed',
-      tone: 'green',
-      stage: 'completed',
-      isTerminal: true,
-      secondaryKey,
-      secondaryLabel: secondaryKey === AppointmentAttendanceStatus.NO_SHOW ? 'No Show' : 'Customer Declined',
-    };
-  }
-  if (status === AppointmentStatus.READY_FOR_OCULAR) {
-    return { key: 'ready_for_ocular', label: 'Ready for Ocular', tone: 'purple', stage: 'appointment', isTerminal: false };
-  }
-  // Only the appointment status says a consultation is finished; elapsed time or attendance alone does not.
   if (status === AppointmentStatus.COMPLETED) {
-    return { key: 'appointment_completed', label: 'Completed', tone: 'green', stage: 'completed', isTerminal: true };
+    const attendance = String(appointment.attendanceStatus || '');
+    if (attendance === AppointmentAttendanceStatus.NO_SHOW) {
+      return completed({ secondaryKey: attendance, secondaryLabel: 'No Show' });
+    }
+    if (attendance === AppointmentAttendanceStatus.CUSTOMER_DECLINED) {
+      return completed({ secondaryKey: attendance, secondaryLabel: 'Customer Declined' });
+    }
+    return completed();
   }
-  if (appointment.type === 'ocular' && appointment.ocularFeeStatus === 'pending' && !appointment.ocularFeePaid) {
-    return { key: 'awaiting_ocular_fee', label: 'Awaiting Ocular Fee', tone: 'orange', stage: 'billing', isTerminal: false };
+  // The consultation is finished, but the customer still has the ocular step ahead.
+  if (status === AppointmentStatus.READY_FOR_OCULAR) {
+    return completed({ isTerminal: false });
   }
-  // Requested -> Confirmed (agent assigns sales staff). Assigned only remains on older records.
-  if (status === AppointmentStatus.CONFIRMED) {
+  if (
+    CONFIRMED_APPOINTMENT_STATUSES.has(status)
+    || (status === AppointmentStatus.RESCHEDULE_REQUESTED && hasSalesStaff)
+  ) {
     return { key: 'appointment_confirmed', label: 'Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false };
   }
-  if (status === AppointmentStatus.ASSIGNED || (status === AppointmentStatus.REQUESTED && appointment.salesStaffId)) {
+  if (status === AppointmentStatus.ASSIGNED || (status === AppointmentStatus.REQUESTED && hasSalesStaff)) {
     return { key: 'appointment_assigned', label: 'Assigned', tone: 'cyan', stage: 'appointment', isTerminal: false };
   }
-  if (status === AppointmentStatus.REQUESTED) {
-    return { key: 'appointment_pending', label: 'Requested', tone: 'yellow', stage: 'appointment', isTerminal: false };
-  }
-  if (status === AppointmentStatus.RESCHEDULE_REQUESTED) {
-    return { key: 'reschedule_requested', label: 'Reschedule Requested', tone: 'orange', stage: 'appointment', isTerminal: false };
-  }
-
-  return {
-    key: status || 'appointment_in_review',
-    label: status ? `Appointment ${formatWorkflowStatusLabel(status)}` : 'Appointment In Review',
-    tone: status === AppointmentStatus.IN_PROGRESS ? 'indigo' : 'cyan',
-    stage: 'appointment',
-    isTerminal: terminalStatuses.has(status),
-  };
+  return { key: 'appointment_pending', label: 'Requested', tone: 'yellow', stage: 'appointment', isTerminal: false };
 }
 
 /**

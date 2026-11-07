@@ -1,4 +1,5 @@
 import { Outlet, useLocation, Link, useNavigate } from 'react-router';
+import { resolveAppointmentStatusGroup } from '@/lib/workflow-status';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Sidebar } from './Sidebar';
@@ -540,7 +541,7 @@ export function AppLayout() {
       type: 'appointment',
       title: a.customerName ?? 'Appointment',
       subtitle: [a.purpose, a.date].filter(Boolean).join(' · '),
-      badge: a.status,
+      badge: resolveAppointmentStatusGroup(a),
       path: `/appointments/${a._id}`,
     }));
 

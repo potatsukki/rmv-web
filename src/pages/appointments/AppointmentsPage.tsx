@@ -24,72 +24,25 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { Role, AppointmentStatus, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
 import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
-import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
+import { APPOINTMENT_STATUS_GROUPS, resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
+// Every role filters by the same four statuses the badges show.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  {
-    label: 'Requested',
-    value: AppointmentStatus.REQUESTED,
-  },
-  { label: 'Assigned', value: AppointmentStatus.ASSIGNED },
-  { label: 'Confirmed', value: AppointmentStatus.CONFIRMED },
-  { label: 'Completed', value: AppointmentStatus.COMPLETED },
-  { label: 'Cancelled', value: AppointmentStatus.CANCELLED },
-  { label: 'No Show', value: AppointmentStatus.NO_SHOW },
+  { label: 'Requested', value: 'requested' },
+  { label: 'Assigned', value: 'assigned' },
+  { label: 'Confirmed', value: 'confirmed' },
+  { label: 'Completed', value: 'completed' },
 ];
 
-// Customers and sales staff only see appointments after a sales staff is assigned, so the Request filter doesn't apply to them.
-const CONFIRMED_STATUS_FILTERS = STATUS_FILTERS.filter((filter) => filter.value !== AppointmentStatus.REQUESTED);
-
-const statusConfig: Record<string, { label: string; dot: string; badge: string }> = {
-  requested: {
-    label: 'Requested',
-    dot: 'bg-[#a97d49]',
-    badge: 'border-[#c7aa7a] text-[#7e6239] bg-[linear-gradient(180deg,#f8f0e5_0%,#ebdcc6_100%)]',
-  },
-  [AppointmentStatus.ASSIGNED]: {
-    label: 'Assigned',
-    dot: 'bg-[#5f8f9c]',
-    badge: 'border-[#8eafbb] text-[#4f6d78] bg-[linear-gradient(180deg,#eef7f8_0%,#d8eaee_100%)]',
-  },
-  confirmed: {
-    label: 'Confirmed',
-    dot: 'bg-[#708ca6]',
-    badge: 'border-[#8da4b8] text-[#4f6679] bg-[linear-gradient(180deg,#eef4f9_0%,#d8e4ee_100%)]',
-  },
-  [AppointmentStatus.READY_FOR_OCULAR]: {
-    label: 'Ready for Ocular',
-    dot: 'bg-[#0f766e]',
-    badge: 'border-[#14b8a6] text-[#0f766e] bg-[linear-gradient(180deg,#f0fdfa_0%,#ccfbf1_100%)]',
-  },
-  completed: {
-    label: 'Completed',
-    dot: 'bg-[#6c8f7d]',
-    badge: 'border-[#93ad9d] text-[#4e6c5a] bg-[linear-gradient(180deg,#eef6f1_0%,#dceade_100%)]',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    dot: 'bg-[#b96c66]',
-    badge: 'border-[#cb8b86] text-[#87544f] bg-[linear-gradient(180deg,#fbefed_0%,#efd7d4_100%)]',
-  },
-  no_show: {
-    label: 'No Show',
-    dot: 'bg-[#9ca6b1]',
-    badge: 'border-[#c6ccd3] text-[#5b6470] bg-[linear-gradient(180deg,#eef2f5_0%,#dde3e8_100%)]',
-  },
-  reschedule_requested: {
-    label: 'Reschedule',
-    dot: 'bg-[#8277a3]',
-    badge: 'border-[#afa7c5] text-[#665d82] bg-[linear-gradient(180deg,#f2f1f8_0%,#e0dced_100%)]',
-  },
-  awaiting_payment: {
-    label: 'Awaiting Payment',
-    dot: 'bg-[#aa7f53]',
-    badge: 'border-[#c4a07d] text-[#7b5d3f] bg-[linear-gradient(180deg,#f8f1e9_0%,#ecdcc8_100%)]',
-  },
-};
+// Older links (e.g. from Reports) pass a raw status; map it to the group that shows it.
+function initialStatusGroup(value: string | null): string | null {
+  if (!value) return null;
+  if ((APPOINTMENT_STATUS_GROUPS as readonly string[]).includes(value)) return value;
+  if (['cancelled', 'no_show', 'ready_for_ocular'].includes(value)) return 'completed';
+  return null;
+}
 
 const workflowDotClass: Record<string, string> = {
   gray: 'bg-[#9ca6b1]',
@@ -255,7 +208,7 @@ export function AppointmentsPage() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [statusFilter, setStatusFilter] = useState<string | null>(searchParams.get('status'));
+  const [statusFilter, setStatusFilter] = useState<string | null>(() => initialStatusGroup(searchParams.get('status')));
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const isDark = resolvedTheme === 'dark';
@@ -282,7 +235,7 @@ export function AppointmentsPage() {
   };
 
   const params: Record<string, string> = {};
-  if (statusFilter !== null) params.status = statusFilter;
+  if (statusFilter) params.statusGroup = statusFilter;
   if (debouncedSearch) params.search = debouncedSearch;
 
   const isQueueRole = Boolean(
@@ -378,16 +331,6 @@ export function AppointmentsPage() {
   const customerCtaClassName = isDark
     ? 'border border-white/35 bg-[linear-gradient(180deg,rgba(248,250,252,0.99)_0%,rgba(225,232,240,0.97)_100%)] text-slate-950 shadow-[inset_0_1px_0_rgba(255,255,255,0.94),0_18px_34px_rgba(0,0,0,0.34)] hover:bg-[linear-gradient(180deg,rgba(255,255,255,1)_0%,rgba(233,239,245,1)_100%)] hover:text-slate-950'
     : '';
-
-  const getStatusKey = (appt: Appointment) => {
-    const awaitingPayment =
-      appt.type === 'ocular' && appt.ocularFeeStatus === 'pending' && !appt.ocularFeePaid;
-    if (awaitingPayment) return 'awaiting_payment';
-    if (appt.status === AppointmentStatus.READY_FOR_OCULAR) {
-      return AppointmentStatus.READY_FOR_OCULAR;
-    }
-    return appt.status;
-  };
 
   const searchPlaceholder = isCustomer
     ? 'Search service, location, date, or notes'
@@ -521,7 +464,7 @@ export function AppointmentsPage() {
         searchPlaceholder={searchPlaceholder}
         searchValue={search}
         onSearchChange={setSearch}
-        filters={isSalesOnly || isCustomer ? CONFIRMED_STATUS_FILTERS : STATUS_FILTERS}
+        filters={STATUS_FILTERS}
         activeFilter={statusFilter ?? ''}
         onFilterChange={setStatusFilter}
         action={toolbarActions}
@@ -583,11 +526,7 @@ export function AppointmentsPage() {
             {sections.map((section) => (
               <div key={section.key} className="space-y-2">
                 {section.items.map((appt) => {
-                  const workflowStatus = resolveAppointmentWorkflowStatus({
-                    ...appt,
-                    status: getStatusKey(appt),
-                  });
-                  const config = statusConfig[getStatusKey(appt)] ?? statusConfig.requested!;
+                  const workflowStatus = resolveAppointmentWorkflowStatus(appt);
                   const queueMeta = queueMetaByAppointmentId.get(appt._id);
 
                   return (
@@ -600,7 +539,7 @@ export function AppointmentsPage() {
                         {/* Row 1: Status dot + Name + Badge + Chevron */}
                         <div className="flex items-center justify-between gap-2 min-w-0">
                           <div className="flex items-center gap-2.5 min-w-0 flex-1">
-                            <div className={`h-2 w-2 rounded-full flex-shrink-0 ${workflowDotClass[workflowStatus.tone] || config.dot}`} />
+                            <div className={`h-2 w-2 rounded-full flex-shrink-0 ${workflowDotClass[workflowStatus.tone]}`} />
                             <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
                               {appt.customerName || 'Appointment'}
                             </p>
@@ -698,11 +637,7 @@ export function AppointmentsPage() {
                 {sections.map((section) => (
                   <Fragment key={section.key}>
                     {section.items.map((appt) => {
-                      const workflowStatus = resolveAppointmentWorkflowStatus({
-                        ...appt,
-                        status: getStatusKey(appt),
-                      });
-                      const config = statusConfig[getStatusKey(appt)] ?? statusConfig.requested!;
+                      const workflowStatus = resolveAppointmentWorkflowStatus(appt);
                       const queueMeta = queueMetaByAppointmentId.get(appt._id);
                       const queueActions = [
                         queueMeta?.actions.reviewReportPath
@@ -725,7 +660,7 @@ export function AppointmentsPage() {
                           {/* Customer */}
                           <TableCell className="pl-5 py-5">
                             <div className="flex items-center gap-3 min-w-0">
-                              <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${workflowDotClass[workflowStatus.tone] || config.dot}`} />
+                              <div className={`h-2.5 w-2.5 rounded-full flex-shrink-0 ${workflowDotClass[workflowStatus.tone]}`} />
                               <div className="min-w-0">
                                 <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100 transition-colors group-hover:text-[#4f6679] dark:group-hover:text-sky-300">
                                   {appt.customerName || 'Appointment'}
