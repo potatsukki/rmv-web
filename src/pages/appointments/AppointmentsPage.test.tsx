@@ -54,4 +54,17 @@ describe('AppointmentsPage consultation status', () => {
     expect((html.match(/>Completed</g) || []).length).toBeGreaterThanOrEqual(2);
     expect(html).not.toContain('Ready for Ocular');
   });
+
+  it.each([Role.CUSTOMER, Role.SALES_STAFF, Role.APPOINTMENT_AGENT])('offers only the four status filters to %s', (role) => {
+    auth.user.roles = [role];
+    query.data.items = [];
+
+    const html = renderToStaticMarkup(<MemoryRouter><AppointmentsPage /></MemoryRouter>);
+
+    for (const label of ['All', 'Requested', 'Assigned', 'Confirmed', 'Completed']) {
+      expect(html).toContain(`>${label}<`);
+    }
+    expect(html).not.toContain('>Cancelled<');
+    expect(html).not.toContain('>No Show<');
+  });
 });

@@ -417,7 +417,6 @@ export function AppointmentDetailPage() {
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
   const appointmentWorkflowStatus = resolveAppointmentWorkflowStatus(appt);
-  const isConsultationDone = appointmentWorkflowStatus.key === 'appointment_completed';
   const selectedDesignTemplates = appt.selectedDesignTemplates?.length
     ? appt.selectedDesignTemplates
     : appt.selectedDesignTemplateName
@@ -605,21 +604,12 @@ export function AppointmentDetailPage() {
             ) : null}
           </div>
         </div>
-        {isCustomer && appt.type === 'ocular' && !appt.ocularFeePaid && appt.ocularFeeStatus === 'pending' ? (
-          <span className="inline-flex items-center rounded-full border border-amber-300 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-700">
-            Awaiting Payment
-          </span>
-        ) : (
-          <div className="flex flex-wrap items-center gap-2">
-            <StatusBadge
-              status={isConsultationDone ? appointmentWorkflowStatus.key : appt.status}
-              label={isConsultationDone ? appointmentWorkflowStatus.label : undefined}
-            />
-            {appointmentWorkflowStatus.secondaryKey && (
-              <StatusBadge status={appointmentWorkflowStatus.secondaryKey} />
-            )}
-          </div>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <StatusBadge status={appointmentWorkflowStatus.key} label={appointmentWorkflowStatus.label} />
+          {appointmentWorkflowStatus.secondaryKey && (
+            <StatusBadge status={appointmentWorkflowStatus.secondaryKey} />
+          )}
+        </div>
       </div>
 
       {/* ── Status Guide Banner ── */}
