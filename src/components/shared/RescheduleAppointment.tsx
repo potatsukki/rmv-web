@@ -28,7 +28,7 @@ export function RescheduleAppointment({
   const [slotCode, setSlotCode] = useState('');
   const [reason, setReason] = useState('');
   const rescheduleMutation = useRequestReschedule();
-  const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(date, type);
+  const { data: slotsData, isLoading: slotsLoading, isError: slotsIsError, error: slotsError } = useAvailableSlots(date, type);
 
   if (!open) {
     return (
@@ -80,6 +80,10 @@ export function RescheduleAppointment({
           <Label>New time</Label>
           {slotsLoading ? (
             <Skeleton className="h-10 w-full" />
+          ) : slotsIsError ? (
+            <p className="text-sm text-destructive">
+              {extractErrorMessage(slotsError, 'Unable to load time slots for this date.')}
+            </p>
           ) : (
             <div className="flex flex-wrap gap-2">
               {slotsData?.slots.map((slot) => (
