@@ -1,7 +1,7 @@
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Check, Clock, Loader2, PenTool } from 'lucide-react';
+import { Check, PenTool } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 
@@ -18,8 +18,6 @@ import {
 import { SignaturePad } from '@/components/shared/SignaturePad';
 import { useAuthStore } from '@/stores/auth.store';
 import {
-  useCloseOwnAvailability,
-  useUpdateOwnAvailability,
   useUpdateProfile,
   useSignature,
   useSaveSignature,
@@ -83,8 +81,6 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 export function AccountProfilePage() {
   const { user } = useAuthStore();
   const updateProfile = useUpdateProfile();
-  const timeInMutation = useUpdateOwnAvailability();
-  const timeOutMutation = useCloseOwnAvailability();
   const { data: signatureData } = useSignature();
   const saveSignature = useSaveSignature();
   const deleteSignature = useDeleteSignature();
@@ -206,90 +202,8 @@ export function AccountProfilePage() {
 
   const isCashier = Boolean(user?.roles.includes(Role.CASHIER));
   const isCustomer = user?.roles.includes(Role.CUSTOMER);
-  const isInternalAvailabilityUser = Boolean(
-    user?.roles.some((role) => [
-      Role.APPOINTMENT_AGENT,
-      Role.SALES_STAFF,
-      Role.ENGINEER,
-      Role.CASHIER,
-      Role.ADMIN,
-      Role.FABRICATION_STAFF,
-    ].includes(role)),
-  );
-  const availabilityLabel = user?.availabilityStatus
-    ? user.availabilityStatus.replace(/_/g, ' ')
-    : 'Setup required';
-  const availabilityShiftLabel = user?.activeShift
-    ? user.activeShift.shiftEndAt
-      ? `${new Date(user.activeShift.shiftStartAt).toLocaleString()} to ${new Date(user.activeShift.shiftEndAt).toLocaleString()}`
-      : `Timed in at ${new Date(user.activeShift.shiftStartAt).toLocaleString()}`
-    : user?.expiredShift
-      ? user.expiredShift.shiftEndAt
-        ? `Previous shift ended ${new Date(user.expiredShift.shiftEndAt).toLocaleString()}`
-        : 'Previous time-in session closed'
-      : 'No active shift window saved yet.';
-  const isTimedIn = Boolean(user?.activeShift);
-  const timeClockPending = timeInMutation.isPending || timeOutMutation.isPending;
-
-  const handleTimeClock = async () => {
-    if (timeClockPending) return;
-    if (isTimedIn) {
-      await timeOutMutation.mutateAsync();
-      toast.success('Timed out');
-      return;
-    }
-    await timeInMutation.mutateAsync({ availabilityNote: 'Timed in' });
-    toast.success('Timed in');
-  };
-
   return (
     <div className="space-y-6">
-    {isInternalAvailabilityUser && (
-      <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)]">
-        <CardHeader className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <CardTitle className="text-lg font-semibold">Availability Session</CardTitle>
-            <CardDescription className="text-[var(--text-metal-muted-color)]">
-              Time in and time out for attendance. Admins manage availability and shift schedules.
-            </CardDescription>
-          </div>
-          <button
-            type="button"
-            className={`inline-flex h-10 min-w-[132px] items-center justify-center gap-2 whitespace-nowrap rounded-xl border px-4 text-sm font-semibold leading-none shadow-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-sky-300/80 disabled:cursor-not-allowed disabled:opacity-60 ${
-              isTimedIn
-                ? 'border-amber-300/80 bg-amber-100 text-amber-900 hover:bg-amber-200 dark:border-amber-300/70 dark:bg-amber-300 dark:text-amber-950 dark:hover:bg-amber-200'
-                : 'border-sky-300/80 bg-sky-100 text-sky-900 hover:bg-sky-200 dark:border-sky-300/70 dark:bg-sky-300 dark:text-sky-950 dark:hover:bg-sky-200'
-            }`}
-            disabled={timeClockPending}
-            onClick={handleTimeClock}
-          >
-            {timeClockPending ? (
-              <Loader2 className="h-4 w-4 shrink-0 animate-spin" />
-            ) : (
-              <Clock className="h-4 w-4 shrink-0" />
-            )}
-            {isTimedIn ? 'Time Out' : 'Time In'}
-          </button>
-        </CardHeader>
-        <CardContent className="grid gap-3 sm:grid-cols-2">
-          <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">Current status</p>
-            <p className="mt-1 text-sm font-semibold capitalize text-[var(--color-card-foreground)]">{availabilityLabel}</p>
-            <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">
-              Availability is managed by an admin.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-card)]/85 p-4">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[var(--color-muted-foreground)]">Shift window</p>
-            <p className="mt-1 text-sm font-semibold text-[var(--color-card-foreground)]">{availabilityShiftLabel}</p>
-            {user?.availabilityNote && (
-              <p className="mt-1 text-xs text-[var(--text-metal-muted-color)]">Note: {user.availabilityNote}</p>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    )}
-
     <Card className="rounded-2xl border-[color:var(--color-border)]/60 shadow-sm bg-[var(--metal-panel-background)] text-[var(--color-card-foreground)] backdrop-blur-sm">
       <CardHeader>
         <CardTitle className="text-lg font-semibold text-[var(--color-card-foreground)]">
