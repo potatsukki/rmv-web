@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -140,8 +139,6 @@ function localDateTimeToIso(value?: string) {
 }
 
 export function UsersPage() {
-  const location = useLocation();
-  const isEmployeeMonitoringPage = location.pathname === '/employees';
   const [search, setSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const [dialogOpen, setDialogOpen] = useState(false);
@@ -318,9 +315,7 @@ export function UsersPage() {
     return user.availabilityNote || 'No shift details';
   };
 
-  const userList = extractItems<User>(users).filter((u) => (
-    isEmployeeMonitoringPage ? isInternalAvailabilityUser(u) : true
-  ));
+  const userList = extractItems<User>(users);
   const selectedRole = form.watch('role');
   const canEditAvailability = Boolean(editingUser && INTERNAL_AVAILABILITY_ROLES.includes(selectedRole));
   const selectedAvailability = form.watch('availabilityStatus');
@@ -335,12 +330,10 @@ export function UsersPage() {
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-[#171b21] dark:text-slate-100">
-            {isEmployeeMonitoringPage ? 'Employee Monitoring' : 'User Management'}
+            User Management
           </h1>
           <p className="mt-1 text-sm text-[#616a74] dark:text-slate-400">
-            {isEmployeeMonitoringPage
-              ? 'Monitor employees and update admin-controlled availability.'
-              : 'Manage system access and employee roles.'}
+            Manage system access and employee roles.
           </p>
         </div>
         <Button
@@ -356,11 +349,11 @@ export function UsersPage() {
       {/* Toolbar */}
       <CollectionToolbar
         title="Find the right account fast"
-        description={isEmployeeMonitoringPage ? 'Search staff records and narrow by role before updating availability.' : 'Search account records and narrow by role before making access changes.'}
+        description="Search account records and narrow by role before making access changes."
         searchPlaceholder="Search name, email, or customer ID"
         searchValue={search}
         onSearchChange={setSearch}
-        filters={[{ value: 'all', label: 'All' }, ...ROLES.filter((role) => !isEmployeeMonitoringPage || role.value !== Role.CUSTOMER)]}
+        filters={[{ value: 'all', label: 'All' }, ...ROLES]}
         activeFilter={roleFilter}
         onFilterChange={setRoleFilter}
       />
