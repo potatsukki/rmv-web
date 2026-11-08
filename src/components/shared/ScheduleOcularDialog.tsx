@@ -58,7 +58,12 @@ interface ScheduleOcularDialogProps {
 export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultationDate }: ScheduleOcularDialogProps) {
   const scheduleOcular = useScheduleProjectOcular();
   const leadMinDate = localDateAfter(MIN_BOOKING_LEAD_DAYS);
-  const consultationMinDate = consultationDate ? dateAfter(consultationDate, OCULAR_MIN_DAYS_AFTER_CONSULTATION) : '';
+  // Count from the day the consultation actually happened: one dated later than today was held today.
+  const today = localDateAfter(0);
+  const consultationDay = consultationDate
+    ? (consultationDate.slice(0, 10) < today ? consultationDate.slice(0, 10) : today)
+    : '';
+  const consultationMinDate = consultationDay ? dateAfter(consultationDay, OCULAR_MIN_DAYS_AFTER_CONSULTATION) : '';
   const minDate = consultationMinDate > leadMinDate ? consultationMinDate : leadMinDate;
   const [date, setDate] = useState('');
   const [slotCode, setSlotCode] = useState('');
