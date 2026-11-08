@@ -536,6 +536,10 @@ export function ProjectDetailPage() {
   // ── Data queries ──
   const { data: project, isLoading, isError, refetch } = useProject(id!);
   const ocularAppointment = useAppointment(project?.ocularAppointmentId || '');
+  // The consultation date sets the earliest ocular date while the project waits for its ocular visit.
+  const consultationAppointment = useAppointment(
+    project?.status === 'draft' && !project?.ocularAppointmentId ? project?.appointmentId || '' : '',
+  );
   const projectServiceItems = useMemo(() => getProjectServiceItems(project), [project]);
   const linkedProjectItemId = useMemo(() => {
     const params = new URLSearchParams(location.search);
@@ -1398,6 +1402,7 @@ export function ProjectDetailPage() {
           isCustomer={Boolean(isCustomer)}
           onSignContract={() => navigate(`/projects/${project._id}/contract`)}
           onViewOcular={() => navigate(`/appointments/${project.ocularAppointmentId}`)}
+          consultationDate={consultationAppointment.data?.date}
         />
       )}
       {isCustomer && project.status === 'submitted' && (
