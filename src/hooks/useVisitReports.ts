@@ -179,6 +179,8 @@ export function useSubmitVisitReport() {
       const appointmentId = getVisitReportReferenceId(report.appointmentId);
       if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
       qc.invalidateQueries({ queryKey: ['projects'] });
+      // Submitting a report completes its appointment, so every appointment list/tab must refresh.
+      qc.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
 }
@@ -199,6 +201,7 @@ export function useReturnVisitReport() {
       qc.invalidateQueries({ queryKey: KEYS.detail(String(report._id)) });
       const appointmentId = getVisitReportReferenceId(report.appointmentId);
       if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
+      qc.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
 }
@@ -220,6 +223,7 @@ export function useReopenVisitReportForRepair() {
       const appointmentId = getVisitReportReferenceId(report.appointmentId);
       if (appointmentId) qc.invalidateQueries({ queryKey: KEYS.byAppointment(appointmentId) });
       qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['appointments'] });
     },
   });
 }

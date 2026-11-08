@@ -50,6 +50,11 @@ export function useUpdateAppointmentSalesNotes() {
 }
 
 // ── Queries ──
+// Appointment statuses change from other screens and other users, and each filter tab has its
+// own cache entry. Always revalidate (cached rows still render first) so a tab never shows a
+// list from before an appointment moved into it.
+const LIVE_LIST_OPTIONS = { staleTime: 0, refetchOnWindowFocus: true } as const;
+
 export function useAppointments(params?: Record<string, string>, enabled = true) {
   return useQuery({
     queryKey: KEYS.list(params),
@@ -61,6 +66,7 @@ export function useAppointments(params?: Record<string, string>, enabled = true)
       return data.data;
     },
     enabled,
+    ...LIVE_LIST_OPTIONS,
   });
 }
 
@@ -75,6 +81,7 @@ export function useAppointmentQueue(params?: Record<string, string>, enabled = t
       return data.data;
     },
     enabled,
+    ...LIVE_LIST_OPTIONS,
   });
 }
 
