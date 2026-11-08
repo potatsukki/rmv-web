@@ -11,7 +11,7 @@ import { useAvailableSlots } from '@/hooks/useAppointments';
 import { useScheduleProjectOcular } from '@/hooks/useProjects';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { extractErrorMessage } from '@/lib/utils';
-import { MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
+import { MIN_BOOKING_LEAD_DAYS, OCULAR_MIN_DAYS_AFTER_CONSULTATION } from '@/lib/constants';
 
 const LazyLocationPicker = lazy(() =>
   import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
@@ -34,15 +34,32 @@ export function localDateAfter(days: number) {
   return `${year}-${month}-${day}`;
 }
 
+/** yyyy-MM-dd `days` after a yyyy-MM-dd date. */
+function dateAfter(dateStr: string, days: number) {
+  const [year = 0, month = 1, day = 1] = dateStr.slice(0, 10).split('-').map(Number);
+  const date = new Date(year, month - 1, day + days);
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+}
+
+function formatLongDate(dateStr: string) {
+  const [year = 0, month = 1, day = 1] = dateStr.split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
 interface ScheduleOcularDialogProps {
   projectId: string;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** Consultation date (yyyy-MM-dd); the ocular must be at least 3 days after it. */
+  consultationDate?: string;
 }
 
 /** Sales staff schedules the ocular visit agreed face-to-face with the customer. */
-export function ScheduleOcularDialog({ projectId, open, onOpenChange }: ScheduleOcularDialogProps) {
+export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultationDate }: ScheduleOcularDialogProps) {
   const scheduleOcular = useScheduleProjectOcular();
+  const leadMinDate = localDateAfter(MIN_BOOKING_LEAD_DAYS);
+  const consultationMinDate = consultationDate ? dateAfter(consultationDate, OCULAR_MIN_DAYS_AFTER_CONSULTATION) : '';
+  const minDate = consultationMinDate > leadMinDate ? consultationMinDate : leadMinDate;
   const [date, setDate] = useState('');
   const [slotCode, setSlotCode] = useState('');
   const [sitePin, setSitePin] = useState<MapPoint | null>(null);
@@ -85,6 +102,12 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange }: Schedule
       toast.error('Select the ocular visit date and time.');
       return;
     }
+    if (date < minDate) {
+      toast.error(consultationMinDate
+        ? `The ocular visit must be at least ${OCULAR_MIN_DAYS_AFTER_CONSULTATION} days after the consultation. Choose ${formatLongDate(minDate)} or later.`
+        : `Choose ${formatLongDate(minDate)} or later.`);
+      return;
+    }
     if (!slots.data?.slots.find((slot) => slot.slotCode === slotCode)?.available) {
       toast.error('Select an available ocular visit time.');
       return;
@@ -122,13 +145,18 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange }: Schedule
             <Input
               id="schedule-ocular-date"
               type="date"
-              min={localDateAfter(MIN_BOOKING_LEAD_DAYS)}
+              min={minDate}
               value={date}
               onChange={(event) => {
                 setDate(event.target.value);
                 setSlotCode('');
               }}
             />
+            {consultationMinDate && (
+              <p className="text-xs text-muted-foreground">
+                Earliest date: {formatLongDate(minDate)} ({OCULAR_MIN_DAYS_AFTER_CONSULTATION} days after the consultation)
+              </p>
+            )}
           </div>
           <div className="space-y-2">
             <Label htmlFor="schedule-ocular-slot">Time Slot</Label>

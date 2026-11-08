@@ -54,8 +54,10 @@ export const APPOINTMENT_TYPE_LABELS: Record<string, string> = {
 
 export const SLOT_CODES = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00', '16:00'] as const;
 
-// Minimum days between today and a bookable date; keep in sync with rmv-server (temporarily 2, was 3).
-export const MIN_BOOKING_LEAD_DAYS = 2;
+// Minimum days between today and a bookable date; keep in sync with rmv-server.
+export const MIN_BOOKING_LEAD_DAYS = 3;
+// An ocular visit is scheduled at least this many days after its consultation; keep in sync with rmv-server.
+export const OCULAR_MIN_DAYS_AFTER_CONSULTATION = 3;
 export type SlotCode = (typeof SLOT_CODES)[number];
 
 // ── Project ──

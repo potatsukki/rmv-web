@@ -15,6 +15,8 @@ interface ProjectOcularStepsProps {
   isCustomer: boolean;
   onSignContract: () => void;
   onViewOcular: () => void;
+  /** Consultation date (yyyy-MM-dd); the ocular visit must be at least 3 days after it. */
+  consultationDate?: string;
 }
 
 /**
@@ -30,6 +32,7 @@ export function ProjectOcularSteps({
   isCustomer,
   onSignContract,
   onViewOcular,
+  consultationDate,
 }: ProjectOcularStepsProps) {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const ocularScheduled = Boolean(ocularAppointmentId);
@@ -92,7 +95,12 @@ export function ProjectOcularSteps({
       </CardContent>
 
       {canManage && (
-        <ScheduleOcularDialog projectId={projectId} open={scheduleOpen} onOpenChange={setScheduleOpen} />
+        <ScheduleOcularDialog
+          projectId={projectId}
+          open={scheduleOpen}
+          onOpenChange={setScheduleOpen}
+          consultationDate={consultationDate}
+        />
       )}
 
     </Card>
