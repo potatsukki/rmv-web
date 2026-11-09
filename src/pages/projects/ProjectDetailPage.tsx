@@ -9,8 +9,10 @@ import {
   RotateCcw, Fence, Grid3x3, DoorOpen, Armchair, ChefHat, Utensils,
   BookOpen, Frame, Umbrella, ArrowUpFromLine, Wrench, Layers, DoorClosed, Calculator,
   MessageSquare, LockKeyhole, CalendarDays, ShieldCheck, Maximize2,
-  User, MapPin,
+  User, MapPin, History,
 } from 'lucide-react';
+import { useActivityHistory } from '@/hooks/useReports';
+import { ActivityTimeline } from '@/components/shared/ActivityTimeline';
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -79,7 +81,7 @@ const LazyFabricationTab = lazy(() =>
 );
 
 // ── Types ──
-type TabKey = 'details' | 'design_review' | 'contract' | 'blueprint' | 'costing' | 'payments' | 'fabrication';
+type TabKey = 'details' | 'design_review' | 'contract' | 'blueprint' | 'costing' | 'payments' | 'fabrication' | 'activity';
 
 const SERVICE_ICONS: Record<string, React.ElementType> = {
   [ServiceType.RAILINGS]: Fence,
@@ -108,6 +110,8 @@ const ALL_TABS: { key: TabKey; label: string; icon: React.ElementType }[] = [
   { key: 'costing', label: 'Costing', icon: Calculator },
   { key: 'payments', label: 'Payments', icon: CreditCard },
   { key: 'fabrication', label: 'Fabrication', icon: Hammer },
+  // Staff only: every recorded step of the project (who did what, and when).
+  { key: 'activity', label: 'Activity', icon: History },
 ];
 
 const formatCurrency = (v: number) =>
@@ -620,18 +624,20 @@ export function ProjectDetailPage() {
   const isFabricationStaff = user?.roles?.some((r: string) => r === Role.FABRICATION_STAFF);
   const isStaff = !isCustomer; // any non-customer role
 
+  const activityHistory = useActivityHistory('projects', id || '', isStaff && activeTab === 'activity');
+
   const tabs = useMemo(() => {
     if (isEngineer || isFabricationStaff) {
       // Prioritize Blueprint for tech staff and hide Payments
       const order: TabKey[] = isEngineer
-        ? ['details', 'design_review', 'contract', 'blueprint', 'costing', 'fabrication']
-        : ['details', 'design_review', 'contract', 'blueprint', 'fabrication'];
+        ? ['details', 'design_review', 'contract', 'blueprint', 'costing', 'fabrication', 'activity']
+        : ['details', 'design_review', 'contract', 'blueprint', 'fabrication', 'activity'];
       return order
         .map((k) => ALL_TABS.find((t) => t.key === k))
         .filter(Boolean) as typeof ALL_TABS;
     }
     if (isCustomer) {
-      return ALL_TABS.filter((tab) => tab.key !== 'design_review');
+      return ALL_TABS.filter((tab) => tab.key !== 'design_review' && tab.key !== 'activity');
     }
     return ALL_TABS;
   }, [isEngineer, isFabricationStaff, isCustomer]);
@@ -1411,6 +1417,7 @@ export function ProjectDetailPage() {
           onSignContract={() => navigate(`/projects/${project._id}/contract`)}
           onViewOcular={() => navigate(`/appointments/${project.ocularAppointmentId}`)}
           consultationDate={consultationAppointment.data?.date}
+          salesStaffId={currentSalesStaffId || undefined}
         />
       )}
       {isCustomer && project.status === 'submitted' && (
@@ -2992,6 +2999,18 @@ export function ProjectDetailPage() {
       )}
 
       {/* ════════════════  FABRICATION TAB  ════════════════ */}
+      {activeTab === 'activity' && isStaff && (
+        <div className="w-full" role="tabpanel" id="project-panel-activity" aria-labelledby="project-tab-activity">
+          <ActivityTimeline
+            items={activityHistory.data}
+            isLoading={activityHistory.isLoading}
+            isError={activityHistory.isError}
+            showTarget
+            description="Every recorded step of this project, its consultation and ocular visit, reports and blueprints."
+          />
+        </div>
+      )}
+
       {activeTab === 'fabrication' && (
         <div
           className="w-full space-y-4"

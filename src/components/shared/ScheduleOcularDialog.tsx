@@ -52,10 +52,12 @@ interface ScheduleOcularDialogProps {
   onOpenChange: (open: boolean) => void;
   /** Consultation date (yyyy-MM-dd); the ocular must be at least 3 days after it. */
   consultationDate?: string;
+  /** The project's sales staff: only the days they have no other appointment are offered. */
+  salesStaffId?: string;
 }
 
 /** Sales staff schedules the ocular visit agreed face-to-face with the customer. */
-export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultationDate }: ScheduleOcularDialogProps) {
+export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultationDate, salesStaffId }: ScheduleOcularDialogProps) {
   const scheduleOcular = useScheduleProjectOcular();
   const leadMinDate = localDateAfter(MIN_BOOKING_LEAD_DAYS);
   // Count from the day the consultation actually happened: one dated later than today was held today.
@@ -72,7 +74,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
   const [fee, setFee] = useState<OcularFeePreview | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
-  const slots = useAvailableSlots(open ? date : '', 'ocular');
+  const slots = useAvailableSlots(open ? date : '', 'ocular', salesStaffId);
 
   useEffect(() => {
     if (!sitePin) {
@@ -177,7 +179,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
             </Select>
             {date && slots.isError && <p className="text-xs text-destructive">{extractErrorMessage(slots.error, 'Unable to load slots for this date.')}</p>}
             {date && !slots.isLoading && slots.data?.slots.every((slot) => !slot.available) && (
-              <p className="text-xs text-destructive">No available ocular slots on this date.</p>
+              <p className="text-xs text-destructive">No available ocular slots on this date. The sales staff may already have an appointment that day.</p>
             )}
           </div>
           <div className="space-y-3 sm:col-span-2">

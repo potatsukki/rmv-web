@@ -780,6 +780,7 @@ export interface AuditLog {
     firstName: string;
     lastName: string;
     email: string;
+    roles?: string[];
   };
   actorEmail?: string;
   targetType?: string;
@@ -787,6 +788,19 @@ export interface AuditLog {
   details?: Record<string, unknown>;
   ipAddress?: string;
   createdAt: string;
+}
+
+/** One recorded step in an appointment's or project's Activity history. */
+export interface ActivityHistoryItem {
+  _id: string;
+  action: string;
+  targetType?: string;
+  targetId?: string;
+  at: string;
+  /** null when the system did the step on its own. */
+  actor: { _id: string; name: string; roles: string[] } | null;
+  automatic: boolean;
+  details: Record<string, string | number | boolean>;
 }
 
 export interface AuditLogListResponse {

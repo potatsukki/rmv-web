@@ -33,6 +33,8 @@ import {
   useCustomerSubmitLocation,
 } from '@/hooks/useAppointments';
 import { useSubmitVisitReport, useVisitReportsByAppointment } from '@/hooks/useVisitReports';
+import { useActivityHistory } from '@/hooks/useReports';
+import { ActivityTimeline } from '@/components/shared/ActivityTimeline';
 import { getVisitReportReferenceId } from '@/lib/visit-report-cache';
 
 import { useAuthStore } from '@/stores/auth.store';
@@ -93,6 +95,9 @@ export function AppointmentDetailPage() {
   const isAgent = hasRole(user?.roles, Role.APPOINTMENT_AGENT);
   const isSalesStaff = hasRole(user?.roles, Role.SALES_STAFF);
   const isAdmin = hasRole(user?.roles, Role.ADMIN);
+  // Activity history (who did what, and when) is for staff only.
+  const canSeeActivity = isAgent || isSalesStaff || isAdmin || hasRole(user?.roles, Role.CASHIER);
+  const activityHistory = useActivityHistory('appointments', id || '', canSeeActivity);
 
   // Fetch visit reports — only for roles that have access (not customers)
   const canSeeVisitReports = isSalesStaff || isAdmin || hasRole(user?.roles, Role.ENGINEER) || isAgent;
@@ -2005,7 +2010,14 @@ export function AppointmentDetailPage() {
         </DialogContent>
       </Dialog>
 
-
+      {canSeeActivity && (
+        <ActivityTimeline
+          items={activityHistory.data}
+          isLoading={activityHistory.isLoading}
+          isError={activityHistory.isError}
+          showTarget
+        />
+      )}
     </div>
   );
 }
