@@ -42,4 +42,19 @@ describe('matchesProjectStage', () => {
     expect(matchesProjectStage(blueprintProject, 'design')).toBe(true);
     expect(matchesProjectStage(blueprintProject, 'billing')).toBe(false);
   });
+
+  it('lists submitted projects under For Review', () => {
+    const submitted = project(ProjectStatus.SUBMITTED, [ProjectStatus.SUBMITTED]);
+
+    expect(matchesProjectStage(submitted, 'review')).toBe(true);
+    expect(matchesProjectStage(submitted, 'design')).toBe(false);
+  });
+
+  it('treats Active as anything not completed or cancelled', () => {
+    expect(matchesProjectStage(project(ProjectStatus.DRAFT, []), 'active')).toBe(true);
+    expect(matchesProjectStage(project(ProjectStatus.PAYMENT_PENDING, []), 'active')).toBe(true);
+    expect(matchesProjectStage(project(ProjectStatus.COMPLETED, []), 'active')).toBe(false);
+    expect(matchesProjectStage(project(ProjectStatus.FABRICATION, [ProjectStatus.COMPLETED]), 'active')).toBe(false);
+    expect(matchesProjectStage(project(ProjectStatus.CANCELLED, []), 'active')).toBe(false);
+  });
 });

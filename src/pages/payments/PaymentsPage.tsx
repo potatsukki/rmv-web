@@ -54,7 +54,8 @@ import {
 } from '@/components/ui/dialog';
 import { usePendingOcularFees, useUnpaidOcularFees } from '@/hooks/useAppointments';
 import { resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus, type WorkflowStatus } from '@/lib/workflow-status';
-import type { Project } from '@/lib/types';
+import { isProjectListingStage, PROJECT_STAGE_LABELS } from '@/lib/project-stage-filter';
+import type { Project, ProjectPaymentDue } from '@/lib/types';
 import { getProjectDisplaySiteAddress } from '@/lib/project-display';
 import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
 
@@ -69,25 +70,9 @@ const formatCurrency = (v: number) =>
 const PAYMENT_READY_PROJECT_STATUSES = new Set(['payment_pending', 'fabrication', 'completed']);
 const PAYMENT_READY_ITEM_STATUSES = new Set(['payment_pending', 'fabrication', 'completed']);
 
-const PAYMENT_STAGE_PRIORITY = ['payment_pending', 'fabrication', 'completed'];
-
-const getProjectStageStatus = (project: { status: string; items?: { status: string }[] }) => {
-  if (PAYMENT_READY_PROJECT_STATUSES.has(String(project.status))) {
-    return String(project.status);
-  }
-
-  const paymentReadyItem = PAYMENT_STAGE_PRIORITY.find((status) =>
-    project.items?.some((item) => String(item.status) === status),
-  );
-
-  return paymentReadyItem
-    ? paymentReadyItem
-    : String(project.status);
-};
-
-const isPaymentListReady = (project: { status: string; items?: { status: string }[] }) =>
-  PAYMENT_READY_PROJECT_STATUSES.has(String(project.status))
-  || Boolean(project.items?.some((item) => PAYMENT_READY_ITEM_STATUSES.has(String(item.status))));
+// Same stages as the Projects page filters, so "Billing" means the same thing on both pages.
+const getProjectStageStatus = (project: { status: string; items?: { status: string }[] }) =>
+  resolveProjectWorkflowStatus({ project: project as unknown as Project }).stage;
 
 type PaymentListStatus = 'not_billed' | 'loading' | 'unavailable' | 'payment_pending' | 'for_verification' | 'partially_paid' | 'paid';
 
@@ -116,6 +101,15 @@ type PaymentListProject = {
   };
   status: string;
   items?: { _id: string; status: string; title?: string }[];
+  paymentDue?: ProjectPaymentDue;
+};
+
+// Why a project with no payment plan yet still needs the customer (instead of "Not Yet Billed").
+const getPaymentDueBadge = (project: PaymentListProject) => {
+  if (project.paymentDue?.needsPlan) return { status: 'payment_pending', label: 'Choose Payment Plan' };
+  if (project.paymentDue?.designFee) return { status: 'payment_pending', label: 'Design Fee Due' };
+  if (project.paymentDue?.revisionFee) return { status: 'payment_pending', label: 'Revision Fee Due' };
+  return null;
 };
 
 const getPaymentProjectCustomerName = (project: PaymentListProject) => {
@@ -147,10 +141,7 @@ const formatStatusLabel = (status: string) =>
 
 const formatProjectStageFilterLabel = (status: string) => {
   if (status === 'paid') return 'Fully Paid';
-  if (status === 'payment_pending') return 'Billing';
-  if (status === 'fabrication') return 'Fabrication';
-  if (status === 'completed') return 'Completed';
-  return formatStatusLabel(status);
+  return isProjectListingStage(status) ? PROJECT_STAGE_LABELS[status] : formatStatusLabel(status);
 };
 
 const derivePaymentListStatus = (plans: any[]): PaymentListStatus => {
@@ -194,7 +185,7 @@ function PaymentProjectRow({
 }) {
   const paymentBadge = paymentDetail
     ? { status: paymentDetail.key, label: paymentDetail.label }
-    : PAYMENT_STATUS_BADGES[paymentStatus];
+    : getPaymentDueBadge(project) ?? PAYMENT_STATUS_BADGES[paymentStatus];
   const projectWorkflow = resolveProjectWorkflowStatus({ project: project as unknown as Project });
   const projectStageBadge = { status: projectWorkflow.key, label: projectWorkflow.label };
   const siteAddress = getProjectDisplaySiteAddress(project);
@@ -259,22 +250,25 @@ const historyStatusConfig: Record<string, { label: string; className: string }> 
 
 export function PaymentsPage() {
   const { user } = useAuthStore();
+  const isCustomer = user?.roles.includes(Role.CUSTOMER);
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [selectedProjectId, setSelectedProjectId] = useState('');
   const [selectedProjectItemId, setSelectedProjectItemId] = useState('');
   const [projectSearch, setProjectSearch] = useState('');
-  const [projectStageFilter, setProjectStageFilter] = useState('all');
+  // The dashboard "Pending Payments" card opens /payments?filter=due.
+  const [projectStageFilter, setProjectStageFilter] = useState(() => (searchParams.get('filter') === 'due' ? 'due' : 'all'));
   const [activeTab, setActiveTab] = useState('payments');
 
 
-  const { data: projects } = useProjects();
+  // Customers get only payment-relevant projects, each with what is due now (server-filtered).
+  const { data: projects } = useProjects(isCustomer ? { limit: '100', payment: 'relevant' } : { limit: '100' });
   const { data: plan, isLoading: planLoading } = usePaymentPlan(selectedProjectId, selectedProjectItemId);
   const { data: payments } = usePaymentsByProject(selectedProjectId, selectedProjectItemId);
   const stageCheckout = useStageCheckout();
   const [gcashStageId, setGcashStageId] = useState('');
   const recordCash = useRecordCashPayment();
 
-  const [searchParams, setSearchParams] = useSearchParams();
   const [blockedAction, setBlockedAction] = useState<BlockedActionInfo | null>(null);
 
   const [cashDialog, setCashDialog] = useState<{ open: boolean; stageId: string; amount: number }>({
@@ -286,14 +280,15 @@ export function PaymentsPage() {
   const cashAmountError = getCashPaymentAmountError(Number(cashAmount), cashDialog.amount);
 
   const location = useLocation();
-  const isCustomer = user?.roles.includes(Role.CUSTOMER);
   const isCashier = user?.roles.some((r: string) => [Role.CASHIER, Role.ADMIN].includes(r as Role));
   const shouldHideAmount = user?.roles.some((r: string) => [Role.ADMIN, Role.APPOINTMENT_AGENT].includes(r as Role));
   const { data: unpaidOcularFees } = useUnpaidOcularFees();
   const { data: pendingOcularFees } = usePendingOcularFees(!!isCashier);
   const pendingOcularFeeCount = (pendingOcularFees ?? []).filter((appt) => (appt.ocularFee ?? 0) > 0).length;
+  // Same rule as the dashboard count: an unpaid fee on a visit that is still open.
   const actionableOcularFees = useMemo(
-    () => (unpaidOcularFees ?? []).filter((appt) => (appt.ocularFee ?? 0) > 0),
+    () => (unpaidOcularFees ?? []).filter((appt) =>
+      (appt.ocularFee ?? 0) > 0 && !['cancelled', 'completed', 'no_show'].includes(String(appt.status))),
     [unpaidOcularFees],
   );
 
@@ -439,12 +434,8 @@ export function PaymentsPage() {
     }
   }, [searchParams, setSearchParams]);
 
-  const basePaymentProjects = useMemo(() => {
-    if (!projects?.items) return [];
-    return isCustomer
-      ? projects.items.filter((p) => isPaymentListReady(p))
-      : projects.items;
-  }, [projects, isCustomer]);
+  // The server already limits a customer's list to payment-relevant projects (payment=relevant).
+  const basePaymentProjects = useMemo(() => projects?.items ?? [], [projects]);
 
   const paymentPlanTargets = useMemo(
     () => basePaymentProjects.flatMap((project) => getPaymentPlanTargets(project as PaymentListProject)),
@@ -486,7 +477,10 @@ export function PaymentsPage() {
   // Filtered project list for table view
   const filteredProjects = useMemo(() => {
     let items = basePaymentProjects;
-    if (projectStageFilter !== 'all') {
+    if (projectStageFilter === 'due') {
+      // Same rule as the dashboard "Pending Payments" count.
+      items = items.filter((p) => Boolean(p.paymentDue?.needsPayment));
+    } else if (projectStageFilter !== 'all') {
       items = items.filter((p) => getEffectiveProjectStageStatus(p) === projectStageFilter);
     }
     if (projectSearch.trim()) {
@@ -616,6 +610,7 @@ export function PaymentsPage() {
                 onSearchChange={setProjectSearch}
                 filters={[
                   { value: 'all', label: 'All Project Stages' },
+                  ...(isCustomer ? [{ value: 'due', label: 'Needs Payment' }] : []),
                   ...projectStages.map((status) => ({
                     value: status,
                     label: formatProjectStageFilterLabel(status),
@@ -967,11 +962,24 @@ export function PaymentsPage() {
           </CardContent>
         </Card>
       ) : !plan ? (
-        <EmptyState
-          icon={<CreditCard className="h-16 w-16" />}
-          title="No payment plan"
-          description="A payment plan hasn't been created for this project yet."
-        />
+        isCustomer && selectedProject?.paymentDue?.needsPlan ? (
+          <EmptyState
+            icon={<CreditCard className="h-16 w-16" />}
+            title="Choose your payment plan"
+            description="Your blueprint and costing are approved. Choose full payment or installment to see your payment schedule."
+            action={(
+              <Button asChild>
+                <Link to={`/projects/${selectedProjectId}/blueprint`}>Choose Payment Plan</Link>
+              </Button>
+            )}
+          />
+        ) : isCustomer && (selectedProject?.paymentDue?.designFee || selectedProject?.paymentDue?.revisionFee) ? null : (
+          <EmptyState
+            icon={<CreditCard className="h-16 w-16" />}
+            title="No payment plan"
+            description="A payment plan hasn't been created for this project yet."
+          />
+        )
       ) : (
         <>
           {/* ── Payment Status Banner ── */}
