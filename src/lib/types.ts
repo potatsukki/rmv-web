@@ -391,8 +391,18 @@ export interface Project {
     skippedReason?: string;
   };
   latestBlueprintStatus?: string;
+  /** What the customer still has to pay now; sent with the Payments page list (payment=relevant). */
+  paymentDue?: ProjectPaymentDue;
   createdAt: string;
   updatedAt: string;
+}
+
+export interface ProjectPaymentDue {
+  dueStages: number;
+  designFee: boolean;
+  revisionFee: boolean;
+  needsPlan: boolean;
+  needsPayment: boolean;
 }
 
 export interface ProjectItem {

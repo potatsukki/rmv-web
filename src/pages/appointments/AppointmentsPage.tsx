@@ -246,6 +246,9 @@ export function AppointmentsPage() {
 
   if (isCustomer && !params.limit) {
     params.limit = '100';
+    // Fetch newest first so the 100-item cap drops the oldest visits; sections re-sort below.
+    params.sortBy = 'date';
+    params.sortOrder = 'desc';
   }
 
   const listQuery = useAppointments(params, !isQueueRole);

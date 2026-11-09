@@ -424,7 +424,8 @@ export function DashboardPage() {
   const activeProjects = projectsQuery.data?.items.filter(
     (project) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(project.status as ProjectStatus),
   );
-  const dashboardData = data && activeProjects
+  // Customers keep the server count: it uses the same stage rule as the Projects "Active" filter.
+  const dashboardData = data && activeProjects && primaryRole !== Role.CUSTOMER
     ? { ...data, activeProjects: activeProjects.length }
     : data;
   const kpis = getRoleKpis(
@@ -771,10 +772,12 @@ function CustomerDashboard({
 }) {
   const [selectedSample, setSelectedSample] = useState<ServiceProjectReference | null>(null);
   const metrics = [
+    // Each card opens the list filtered by the same rule the server counts with.
+    // Pending Visits = the Requested + Assigned filters on the Appointments page.
     { label: 'Pending Visits', value: summary?.pendingAppointments ?? 0, detail: 'Appointments awaiting confirmation', icon: CalendarDays, to: '/appointments' },
-    { label: 'Active Projects', value: summary?.activeProjects ?? 0, detail: 'Projects currently moving forward', icon: FolderOpen, to: '/projects' },
-    { label: 'Pending Payments', value: summary?.pendingPayments ?? 0, detail: 'Items that may need your action', icon: CreditCard, to: '/payments' },
-    { label: 'In Fabrication', value: summary?.fabricationInProgress ?? 0, detail: 'Projects being built in the workshop', icon: Hammer, to: '/projects' },
+    { label: 'Active Projects', value: summary?.activeProjects ?? 0, detail: 'Projects currently moving forward', icon: FolderOpen, to: '/projects?stage=active' },
+    { label: 'Pending Payments', value: summary?.pendingPayments ?? 0, detail: 'Items that may need your action', icon: CreditCard, to: '/payments?filter=due' },
+    { label: 'In Fabrication', value: summary?.fabricationInProgress ?? 0, detail: 'Projects being built in the workshop', icon: Hammer, to: '/projects?stage=fabrication' },
   ];
 
   return (

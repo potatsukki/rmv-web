@@ -1,5 +1,5 @@
 import { useState, Fragment } from 'react';
-import { Link, useNavigate } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { FolderOpen, FolderPlus, ChevronRight, Calendar, User, Wrench } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -24,18 +24,19 @@ import { ProjectStatus, BlueprintStatus, Role, SERVICE_TYPE_LABELS } from '@/lib
 import { formatPersonName } from '@/lib/address';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
-import { matchesProjectStage, type ProjectListingStage } from '@/lib/project-stage-filter';
+import {
+  isProjectListingStage,
+  PROJECT_STAGE_LABELS,
+  type ProjectListingStage,
+} from '@/lib/project-stage-filter';
 import type { Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
+// The server filters by stage before paging, so every matching project can be listed.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Ocular', value: 'pending_ocular' },
-  { label: 'Design / Blueprint', value: 'design' },
-  { label: 'Billing', value: 'billing' },
-  { label: 'Fabrication', value: 'fabrication' },
-  { label: 'Completed', value: 'completed' },
-  { label: 'Cancelled', value: 'cancelled' },
+  ...(['active', 'pending_ocular', 'review', 'design', 'billing', 'fabrication', 'completed', 'cancelled'] as const)
+    .map((stage) => ({ label: PROJECT_STAGE_LABELS[stage], value: stage })),
 ];
 
 function statusConfig(status: string) {
@@ -99,7 +100,7 @@ function deriveDisplayStatus(project: { status?: string; latestBlueprintStatus?:
 }
 
 // Ocular visits that are still ahead; completed ones become part of the project.
-const ACTIVE_OCULAR_STATUSES = new Set(['requested', 'confirmed', 'preparing', 'on_the_way', 'arrived_at_site', 'in_progress']);
+const ACTIVE_OCULAR_STATUSES = ['requested', 'confirmed', 'preparing', 'on_the_way', 'arrived_at_site', 'in_progress'];
 
 // Ocular visits that don't have a project yet open their appointment instead.
 function projectHref(project: any) {
@@ -115,28 +116,47 @@ function getActionSortTime(project: any) {
 
 export function ProjectsPage() {
   const navigate = useNavigate();
-  const [statusFilter, setStatusFilter] = useState<ProjectListingStage | ''>('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  // Dashboard cards open a stage directly, e.g. /projects?stage=active.
+  const [statusFilter, setStatusFilter] = useState<ProjectListingStage | ''>(() => {
+    const stage = searchParams.get('stage');
+    return isProjectListingStage(stage) ? stage : '';
+  });
   const [search, setSearch] = useState('');
   const { user } = useAuthStore();
   const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
   const isStaff = !isCustomer;
   const canCreateProject = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role as Role));
-  const params: Record<string, string> = {};
-  if (statusFilter === 'pending_ocular') params.status = 'draft';
-  if (statusFilter) params.limit = '100';
+  const params: Record<string, string> = { limit: '100' };
+  if (statusFilter) params.stage = statusFilter;
   if (search) params.search = search;
 
+  const changeStatusFilter = (value: ProjectListingStage | '') => {
+    setStatusFilter(value);
+    const next = new URLSearchParams(searchParams);
+    if (value) next.set('stage', value);
+    else next.delete('stage');
+    setSearchParams(next, { replace: true });
+  };
+
   const { data, isLoading, isError, refetch } = useProjects(params);
-  const ocularVisitsQuery = useAppointments({ type: 'ocular', limit: '20' }, Boolean(isCustomer));
+  const showOcularVisits = Boolean(isCustomer) && !search && (statusFilter === '' || statusFilter === 'pending_ocular');
+  const ocularVisitsQuery = useAppointments({
+    type: 'ocular',
+    status: ACTIVE_OCULAR_STATUSES.join(','),
+    limit: '100',
+    sortBy: 'date',
+    sortOrder: 'desc',
+  }, showOcularVisits);
 
   if (isError) return <PageError onRetry={refetch} />;
 
   // The project is only created after the ocular visit, so a customer's upcoming ocular visits
   // are listed alongside their projects (labelled OCULAR) instead of leaving the list empty.
   const linkedOcularIds = new Set((data?.items || []).map((project: any) => String(project.ocularAppointmentId || '')).filter(Boolean));
-  const ocularVisitRows: any[] = isCustomer && !search
+  const ocularVisitRows: any[] = showOcularVisits
     ? (ocularVisitsQuery.data?.items || [])
-      .filter((visit) => ACTIVE_OCULAR_STATUSES.has(String(visit.status)) && !linkedOcularIds.has(String(visit._id)))
+      .filter((visit) => !linkedOcularIds.has(String(visit._id)))
       .map((visit) => ({
         _id: visit._id,
         projectNumber: visit.appointmentNumber || 'Ocular visit',
@@ -151,7 +171,9 @@ export function ProjectsPage() {
       }))
     : [];
 
-  const projects = [...(data?.items || []), ...ocularVisitRows].filter((project) => matchesProjectStage(project as Project, statusFilter));
+  // Project rows are already filtered by the server; ocular visit rows only show under All and Ocular.
+  const projects = [...(data?.items || []), ...ocularVisitRows];
+  const hiddenProjectCount = Math.max(0, (data?.total ?? 0) - (data?.items?.length ?? 0));
 
   const upcomingItems = projects
     .filter((p: any) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(p.status as ProjectStatus))
@@ -187,7 +209,7 @@ export function ProjectsPage() {
         onSearchChange={setSearch}
         filters={STATUS_FILTERS}
         activeFilter={statusFilter}
-        onFilterChange={(value) => setStatusFilter(value as ProjectListingStage | '')}
+        onFilterChange={(value) => changeStatusFilter(value as ProjectListingStage | '')}
         action={canCreateProject ? (
           <Button asChild className="shrink-0">
             <Link to="/projects/create"><FolderPlus className="h-4 w-4" />Create Project</Link>
@@ -223,7 +245,7 @@ export function ProjectsPage() {
             <Button
               variant="outline"
               className="text-[var(--color-card-foreground)]"
-              onClick={() => { setSearch(''); setStatusFilter(''); }}
+              onClick={() => { setSearch(''); changeStatusFilter(''); }}
             >
               Clear Filters
             </Button>
@@ -374,6 +396,7 @@ export function ProjectsPage() {
             <div className="border-t border-[color:var(--color-border)] px-6 py-2.5">
               <p className="text-xs text-[var(--text-metal-color)]">
                 {projects.length} project{projects.length !== 1 ? 's' : ''}
+                {hiddenProjectCount > 0 && ` · ${hiddenProjectCount} more not shown — search by Project ID to find older ones`}
               </p>
             </div>
           </div>
@@ -449,6 +472,7 @@ export function ProjectsPage() {
             ))}
             <p className="px-1 pt-1 text-[11px] text-[var(--text-metal-color)]">
               {projects.length} project{projects.length !== 1 ? 's' : ''}
+              {hiddenProjectCount > 0 && ` · ${hiddenProjectCount} more not shown — search by Project ID to find older ones`}
             </p>
           </div>
         </>
