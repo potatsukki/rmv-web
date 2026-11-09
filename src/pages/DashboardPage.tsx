@@ -771,10 +771,10 @@ function CustomerDashboard({
 }) {
   const [selectedSample, setSelectedSample] = useState<ServiceProjectReference | null>(null);
   const metrics = [
-    { label: 'Active projects', value: summary?.activeProjects ?? 0, detail: 'Projects currently moving forward', icon: FolderOpen, to: '/projects' },
-    { label: 'Pending visits', value: summary?.pendingAppointments ?? 0, detail: 'Appointments awaiting confirmation', icon: CalendarDays, to: '/appointments' },
-    { label: 'Pending payments', value: summary?.pendingPayments ?? 0, detail: 'Items that may need your action', icon: CreditCard, to: '/payments' },
-    { label: 'In fabrication', value: summary?.fabricationInProgress ?? 0, detail: 'Projects being built in the workshop', icon: Hammer, to: '/projects' },
+    { label: 'Pending Visits', value: summary?.pendingAppointments ?? 0, detail: 'Appointments awaiting confirmation', icon: CalendarDays, to: '/appointments' },
+    { label: 'Active Projects', value: summary?.activeProjects ?? 0, detail: 'Projects currently moving forward', icon: FolderOpen, to: '/projects' },
+    { label: 'Pending Payments', value: summary?.pendingPayments ?? 0, detail: 'Items that may need your action', icon: CreditCard, to: '/payments' },
+    { label: 'In Fabrication', value: summary?.fabricationInProgress ?? 0, detail: 'Projects being built in the workshop', icon: Hammer, to: '/projects' },
   ];
 
   return (
@@ -792,7 +792,7 @@ function CustomerDashboard({
           <div>
             <p className="workspace-eyebrow">Explore our work</p>
             <h2 id="customer-sample-projects-heading" className="mt-1 text-xl font-bold text-[#f7f7f5]">
-              Sample projects
+              Portfolio
             </h2>
             <p className="mt-1 text-sm text-slate-400">Browse fabrication ideas before requesting your quotation.</p>
           </div>
@@ -926,11 +926,6 @@ function CustomerDashboard({
             {notificationsLoading ? <div className="p-6 text-sm text-slate-400">Loading updates…</div> : notifications.length ? notifications.slice(0, 4).map((notification) => <Link key={notification._id} to={notification.link || '/notifications'} className="workspace-focus block px-5 py-4 hover:bg-white/[.035] sm:px-6"><p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-400">{notification.message}</p><p className="mt-2 text-xs text-slate-500">{formatApiTimeAgo(notification.createdAt, true)}</p></Link>) : <div className="p-6 text-sm text-slate-400">Updates about your appointments, projects, and payments will appear here.</div>}
           </div>
         </div>
-      </section>
-
-      <section className="workspace-panel flex flex-col gap-5 overflow-hidden px-6 py-6 md:flex-row md:items-center md:justify-between" style={{ backgroundImage: "linear-gradient(90deg, rgba(9,11,13,.96), rgba(9,11,13,.7)), url('/landing/about-legacy-welder.png')", backgroundSize: 'cover', backgroundPosition: 'right center' }}>
-        <div><p className="workspace-eyebrow">Ready when you are</p><h2 className="mt-2 text-xl font-bold text-[#f7f7f5]">Have a new fabrication project in mind?</h2><p className="mt-2 max-w-xl text-sm leading-6 text-slate-300">Tell us what you need and the RMV team will guide you through the existing consultation and site-review process.</p></div>
-        <Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 shrink-0 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]">BOOK AN APPOINTMENT <ArrowRight className="h-4 w-4" /></Link>
       </section>
     </div>
   );
