@@ -2392,11 +2392,7 @@ export function LandingPage() {
 
           <div className="relative mx-auto flex w-[min(calc(100%_-_32px),1480px)] flex-col justify-end pb-8 pt-16 sm:w-[min(calc(100%_-_48px),1480px)] sm:pb-10 lg:pb-6">
             <div className="max-w-[860px] py-10 sm:py-14 lg:py-6">
-              <p className="font-['Inter',sans-serif] text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#F5B400] sm:text-xs">
-                RMV Fabrication · SS304 / SS316
-              </p>
-
-              <h1 className="mt-5 font-['Sora',sans-serif] text-[clamp(2.6rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-white">
+              <h1 className="font-['Sora',sans-serif] text-[clamp(2.6rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-white">
                 <span className="block text-[#F5B400]">Stainless Steel</span>
                 <span className="block">Built With</span>
                 <span className="block">Precision.</span>
