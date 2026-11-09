@@ -234,7 +234,8 @@ export function AppointmentsPage() {
     return `${hour12}:${String(m).padStart(2, '0')} ${suffix}`;
   };
 
-  const params: Record<string, string> = {};
+  // Ocular visits a project scheduled are listed under Projects, not here.
+  const params: Record<string, string> = { excludeProjectOculars: 'true' };
   if (statusFilter) params.statusGroup = statusFilter;
   if (debouncedSearch) params.search = debouncedSearch;
 

@@ -584,7 +584,7 @@ export function AppointmentDetailPage() {
         <Button
           variant="ghost"
           size="icon"
-          onClick={() => navigate('/appointments')}
+          onClick={() => navigate(appt.linkedProject ? `/projects/${appt.linkedProject._id}` : '/appointments')}
           className="rounded-xl text-[#6e6e73] dark:text-slate-300 hover:text-[#1d1d1f] dark:hover:text-slate-100"
           aria-label="Go back"
         >
@@ -1641,7 +1641,7 @@ export function AppointmentDetailPage() {
                   })}
                 </div>
                 <p className="text-xs text-[#6e6e73] dark:text-slate-500">
-                  Availability and schedule conflicts are checked for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}. Staff who still have an active appointment can be assigned again once it is completed.
+                  Availability and schedule conflicts are checked for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}. Staff who already have an appointment on this date can't take another one that day.
                 </p>
               </div>
             )}

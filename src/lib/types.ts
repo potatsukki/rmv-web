@@ -159,6 +159,8 @@ export interface Appointment {
   _id: string;
   appointmentNumber?: string;
   canonicalAppointmentId?: string;
+  /** Set on an ocular visit that a project scheduled; the ocular page links back to it. */
+  linkedProject?: { _id: string; projectNumber?: string; title?: string };
   customerId: string;
   customerName?: string;
   customerNumber?: string;
