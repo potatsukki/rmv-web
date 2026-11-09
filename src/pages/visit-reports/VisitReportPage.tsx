@@ -46,7 +46,6 @@ import {
   useVisitReportsByAppointment,
 } from '@/hooks/useVisitReports';
 import { useProjectByVisitReport } from '@/hooks/useProjects';
-import { useUpdateConsultationAttendance } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import {
   Role,
@@ -352,7 +351,6 @@ export function VisitReportPage() {
   const submitMutation = useSubmitVisitReport();
   const returnMutation = useReturnVisitReport();
   const reopenMutation = useReopenVisitReportForRepair();
-  const attendanceMutation = useUpdateConsultationAttendance();
 
   // Fetch the linked project (only when report is submitted/completed)
   const { data: linkedProject } = useProjectByVisitReport(
@@ -487,12 +485,6 @@ export function VisitReportPage() {
   );
   const recordedAttendanceStatus = appointmentRecord?.attendanceStatus;
   const attendanceStatus = recordedAttendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
-  const canUpdateConsultationAttendance = Boolean(
-    effectiveVisitType === 'consultation'
-    && appointmentId
-    && appointmentRecord?.status === 'confirmed'
-    && (isAdmin || isAssignedSalesStaff),
-  );
   const contactPersonLabel = [
     appointmentRecord?.customerName || report?.customerName,
     appointmentRecord?.customerPhone,
@@ -825,17 +817,6 @@ export function VisitReportPage() {
     }
 
     navigate(sourcePath || '/appointments?tab=visit-reports');
-  };
-
-  const updateConsultationAttendance = async () => {
-    if (!appointmentId) return;
-    try {
-      await attendanceMutation.mutateAsync({ id: appointmentId, action: 'check_in' });
-      await refetch();
-      toast.success('Customer checked in.');
-    } catch (error) {
-      toast.error(extractErrorMessage(error, 'Unable to update consultation attendance.'));
-    }
   };
 
   const handlePrimarySubmitClick = () => {
@@ -1544,25 +1525,9 @@ export function VisitReportPage() {
                   </div>
                 </div>
 
-                {canUpdateConsultationAttendance
-                  && attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
-                  <div className="flex flex-wrap gap-3">
-                    <Button
-                      type="button"
-                      onClick={() => updateConsultationAttendance()}
-                      disabled={attendanceMutation.isPending}
-                      className="rounded-xl bg-blue-600 text-white hover:bg-blue-500"
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      Check In Customer
-                    </Button>
-                  </div>
-                )}
-
                 <p className="text-xs leading-5 text-gray-500 dark:text-slate-400">
-                  Check-in records the customer's arrival and unlocks Complete Consultation. The status
-                  changes automatically to In Progress at the scheduled start. The consultation is only
-                  completed when you submit this report with Complete Consultation.
+                  The status changes automatically to In Progress at the scheduled start. The consultation
+                  is only completed when you submit this report with Complete Consultation.
                 </p>
               </CardContent>
             </Card>
