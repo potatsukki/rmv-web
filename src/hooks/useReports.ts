@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, AuditLogListResponse } from '@/lib/types';
+import type { ActivityHistoryItem, ApiResponse, AuditLogListResponse } from '@/lib/types';
 
 const getActiveTabRefetchInterval = (ms: number) =>
   typeof document === 'undefined' || document.visibilityState === 'visible' ? ms : false;
@@ -266,8 +266,19 @@ export function useConversionReport(enabled = true) {
   });
 }
 
-// ── Audit Logs (Admin recent activity) ──
-export function useAuditLogs(params?: { limit?: number; page?: number }, enabled = true) {
+// ── Audit Logs (Admin recent activity + Activity Log page) ──
+export interface AuditLogFilters {
+  limit?: number;
+  page?: number;
+  action?: string;
+  targetType?: string;
+  targetId?: string;
+  actorId?: string;
+  dateFrom?: string;
+  dateTo?: string;
+}
+
+export function useAuditLogs(params?: AuditLogFilters, enabled = true) {
   return useQuery({
     queryKey: ['reports', 'audit-logs', params],
     queryFn: async () => {
@@ -358,5 +369,17 @@ export function useAcknowledgeLifecycleMismatchHotspot() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['reports', 'lifecycle-mismatch-hotspots'] });
     },
+  });
+}
+
+// ── Activity history of one record (staff only) ──
+export function useActivityHistory(kind: 'appointments' | 'projects', id: string, enabled = true) {
+  return useQuery({
+    queryKey: [kind, id, 'history'],
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<ActivityHistoryItem[]>>(`/${kind}/${id}/history`);
+      return data.data;
+    },
+    enabled: enabled && Boolean(id),
   });
 }

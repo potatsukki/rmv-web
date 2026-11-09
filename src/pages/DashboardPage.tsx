@@ -5,7 +5,6 @@ import {
   Clock,
   FolderOpen,
   CreditCard,
-  DollarSign,
   Coins,
   TrendingUp,
   Hammer,
@@ -17,16 +16,9 @@ import {
   CalendarCheck,
   Users,
   CalendarPlus,
-  LogIn,
-  UserPlus,
-  UserCheck,
-  ClipboardCheck,
-  Receipt,
-  Wrench,
   Settings,
   Bell,
   Eye,
-  ShieldCheck,
   CheckCircle2,
 } from 'lucide-react';
 
@@ -38,11 +30,12 @@ import { useNotifications } from '@/hooks/useNotifications';
 import { useProjects } from '@/hooks/useProjects';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, Role } from '@/lib/constants';
-import type { AuditLog, Project } from '@/lib/types';
+import type { Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import { formatApiTimeAgo } from '@/lib/utils';
+import { getAuditDisplay, getAuditNavPath } from '@/lib/audit-actions';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
   getServiceById,
@@ -83,86 +76,6 @@ function formatCurrencyDashboard(v: number) {
     return new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
   }
   return formatCurrencyCompact(v);
-}
-
-// ── Audit Action Display Mapping ──
-const AUDIT_ACTION_MAP: Record<string, { icon: React.ElementType; label: string; color: string }> = {
-  // Auth
-  login:            { icon: LogIn,          label: 'Logged in',                  color: 'text-blue-600 bg-blue-50' },
-  logout:           { icon: LogIn,          label: 'Logged out',                 color: 'text-gray-500 bg-gray-50' },
-  login_failed:     { icon: AlertCircle,    label: 'Failed login attempt',       color: 'text-red-600 bg-red-50' },
-  password_changed: { icon: ShieldCheck,    label: 'Password changed',           color: 'text-violet-600 bg-violet-50' },
-  password_reset:   { icon: ShieldCheck,    label: 'Password reset',             color: 'text-violet-600 bg-violet-50' },
-  email_verified:   { icon: UserCheck,      label: 'Email verified',             color: 'text-emerald-600 bg-emerald-50' },
-  // User
-  user_created:     { icon: UserPlus,       label: 'User created',               color: 'text-indigo-600 bg-indigo-50' },
-  user_updated:     { icon: UserCheck,      label: 'User updated',               color: 'text-blue-600 bg-blue-50' },
-  user_disabled:    { icon: AlertCircle,    label: 'User disabled',              color: 'text-red-600 bg-red-50' },
-  user_enabled:     { icon: UserCheck,      label: 'User enabled',               color: 'text-emerald-600 bg-emerald-50' },
-  // Appointment
-  appointment_created:   { icon: CalendarPlus,  label: 'Appointment booked',     color: 'text-indigo-600 bg-indigo-50' },
-  appointment_confirmed: { icon: CalendarCheck, label: 'Appointment confirmed',  color: 'text-emerald-600 bg-emerald-50' },
-  appointment_cancelled: { icon: CalendarDays,  label: 'Appointment cancelled',  color: 'text-red-600 bg-red-50' },
-  appointment_completed: { icon: CalendarCheck, label: 'Appointment completed',  color: 'text-emerald-600 bg-emerald-50' },
-  appointment_no_show:   { icon: AlertCircle,   label: 'No-show',                color: 'text-amber-600 bg-amber-50' },
-  appointment_reschedule_requested: { icon: Clock, label: 'Reschedule requested', color: 'text-amber-600 bg-amber-50' },
-  appointment_rescheduled: { icon: CalendarDays, label: 'Appointment rescheduled', color: 'text-blue-600 bg-blue-50' },
-  sales_assigned:    { icon: Users,         label: 'Sales assigned',             color: 'text-indigo-600 bg-indigo-50' },
-  // Project
-  project_created:   { icon: FolderOpen,    label: 'Project created',            color: 'text-blue-600 bg-blue-50' },
-  project_updated:   { icon: FolderOpen,    label: 'Project updated',            color: 'text-blue-600 bg-blue-50' },
-  project_cancelled: { icon: FolderOpen,    label: 'Project cancelled',          color: 'text-red-600 bg-red-50' },
-  project_completed: { icon: FolderOpen,    label: 'Project completed',          color: 'text-emerald-600 bg-emerald-50' },
-  project_reassigned:{ icon: Users,         label: 'Project reassigned',         color: 'text-violet-600 bg-violet-50' },
-  // Blueprint
-  blueprint_uploaded:          { icon: FileText, label: 'Blueprint uploaded',     color: 'text-sky-600 bg-sky-50' },
-  blueprint_approved:          { icon: FileText, label: 'Blueprint approved',     color: 'text-emerald-600 bg-emerald-50' },
-  blueprint_revision_requested:{ icon: FileText, label: 'Blueprint revision requested', color: 'text-amber-600 bg-amber-50' },
-  blueprint_revision_uploaded: { icon: FileText, label: 'Blueprint revision uploaded',  color: 'text-sky-600 bg-sky-50' },
-  // Payment
-  payment_plan_created:   { icon: CreditCard, label: 'Payment plan created',     color: 'text-indigo-600 bg-indigo-50' },
-  payment_plan_updated:   { icon: CreditCard, label: 'Payment plan updated',     color: 'text-blue-600 bg-blue-50' },
-  payment_proof_submitted:{ icon: CreditCard, label: 'Payment received',  color: 'text-amber-600 bg-amber-50' },
-  payment_verified:       { icon: DollarSign,  label: 'Payment verified',         color: 'text-emerald-600 bg-emerald-50' },
-  payment_declined:       { icon: CreditCard, label: 'Payment declined',         color: 'text-red-600 bg-red-50' },
-  receipt_generated:      { icon: Receipt,    label: 'Receipt generated',        color: 'text-emerald-600 bg-emerald-50' },
-  receipt_resent:         { icon: Receipt,    label: 'Receipt resent',           color: 'text-blue-600 bg-blue-50' },
-  // Cash
-  cash_collected:    { icon: DollarSign,    label: 'Cash collected',             color: 'text-emerald-600 bg-emerald-50' },
-  cash_received:     { icon: DollarSign,    label: 'Cash received',              color: 'text-emerald-600 bg-emerald-50' },
-  cash_discrepancy:  { icon: AlertCircle,   label: 'Cash discrepancy',           color: 'text-red-600 bg-red-50' },
-  // Fabrication
-  fabrication_assigned: { icon: Wrench,     label: 'Fabrication assigned',       color: 'text-orange-600 bg-orange-50' },
-  fabrication_updated:  { icon: Hammer,     label: 'Fabrication updated',        color: 'text-orange-600 bg-orange-50' },
-  // Visit Report
-  visit_report_created:   { icon: ClipboardCheck, label: 'Visit report created',   color: 'text-cyan-600 bg-cyan-50' },
-  visit_report_updated:   { icon: ClipboardCheck, label: 'Visit report updated',   color: 'text-cyan-600 bg-cyan-50' },
-  visit_report_submitted: { icon: ClipboardCheck, label: 'Visit report submitted',  color: 'text-emerald-600 bg-emerald-50' },
-  visit_report_returned:  { icon: ClipboardCheck, label: 'Visit report returned',   color: 'text-amber-600 bg-amber-50' },
-  visit_report_completed: { icon: ClipboardCheck, label: 'Visit report completed',  color: 'text-emerald-600 bg-emerald-50' },
-  // Config
-  config_updated:       { icon: Settings,   label: 'Config updated',             color: 'text-gray-600 bg-gray-50' },
-  maintenance_toggled:  { icon: Settings,   label: 'Maintenance toggled',        color: 'text-amber-600 bg-amber-50' },
-};
-
-const DEFAULT_ACTION_DISPLAY = { icon: Activity, label: 'Action performed', color: 'text-gray-500 bg-gray-50' };
-
-function getAuditDisplay(action: string) {
-  return AUDIT_ACTION_MAP[action] ?? DEFAULT_ACTION_DISPLAY;
-}
-
-function getAuditNavPath(log: AuditLog): string | undefined {
-  if (!log.targetType || !log.targetId) return undefined;
-  const map: Record<string, string> = {
-    appointment: '/appointments',
-    project: `/projects/${log.targetId}`,
-    payment: '/payments',
-    user: '/users',
-    blueprint: '/projects',
-    fabrication: '/projects',
-    visit_report: '/visit-reports',
-  };
-  return map[log.targetType];
 }
 
 function getNotificationCategory(category: string): { icon: React.ElementType; color: string } {
@@ -609,7 +522,7 @@ export function DashboardPage() {
             Recent Activity
           </CardTitle>
           <Link
-            to="/notifications"
+            to={isAdmin ? '/admin/activity-logs' : '/notifications'}
             className="flex items-center gap-1 text-xs font-medium text-[var(--color-card-foreground)] underline underline-offset-4 hover:text-[var(--text-metal-color)]"
           >
             View all <ArrowRight className="h-3 w-3" />

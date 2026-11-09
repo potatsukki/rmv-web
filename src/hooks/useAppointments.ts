@@ -112,13 +112,14 @@ export function useAppointment(id: string) {
   });
 }
 
-export function useAvailableSlots(date: string, type: string) {
+/** `salesStaffId` (staff only) shows just that sales staff member's free days. */
+export function useAvailableSlots(date: string, type: string, salesStaffId?: string) {
   return useQuery({
-    queryKey: KEYS.slots(date, type),
+    queryKey: [...KEYS.slots(date, type), salesStaffId ?? ''],
     queryFn: async () => {
       const { data } = await api.get<
         ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number }[] }>
-      >('/appointments/slots', { params: { date, type } });
+      >('/appointments/slots', { params: { date, type, ...(salesStaffId ? { salesStaffId } : {}) } });
       return data.data;
     },
     enabled: !!date && !!type,

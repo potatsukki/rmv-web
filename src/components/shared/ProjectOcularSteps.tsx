@@ -17,6 +17,8 @@ interface ProjectOcularStepsProps {
   onViewOcular: () => void;
   /** Consultation date (yyyy-MM-dd); the ocular visit must be at least 3 days after it. */
   consultationDate?: string;
+  /** The project's sales staff, so scheduling only offers their free days. */
+  salesStaffId?: string;
 }
 
 /**
@@ -33,6 +35,7 @@ export function ProjectOcularSteps({
   onSignContract,
   onViewOcular,
   consultationDate,
+  salesStaffId,
 }: ProjectOcularStepsProps) {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const ocularScheduled = Boolean(ocularAppointmentId);
@@ -100,6 +103,7 @@ export function ProjectOcularSteps({
           open={scheduleOpen}
           onOpenChange={setScheduleOpen}
           consultationDate={consultationDate}
+          salesStaffId={salesStaffId}
         />
       )}
 

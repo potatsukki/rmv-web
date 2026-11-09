@@ -173,6 +173,9 @@ const SettingsPage = lazy(() =>
 const ReviewsPage = lazy(() =>
   import('@/pages/admin/ReviewsPage').then((module) => ({ default: module.ReviewsPage })),
 );
+const ActivityLogPage = lazy(() =>
+  import('@/pages/admin/ActivityLogPage').then((module) => ({ default: module.ActivityLogPage })),
+);
 const SlotManagementPage = lazy(() =>
   import('@/pages/admin/SlotManagementPage').then((module) => ({
     default: module.SlotManagementPage,
@@ -406,6 +409,7 @@ export default function App() {
                 <Route path="/employees" element={<Navigate to="/users" replace />} />
                 <Route path="/settings" element={<SettingsPage />} />
                 <Route path="/admin/reviews" element={<ReviewsPage />} />
+                <Route path="/admin/activity-logs" element={<ActivityLogPage />} />
               </Route>
 
               <Route element={<ProtectedRoute allowedRoles={SLOT_MGMT_ROLES} />}>

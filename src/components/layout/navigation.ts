@@ -14,6 +14,7 @@ import {
   CalendarPlus,
   LifeBuoy,
   Star,
+  History,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -97,6 +98,7 @@ export const sidebarNavGroups: NavGroup[] = [
       { label: 'Slot Management', path: '/slot-management', icon: CalendarOff, roles: [Role.ADMIN, Role.APPOINTMENT_AGENT] },
       { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
       { label: 'Reviews', path: '/admin/reviews', icon: Star, roles: [Role.ADMIN] },
+      { label: 'Activity Log', path: '/admin/activity-logs', icon: History, roles: [Role.ADMIN] },
     ],
   },
 ];
@@ -179,6 +181,7 @@ export const mobileMenuItems: NavItem[] = [
   { label: 'Create Project', path: '/projects/create', icon: FolderPlus, roles: [Role.SALES_STAFF, Role.ADMIN] },
   { label: 'Settings', path: '/settings', icon: Settings, roles: [Role.ADMIN] },
   { label: 'Reviews', path: '/admin/reviews', icon: Star, roles: [Role.ADMIN] },
+  { label: 'Activity Log', path: '/admin/activity-logs', icon: History, roles: [Role.ADMIN] },
   { label: 'Help Center', path: '/help', icon: LifeBuoy, roles: Object.values(Role) },
 ];
 
