@@ -13,3 +13,5 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
+// Always show the account chooser so a shared browser never silently reuses someone else's Google account.
+googleProvider.setCustomParameters({ prompt: 'select_account' });

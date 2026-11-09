@@ -57,6 +57,10 @@ export const useAuthStore = create<AuthStore>((set, get) => ({
   clearAuthState: () => {
     disconnectSocket();
     clearStoredAuthSession();
+    // End the Firebase Google session too, so the next sign-up does not reuse this user's Google account.
+    void Promise.all([import('@/lib/firebase'), import('firebase/auth')])
+      .then(([{ auth }, { signOut }]) => signOut(auth))
+      .catch(() => undefined);
     useThemeStore.getState().syncThemePreference(undefined, 'guest');
     set({
       user: null,

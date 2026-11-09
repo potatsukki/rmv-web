@@ -237,7 +237,7 @@ export function BookAppointmentPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const { data: slotsData, isLoading: slotsLoading } = useAvailableSlots(
+  const { data: slotsData, isLoading: slotsLoading, isError: slotsIsError, error: slotsError } = useAvailableSlots(
     selectedDate,
     'office',
   );
@@ -709,6 +709,11 @@ export function BookAppointmentPage() {
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73] dark:text-slate-400" />
                   </div>
+                ) : slotsIsError ? (
+                  // Show why the date can't be booked (e.g. too soon) instead of "No staff available".
+                  <p className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700 dark:border-red-500/30 dark:bg-red-500/10 dark:text-red-300">
+                    {extractErrorMessage(slotsError, 'Unable to load time slots for this date.')}
+                  </p>
                 ) : (
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                     {SLOT_CODES.map((slot) => {

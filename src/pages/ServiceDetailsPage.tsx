@@ -219,7 +219,7 @@ export function ServiceDetailsPage() {
 
                 {priceEstimate && (
                   <div className="mt-5 rounded-xl border border-[#F5B400]/25 bg-[#F5B400]/[0.07] p-4">
-                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#F5B400]">Estimated Price Range</p>
+                    <p className="text-[10px] font-extrabold uppercase tracking-[0.16em] text-[#F5B400]">Price Range</p>
                     <p className="mt-2 text-xl font-extrabold text-white">{priceEstimate}</p>
                     <p className="mt-2 text-xs leading-5 text-white/58">{CUSTOMER_PRICE_NOTE}</p>
                   </div>

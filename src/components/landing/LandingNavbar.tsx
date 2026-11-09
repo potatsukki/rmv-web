@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router';
+import { Link, useLocation } from 'react-router';
 import { ChevronDown, Menu, X } from 'lucide-react';
 
 import { useAuthStore } from '@/stores/auth.store';
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
 export function LandingNavbar() {
   const { user } = useAuthStore();
   const quoteTarget = user ? '/appointments/book' : '/login';
+  const isServicesPage = useLocation().pathname.startsWith('/services/');
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
@@ -75,20 +76,20 @@ export function LandingNavbar() {
         </Link>
 
         <nav className="hidden items-stretch self-stretch lg:flex" aria-label="Primary navigation">
-          {NAV_ITEMS.slice(0, 1).map((item, index) => (
+          {NAV_ITEMS.slice(0, 1).map((item) => (
             <a
               key={item.label}
               href={item.href}
               className={cn(
                 'group relative flex min-w-[84px] items-center justify-center px-3 text-[0.68rem] font-bold uppercase tracking-[0.09em] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400] xl:min-w-[96px]',
-                index === 0 ? 'text-[#F5B400]' : 'text-white/78 hover:text-white',
+                !isServicesPage ? 'text-[#F5B400]' : 'text-white/78 hover:text-white',
               )}
             >
               {item.label}
               <span
                 className={cn(
                   'absolute inset-x-4 bottom-0 h-0.5 origin-left bg-[#F5B400] transition-transform duration-200',
-                  index === 0 ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100',
+                  !isServicesPage ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100',
                 )}
               />
             </a>
@@ -99,12 +100,20 @@ export function LandingNavbar() {
               type="button"
               aria-expanded={servicesOpen}
               aria-controls="landing-services-menu"
-              className="group relative flex min-w-[84px] items-center justify-center gap-1 px-3 text-[0.68rem] font-bold uppercase tracking-[0.09em] text-white/78 transition-colors duration-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400] xl:min-w-[96px]"
+              className={cn(
+                'group relative flex min-w-[84px] items-center justify-center gap-1 px-3 text-[0.68rem] font-bold uppercase tracking-[0.09em] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400] xl:min-w-[96px]',
+                isServicesPage ? 'text-[#F5B400]' : 'text-white/78 hover:text-white',
+              )}
               onClick={() => setServicesOpen((open) => !open)}
             >
               Services
               <ChevronDown className={cn('h-3.5 w-3.5 transition-transform duration-200', servicesOpen && 'rotate-180 text-[#F5B400]')} aria-hidden="true" />
-              <span className="absolute inset-x-4 bottom-0 h-0.5 origin-left bg-[#F5B400] transition-transform duration-200 group-hover:scale-x-100" />
+              <span
+                className={cn(
+                  'absolute inset-x-4 bottom-0 h-0.5 origin-left bg-[#F5B400] transition-transform duration-200',
+                  servicesOpen || isServicesPage ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100',
+                )}
+              />
             </button>
 
             {servicesOpen && (
@@ -178,14 +187,14 @@ export function LandingNavbar() {
             className="mx-auto grid max-h-[calc(100dvh_-_64px)] w-[min(calc(100%_-_32px),720px)] overflow-y-auto py-4"
             aria-label="Mobile navigation"
           >
-            {NAV_ITEMS.slice(0, 1).map((item, index) => (
+            {NAV_ITEMS.slice(0, 1).map((item) => (
               <a
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
                 className={cn(
                   'flex min-h-12 items-center border-b border-white/[0.08] text-sm font-bold uppercase tracking-[0.12em] transition-colors hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400]',
-                  index === 0 ? 'text-[#F5B400]' : 'text-white/78',
+                  !isServicesPage ? 'text-[#F5B400]' : 'text-white/78',
                 )}
               >
                 {item.label}
@@ -193,7 +202,10 @@ export function LandingNavbar() {
             ))}
             <button
               type="button"
-              className="flex min-h-12 items-center justify-between border-b border-white/[0.08] text-left text-sm font-bold uppercase tracking-[0.12em] text-white/78 transition-colors hover:text-[#F5B400]"
+              className={cn(
+                'flex min-h-12 items-center justify-between border-b border-white/[0.08] text-left text-sm font-bold uppercase tracking-[0.12em] transition-colors hover:text-[#F5B400]',
+                isServicesPage ? 'text-[#F5B400]' : 'text-white/78',
+              )}
               aria-expanded={mobileServicesOpen}
               onClick={() => setMobileServicesOpen((open) => !open)}
             >
