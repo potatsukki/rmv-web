@@ -210,7 +210,7 @@ export function RegisterPage() {
       });
       setAttemptData(0, null);
       setAttempts(0);
-      navigate('/login', { replace: true, state: { registeredEmail: data.email, registrationComplete: true, from } });
+      navigate('/verify-otp', { replace: true, state: { email: data.email, purpose: 'email_verification', from } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string } } } };
       recordFailedAttempt(error.response?.data?.error?.message || 'Registration failed. Please review your details and try again.');
@@ -233,7 +233,7 @@ export function RegisterPage() {
           <AuthField id="lastName" label="Last Name" placeholder="Enter your last name" autoComplete="family-name" icon={UserRound} error={errors.lastName?.message} disabled={isLocked} registration={register('lastName')} />
         </div>
         <AuthField id="email" label="Email Address" type="email" placeholder="Enter your email address" autoComplete="email" icon={Mail} error={errors.email?.message} disabled={isLocked} registration={register('email')} />
-        <AuthField id="phone" label="Mobile Number" type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} disabled={isLocked} registration={register('phone')} />
+        <AuthField id="phone" label="Mobile Number" requiredMark type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} disabled={isLocked} registration={register('phone')} />
         <PasswordField id="password" label="Password" placeholder="Create a secure password" autoComplete="new-password" error={errors.password?.message} disabled={isLocked} registration={register('password')} />
         {strength ? (
           <div className="auth-password-strength" aria-live="polite">
