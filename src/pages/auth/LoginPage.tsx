@@ -77,7 +77,6 @@ export function LoginPage() {
   const locationState = (location.state as {
     from?: unknown;
     registeredEmail?: string;
-    registrationComplete?: boolean;
   } | null) ?? null;
   const locationFrom = normalizeAuthContinuationPath(locationState?.from);
   const from = locationFrom || getStoredAuthContinuationPath() || '/dashboard';
@@ -134,10 +133,7 @@ export function LoginPage() {
   useEffect(() => {
     const redirectReason = consumeAuthRedirectReason();
     if (redirectReason) toast.error(redirectReason);
-    if (locationState?.registrationComplete) {
-      toast.success('Registration successful. Sign in when you are ready. If your email is still unverified, we will send you to OTP verification next.');
-    }
-  }, [locationState?.registrationComplete]);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;

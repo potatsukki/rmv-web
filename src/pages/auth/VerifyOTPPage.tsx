@@ -7,7 +7,9 @@ import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
-import { getStoredAuthContinuationPath, normalizeAuthContinuationPath } from '@/lib/auth-session';
+import { resolvePostLoginPath } from '@/lib/auth-routing';
+import { clearStoredAuthContinuationPath, getStoredAuthContinuationPath, normalizeAuthContinuationPath } from '@/lib/auth-session';
+import { useAuthStore } from '@/stores/auth.store';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 
 const OTP_LENGTH = 6;
@@ -17,6 +19,7 @@ export function VerifyOTPPage() {
   const location = useLocation();
   const navigate = useNavigate();
   useAuthPageScrollbar();
+  const { setCsrfToken, setAccessToken, setRefreshToken, fetchMe } = useAuthStore();
   const state = location.state as { email?: string; purpose?: string; from?: unknown } | null;
   const email = state?.email || '';
   const purpose = state?.purpose || 'email_verification';
@@ -46,13 +49,38 @@ export function VerifyOTPPage() {
     if (code.length !== OTP_LENGTH) { toast.error('Please enter the complete code'); return; }
     setIsSubmitting(true);
     try {
-      if (purpose === 'email_verification') { await api.post('/auth/verify-email', { email, otp: code }); toast.success('Email verified! Please sign in to continue.'); navigate('/login', { replace: true, state: { from } }); }
+      if (purpose === 'email_verification') {
+        const response = await api.post('/auth/verify-email', { email, otp: code });
+        const data = response.data.data as {
+          csrfToken?: string;
+          accessToken?: string;
+          refreshToken?: string;
+          user?: { roles?: Parameters<typeof resolvePostLoginPath>[1] };
+        };
+
+        // The server already opens a session on verification, so sign the user straight in.
+        if (!data.accessToken) {
+          toast.success('Email verified! Please sign in to continue.');
+          navigate('/login', { replace: true, state: { from, registeredEmail: email } });
+          return;
+        }
+
+        if (data.csrfToken) setCsrfToken(data.csrfToken);
+        setAccessToken(data.accessToken);
+        if (data.refreshToken) setRefreshToken(data.refreshToken);
+        await fetchMe();
+        toast.success('Email verified! Welcome to RMV.');
+        const destination = resolvePostLoginPath(from, data.user?.roles ?? []);
+        if (destination.redirectReason) toast(destination.redirectReason, { icon: 'ℹ️' });
+        clearStoredAuthContinuationPath();
+        navigate(destination.path, { replace: true });
+      }
       else if (purpose === 'password_reset') navigate('/reset-password', { state: { email, otp: code } });
     } catch (err: unknown) {
       const error = err as { response?: { data?: { error?: { message?: string } } } };
       toast.error(error.response?.data?.error?.message || 'Verification failed'); setOtp(Array(OTP_LENGTH).fill('')); inputRefs.current[0]?.focus();
     } finally { setIsSubmitting(false); }
-  }, [email, from, navigate, otp, purpose]);
+  }, [email, fetchMe, from, navigate, otp, purpose, setAccessToken, setCsrfToken, setRefreshToken]);
   useEffect(() => { if (otp.every(Boolean)) void handleSubmit(); }, [handleSubmit, otp]);
   const handleResend = async () => {
     setIsResending(true);
