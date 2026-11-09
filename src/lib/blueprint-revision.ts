@@ -32,6 +32,7 @@ export function getRevisionQuotation(blueprint: Blueprint): BlueprintDraft['quot
     discount: String(quotation.discount ?? 0),
     fees: String(quotation.fees ?? 0),
     validityDays: String(quotation.validityDays ?? 30),
+    workingDays: quotation.workingDays ? String(quotation.workingDays) : '',
   };
 }
 

@@ -1235,6 +1235,14 @@ export function ProjectDetailPage() {
     ? getPositiveAmount(blueprint.quotation?.total)
     : undefined;
   const approvedCostAmount = approvedProjectCost ?? approvedItemQuotationTotal;
+  // Work duration from the engineer's quotation; the target finish is set when fabrication starts.
+  const quotedWorkingDays = blueprint?.quotation?.workingDays;
+  const workDuration = quotedWorkingDays
+    ? `${quotedWorkingDays} working day${quotedWorkingDays === 1 ? '' : 's'}`
+    : blueprint?.quotation?.estimatedDuration;
+  const targetFinishLabel = project.estimatedCompletionDate
+    ? format(new Date(project.estimatedCompletionDate), 'MMM d, yyyy')
+    : null;
   const approvedCostLabel = approvedProjectCost !== undefined
     ? 'Approved Project Cost'
     : projectServiceItems.length > 1
@@ -1904,6 +1912,16 @@ export function ProjectDetailPage() {
                   <p>{DELIVERY_TYPE_LABELS[(project.deliveryType as DeliveryType | undefined) || DeliveryType.SHOP_FABRICATED]}</p>
                 )}
               </DetailField>
+              {(workDuration || targetFinishLabel) && (
+                <DetailField label="Work Duration">
+                  {workDuration && <p>{workDuration}</p>}
+                  {targetFinishLabel && (
+                    <p className="mt-0.5 text-xs text-[var(--text-metal-muted-color)]">
+                      Target finish: {targetFinishLabel} (Mon–Sat working days)
+                    </p>
+                  )}
+                </DetailField>
+              )}
               {isStaff && project.customerName && (
                 <DetailField label="Customer" value={project.customerName} />
               )}

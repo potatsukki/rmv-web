@@ -79,6 +79,7 @@ type QuotationDraftState = {
   subtotal: string;
   total: string;
   validityDays: string;
+  workingDays: string;
   systemEstimatedDuration: string;
   adjustedEstimatedDuration: string;
   estimatedDuration: string;
@@ -165,6 +166,7 @@ function getEmptyQuotation(serviceType = 'custom', complexity: QuotationComplexi
     subtotal: '',
     total: '',
     validityDays: '30',
+    workingDays: '',
     systemEstimatedDuration,
     adjustedEstimatedDuration: '',
     estimatedDuration: systemEstimatedDuration,
@@ -224,6 +226,7 @@ function normalizeDraftQuotation(
     subtotal: String(quotation?.subtotal || subtotal || ''),
     total: String(quotation?.total || total || ''),
     validityDays: quotation?.validityDays || '30',
+    workingDays: quotation?.workingDays || '',
     systemEstimatedDuration,
     adjustedEstimatedDuration,
     estimatedDuration: adjustedEstimatedDuration || quotation?.estimatedDuration || systemEstimatedDuration,
@@ -750,6 +753,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const [quotMaterialCosts, setQuotMaterialCosts] = useState<MaterialCost[]>([{ material: '', amount: '' }]);
   const [quotValidityDays, setQuotValidityDays] = useState('30');
   const [quotSystemDuration, setQuotSystemDuration] = useState('');
+  const [quotWorkingDays, setQuotWorkingDays] = useState('');
   const [quotInitialized, setQuotInitialized] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const draftCacheKey = useMemo(
@@ -786,6 +790,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     subtotal: String(quotSubtotal || ''),
     total: String(quotGrandTotal || ''),
     validityDays: quotValidityDays,
+    // The server turns working days into the duration text ("10 working days") when set.
+    workingDays: quotWorkingDays.trim(),
     systemEstimatedDuration: quotSystemDuration,
     adjustedEstimatedDuration: '',
     estimatedDuration: quotEstimatedDuration,
@@ -801,6 +807,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     quotSubtotal,
     quotSystemDuration,
     quotValidityDays,
+    quotWorkingDays,
   ]);
 
   const lastSavedQuotation = useRef(currentQuotation);
@@ -837,6 +844,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     setQuotMaterialCosts(cachedMaterialCosts.length > 0 ? cachedMaterialCosts : [{ material: '', amount: '' }]);
     setQuotValidityDays(cached.quotValidityDays);
     setQuotSystemDuration(cached.quotSystemDuration);
+    setQuotWorkingDays(cached.quotWorkingDays);
     setPreviewFile(null);
     lastSavedQuotation.current = emptyQuotation;
     setQuotInitialized(false);
@@ -854,6 +862,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       quotMaterialCosts,
       quotValidityDays,
       quotSystemDuration,
+      quotWorkingDays,
     };
     sessionStorage.setItem(draftCacheKey, JSON.stringify(payload));
   }, [
@@ -866,6 +875,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     quotMaterialCosts,
     quotSystemDuration,
     quotValidityDays,
+    quotWorkingDays,
   ]);
 
   // Payment dialogs still use the live config to show surcharge details.
@@ -915,6 +925,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         );
         setQuotValidityDays(nextQuotation.validityDays || '30');
         setQuotSystemDuration(nextQuotation.systemEstimatedDuration);
+        setQuotWorkingDays(nextQuotation.workingDays);
       }
       lastSavedQuotation.current = nextQuotation;
       setQuotInitialized(true);
@@ -1220,6 +1231,26 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
           </div>
         </div>
       </section>
+      <section className={`rounded-xl border p-4 ${isDark ? 'border-slate-700/70 bg-slate-950/45' : 'border-[#d2d2d7] bg-white/70'}`}>
+        <label className="block max-w-xs">
+          <span className={`mb-1 block text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Working days (work duration)</span>
+          <input
+            type="number"
+            min={1}
+            max={365}
+            step={1}
+            inputMode="numeric"
+            value={quotWorkingDays}
+            disabled={uploading}
+            onChange={(e) => setQuotWorkingDays(e.target.value.replace(/[^\d]/g, ''))}
+            placeholder={quotSystemDuration ? `Suggested: ${quotSystemDuration}` : 'e.g. 10'}
+            className={inputCls}
+          />
+        </label>
+        <p className={`mt-1 text-xs ${isDark ? 'text-slate-400' : 'text-[#6e6e73]'}`}>
+          Monday to Saturday. The customer sees this as the estimated completion time, and the target finish date is set when fabrication starts. Leave blank to show the suggested duration.
+        </p>
+      </section>
     </div>
   );
 
@@ -1385,6 +1416,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       setQuotInternalCosts({ ...EMPTY_INTERNAL_COSTS });
       setQuotMaterialCosts([{ material: '', amount: '' }]);
       setQuotValidityDays('30');
+      setQuotWorkingDays('');
       setQuotInitialized(false);
       sessionStorage.removeItem(draftCacheKey);
       lastSavedQuotation.current = currentQuotation;
