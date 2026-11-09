@@ -848,7 +848,7 @@ function CustomerDashboard({
 
                   {selectedSample.estimatedPrice && (
                     <div className="mt-5 rounded-xl border border-[#f5b400]/25 bg-[#f5b400]/10 p-4">
-                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#f5b400]">Estimated Price</p>
+                      <p className="text-[10px] font-bold uppercase tracking-[0.14em] text-[#f5b400]">Price Range</p>
                       <p className="mt-2 text-lg font-bold text-white">{selectedSample.estimatedPrice}</p>
                       {selectedSample.priceNote && <p className="mt-2 text-xs leading-5 text-slate-300">{selectedSample.priceNote}</p>}
                     </div>

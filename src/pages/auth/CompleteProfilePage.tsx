@@ -5,11 +5,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
 import { ArrowLeft, ArrowRight, Loader2, Phone, UserRound } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { signOut } from 'firebase/auth';
 
 import { AuthField } from '@/components/auth/AuthFields';
 import { AuthLayout } from '@/components/auth/AuthLayout';
 import { Button } from '@/components/ui/button';
 import { api, fetchCsrfToken } from '@/lib/api';
+import { auth } from '@/lib/firebase';
 import { getStoredAuthContinuationPath, normalizeAuthContinuationPath } from '@/lib/auth-session';
 import { useAuthStore } from '@/stores/auth.store';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
@@ -26,12 +28,17 @@ export function CompleteProfilePage() {
   useAuthPageScrollbar();
   const { setCsrfToken } = useAuthStore();
   const [submitting, setSubmitting] = useState(false);
-  const state = location.state as { email?: string; googleName?: string; googlePhoto?: string; idToken?: string; from?: unknown } | null;
+  const state = location.state as { email?: string; googleName?: string; googleFirstName?: string; googleLastName?: string; googlePhoto?: string; idToken?: string; from?: unknown } | null;
   const from = normalizeAuthContinuationPath(state?.from) || getStoredAuthContinuationPath() || '/dashboard';
   if (!state?.idToken) return <Navigate to="/register" state={{ from }} replace />;
-  const names = (state.googleName || '').split(' ');
-  const defaultFirstName = names[0] || '';
-  const defaultLastName = names.slice(1).join(' ') || '';
+  // Prefer Google's own given/family names; splitting the display name breaks multi-word first names.
+  const names = (state.googleName || '').trim().split(/\s+/);
+  const defaultFirstName = state.googleFirstName?.trim() || names[0] || '';
+  const defaultLastName = state.googleLastName?.trim() || names.slice(1).join(' ') || '';
+  const switchGoogleAccount = async () => {
+    await signOut(auth).catch(() => undefined);
+    navigate('/register', { replace: true, state: { from } });
+  };
   const { register, handleSubmit, formState: { errors } } = useForm<CompleteProfileForm>({ resolver: zodResolver(schema), defaultValues: { firstName: defaultFirstName, lastName: defaultLastName, phone: '' } });
 
   const onSubmit = async (data: CompleteProfileForm) => {
@@ -54,6 +61,7 @@ export function CompleteProfilePage() {
         {state.googlePhoto ? <img src={state.googlePhoto} alt="Google account avatar" referrerPolicy="no-referrer" /> : <div className="auth-profile-identity__fallback">{defaultFirstName.slice(0, 1).toUpperCase()}</div>}
         <div><p>{state.googleName || 'Google account'}</p><small>{state.email}</small></div>
       </div>
+      <p className="auth-form-switch">Not you? <button type="button" onClick={switchGoogleAccount} className="font-semibold underline underline-offset-2">Use another Google account</button></p>
       <form className="auth-form auth-form--register" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="auth-name-grid"><AuthField id="firstName" label="First Name" placeholder="Enter your first name" autoComplete="given-name" icon={UserRound} error={errors.firstName?.message} registration={register('firstName')} /><AuthField id="lastName" label="Last Name" placeholder="Enter your last name" autoComplete="family-name" icon={UserRound} error={errors.lastName?.message} registration={register('lastName')} /></div>
         <AuthField id="phone" label="Mobile Number" type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} registration={register('phone')} />

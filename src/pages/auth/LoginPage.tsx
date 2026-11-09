@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { AlertCircle, ArrowLeft, ArrowRight, Loader2, Mail, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { getRedirectResult, signInWithPopup, signInWithRedirect, type UserCredential } from 'firebase/auth';
+import { getAdditionalUserInfo, getRedirectResult, signInWithPopup, signInWithRedirect, type UserCredential } from 'firebase/auth';
 
 import { AuthField, GoogleAuthButton, PasswordField } from '@/components/auth/AuthFields';
 import { AuthLayout } from '@/components/auth/AuthLayout';
@@ -95,8 +95,17 @@ export function LoginPage() {
     const responseData = response.data.data;
 
     if (responseData.needsProfile) {
+      const profile = getAdditionalUserInfo(result)?.profile as { given_name?: string; family_name?: string } | null | undefined;
       navigate('/complete-profile', {
-        state: { email: responseData.email, googleName: responseData.googleName, googlePhoto: responseData.googlePhoto, idToken, from },
+        state: {
+          email: responseData.email,
+          googleName: responseData.googleName,
+          googleFirstName: profile?.given_name,
+          googleLastName: profile?.family_name,
+          googlePhoto: responseData.googlePhoto,
+          idToken,
+          from,
+        },
         replace: true,
       });
       return;

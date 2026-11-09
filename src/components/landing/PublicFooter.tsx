@@ -23,7 +23,7 @@ export function PublicFooter() {
               <p className="text-[0.55rem] font-bold uppercase tracking-[0.18em] text-white/55">Stainless Fabrication</p>
             </div>
           </div>
-          <p className="mt-5 max-w-xs text-sm leading-6 text-white/58">Custom stainless and metal fabrication for residential, commercial, and industrial project requirements.</p>
+          <p className="mt-5 max-w-xs text-sm leading-6 text-white/58">Custom stainless steel fabrication for residential, commercial, and industrial project requirements.</p>
         </div>
 
         <div>

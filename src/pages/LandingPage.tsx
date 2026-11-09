@@ -8,6 +8,8 @@ import {
   BookOpen,
   CalendarCheck,
   ChefHat,
+  ChevronLeft,
+  ChevronRight,
   ClipboardList,
   Clock3,
   DoorClosed,
@@ -131,28 +133,28 @@ const SERVICE_ICONS: Record<ServiceType, LucideIcon> = {
 
 const SERVICE_DESCRIPTIONS: Record<ServiceType, string> = {
   [ServiceType.RAILINGS]: 'Stainless railings for balconies, stairs, and safety edges.',
-  [ServiceType.GRILLS]: 'Protective metal grills for openings, storefronts, and homes.',
-  [ServiceType.GATES]: 'Custom steel gates built for security, access, and style.',
-  [ServiceType.FENCES]: 'Durable fences for residential, commercial, and perimeter needs.',
+  [ServiceType.GRILLS]: 'Stainless and metal grills for openings, storefronts, and homes.',
+  [ServiceType.GATES]: 'Custom stainless and steel gates built for security, access, and style.',
+  [ServiceType.FENCES]: 'Durable stainless and steel fences for residential, commercial, and perimeter needs.',
   [ServiceType.KITCHEN_COUNTER]: 'Stainless counters for prep, service, and daily kitchen use.',
   [ServiceType.KITCHEN_CABINET]: 'Built-in stainless cabinets for organized kitchen storage.',
-  [ServiceType.TABLE]: 'Work tables and dining tables fabricated to size.',
-  [ServiceType.CHAIR]: 'Metal seating frames and custom chair fabrication.',
-  [ServiceType.SHELVING]: 'Strong shelving for kitchens, stockrooms, and display areas.',
-  [ServiceType.DOOR]: 'Metal and stainless doors for access, utility, and security.',
-  [ServiceType.WINDOW_FRAME]: 'Window frames made for clean fit, strength, and finish.',
-  [ServiceType.CANOPY]: 'Canopies for storefront shade, weather cover, and entries.',
-  [ServiceType.STAIRCASE]: 'Steel stair systems for homes, shops, and commercial spaces.',
-  [ServiceType.BALUSTRADE]: 'Balustrades with polished safety and architectural finish.',
-  [ServiceType.SIGNAGE]: 'Fabricated signage frames and branded metal installations.',
-  [ServiceType.CUSTOM]: 'Custom stainless and metal works built to your project specs.',
+  [ServiceType.TABLE]: 'Stainless work tables and dining tables fabricated to size.',
+  [ServiceType.CHAIR]: 'Stainless and metal seating frames and custom chair fabrication.',
+  [ServiceType.SHELVING]: 'Strong stainless shelving for kitchens, stockrooms, and display areas.',
+  [ServiceType.DOOR]: 'Stainless and metal doors for access, utility, and security.',
+  [ServiceType.WINDOW_FRAME]: 'Stainless and metal window frames made for clean fit, strength, and finish.',
+  [ServiceType.CANOPY]: 'Stainless and steel-frame canopies for storefront shade, weather cover, and entries.',
+  [ServiceType.STAIRCASE]: 'Stainless and steel stair systems for homes, shops, and commercial spaces.',
+  [ServiceType.BALUSTRADE]: 'Stainless balustrades with polished safety and architectural finish.',
+  [ServiceType.SIGNAGE]: 'Stainless signage frames and branded metal installations.',
+  [ServiceType.CUSTOM]: 'Custom stainless steel and metal works built to your project specs.',
 };
 
 export const CUSTOMER_TECHNICAL_NOTE =
   'Technical specifications such as material thickness, post spacing, stainless grade, and anchoring method will be recommended by RMV based on the project requirements.';
 
 export const CUSTOMER_PRICE_NOTE =
-  'Final price depends on project measurements, preferred finish, installation conditions, and selected add-ons.';
+  'Price starts at the minimum and depends on the design, measurements, finish, and installation. It will not go above the maximum.';
 
 const CUSTOMER_DETAIL_LIMIT = 7;
 
@@ -372,7 +374,7 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
         ],
       },
     ],
-    estimatedPrice: 'Estimate starts around ₱18,000 - ₱65,000+.',
+    estimatedPrice: '₱18,000 – ₱65,000',
     priceNote:
       'Estimate-only range for standard stainless counter work; large layouts, thicker gauges, sink bowls, and installation complexity can increase cost.',
   },
@@ -417,7 +419,7 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
         ],
       },
     ],
-    estimatedPrice: 'Estimate starts around ₱25,000 - ₱95,000+.',
+    estimatedPrice: '₱25,000 – ₱95,000',
     priceNote:
       'Estimate-only range for cabinet modules; final cost depends on module count, doors, shelves, grade, finish, and site installation.',
   },
@@ -461,13 +463,13 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
         ],
       },
     ],
-    estimatedPrice: 'Estimate starts around ₱3,500 - ₱9,500 per linear meter.',
+    estimatedPrice: '₱3,500 – ₱9,500 per linear meter',
     priceNote:
       'Estimate-only range for typical stainless railing runs; curves, glass, custom patterns, heavier posts, and difficult mounting may increase cost.',
   },
   [ServiceType.GATES]: {
     fullDescription:
-      'Custom steel and stainless gates for secured access, storefronts, homes, and property entries. Built around your opening size, swing or sliding movement, panel style, and lock provisions.',
+      'Custom stainless and steel gates for secured access, storefronts, homes, and property entries. Built around your opening size, swing or sliding movement, panel style, and lock provisions.',
     specGroups: [
       {
         title: 'Measurements',
@@ -507,7 +509,7 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
         ],
       },
     ],
-    estimatedPrice: 'Estimate starts around ₱28,000 - ₱120,000+.',
+    estimatedPrice: '₱28,000 – ₱120,000',
     priceNote:
       'Estimate-only range for custom gate fabrication; automation, large spans, decorative panels, and site preparation can increase cost.',
   },
@@ -551,13 +553,13 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
         ],
       },
     ],
-    estimatedPrice: 'Estimate starts around ₱18,000 - ₱85,000+.',
+    estimatedPrice: '₱18,000 – ₱85,000',
     priceNote:
       'Estimate-only range for standard canopy work; roofing material, wind exposure, support structure, drainage, and installation access affect final cost.',
   },
   [ServiceType.CUSTOM]: {
     fullDescription:
-      'Custom stainless and metal fabrication for special layouts, one-off fixtures, frames, displays, utility pieces, and site-specific requirements that do not fit a standard service category.',
+      'Custom stainless steel and metal fabrication for special layouts, one-off fixtures, frames, displays, utility pieces, and site-specific requirements that do not fit a standard service category.',
     specGroups: [
       {
         title: 'Measurements',
@@ -594,7 +596,7 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
         ],
       },
     ],
-    estimatedPrice: 'Estimate depends on approved scope; typical custom work starts around ₱10,000+.',
+    estimatedPrice: 'Starts at ₱10,000',
     priceNote:
       'Estimate-only starting point for simple custom fabrication; detailed drawings, materials, quantity, and installation requirements define the final quote.',
   },
@@ -626,7 +628,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-counter/01-kitchen-counter-corner-open-shelf.png',
     description:
       'A space-saving corner stainless counter layout with sink, open lower shelving, and mixed storage. Good for small kitchens, food businesses, prep corners, and layouts that need practical storage without making the area feel crowded.',
-    estimatedPrice: '₱30,000 – ₱85,000+',
+    estimatedPrice: '₱30,000 – ₱85,000',
     priceNote:
       'Final cost depends on wall length, sink size, shelving layout, cabinet doors, steel grade, thickness, and installation condition.',
     confirmationGroups: [
@@ -671,7 +673,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-counter/02-kitchen-counter-sink-drainer-drawers.png',
     description:
       'A stainless counter with integrated sink, drainboard, drawers, and lower storage. Best for washing, rinsing, food preparation, and kitchen areas that need clean water flow with organized storage.',
-    estimatedPrice: '₱25,000 – ₱65,000+',
+    estimatedPrice: '₱25,000 – ₱65,000',
     priceNote:
       'Final cost depends on sink bowl size, drainboard length, drawer count, steel grade, material thickness, backsplash height, and plumbing cutouts.',
     confirmationGroups: [
@@ -716,7 +718,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-counter/03-kitchen-counter-island-prep-table.png',
     description:
       'A heavy-duty stainless island prep table with an open lower shelf. Ideal for food preparation, sorting, packing, baking, and commercial kitchen work areas that need a durable center workstation.',
-    estimatedPrice: '₱15,000 – ₱55,000+',
+    estimatedPrice: '₱15,000 – ₱55,000',
     priceNote:
       'Final cost depends on table size, steel grade, frame reinforcement, lower shelf, caster wheels, edge style, and material thickness.',
     confirmationGroups: [
@@ -761,7 +763,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-counter/04-kitchen-counter-drawer-base-workstation.png',
     description:
       'A premium stainless workstation counter with sink, drawers, cabinet storage, backsplash, and wide prep surface. Good for kitchens that need both working space and organized storage.',
-    estimatedPrice: '₱35,000 – ₱95,000+',
+    estimatedPrice: '₱35,000 – ₱95,000',
     priceNote:
       'Final cost depends on total counter length, drawer count, cabinet layout, sink bowl size, backsplash height, material grade, and installation complexity.',
     confirmationGroups: [
@@ -806,7 +808,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-counter/05-kitchen-counter-sink-sliding-storage.png',
     description:
       'A straight stainless kitchen counter with built-in sink, backsplash, and sliding-door base storage. Good for washing, food prep, and compact commercial or home kitchen layouts.',
-    estimatedPrice: '₱18,000 – ₱45,000+',
+    estimatedPrice: '₱18,000 – ₱45,000',
     priceNote:
       'Final cost depends on counter length, sink bowl size, sliding door system, steel grade, thickness, backsplash height, and plumbing cutouts.',
     confirmationGroups: [
@@ -851,7 +853,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-counter/06-kitchen-counter-l-shape-commercial.png',
     description:
       'An L-shaped stainless counter layout for commercial kitchens, food stalls, prep rooms, and restaurants. Built around wall dimensions, appliance placement, plumbing points, and storage needs.',
-    estimatedPrice: '₱45,000 – ₱120,000+',
+    estimatedPrice: '₱45,000 – ₱120,000',
     priceNote:
       'Final cost depends on total wall length, number of cabinets/drawers, sink and appliance cutouts, backsplash coverage, steel thickness, and installation complexity.',
     confirmationGroups: [
@@ -899,7 +901,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-cabinet/01-kitchen-cabinet-tall-storage.png',
     description:
       'A tall freestanding stainless steel storage cabinet with double doors, internal shelving, sturdy legs, and durable brushed finish. Best for storing cookware, containers, dry goods, supplies, and kitchen tools in food businesses, stockrooms, and heavy-use kitchens.',
-    estimatedPrice: '₱28,000 – ₱85,000+',
+    estimatedPrice: '₱28,000 – ₱85,000',
     priceNote:
       'Final cost depends on cabinet height, width, shelf count, steel grade, thickness, handles, locks, and installation or delivery requirements.',
     confirmationGroups: [
@@ -944,7 +946,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-cabinet/02-kitchen-cabinet-drawers-open-shelves.png',
     description:
       'A custom stainless base cabinet with drawers, swing-door storage, and open shelf sections. Good for kitchens that need organized storage, quick-access shelves, and a durable stainless work surface.',
-    estimatedPrice: '₱35,000 – ₱95,000+',
+    estimatedPrice: '₱35,000 – ₱95,000',
     priceNote:
       'Final cost depends on total length, drawer count, shelf layout, cabinet doors, steel grade, material thickness, and hardware.',
     confirmationGroups: [
@@ -989,7 +991,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-cabinet/03-kitchen-cabinet-overhead-wall-mounted.png',
     description:
       'A wall-mounted stainless kitchen cabinet with swing doors and open shelf sections. Ideal for overhead storage above counters, prep areas, dishwashing zones, and compact kitchens that need extra storage without using floor space.',
-    estimatedPrice: '₱22,000 – ₱70,000+',
+    estimatedPrice: '₱22,000 – ₱70,000',
     priceNote:
       'Final cost depends on cabinet length, height, door count, shelf sections, wall support, steel grade, thickness, and mounting complexity.',
     confirmationGroups: [
@@ -1034,7 +1036,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-cabinet/04-kitchen-cabinet-full-system.png',
     description:
       'A complete stainless kitchen cabinet system with base cabinets, drawers, overhead cabinets, backsplash, and sink-area storage. Best for restaurants, food businesses, commercial kitchens, and heavy-use home kitchens.',
-    estimatedPrice: '₱80,000 – ₱220,000+',
+    estimatedPrice: '₱80,000 – ₱220,000',
     priceNote:
       'Final cost depends on total wall length, number of modules, drawer count, overhead cabinets, sink cutouts, backsplash coverage, steel grade, and installation complexity.',
     confirmationGroups: [
@@ -1079,7 +1081,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/kitchen-cabinet/05-kitchen-cabinet-base-storage.png',
     description:
       'A simple under-counter stainless base cabinet with brushed stainless doors, practical handles, sturdy legs, and clean storage space. Good for compact kitchens, washing areas, prep counters, and commercial storage.',
-    estimatedPrice: '₱20,000 – ₱60,000+',
+    estimatedPrice: '₱20,000 – ₱60,000',
     priceNote:
       'Final cost depends on cabinet length, door count, shelf layout, steel grade, thickness, countertop or backsplash inclusion, and installation condition.',
     confirmationGroups: [
@@ -1445,7 +1447,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/gates/01-gates-double-swing-stainless-gate.png',
     description:
       'A double swing stainless gate for residential driveways, home entrances, and small compounds. Built with two hinged panels, sturdy side posts, vertical bars, horizontal rails, latch hardware, and clean stainless fabrication for secure daily use.',
-    estimatedPrice: '₱35,000 – ₱120,000+',
+    estimatedPrice: '₱35,000 – ₱120,000',
     priceNote:
       'Final cost depends on opening width, gate height, tube size, stainless grade, panel design, hinge hardware, lock system, post condition, and installation complexity.',
     confirmationGroups: [
@@ -1492,7 +1494,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/gates/02-gates-modern-mixed-metal-gate.png',
     description:
       'A modern custom metal gate using a painted steel frame with stainless steel accent strips or panels. Good for residential front gates that need a clean modern look while staying practical, durable, and buildable.',
-    estimatedPrice: '₱45,000 – ₱150,000+',
+    estimatedPrice: '₱45,000 – ₱150,000',
     priceNote:
       'Final cost depends on gate size, painted frame thickness, stainless accent quantity, panel layout, hinges or rollers, lock hardware, finish coating, and site installation.',
     confirmationGroups: [
@@ -1538,7 +1540,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/gates/03-gates-commercial-security-gate.png',
     description:
       'A heavy-duty commercial security gate for storefronts, warehouses, service entrances, and business properties. Built with strong vertical bars, reinforced frame, secure posts, heavy hinges, and lock hardware for practical access control.',
-    estimatedPrice: '₱40,000 – ₱160,000+',
+    estimatedPrice: '₱40,000 – ₱160,000',
     priceNote:
       'Final cost depends on opening size, bar spacing, frame thickness, hinge or sliding system, lock hardware, steel grade, post reinforcement, and installation condition.',
     confirmationGroups: [
@@ -1584,7 +1586,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/gates/04-gates-pedestrian-stainless-gate.png',
     description:
       'A single pedestrian stainless gate for side entrances, walkways, utility access, and home entry points. Built with a compact frame, vertical bars, hinge post, latch handle, lockset, and clean welded joints.',
-    estimatedPrice: '₱12,000 – ₱45,000+',
+    estimatedPrice: '₱12,000 – ₱45,000',
     priceNote:
       'Final cost depends on gate height, gate width, stainless grade, bar spacing, lockset, hinge post, wall condition, and installation requirements.',
     confirmationGroups: [
@@ -1630,7 +1632,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/gates/05-gates-sliding-stainless-gate.png',
     description:
       'A stainless sliding gate for residential driveways and property entrances. Built with a strong rectangular frame, horizontal bars or panels, bottom track, rollers, guide post, lock area, and proper concrete floor contact.',
-    estimatedPrice: '₱45,000 – ₱180,000+',
+    estimatedPrice: '₱45,000 – ₱180,000',
     priceNote:
       'Final cost depends on gate span, sliding track length, roller system, frame size, stainless grade, panel design, guide posts, lock hardware, and installation complexity.',
     confirmationGroups: [
@@ -1676,7 +1678,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/gates/06-gates-decorative-stainless-gate.png',
     description:
       'A stainless residential gate with simple decorative bar patterns, balanced vertical and horizontal bars, clean welds, proper hinges, latch hardware, side posts, and durable stainless finish. Elegant but still practical and buildable.',
-    estimatedPrice: '₱35,000 – ₱140,000+',
+    estimatedPrice: '₱35,000 – ₱140,000',
     priceNote:
       'Final cost depends on gate size, decorative pattern complexity, tube size, stainless grade, hinge hardware, lockset, polishing, and installation condition.',
     confirmationGroups: [
@@ -1771,7 +1773,7 @@ const CANOPY_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/canopy/02-canopy-garage-carport-canopy.png',
     description:
       'A heavy-duty metal garage or carport canopy for residential driveways and parking areas. Built with steel posts, cross beams, metal roof sheets, base plates, roof slope, gutter provision, and durable outdoor fabrication.',
-    estimatedPrice: '₱55,000 – ₱250,000+',
+    estimatedPrice: '₱55,000 – ₱250,000',
     priceNote:
       'Final cost depends on parking area size, number of posts, roof span, roofing material, steel thickness, gutter system, coating finish, and site preparation.',
     confirmationGroups: [
@@ -1817,7 +1819,7 @@ const CANOPY_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/canopy/03-canopy-storefront-metal-canopy.png',
     description:
       'A metal canopy for storefronts, shop entrances, business fronts, and commercial doors. Built with wall brackets, steel frame, support posts when needed, roof panels, wall anchors, clean welds, and practical drainage.',
-    estimatedPrice: '₱25,000 – ₱120,000+',
+    estimatedPrice: '₱25,000 – ₱120,000',
     priceNote:
       'Final cost depends on storefront width, projection, roof material, frame thickness, wall mounting condition, support post needs, drainage details, and finish.',
     confirmationGroups: [
@@ -1863,7 +1865,7 @@ const CANOPY_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/canopy/04-canopy-polycarbonate-entrance-canopy.png',
     description:
       'A lightweight polycarbonate entrance canopy for homes, offices, and small business entrances. Built with a steel support frame, translucent roof sheets, wall brackets, proper bolts, clean seams, and weather-protective coverage.',
-    estimatedPrice: '₱18,000 – ₱85,000+',
+    estimatedPrice: '₱18,000 – ₱85,000',
     priceNote:
       'Final cost depends on entrance width, canopy projection, polycarbonate thickness, frame material, bracket design, wall anchors, roof slope, and installation condition.',
     confirmationGroups: [
@@ -1912,7 +1914,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/custom/01-custom-stainless-storage-cabinet.png',
     description:
       'A fully custom fabricated stainless steel storage cabinet designed for kitchens, stockrooms, laundry areas, food businesses, clinics, restaurants, and utility spaces. Built to customer dimensions with heavy-duty construction, adjustable shelves, durable hinges, brushed stainless finish, and long service life.',
-    estimatedPrice: '₱18,000 – ₱95,000+',
+    estimatedPrice: '₱18,000 – ₱95,000',
     priceNote:
       'Final price depends on cabinet size, stainless grade, shelf count, door type, thickness, finish, accessories, and installation requirements.',
     confirmationGroups: [
@@ -1957,7 +1959,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/custom/02-custom-food-cart-kiosk-frame.png',
     description:
       'Custom stainless and painted steel food carts, kiosks, mobile counters, and business carts built around your concept. Suitable for milk tea, coffee, street food, snack bars, and retail kiosks.',
-    estimatedPrice: '₱35,000 – ₱180,000+',
+    estimatedPrice: '₱35,000 – ₱180,000',
     priceNote:
       'Price varies depending on size, roofing, wheels, storage, sinks, electrical provisions, stainless coverage, and accessories.',
     confirmationGroups: [
@@ -2003,7 +2005,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/custom/03-custom-metal-partition-utility-frame.png',
     description:
       'Custom fabricated steel and stainless partitions, divider frames, protective barriers, utility frames, storage frames, and structural metal works for residential and commercial applications.',
-    estimatedPrice: '₱15,000 – ₱120,000+',
+    estimatedPrice: '₱15,000 – ₱120,000',
     priceNote:
       'Pricing depends on overall dimensions, steel size, finish, installation method, and complexity.',
     confirmationGroups: [
@@ -2049,7 +2051,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/custom/04-custom-stainless-work-table.png',
     description:
       'Heavy-duty stainless work tables fabricated to your required dimensions for food preparation, restaurants, commissaries, bakeries, hospitals, laboratories, and commercial kitchens.',
-    estimatedPrice: '₱10,000 – ₱65,000+',
+    estimatedPrice: '₱10,000 – ₱65,000',
     priceNote:
       'Price depends on size, backsplash, undershelf, wheels, sink cutout, stainless thickness, and fabrication complexity.',
     confirmationGroups: [
@@ -2095,7 +2097,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/custom/05-custom-stainless-shelves-racks.png',
     description:
       'Custom stainless storage shelves and commercial racks fabricated for kitchens, bakeries, restaurants, clinics, pharmacies, stockrooms, warehouses, and utility rooms.',
-    estimatedPrice: '₱8,000 – ₱60,000+',
+    estimatedPrice: '₱8,000 – ₱60,000',
     priceNote:
       'Pricing depends on rack size, shelf quantity, loading capacity, stainless grade, and fabrication details.',
     confirmationGroups: [
@@ -2141,7 +2143,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
     image: '/landing/services/custom/06-custom-stainless-sink-utility-station.png',
     description:
       'Custom stainless sink stations for restaurants, food preparation, wash areas, commissaries, laboratories, and commercial kitchens. Fabricated with integrated work surfaces, backsplashes, shelving, and plumbing provisions.',
-    estimatedPrice: '₱12,000 – ₱90,000+',
+    estimatedPrice: '₱12,000 – ₱90,000',
     priceNote:
       'Final pricing depends on sink size, number of bowls, drainboards, shelving, backsplash, plumbing layout, and stainless thickness.',
     confirmationGroups: [
@@ -2214,11 +2216,11 @@ const FEATURED_SERVICES = [
 
 const HERO_TRUST_ITEMS: Array<{ title: string; Icon: LucideIcon }> = [
   {
-    title: 'Premium Quality Materials',
+    title: 'SS304 & SS316 Stainless',
     Icon: ShieldCheck,
   },
   {
-    title: 'Expert Fabrication',
+    title: 'Expert Stainless Fabrication',
     Icon: Drill,
   },
   {
@@ -2256,7 +2258,7 @@ const FEATURED_PROJECTS = [
 
 const ABOUT_BENEFITS: Array<{ title: string; Icon: LucideIcon }> = [
   {
-    title: 'High Quality Materials',
+    title: 'Quality Stainless Steel',
     Icon: ShieldCheck,
   },
   {
@@ -2293,9 +2295,9 @@ const PROCESS_TRUST_ITEMS: Array<{ title: string; description: string; Icon: Luc
 ];
 
 const MATERIAL_CHECKLIST = [
-  '304 and 316 stainless steel options',
-  'Precision cutting and welding',
-  'Professional finishing techniques',
+  'SS304 and SS316 stainless steel grades',
+  'Precision stainless cutting and welding',
+  'Brushed and polished stainless finishes',
   'Strict quality review',
 ];
 
@@ -2307,7 +2309,7 @@ const TRUST_REASONS: Array<{ title: string; description: string; Icon: LucideIco
   },
   {
     title: 'Custom-Built Solutions',
-    description: 'Every fabrication is shaped around the function, finish, and dimensions the project needs.',
+    description: 'Every stainless fabrication is shaped around the function, finish, and dimensions the project needs.',
     Icon: PenTool,
   },
   {
@@ -2389,19 +2391,20 @@ export function LandingPage() {
           <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#090B0D] via-[#090B0D]/70 to-transparent" />
 
           <div className="relative mx-auto flex w-[min(calc(100%_-_32px),1480px)] flex-col justify-end pb-8 pt-16 sm:w-[min(calc(100%_-_48px),1480px)] sm:pb-10 lg:pb-6">
-            <div className="max-w-[760px] py-10 sm:py-14 lg:py-6">
+            <div className="max-w-[860px] py-10 sm:py-14 lg:py-6">
               <p className="font-['Inter',sans-serif] text-[0.7rem] font-bold uppercase tracking-[0.2em] text-[#F5B400] sm:text-xs">
-                RMV Stainless Steel Fabrication
+                RMV Fabrication · SS304 / SS316
               </p>
 
-              <h1 className="mt-5 font-['Sora',sans-serif] text-[clamp(3rem,6vw,5.5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-white">
+              <h1 className="mt-5 font-['Sora',sans-serif] text-[clamp(2.6rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-white">
+                <span className="block text-[#F5B400]">Stainless Steel</span>
                 <span className="block">Built With</span>
-                <span className="block text-[#F5B400]">Precision.</span>
+                <span className="block">Precision.</span>
                 <span className="block">Made to Last.</span>
               </h1>
 
               <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-white/78 sm:text-lg sm:leading-8">
-                Premium stainless steel fabrication for residential, commercial, and industrial projects.
+                Custom stainless steel railings, gates, kitchen counters, cabinets, and more for residential, commercial, and industrial projects.
               </p>
 
               <div className="mt-8 flex flex-col gap-3 sm:flex-row">
@@ -2446,7 +2449,7 @@ export function LandingPage() {
                 Services
               </h2>
               <p className="mt-5 max-w-sm font-['Inter',sans-serif] text-base leading-7 text-[#5D646B]">
-                High-quality stainless and metal fabrication tailored to residential, commercial, and industrial project needs.
+                High-quality stainless steel fabrication tailored to residential, commercial, and industrial project needs.
               </p>
               <a
                 href="#service-grid"
@@ -2504,7 +2507,7 @@ export function LandingPage() {
                 Projects
               </h2>
               <p className="mt-5 max-w-sm font-['Inter',sans-serif] text-base leading-7 text-[#8F969D]">
-                A selection of stainless fabrication work showing practical layouts, clean finishes, and custom project execution.
+                A selection of stainless steel fabrication work showing practical layouts, clean finishes, and custom project execution.
               </p>
               <button
                 type="button"
@@ -2554,10 +2557,10 @@ export function LandingPage() {
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">About RMV</p>
               <h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
-                Quality Fabrication.<br />Trusted Service.
+                Stainless Steel Specialists.<br />Trusted Service.
               </h2>
               <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-[#5D646B]">
-                RMV Stainless Steel Fabrication specializes in custom stainless and metal works for homes, businesses, and industrial project requirements. Each job is shaped around practical use, accurate measurements, and a finish built for its environment.
+                RMV Stainless Steel Fabrication specializes in custom stainless steel works for homes, businesses, and industrial project requirements, with other metal fabrication available when a project needs it. Each job is shaped around practical use, accurate measurements, and a finish built for its environment.
               </p>
 
               <div className="mt-8 grid gap-4 sm:grid-cols-3">
@@ -2601,10 +2604,10 @@ export function LandingPage() {
             <div>
               <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Materials &amp; Process</p>
               <h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
-                Built on Quality.<br />Focused on Precision.
+                Quality Stainless.<br />Precise Fabrication.
               </h2>
               <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-[#5D646B]">
-                RMV works with stainless material options and a fabrication process built around accurate measurements, practical detailing, clean welding, and professional finishing.
+                RMV works with SS304 and SS316 stainless steel and a fabrication process built around accurate measurements, practical detailing, clean welding, and professional finishing.
               </p>
 
               <ul className="mt-7 grid gap-3">
@@ -2686,7 +2689,7 @@ export function LandingPage() {
               Ready to Start<br />Your Project?
             </h2>
             <p className="max-w-md font-['Inter',sans-serif] text-base font-medium leading-7 text-black/72">
-              Let&apos;s bring your ideas to life with precision fabrication and premium quality.
+              Let&apos;s bring your ideas to life in stainless steel, fabricated with precision and premium quality.
             </p>
             <button
               type="button"
@@ -2710,7 +2713,7 @@ export function LandingPage() {
                 </div>
               </div>
               <p className="mt-5 max-w-xs text-sm leading-6 text-white/58">
-                Custom stainless and metal fabrication for residential, commercial, and industrial project requirements.
+                Custom stainless steel fabrication for residential, commercial, and industrial project requirements.
               </p>
             </div>
 
@@ -2807,6 +2810,32 @@ export function LandingPage() {
                         alt={displayTitle}
                         className="h-[220px] w-full object-cover sm:h-[360px] lg:h-[430px]"
                       />
+                      {hasVariants && (selectedService.variants?.length ?? 0) > 1 && (
+                        <>
+                          <button
+                            type="button"
+                            aria-label="Previous design"
+                            onClick={() => {
+                              const total = selectedService.variants?.length ?? 1;
+                              setSelectedVariantIndex((i) => (i - 1 + total) % total);
+                            }}
+                            className="absolute left-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-black shadow-lg transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700]/70 sm:h-12 sm:w-12"
+                          >
+                            <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                          </button>
+                          <button
+                            type="button"
+                            aria-label="Next design"
+                            onClick={() => {
+                              const total = selectedService.variants?.length ?? 1;
+                              setSelectedVariantIndex((i) => (i + 1) % total);
+                            }}
+                            className="absolute right-3 top-1/2 flex h-10 w-10 -translate-y-1/2 items-center justify-center rounded-full bg-white/85 text-black shadow-lg transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#FFD700]/70 sm:h-12 sm:w-12"
+                          >
+                            <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                          </button>
+                        </>
+                      )}
                       {hasVariants && (
                         <div className="absolute bottom-3 left-3 rounded-full border border-white/12 bg-black/50 px-3 py-1.5 text-[10px] font-black uppercase tracking-[0.16em] text-white/82 backdrop-blur">
                           {String(selectedVariantIndex + 1).padStart(2, '0')} / {selectedService.variants?.length}
@@ -2871,12 +2900,7 @@ export function LandingPage() {
                     </DialogHeader>
 
                     <div className="mt-5 rounded-2xl border border-[#FFD700]/25 bg-[#FFD700]/[0.07] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.05)] sm:p-5">
-                      <div className="flex flex-wrap items-center justify-between gap-3">
-                        <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#FFD700]">Estimated Price Range</h3>
-                        <span className="rounded-full border border-[#FFD700]/25 bg-black/20 px-2.5 py-1 text-[9px] font-black uppercase tracking-[0.14em] text-[#FFD700]">
-                          Estimate only
-                        </span>
-                      </div>
+                      <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#FFD700]">Price Range</h3>
                       <p className="mt-3 text-2xl font-black leading-tight text-white sm:text-3xl">{displayPrice}</p>
                       <p className="mt-3 text-sm leading-6 text-white/64">{CUSTOMER_PRICE_NOTE}</p>
                     </div>

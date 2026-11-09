@@ -5,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router';
 import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Mail, Phone, ShieldAlert, UserRound } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { signInWithPopup } from 'firebase/auth';
+import { getAdditionalUserInfo, signInWithPopup } from 'firebase/auth';
 
 import { AuthField, GoogleAuthButton, PasswordField } from '@/components/auth/AuthFields';
 import { AuthLayout } from '@/components/auth/AuthLayout';
@@ -152,7 +152,19 @@ export function RegisterPage() {
       const responseData = response.data.data;
 
       if (responseData.needsProfile) {
-        navigate('/complete-profile', { state: { email: responseData.email, googleName: responseData.googleName, googlePhoto: responseData.googlePhoto, idToken, from }, replace: true });
+        const profile = getAdditionalUserInfo(result)?.profile as { given_name?: string; family_name?: string } | null | undefined;
+        navigate('/complete-profile', {
+          state: {
+            email: responseData.email,
+            googleName: responseData.googleName,
+            googleFirstName: profile?.given_name,
+            googleLastName: profile?.family_name,
+            googlePhoto: responseData.googlePhoto,
+            idToken,
+            from,
+          },
+          replace: true,
+        });
         return;
       }
       if (responseData.requires2FA) {
