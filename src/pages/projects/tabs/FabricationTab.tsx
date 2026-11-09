@@ -651,10 +651,15 @@ export function FabricationTab({
 
                           return (
                             <div key={step.key} className="relative px-1 text-center">
+                              {/* Columns are equal width, so the next circle's center is one column away:
+                                  start at this circle's right edge (50% + 24px) and stop at the next one's left edge. */}
+                              {!isLast && (
+                                <span
+                                  aria-hidden="true"
+                                  className={`absolute left-[calc(50%+24px)] top-6 h-[2px] w-[calc(100%-48px)] -translate-y-1/2 ${lineClass}`}
+                                />
+                              )}
                               <div className="relative mx-auto mb-2 flex h-12 w-12 items-center justify-center">
-                                {!isLast && (
-                                  <span className={`absolute left-[calc(100%+6px)] top-1/2 h-[2px] w-[calc(100%-4px)] -translate-y-1/2 ${lineClass}`} />
-                                )}
                                 <span className={`relative z-10 flex h-12 w-12 items-center justify-center rounded-full border ${nodeClass}`}>
                                   <StageIcon className="h-4 w-4" />
                                 </span>

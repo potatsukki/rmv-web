@@ -325,6 +325,8 @@ export interface Project {
   title: string;
   totalCost?: number;
   designFee?: ProjectDesignFee;
+  /** Target finish date, set when fabrication starts from the quoted working days. */
+  estimatedCompletionDate?: string;
   serviceType?: string;
   serviceTypes?: string[];
   description?: string;
@@ -513,6 +515,8 @@ export interface Blueprint {
     paymentOption?: QuotationPaymentOption;
     paymentMilestones?: QuotationMilestone[];
     validityDays?: number;
+    /** Engineer's work duration in working days (Mon–Sat). */
+    workingDays?: number;
     systemEstimatedDuration?: string;
     adjustedEstimatedDuration?: string;
     estimatedDuration?: string;
@@ -577,6 +581,7 @@ export interface BlueprintDraft {
     }[];
     fees?: string;
     validityDays?: string;
+    workingDays?: string;
     breakdown?: string;
     estimatedDuration?: string;
     engineerNotes?: string;

@@ -38,8 +38,14 @@ describe('blueprint draft cache isolation', () => {
       designFileMeta: null,
       costingFileMeta: null,
       quotMaterialCosts: [{ material: '', amount: '' }],
+      quotWorkingDays: '',
       ...defaults,
     });
+  });
+
+  it('keeps the working days the engineer typed', () => {
+    expect(resolveBlueprintDraftCache(JSON.stringify({ quotWorkingDays: '12' }), defaults).quotWorkingDays).toBe('12');
+    expect(resolveBlueprintDraftCache(JSON.stringify({ quotWorkingDays: 12 }), defaults).quotWorkingDays).toBe('');
   });
 
   it('does not retain omitted file fields from a partial item cache', () => {

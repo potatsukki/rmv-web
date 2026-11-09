@@ -21,6 +21,8 @@ export type BlueprintTabDraftCache = {
   quotMaterialCosts: BlueprintMaterialCostCache[];
   quotValidityDays: string;
   quotSystemDuration: string;
+  /** Engineer's working days, kept as typed (empty when not set). */
+  quotWorkingDays: string;
 };
 
 type DraftCacheDefaults = Pick<
@@ -82,5 +84,6 @@ export function resolveBlueprintDraftCache(
     quotSystemDuration: typeof cached.quotSystemDuration === 'string'
       ? cached.quotSystemDuration
       : defaults.quotSystemDuration,
+    quotWorkingDays: typeof cached.quotWorkingDays === 'string' ? cached.quotWorkingDays : '',
   };
 }
