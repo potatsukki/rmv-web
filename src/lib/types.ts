@@ -303,6 +303,10 @@ export interface CustomerQueueStatus {
 export interface Project {
   ocularAppointmentId?: string;
   ocularVisitStatus?: string;
+  /** Public ID (APT-…) of the source consultation; project detail only. */
+  appointmentNumber?: string;
+  /** Public ID (APT-…) of the ocular visit; project detail only. */
+  ocularAppointmentNumber?: string;
   serviceTypeCustom?: string;
   deliveryType?: 'shop_fabricated' | 'on_site_installation';
   measurementUnit?: string;
