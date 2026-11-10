@@ -262,7 +262,7 @@ const KNOWLEDGE_BASE: HelpCategory[] = [
         summary: 'Understand REQUESTED to COMPLETED paths, including exceptions.',
         roles: APPOINTMENT_HELP_ROLES,
         body: [
-          'Office consultations move Requested → Confirmed (the agent assigns a sales staff) → Completed. A sales staff member takes one appointment per day; an appointment on another date does not block them. Ocular visits scheduled from a project are found under Projects, not Appointments. No-show and customer-declined consultations also end as Completed, with the outcome shown as an extra badge.',
+          'Office consultations move Requested → Confirmed (the agent assigns a sales staff) → Completed. A sales staff member cannot take two appointments at the same date and time; other time slots that day stay open. Ocular visits scheduled from a project are found under Projects, not Appointments. No-show and customer-declined consultations also end as Completed, with the outcome shown as an extra badge.',
           'Office consultation attendance starts automatically at the scheduled time. The consultation is completed only when the sales staff submits the consultation report; arrival and exception statuses are still tracked.',
           'Each state affects what actions remain available to customer, agent, and assigned staff in the page UI.',
           'When troubleshooting, first confirm the current status before attempting follow-up actions like payments or report submission.',

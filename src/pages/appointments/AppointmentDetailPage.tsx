@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link, useLocation } from 'react-router';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, CalendarX } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, CalendarX, Hash, Ticket } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
@@ -601,12 +601,6 @@ export function AppointmentDetailPage() {
           </h1>
           <div className="mt-1 flex flex-wrap gap-x-3 gap-y-1 font-mono text-xs text-[#69737d] dark:text-slate-400">
             {appt.appointmentNumber && <span>{appt.appointmentNumber}</span>}
-            {appt.customerNumber && <span>{appt.customerNumber}</span>}
-            {appt.queueNumber ? (
-              <span className="font-semibold text-sky-700 dark:text-sky-300">Queue {appt.queueNumber}</span>
-            ) : appt.type === 'office' && !['completed', 'cancelled', 'no_show'].includes(appt.status) ? (
-              <span className="font-sans">Queue number will be assigned at check-in</span>
-            ) : null}
           </div>
         </div>
         <div className="flex flex-wrap items-center gap-2">
@@ -1023,6 +1017,22 @@ export function AppointmentDetailPage() {
             <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Appointment Info</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
+            <InfoRow icon={Hash} label="Appointment ID" value={appt.appointmentNumber || 'Sync pending'} />
+
+            <InfoRow icon={User} label="Customer ID" value={appt.customerNumber || 'Sync pending'} />
+
+            <InfoRow
+              icon={Ticket}
+              label="Queue"
+              value={appt.queueNumber
+                ? `Queue ${appt.queueNumber}`
+                : appt.type !== 'office'
+                  ? 'Not required'
+                  : ['completed', 'cancelled', 'no_show'].includes(appt.status)
+                    ? 'Not issued'
+                    : 'Assigned at check-in'}
+            />
+
             <InfoRow
               icon={Clock}
               label="Date & Time"
@@ -1640,7 +1650,7 @@ export function AppointmentDetailPage() {
                   })}
                 </div>
                 <p className="text-xs text-[#6e6e73] dark:text-slate-500">
-                  Availability and schedule conflicts are checked for {format(new Date(`${appt.date}T00:00:00`), 'MMMM d, yyyy')}. Staff who already have an appointment on this date can't take another one that day.
+                  Availability and schedule conflicts are checked for {format(new Date(`${(appt.status === AppointmentStatus.RESCHEDULE_REQUESTED && appt.requestedRescheduleDate) || appt.date}T00:00:00`), 'MMMM d, yyyy')} at {formatSlotTime((appt.status === AppointmentStatus.RESCHEDULE_REQUESTED && appt.requestedRescheduleSlotCode) || appt.slotCode)}. Staff who already have an appointment at this time can't take another one; other time slots that day stay open.
                 </p>
               </div>
             )}

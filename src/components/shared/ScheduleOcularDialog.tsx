@@ -187,7 +187,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
             </Select>
             {date && slots.isError && <p className="text-xs text-destructive">{extractErrorMessage(slots.error, 'Unable to load slots for this date.')}</p>}
             {date && !slots.isLoading && slots.data?.slots.every((slot) => !slot.available) && (
-              <p className="text-xs text-destructive">No available ocular slots on this date. The sales staff may already have an appointment that day.</p>
+              <p className="text-xs text-destructive">No available ocular slots on this date. The sales staff may already have an appointment at every open time.</p>
             )}
           </div>
           <div className="space-y-3 sm:col-span-2">

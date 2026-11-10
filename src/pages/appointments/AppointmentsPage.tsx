@@ -170,36 +170,20 @@ function dedupeCustomerOcularFollowUps(appointments: Appointment[]) {
   return appointments.filter((appt) => !duplicateIds.has(appt._id));
 }
 
-function queueDisplayValue(appt: Appointment) {
-  if (appt.queueNumber) return appt.queueNumber;
-  if (appt.type !== 'office') return 'Not required';
-  if (['completed', 'cancelled', 'no_show'].includes(appt.status)) return 'Not issued';
-  return 'Assigned at check-in';
-}
-
-function AppointmentIdentifiers({ appt, compact = false }: { appt: Appointment; compact?: boolean }) {
-  const identifiers = [
-    { label: 'Appointment ID', value: appt.appointmentNumber || 'Sync pending', emphasized: true },
-    { label: 'Customer ID', value: appt.customerNumber || 'Sync pending' },
-    { label: 'Queue', value: queueDisplayValue(appt), queue: Boolean(appt.queueNumber) },
-  ];
-
+// Only the Appointment ID is listed; Customer ID and Queue are shown on the appointment's details page.
+function AppointmentIdentifier({ appt, showLabel = false }: { appt: Appointment; showLabel?: boolean }) {
+  const value = appt.appointmentNumber || 'Sync pending';
   return (
-    <dl className={compact
-      ? 'grid grid-cols-2 gap-x-3 gap-y-2 rounded-xl border border-[#d7dde4] bg-white/45 p-3 dark:border-slate-700 dark:bg-slate-900/35'
-      : 'min-w-0 space-y-2'}
-    >
-      {identifiers.map((identifier, index) => (
-        <div key={identifier.label} className={compact && index === 0 ? 'col-span-2' : undefined}>
-          <dt className="text-[9px] font-semibold uppercase tracking-wider text-[#7a8490] dark:text-slate-500">
-            {identifier.label}
-          </dt>
-          <dd className={`mt-0.5 text-[11px] ${identifier.emphasized || identifier.queue ? 'font-semibold' : 'font-medium'} ${identifier.queue ? 'text-sky-700 dark:text-sky-300' : 'text-[#3f4954] dark:text-slate-200'} ${identifier.value.includes('-') ? 'font-mono' : ''}`}>
-            {identifier.value}
-          </dd>
-        </div>
-      ))}
-    </dl>
+    <div className="min-w-0">
+      {showLabel && (
+        <p className="text-[9px] font-semibold uppercase tracking-wider text-[#7a8490] dark:text-slate-500">
+          Appointment ID
+        </p>
+      )}
+      <p className={`mt-0.5 truncate text-[11px] font-semibold text-[#3f4954] dark:text-slate-200 ${value.includes('-') ? 'font-mono' : ''}`}>
+        {value}
+      </p>
+    </div>
   );
 }
 
@@ -557,8 +541,8 @@ export function AppointmentsPage() {
                           </div>
                         </div>
 
-                        <div className="mt-3 ml-[18px]">
-                          <AppointmentIdentifiers appt={appt} compact />
+                        <div className="mt-2 ml-[18px]">
+                          <AppointmentIdentifier appt={appt} showLabel />
                         </div>
 
                         {/* Row 2: Meta — type · date · time */}
@@ -629,7 +613,7 @@ export function AppointmentsPage() {
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
                   <TableHead className="w-[18%] pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">{isCustomer ? 'Appointment' : 'Customer'}</TableHead>
-                  <TableHead className="w-[17%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">References</TableHead>
+                  <TableHead className="w-[17%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Appointment ID</TableHead>
                   <TableHead className="w-[11%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Type</TableHead>
                   <TableHead className="w-[22%] whitespace-nowrap text-xs font-semibold uppercase tracking-wider text-[#68727d]">Date & Time</TableHead>
                   <TableHead className="hidden w-[12%] text-xs font-semibold uppercase tracking-wider text-[#68727d] xl:table-cell">Location</TableHead>
@@ -731,9 +715,9 @@ export function AppointmentsPage() {
                             </div>
                           </TableCell>
 
-                          {/* Public IDs and queue */}
+                          {/* Appointment ID */}
                           <TableCell className="py-5">
-                            <AppointmentIdentifiers appt={appt} />
+                            <AppointmentIdentifier appt={appt} />
                           </TableCell>
 
                           {/* Type */}
