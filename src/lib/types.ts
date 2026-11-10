@@ -877,6 +877,20 @@ export interface ServiceSpecifications {
   additional?: Record<string, string | number | boolean>;
 }
 
+export interface ConsultationSnapshot {
+  appointmentId?: string;
+  status?: string;
+  serviceType?: string;
+  serviceTypeCustom?: string;
+  actualVisitDateTime?: string;
+  discussionNotes?: string;
+  consultationOutcome?: 'schedule_ocular' | 'no_ocular';
+  noOcularReason?: string;
+  recommendedOcularDate?: string;
+  recommendedOcularSlot?: string;
+  capturedAt: string;
+}
+
 export interface VisitReport {
   _id: string;
   appointmentId: string | (Partial<Appointment> & { _id: string });
@@ -934,6 +948,8 @@ export interface VisitReport {
   recommendedOcularAddress?: UserAddress;
   relatedOcularAppointment?: Partial<Appointment> & { _id: string };
   linkedProjectId?: string;
+  /** Read-only copy of the consultation answers, kept when this report moved on to the ocular visit. */
+  consultationSnapshot?: ConsultationSnapshot;
 
   photoKeys: string[];
   videoKeys: string[];

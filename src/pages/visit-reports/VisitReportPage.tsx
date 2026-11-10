@@ -1162,6 +1162,31 @@ export function VisitReportPage() {
         </div>
       )}
 
+      {/* ── Consultation record kept when this report moved on to the ocular visit ── */}
+      {effectiveVisitType === 'ocular' && report.consultationSnapshot && (
+        <div className="rounded-xl border border-[#d8dee6] bg-[#f8fafc] p-4 dark:border-slate-700 dark:bg-slate-800/80">
+          <p className="text-sm font-semibold text-gray-900 dark:text-slate-100">Consultation Record (read-only)</p>
+          <p className="mt-1 text-xs text-[#647080] dark:text-slate-400">
+            This report started as the consultation report. Its consultation answers are kept here.
+          </p>
+          <dl className="mt-3 grid gap-2 text-sm sm:grid-cols-2">
+            <div><dt className="text-xs text-[#647080] dark:text-slate-400">Service</dt><dd className="text-gray-900 dark:text-slate-100">{getServiceTypeLabel(report.consultationSnapshot.serviceType, report.consultationSnapshot.serviceTypeCustom)}</dd></div>
+            {report.consultationSnapshot.actualVisitDateTime && (
+              <div><dt className="text-xs text-[#647080] dark:text-slate-400">Consultation held</dt><dd className="text-gray-900 dark:text-slate-100">{format(new Date(report.consultationSnapshot.actualVisitDateTime), 'MMM d, yyyy h:mm a')}</dd></div>
+            )}
+            {report.consultationSnapshot.consultationOutcome && (
+              <div><dt className="text-xs text-[#647080] dark:text-slate-400">Outcome</dt><dd className="text-gray-900 dark:text-slate-100">{report.consultationSnapshot.consultationOutcome === 'schedule_ocular' ? 'Schedule ocular visit' : 'Proceed without ocular visit'}</dd></div>
+            )}
+            {report.consultationSnapshot.noOcularReason && (
+              <div><dt className="text-xs text-[#647080] dark:text-slate-400">Reason</dt><dd className="text-gray-900 dark:text-slate-100">{report.consultationSnapshot.noOcularReason}</dd></div>
+            )}
+            {report.consultationSnapshot.discussionNotes && (
+              <div className="sm:col-span-2"><dt className="text-xs text-[#647080] dark:text-slate-400">Discussion notes</dt><dd className="whitespace-pre-wrap text-gray-900 dark:text-slate-100">{report.consultationSnapshot.discussionNotes}</dd></div>
+            )}
+          </dl>
+        </div>
+      )}
+
       {effectiveVisitType === 'ocular' && !reportHasMeasurements && !canEdit && (
         <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 dark:border-amber-900/60 dark:bg-amber-950/40">
           <div className="flex items-start gap-3">
