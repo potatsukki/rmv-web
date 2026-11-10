@@ -1947,6 +1947,12 @@ export function ProjectDetailPage() {
               {project.projectNumber && (
                 <DetailField label="Project Number" value={project.projectNumber} />
               )}
+              {project.appointmentNumber && (
+                <DetailField label="Consultation Appointment ID" value={project.appointmentNumber} />
+              )}
+              {project.ocularAppointmentNumber && (
+                <DetailField label="Ocular Appointment ID" value={project.ocularAppointmentNumber} />
+              )}
               {!shouldHideAmount && approvedCostAmount !== undefined && (
                 <DetailField label={approvedCostLabel}>
                   <p>{formatCurrency(approvedCostAmount)}</p>
