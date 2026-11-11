@@ -1163,6 +1163,8 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-password-strength__rules { display: flex; flex-wrap: wrap; gap: 5px 12px; }
 .auth-password-strength__rules span { display: inline-flex; align-items: center; gap: 4px; color: #8f969d; font: 500 0.69rem/1.3 'Inter', system-ui, sans-serif; }
 .auth-password-strength__rules svg { width: 13px; height: 13px; color: #43a66b; }
+.auth-password-strength__rules span[data-met='true'] { color: #cfe9d9; }
+.auth-password-strength__rules span[data-met='false'] svg { color: #e45858; }
 
 .auth-otp-row { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; }
 .auth-otp-input { height: 58px !important; min-width: 0; padding: 0 !important; border: 1px solid rgba(255,255,255,0.14) !important; border-radius: 5px !important; background: rgba(255,255,255,0.025) !important; color: #f7f7f5 !important; font: 700 1.4rem/1 'Sora', system-ui, sans-serif !important; text-align: center; box-shadow: none !important; }
@@ -1294,7 +1296,7 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   .auth-google-button { min-height: 44px; font-size: 0.69rem !important; }
   .auth-divider { gap: 9px; font-size: 0.64rem; }
   .auth-password-strength { gap: 5px; padding: 7px 10px; }
-  .auth-password-strength__rules { display: none; }
+  .auth-password-strength__rules { gap: 3px 10px; }
   .auth-password-strength__top { font-size: 0.65rem; }
   .auth-terms { font-size: 0.73rem; line-height: 1.32; }
   .auth-terms input { width: 18px; height: 18px; }

@@ -53,7 +53,7 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { usePendingOcularFees, useUnpaidOcularFees } from '@/hooks/useAppointments';
-import { resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus, type WorkflowStatus } from '@/lib/workflow-status';
+import { isInitialPaymentVerified, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus, type WorkflowStatus } from '@/lib/workflow-status';
 import { isProjectListingStage, PROJECT_STAGE_LABELS } from '@/lib/project-stage-filter';
 import type { Project, ProjectPaymentDue } from '@/lib/types';
 import { getProjectDisplaySiteAddress } from '@/lib/project-display';
@@ -176,17 +176,19 @@ function PaymentProjectRow({
   project,
   paymentStatus,
   paymentDetail,
+  initialPaymentVerified,
   onSelect,
 }: {
   project: PaymentListProject;
   paymentStatus: PaymentListStatus;
   paymentDetail?: WorkflowStatus;
+  initialPaymentVerified?: boolean;
   onSelect: (projectId: string) => void;
 }) {
   const paymentBadge = paymentDetail
     ? { status: paymentDetail.key, label: paymentDetail.label }
     : getPaymentDueBadge(project) ?? PAYMENT_STATUS_BADGES[paymentStatus];
-  const projectWorkflow = resolveProjectWorkflowStatus({ project: project as unknown as Project });
+  const projectWorkflow = resolveProjectWorkflowStatus({ project: project as unknown as Project, initialPaymentVerified });
   const projectStageBadge = { status: projectWorkflow.key, label: projectWorkflow.label };
   const siteAddress = getProjectDisplaySiteAddress(project);
 
@@ -465,7 +467,7 @@ export function PaymentsPage() {
         if (failedProjects.has(projectId)) status = 'unavailable';
         if (loadingProjects.has(projectId)) status = 'loading';
         const detail = ['not_billed', 'unavailable', 'loading'].includes(status) ? undefined : resolvePaymentWorkflowStatus(plans);
-        return [projectId, { bucket: status, detail }];
+        return [projectId, { bucket: status, detail, initialPaymentVerified: isInitialPaymentVerified(plans) }];
       }),
     );
   }, [basePaymentProjects, paymentPlanQueries, paymentPlanTargets]);
@@ -686,6 +688,7 @@ export function PaymentsPage() {
                     project={p as PaymentListProject}
                     paymentStatus={paymentStatusByProject.get(String(p._id))?.bucket || 'not_billed'}
                     paymentDetail={paymentStatusByProject.get(String(p._id))?.detail}
+                    initialPaymentVerified={paymentStatusByProject.get(String(p._id))?.initialPaymentVerified}
                     onSelect={setSelectedProjectId}
                   />
                 ))

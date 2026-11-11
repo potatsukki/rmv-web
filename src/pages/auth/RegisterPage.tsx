@@ -3,7 +3,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Mail, Phone, ShieldAlert, UserRound } from 'lucide-react';
+import { AlertCircle, ArrowLeft, ArrowRight, Check, Loader2, Mail, Phone, ShieldAlert, UserRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { getAdditionalUserInfo, signInWithPopup } from 'firebase/auth';
 
@@ -240,7 +240,16 @@ export function RegisterPage() {
             <div className="auth-password-strength__top"><span>Password strength</span><strong style={{ color: strength.color }}>{strength.label}</strong></div>
             <div className="auth-password-strength__bars" aria-hidden="true">{[1, 2, 3, 4, 5].map((item) => <span key={item} style={item <= strength.score ? { background: strength.color } : undefined} />)}</div>
             <div className="auth-password-strength__rules">
-              {passwordRules.map((rule) => <span key={rule.label}>{rule.test(passwordValue) ? <Check aria-hidden="true" /> : null}{rule.label}</span>)}
+              {passwordRules.map((rule) => {
+                const met = rule.test(passwordValue);
+                return (
+                  <span key={rule.label} data-met={met}>
+                    {met ? <Check aria-hidden="true" /> : <X aria-hidden="true" />}
+                    {rule.label}
+                    <span className="sr-only">{met ? ' (done)' : ' (missing)'}</span>
+                  </span>
+                );
+              })}
             </div>
           </div>
         ) : null}

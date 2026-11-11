@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus } from './constants';
 import type { PaymentPlan, PaymentStage } from './types';
-import { resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from './workflow-status';
+import { isInitialPaymentVerified, resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from './workflow-status';
 
 describe('project status', () => {
   it.each(['requested', 'confirmed', 'in_progress', 'completed', undefined])(
@@ -55,6 +55,31 @@ function paymentPlan(stages: StageInput[]): PaymentPlan {
 
 const { PENDING, PROOF_SUBMITTED, VERIFIED } = PaymentStageStatus;
 const due = '2026-10-27T00:00:00.000Z';
+
+describe('project stage after the down payment (QA: For Down Payment while Fully Paid)', () => {
+  it.each([
+    ['nothing verified yet', [paymentPlan([{ status: PENDING }, { status: PENDING }])], false],
+    ['payment awaiting the cashier', [paymentPlan([{ status: PROOF_SUBMITTED }])], false],
+    ['full payment verified', [paymentPlan([{ status: VERIFIED }])], true],
+    ['down payment verified', [paymentPlan([{ status: VERIFIED }, { status: PENDING }, { status: PENDING }])], true],
+    ['one item plan still unpaid', [paymentPlan([{ status: VERIFIED }]), paymentPlan([{ status: PENDING }])], false],
+    ['no plan', [], false],
+  ])('isInitialPaymentVerified: %s → %s', (_label, plans, expected) => {
+    expect(isInitialPaymentVerified(plans)).toBe(expected);
+  });
+
+  it('shows the fabrication team assignment once a payment_pending project is paid', () => {
+    expect(resolveProjectWorkflowStatus({ project: { status: 'payment_pending', contractStatus: 'uploaded' }, initialPaymentVerified: true }))
+      .toMatchObject({ key: 'for_fabrication_team', label: 'For Fabrication Team Assignment', stage: 'billing' });
+  });
+
+  it('keeps For Down Payment until the first payment is verified, and For Fabrication once fabrication starts', () => {
+    expect(resolveProjectWorkflowStatus({ project: { status: 'payment_pending', contractStatus: 'uploaded' }, initialPaymentVerified: false }))
+      .toMatchObject({ label: 'For Down Payment' });
+    expect(resolveProjectWorkflowStatus({ project: { status: 'fabrication', contractStatus: 'uploaded' }, initialPaymentVerified: true }))
+      .toMatchObject({ label: 'For Fabrication' });
+  });
+});
 
 describe('resolvePaymentWorkflowStatus', () => {
   it.each([

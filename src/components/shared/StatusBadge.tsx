@@ -74,6 +74,7 @@ const STATUS_COLOR_MAP: Record<string, StatusColor> = {
   for_review: 'blue',
   for_blueprint_costing: 'blue',
   for_down_payment: 'yellow',
+  for_fabrication_team: 'cyan',
   for_fabrication: 'orange',
 
   // Payment progress
@@ -148,6 +149,7 @@ const STATUS_LABEL_OVERRIDE: Record<string, string> = {
   for_review: 'For Review',
   for_blueprint_costing: 'For Blueprint & Costing',
   for_down_payment: 'For Down Payment',
+  for_fabrication_team: 'For Fabrication Team Assignment',
   for_fabrication: 'For Fabrication',
   no_payment: 'No Payment',
   down_payment_paid: 'Down Payment Paid',
