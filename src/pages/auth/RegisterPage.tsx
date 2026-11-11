@@ -125,6 +125,11 @@ export function RegisterPage() {
   });
   const passwordValue = watch('password', '');
   const strength = passwordValue ? getStrength(passwordValue) : null;
+  // Required fields show a red asterisk until the user fills them in.
+  const [firstNameValue, lastNameValue, emailValue, phoneValue, confirmPasswordValue, agreeToTermsValue] = watch(
+    ['firstName', 'lastName', 'email', 'phone', 'confirmPassword', 'agreeToTerms'],
+  );
+  const isEmpty = (value?: string) => !value?.trim();
 
   const recordFailedAttempt = useCallback((message: string) => {
     const newCount = attempts + 1;
@@ -229,12 +234,12 @@ export function RegisterPage() {
 
       <form className="auth-form auth-form--register" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="auth-name-grid">
-          <AuthField id="firstName" label="First Name" placeholder="Enter your first name" autoComplete="given-name" icon={UserRound} error={errors.firstName?.message} disabled={isLocked} registration={register('firstName')} />
-          <AuthField id="lastName" label="Last Name" placeholder="Enter your last name" autoComplete="family-name" icon={UserRound} error={errors.lastName?.message} disabled={isLocked} registration={register('lastName')} />
+          <AuthField id="firstName" label="First Name" requiredMark={isEmpty(firstNameValue)} placeholder="Enter your first name" autoComplete="given-name" icon={UserRound} error={errors.firstName?.message} disabled={isLocked} registration={register('firstName')} />
+          <AuthField id="lastName" label="Last Name" requiredMark={isEmpty(lastNameValue)} placeholder="Enter your last name" autoComplete="family-name" icon={UserRound} error={errors.lastName?.message} disabled={isLocked} registration={register('lastName')} />
         </div>
-        <AuthField id="email" label="Email Address" type="email" placeholder="Enter your email address" autoComplete="email" icon={Mail} error={errors.email?.message} disabled={isLocked} registration={register('email')} />
-        <AuthField id="phone" label="Mobile Number" requiredMark type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} disabled={isLocked} registration={register('phone')} />
-        <PasswordField id="password" label="Password" placeholder="Create a secure password" autoComplete="new-password" error={errors.password?.message} disabled={isLocked} registration={register('password')} />
+        <AuthField id="email" label="Email Address" requiredMark={isEmpty(emailValue)} type="email" placeholder="Enter your email address" autoComplete="email" icon={Mail} error={errors.email?.message} disabled={isLocked} registration={register('email')} />
+        <AuthField id="phone" label="Mobile Number" requiredMark={isEmpty(phoneValue)} type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} disabled={isLocked} registration={register('phone')} />
+        <PasswordField id="password" label="Password" requiredMark={isEmpty(passwordValue)} placeholder="Create a password" autoComplete="new-password" error={errors.password?.message} disabled={isLocked} registration={register('password')} />
         {strength ? (
           <div className="auth-password-strength" aria-live="polite">
             <div className="auth-password-strength__top"><span>Password strength</span><strong style={{ color: strength.color }}>{strength.label}</strong></div>
@@ -253,11 +258,11 @@ export function RegisterPage() {
             </div>
           </div>
         ) : null}
-        <PasswordField id="confirmPassword" label="Confirm Password" placeholder="Confirm your password" autoComplete="new-password" error={errors.confirmPassword?.message} disabled={isLocked} registration={register('confirmPassword')} />
+        <PasswordField id="confirmPassword" label="Confirm Password" requiredMark={isEmpty(confirmPasswordValue)} placeholder="Confirm your password" autoComplete="new-password" error={errors.confirmPassword?.message} disabled={isLocked} registration={register('confirmPassword')} />
         <div>
           <label className="auth-terms">
             <input type="checkbox" aria-invalid={Boolean(errors.agreeToTerms)} aria-describedby={errors.agreeToTerms ? 'terms-error' : undefined} disabled={isLocked} {...register('agreeToTerms')} />
-            <span>I agree to the <Link to="/terms" target="_blank">Terms of Service</Link> and <Link to="/privacy" target="_blank">Privacy Policy</Link>.</span>
+            <span>I agree to the <Link to="/terms" target="_blank">Terms of Service</Link> and <Link to="/privacy" target="_blank">Privacy Policy</Link>.{agreeToTermsValue ? null : <span className="ml-0.5 text-red-500" aria-hidden="true">*</span>}</span>
           </label>
           {errors.agreeToTerms ? <p id="terms-error" className="auth-terms-error">{errors.agreeToTerms.message}</p> : null}
         </div>

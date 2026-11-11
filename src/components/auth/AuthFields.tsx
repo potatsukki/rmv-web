@@ -48,14 +48,17 @@ export function AuthField({ id, label, registration, icon: Icon, error, labelAct
 
 interface PasswordFieldProps extends Omit<AuthFieldProps, 'type' | 'icon'> {}
 
-export function PasswordField({ id, label, registration, error, labelAction, className, ...inputProps }: PasswordFieldProps) {
+export function PasswordField({ id, label, registration, error, labelAction, requiredMark, className, ...inputProps }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const errorId = `${id}-error`;
 
   return (
     <div className="auth-field">
       <div className="auth-field__label-row">
-        <Label htmlFor={id} className="auth-field__label">{label}</Label>
+        <Label htmlFor={id} className="auth-field__label">
+          {label}
+          {requiredMark ? <span className="ml-0.5 text-red-500" aria-hidden="true">*</span> : null}
+        </Label>
         {labelAction}
       </div>
       <div className="auth-field__control">
