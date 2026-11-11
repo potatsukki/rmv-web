@@ -3,7 +3,21 @@ import { CalendarClock, CheckCircle2, FileSignature, Info, MapPin } from 'lucide
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { ScheduleOcularDialog } from '@/components/shared/ScheduleOcularDialog';
+import { formatSlotTime, formatTravelDuration, ScheduleOcularDialog } from '@/components/shared/ScheduleOcularDialog';
+
+/** Who takes the scheduled ocular visit, when, and how far the site is from the shop. */
+export interface OcularVisitSummary {
+  staffName?: string;
+  date?: string;
+  slotCode?: string;
+  travelDurationMinutes?: number;
+  distanceKm?: number;
+}
+
+function formatVisitDate(dateStr: string) {
+  const [year = 0, month = 1, day = 1] = dateStr.slice(0, 10).split('-').map(Number);
+  return new Date(year, month - 1, day).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
 
 interface ProjectOcularStepsProps {
   projectId: string;
@@ -17,8 +31,10 @@ interface ProjectOcularStepsProps {
   onViewOcular: () => void;
   /** Consultation date (yyyy-MM-dd); the ocular visit must be at least 3 days after it. */
   consultationDate?: string;
-  /** The project's sales staff, so scheduling only offers their free days. */
+  /** The project's sales staff: picked by default when scheduling the ocular visit. */
   salesStaffId?: string;
+  /** Staff only: the scheduled visit's staff, schedule, and travel time. */
+  ocularVisit?: OcularVisitSummary;
 }
 
 /**
@@ -36,9 +52,11 @@ export function ProjectOcularSteps({
   onViewOcular,
   consultationDate,
   salesStaffId,
+  ocularVisit,
 }: ProjectOcularStepsProps) {
   const [scheduleOpen, setScheduleOpen] = useState(false);
   const ocularScheduled = Boolean(ocularAppointmentId);
+  const showVisitSummary = ocularScheduled && !isCustomer && Boolean(ocularVisit?.staffName || ocularVisit?.date);
   const ocularCompleted = ocularStatus === 'completed';
 
   const title = ocularCompleted ? 'For Ocular · Visit Finished' : 'For Ocular';
@@ -64,6 +82,30 @@ export function ProjectOcularSteps({
             <p className="mt-1 text-xs text-muted-foreground">{description}</p>
           </div>
         </div>
+
+        {showVisitSummary && ocularVisit && (
+          <dl className="grid gap-x-6 gap-y-2 rounded-lg border bg-background p-3 text-sm sm:grid-cols-3">
+            <div>
+              <dt className="text-xs text-muted-foreground">Ocular staff</dt>
+              <dd className="font-medium">{ocularVisit.staffName || 'Not assigned'}</dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Schedule</dt>
+              <dd className="font-medium">
+                {ocularVisit.date ? formatVisitDate(ocularVisit.date) : '—'}
+                {ocularVisit.slotCode ? `, ${formatSlotTime(ocularVisit.slotCode)}` : ''}
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs text-muted-foreground">Travel from RMV shop</dt>
+              <dd className="font-medium">
+                {ocularVisit.travelDurationMinutes != null
+                  ? `~${formatTravelDuration(ocularVisit.travelDurationMinutes)}${ocularVisit.distanceKm != null ? ` (${ocularVisit.distanceKm.toFixed(1)} km)` : ''}`
+                  : ocularVisit.distanceKm != null ? `${ocularVisit.distanceKm.toFixed(1)} km` : '—'}
+              </dd>
+            </div>
+          </dl>
+        )}
 
         {canManage && (
           <>

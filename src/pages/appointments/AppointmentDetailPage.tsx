@@ -4,6 +4,7 @@ import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users,
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
+import { formatTravelDuration } from '@/components/shared/ScheduleOcularDialog';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { consultationAttendanceLabel, getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
@@ -122,8 +123,14 @@ export function AppointmentDetailPage() {
 
 
   const canConfirmAppointment = !!(isAgent || isAdmin);
-  const canFinalizeOcular = !!isSalesStaff;
-  const canCompleteAppointment = isSalesStaff;
+  // A project's own sales staff can open an ocular visit another staff member takes, but only to view it.
+  const apptSalesStaffId = typeof appt?.salesStaffId === 'string' ? appt.salesStaffId : appt?.salesStaffId?._id;
+  const isViewOnlySales = Boolean(isSalesStaff && !isAdmin && apptSalesStaffId && apptSalesStaffId !== user?._id);
+  const apptSalesStaffName = appt?.salesStaffId && typeof appt.salesStaffId !== 'string'
+    ? `${appt.salesStaffId.firstName} ${appt.salesStaffId.lastName}`.trim()
+    : appt?.salesStaffName;
+  const canFinalizeOcular = !!isSalesStaff && !isViewOnlySales;
+  const canCompleteAppointment = isSalesStaff && !isViewOnlySales;
   const isStaff = user?.roles.some((role) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(
       String(role).trim().toLowerCase().replace(/[\s-]+/g, '_') as Role,
@@ -610,6 +617,17 @@ export function AppointmentDetailPage() {
           )}
         </div>
       </div>
+
+      {isViewOnlySales && (
+        <Card className="rounded-xl border-blue-200 bg-blue-50/60 dark:border-blue-500/30 dark:bg-blue-500/10">
+          <CardContent className="flex items-start gap-3 px-4 py-3">
+            <Info className="mt-0.5 h-4 w-4 shrink-0 text-blue-600 dark:text-blue-300" />
+            <p className="text-sm text-blue-900 dark:text-blue-100">
+              {apptSalesStaffName || 'Another sales staff member'} takes this ocular visit. You can view it, but only they can update the visit and its report.
+            </p>
+          </CardContent>
+        </Card>
+      )}
 
       {/* ── Status Guide Banner ── */}
       {appt.status === AppointmentStatus.REQUESTED && (
@@ -1112,7 +1130,10 @@ export function AppointmentDetailPage() {
             {appt.distanceKm != null && (
               <div>
                 <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Distance</p>
-                <p className="text-sm text-[#6e6e73] dark:text-slate-300">{appt.distanceKm.toFixed(1)} km</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300">
+                  {appt.distanceKm.toFixed(1)} km
+                  {appt.travelDurationMinutes != null && ` · ~${formatTravelDuration(appt.travelDurationMinutes)} drive from the RMV shop`}
+                </p>
               </div>
             )}
 

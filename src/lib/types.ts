@@ -86,6 +86,25 @@ export interface AuthState {
   csrfToken: string | null;
 }
 
+export type FabricationWorkloadStatus = 'available' | 'busy' | 'on_leave' | 'unavailable';
+
+/** One fabrication staff member and the projects they are currently on (engineer's pickers). */
+export interface FabricationStaffWorkload {
+  _id: string;
+  firstName: string;
+  lastName: string;
+  availabilityNote?: string;
+  workloadStatus: FabricationWorkloadStatus;
+  activeProjectCount: number;
+  activeProjects: Array<{
+    _id: string;
+    projectNumber?: string;
+    title: string;
+    status: string;
+    roles: Array<'lead' | 'assistant' | 'delivery_crew'>;
+  }>;
+}
+
 export interface SalesStaffLookupUser {
   _id: string;
   firstName: string;
@@ -216,6 +235,8 @@ export interface Appointment {
   location?: { lat: number; lng: number };
   customerLocation?: { lat: number; lng: number };
   distanceKm?: number;
+  /** Estimated one-way drive from the RMV shop to the site, in minutes. */
+  travelDurationMinutes?: number;
   ocularFee?: number;
   ocularFeeBreakdown?: {
     label: string;
@@ -373,6 +394,8 @@ export interface Project {
   engineerIds: (string | { _id: string; firstName: string; lastName: string; phone?: string })[];
   fabricationLeadId?: string | { _id: string; firstName: string; lastName: string };
   fabricationAssistantIds: (string | { _id: string; firstName: string; lastName: string })[];
+  /** Fabrication staff who go with the delivery / on-site installation. */
+  deliveryCrewIds?: (string | { _id: string; firstName: string; lastName: string })[];
   visitReportId?: string | VisitReport;
   items?: ProjectItem[];
   mediaKeys: string[];

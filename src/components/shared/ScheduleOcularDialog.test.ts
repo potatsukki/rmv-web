@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { localDateAfter, ocularMinDate } from './ScheduleOcularDialog';
+import { departureTime, formatTravelDuration, localDateAfter, ocularMinDate } from './ScheduleOcularDialog';
 
 // Nov 10, 2026, 10:00 AM in Manila.
 const NOV_10 = new Date('2026-11-10T02:00:00Z');
@@ -22,5 +22,22 @@ describe('ocularMinDate', () => {
   it('uses the Manila date, not the browser time zone', () => {
     // 4:30 PM UTC on Nov 9 is already Nov 10 in Manila.
     expect(localDateAfter(0, new Date('2026-11-09T16:30:00Z'))).toBe('2026-11-10');
+  });
+});
+
+describe('ocular travel time', () => {
+  it('formats minutes as minutes or hours and minutes', () => {
+    expect(formatTravelDuration(45)).toBe('45 min');
+    expect(formatTravelDuration(80)).toBe('1 hr 20 min');
+    expect(formatTravelDuration(120)).toBe('2 hr');
+  });
+
+  it('tells when to leave the shop for the visit time', () => {
+    expect(departureTime('09:00', 45)).toBe('8:15 AM');
+    expect(departureTime('13:00', 80)).toBe('11:40 AM');
+  });
+
+  it('never goes before midnight for a very long drive', () => {
+    expect(departureTime('08:00', 600)).toBe('12:00 AM');
   });
 });
