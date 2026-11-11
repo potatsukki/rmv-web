@@ -68,7 +68,7 @@ import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { getItemScopedProjectValue, getProjectDisplaySiteAddress, getProjectSnapshotLabels } from '@/lib/project-display';
 import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
 import { cn, extractErrorMessage } from '@/lib/utils';
-import { resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from '@/lib/workflow-status';
+import { isInitialPaymentVerified, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import type { ApiResponse, ProjectItem, VisitReport } from '@/lib/types';
 import toast from 'react-hot-toast';
 
@@ -882,6 +882,7 @@ export function ProjectDetailPage() {
     project,
     item: activeProjectItemRecord,
     blueprint,
+    initialPaymentVerified: isInitialPaymentVerified(paymentPlan ? [paymentPlan] : []),
   });
   // Payment progress has its own badge next to the project status once a plan exists.
   const paymentWorkflowStatus = paymentPlan?.stages?.length ? resolvePaymentWorkflowStatus([paymentPlan]) : null;

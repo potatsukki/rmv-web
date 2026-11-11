@@ -68,6 +68,15 @@ function isVerifiedStage(stage: PaymentStage) {
   return String(stage.status) === PaymentStageStatus.VERIFIED;
 }
 
+/**
+ * True once the first payment stage (down payment, or the single full payment) of every plan is
+ * verified. Mirrors the server's allProjectItemsHaveFirstPaymentVerified.
+ */
+export function isInitialPaymentVerified(plans: Array<PaymentPlan | null | undefined> = []) {
+  const validPlans = plans.filter((plan): plan is PaymentPlan => Boolean(plan?.stages?.length));
+  return validPlans.length > 0 && validPlans.every((plan) => isVerifiedStage(plan.stages[0]!));
+}
+
 function billingStatus(key: string, label: string, tone: WorkflowStatusTone): WorkflowStatus {
   return { key, label, tone, stage: 'billing', isTerminal: false };
 }
@@ -187,6 +196,8 @@ export function resolveProjectWorkflowStatus(input: {
   project?: Pick<Project, 'status' | 'contractStatus' | 'items' | 'ocularAppointmentId' | 'ocularVisitStatus'> | null;
   item?: Pick<ProjectItem, 'status'> | null;
   blueprint?: Pick<Blueprint, 'status'> | null;
+  /** Down payment (or full payment) verified; pass it where the payment plan is loaded. */
+  initialPaymentVerified?: boolean;
 }): WorkflowStatus {
   const projectStatus = String(input.item?.status || input.project?.status || '');
   const itemStatuses = input.project?.items?.map((item) => String(item.status)) || [];
@@ -213,6 +224,10 @@ export function resolveProjectWorkflowStatus(input: {
   }
 
   if (projectStatus === ProjectStatus.APPROVED || projectStatus === ProjectStatus.PAYMENT_PENDING || anyItemPaymentPending) {
+    // Paid, but fabrication starts only once a fabrication team is assigned.
+    if (input.initialPaymentVerified) {
+      return { key: 'for_fabrication_team', label: 'For Fabrication Team Assignment', tone: 'cyan', stage: 'billing', isTerminal: false };
+    }
     return { key: 'for_down_payment', label: 'For Down Payment', tone: 'yellow', stage: 'billing', isTerminal: false };
   }
 
