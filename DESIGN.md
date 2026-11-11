@@ -105,8 +105,8 @@ Target review widths: `360`, `390`, `430`, `768`, `1024`, `1280`, and `1440` pix
 
 - Use repository images only; no remote stock URLs.
 - All content images use `object-fit: cover`, explicit aspect ratios, and meaningful alt text.
-- Hero: `/landing/hero/hero-stainless-railing-bg.png`, positioned center-right on desktop and 62% center on mobile.
-- Hero overlay: left-to-right gradient from `rgba(9,11,13,0.98)` through `rgba(9,11,13,0.72)` to `rgba(9,11,13,0.18)`, plus a subtle bottom fade.
+- Hero: `/landing/services/railings/03-terrace-stainless-railing.png` (daylight brushed-stainless railing), positioned center on desktop and 68% center on mobile. The hero is the one light photographic section: stainless steel must read clearly, never as a night scene.
+- Hero overlay: left-to-right warm-white fade from `rgba(247,247,245,0.97)` through `rgba(247,247,245,0.8)` to fully transparent at about 84% on desktop; a uniform `rgba(247,247,245,0.85)` veil below `1024px`. No dark overlay and no bottom fade.
 - Service image overlay: top transparent-to-bottom near-black, with an additional low-opacity full black wash.
 - About image: crop the left fabrication portion of `/landing/about-legacy-welder.png` so its embedded legacy copy is never displayed.
 - Project and collage imagery must not be stretched or reused within the same section.
@@ -127,10 +127,11 @@ Target review widths: `360`, `390`, `430`, `768`, `1024`, `1280`, and `1440` pix
 ### Hero
 
 - Minimum desktop height: `720px`; mobile minimum approximately `700px` including trust row.
-- Copy aligned left and vertically centered below the fixed navigation.
-- Headline line breaks: `BUILT WITH` / `PRECISION.` / `MADE TO LAST.` with only `PRECISION.` yellow.
-- CTAs stack on narrow mobile and sit inline from `640px`.
-- Trust row uses four equal items on desktop, two columns on mobile, yellow line icons, and no fabricated metrics.
+- Copy aligned left and vertically centered below the fixed navigation, dark text (`#111417`, body `#5D646B`) on the light photo area.
+- Headline line breaks: `STAINLESS STEEL` / `BUILT WITH` / `PRECISION.` / `MADE TO LAST.`. `STAINLESS STEEL` is the emphasis: a restrained brushed-steel text gradient (`#59616A` → `#14191D` → `#6B737C`) with a short `#F5B400` bar beneath it. Yellow text is not used on the light hero.
+- CTAs stack on narrow mobile and sit inline from `640px`: the primary yellow button and the outline light-background button.
+- Trust row sits in a full-width near-black strip under the photo area, so the hero still ends dark before the warm-white Services section. Four equal items on desktop, two columns on mobile, yellow line icons, and no fabricated metrics.
+- The area behind the fixed navigation stays near-black, so the navigation looks the same as on dark sections.
 
 ### Services
 

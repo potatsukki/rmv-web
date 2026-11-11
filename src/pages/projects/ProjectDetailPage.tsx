@@ -9,7 +9,7 @@ import {
   RotateCcw, Fence, Grid3x3, DoorOpen, Armchair, ChefHat, Utensils,
   BookOpen, Frame, Umbrella, ArrowUpFromLine, Wrench, Layers, DoorClosed, Calculator,
   MessageSquare, LockKeyhole, CalendarDays, ShieldCheck, Maximize2,
-  User, MapPin, History,
+  User, MapPin, History, Truck,
 } from 'lucide-react';
 import { useActivityHistory } from '@/hooks/useReports';
 import { ActivityTimeline } from '@/components/shared/ActivityTimeline';
@@ -33,6 +33,7 @@ import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DesignFeePanel } from '@/components/shared/DesignFeePanel';
 import { ProjectOcularSteps } from '@/components/shared/ProjectOcularSteps';
+import { FabricationStaffPicker, FabricationWorkloadWarning, workloadWarnings } from '@/components/shared/FabricationStaffPicker';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -46,6 +47,8 @@ import {
   useAssignEngineers,
   useReassignProjectSales,
   useAssignFabrication,
+  useAssignDeliveryCrew,
+  useFabricationStaffWorkload,
   useReviewInitialDesign,
   useResubmitInitialDesign,
   useBackfillInitialDesign,
@@ -56,7 +59,6 @@ import {
 import { useLatestBlueprint } from '@/hooks/useBlueprints';
 import { usePaymentPlan, usePaymentsByProject, useProjectPaymentPlans } from '@/hooks/usePayments';
 import { useGetDownloadUrl, openAuthenticatedFile, useAuthenticatedUrl } from '@/hooks/useUploads';
-import { useUsers } from '@/hooks/useUsers';
 import { useAppointment } from '@/hooks/useAppointments';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
@@ -589,6 +591,7 @@ export function ProjectDetailPage() {
   const updateProject = useUpdateProject();
   const reassignProjectSales = useReassignProjectSales();
   const assignFabrication = useAssignFabrication();
+  const assignDeliveryCrew = useAssignDeliveryCrew();
   const reviewInitialDesign = useReviewInitialDesign();
   const resubmitInitialDesign = useResubmitInitialDesign();
   const backfillInitialDesign = useBackfillInitialDesign();
@@ -642,11 +645,8 @@ export function ProjectDetailPage() {
     return ALL_TABS;
   }, [isEngineer, isFabricationStaff, isCustomer]);
 
-  // ── Fabrication staff list (only fetch when engineer is on the page) ──
-  const { data: fabStaffList } = useUsers(
-    isEngineer ? { role: 'fabrication_staff' } : undefined,
-    { enabled: !!isEngineer },
-  );
+  // ── Fabrication staff with their availability and active projects (engineer / admin only) ──
+  const fabWorkload = useFabricationStaffWorkload(Boolean(isEngineer || isAdmin));
 
   const [salesStaffList, setSalesStaffList] = useState<Array<{
     _id: string;
@@ -667,6 +667,9 @@ export function ProjectDetailPage() {
   const [fabLeadId, setFabLeadId] = useState('');
   const [fabAssistantIds, setFabAssistantIds] = useState<string[]>([]);
   const fabricationAssignFormRef = useRef<HTMLDivElement | null>(null);
+  // ── Delivery / installation crew form state ──
+  const [showCrewForm, setShowCrewForm] = useState(false);
+  const [crewIds, setCrewIds] = useState<string[]>([]);
   const [designReviewNotes, setDesignReviewNotes] = useState('');
   const [projectReviewRating, setProjectReviewRating] = useState('5');
   const [projectReviewComment, setProjectReviewComment] = useState('');
@@ -1180,6 +1183,27 @@ export function ProjectDetailPage() {
     );
   };
 
+  const toggleCrewMember = (staffId: string) => {
+    setCrewIds((prev) =>
+      prev.includes(staffId) ? prev.filter((crewId) => crewId !== staffId) : [...prev, staffId],
+    );
+  };
+
+  const handleAssignDeliveryCrew = async () => {
+    if (crewIds.length === 0) {
+      toast.error('Select at least one crew member');
+      return;
+    }
+    try {
+      await assignDeliveryCrew.mutateAsync({ id: id!, deliveryCrewIds: crewIds });
+      toast.success('Delivery / installation crew assigned.');
+      setShowCrewForm(false);
+      refetch();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to assign the delivery / installation crew'));
+    }
+  };
+
   const handleOpenFabricationAssign = () => {
     if (!canAssignFabricationTeam) {
       toast.error('Team assignment unlocks after the customer approves the blueprint and costing.');
@@ -1233,6 +1257,19 @@ export function ProjectDetailPage() {
   if (isError || !project) return <PageError onRetry={refetch} />;
 
   const hasFabLead = project.fabricationLeadId && typeof project.fabricationLeadId !== 'string';
+  const deliveryCrew = (project.deliveryCrewIds || []).map((member) => (
+    typeof member === 'string'
+      ? { _id: member, name: '' }
+      : { _id: member._id, name: `${member.firstName} ${member.lastName}`.trim() }
+  ));
+  const deliveryCrewNames = deliveryCrew.map((member) => member.name).filter(Boolean);
+  // Engineer or admin picks the crew once the fabrication team exists, until the project is completed.
+  const canAssignDeliveryCrew = Boolean(
+    (isAssignedEngineer || isAdmin)
+    && project.fabricationLeadId
+    && [ProjectStatus.PAYMENT_PENDING, ProjectStatus.FABRICATION].includes(project.status as ProjectStatus),
+  );
+  const canSeeFabricatorAvailability = Boolean(isAssignedEngineer || isAdmin);
   const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
   const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
   const headerTitle = activeProjectServiceLabel || projectServiceTitle;
@@ -1419,6 +1456,15 @@ export function ProjectDetailPage() {
           onViewOcular={() => navigate(`/appointments/${project.ocularAppointmentId}`)}
           consultationDate={consultationAppointment.data?.date}
           salesStaffId={currentSalesStaffId || undefined}
+          ocularVisit={ocularAppointment.data ? {
+            staffName: ocularAppointment.data.salesStaffId && typeof ocularAppointment.data.salesStaffId !== 'string'
+              ? `${ocularAppointment.data.salesStaffId.firstName} ${ocularAppointment.data.salesStaffId.lastName}`.trim()
+              : ocularAppointment.data.salesStaffName,
+            date: ocularAppointment.data.date,
+            slotCode: ocularAppointment.data.slotCode,
+            travelDurationMinutes: ocularAppointment.data.travelDurationMinutes,
+            distanceKm: ocularAppointment.data.distanceKm,
+          } : undefined}
         />
       )}
       {isCustomer && project.status === 'submitted' && (
@@ -3083,60 +3129,49 @@ export function ProjectDetailPage() {
                   Assign Fabrication Team
                 </p>
 
+                <p className="text-xs text-[#6e6e73] dark:text-slate-400">
+                  Each fabricator shows whether they are available and the projects they are already on. Busy fabricators can still be assigned.
+                </p>
+
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[#6e6e73] dark:text-slate-400">Lead Fabricator *</label>
-                  <Select value={fabLeadId} onValueChange={setFabLeadId}>
-                    <SelectTrigger className="bg-white dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100">
-                      <SelectValue placeholder="Select lead fabricator" />
-                    </SelectTrigger>
-                    <SelectContent className="dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100">
-                      {fabStaffList?.map((s) => (
-                        <SelectItem key={s._id} value={s._id}>
-                          {s.firstName} {s.lastName}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FabricationStaffPicker
+                    ariaLabel="Lead fabricator"
+                    mode="single"
+                    staff={fabWorkload.data}
+                    isLoading={fabWorkload.isLoading}
+                    isError={fabWorkload.isError}
+                    selectedIds={fabLeadId ? [fabLeadId] : []}
+                    onToggle={(staffId) => {
+                      setFabLeadId(staffId);
+                      setFabAssistantIds((prev) => prev.filter((assistantId) => assistantId !== staffId));
+                    }}
+                    currentProjectId={project._id}
+                  />
                 </div>
 
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[#6e6e73] dark:text-slate-400">Assistants (optional)</label>
-                  <div className="max-h-40 overflow-y-auto rounded-lg border border-[#d2d2d7] bg-white divide-y divide-[#e8e8ed] dark:border-slate-700 dark:bg-slate-900 dark:divide-slate-700">
-                    {fabStaffList
-                      ?.filter((s) => s._id !== fabLeadId)
-                      .map((s) => (
-                        <button
-                          type="button"
-                          key={s._id}
-                          onClick={() => toggleAssistant(s._id)}
-                          className={cn(
-                            'flex w-full items-center gap-2 px-3 py-2 text-left text-sm transition-colors hover:bg-[#f5f5f7] dark:text-slate-100 dark:hover:bg-slate-800',
-                            fabAssistantIds.includes(s._id) && 'bg-violet-50 dark:bg-violet-950/40',
-                          )}
-                        >
-                          <div
-                            className={cn(
-                              'flex h-4 w-4 items-center justify-center rounded border',
-                              fabAssistantIds.includes(s._id)
-                                ? 'border-violet-500 bg-violet-500'
-                                : 'border-[#c8c8cd] dark:border-slate-600',
-                            )}
-                          >
-                            {fabAssistantIds.includes(s._id) && (
-                              <Check className="h-3 w-3 text-white" />
-                            )}
-                          </div>
-                          {s.firstName} {s.lastName}
-                        </button>
-                      ))}
-                    {(!fabStaffList || fabStaffList.filter((s) => s._id !== fabLeadId).length === 0) && (
-                      <p className="px-3 py-2 text-xs text-[#86868b] dark:text-slate-400">No other fabrication staff available</p>
-                    )}
-                  </div>
+                  <FabricationStaffPicker
+                    ariaLabel="Assistant fabricators"
+                    mode="multi"
+                    staff={fabWorkload.data}
+                    isLoading={fabWorkload.isLoading}
+                    isError={fabWorkload.isError}
+                    selectedIds={fabAssistantIds}
+                    onToggle={toggleAssistant}
+                    excludeIds={fabLeadId ? [fabLeadId] : []}
+                    currentProjectId={project._id}
+                    emptyText="No other fabrication staff available"
+                  />
                   {fabAssistantIds.length > 0 && (
                     <p className="mt-1 text-xs text-[#6e6e73] dark:text-slate-400">{fabAssistantIds.length} selected</p>
                   )}
                 </div>
+
+                <FabricationWorkloadWarning
+                  warnings={workloadWarnings(fabWorkload.data, [fabLeadId, ...fabAssistantIds].filter(Boolean), project._id)}
+                />
 
                 <div className="flex gap-2">
                   <Button
@@ -3156,6 +3191,94 @@ export function ProjectDetailPage() {
                     Cancel
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Who is free, before a team is chosen (also while assignment is still locked). */}
+          {canSeeFabricatorAvailability && !hasFabLead && !showFabForm && (
+            <Card className="rounded-none border-x-0 sm:rounded-xl sm:border-x">
+              <CardContent className="space-y-3 p-4">
+                <div>
+                  <p className="flex items-center gap-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
+                    <Users className="h-4 w-4" />
+                    Fabricator Availability
+                  </p>
+                  <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
+                    Who is available and who is already on a project. Busy fabricators can still be assigned.
+                  </p>
+                </div>
+                <FabricationStaffPicker
+                  ariaLabel="Fabricator availability"
+                  staff={fabWorkload.data}
+                  isLoading={fabWorkload.isLoading}
+                  isError={fabWorkload.isError}
+                  currentProjectId={project._id}
+                />
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Delivery / installation crew: separate from the workshop team, never blocks a stage. */}
+          {(canAssignDeliveryCrew || (isStaff && deliveryCrewNames.length > 0)) && (
+            <Card className="rounded-none border-x-0 sm:rounded-xl sm:border-x">
+              <CardContent className="space-y-3 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
+                      <Truck className="h-4 w-4" />
+                      Delivery / Installation Crew
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
+                      {deliveryCrewNames.length > 0
+                        ? deliveryCrewNames.join(', ')
+                        : 'No crew assigned yet. Choose who goes with the delivery or on-site installation.'}
+                    </p>
+                  </div>
+                  {canAssignDeliveryCrew && !showCrewForm && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="w-full shrink-0 sm:w-auto"
+                      onClick={() => {
+                        setCrewIds(deliveryCrew.map((member) => member._id));
+                        setShowCrewForm(true);
+                      }}
+                    >
+                      <Users className="mr-1.5 h-4 w-4" />
+                      {deliveryCrewNames.length > 0 ? 'Change Crew' : 'Assign Crew'}
+                    </Button>
+                  )}
+                </div>
+
+                {canAssignDeliveryCrew && showCrewForm && (
+                  <>
+                    <FabricationStaffPicker
+                      ariaLabel="Delivery and installation crew"
+                      mode="multi"
+                      staff={fabWorkload.data}
+                      isLoading={fabWorkload.isLoading}
+                      isError={fabWorkload.isError}
+                      selectedIds={crewIds}
+                      onToggle={toggleCrewMember}
+                      currentProjectId={project._id}
+                    />
+                    <FabricationWorkloadWarning warnings={workloadWarnings(fabWorkload.data, crewIds, project._id)} />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        onClick={handleAssignDeliveryCrew}
+                        disabled={assignDeliveryCrew.isPending || crewIds.length === 0}
+                      >
+                        {assignDeliveryCrew.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                        Save Crew
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowCrewForm(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </>
+                )}
               </CardContent>
             </Card>
           )}
@@ -3228,6 +3351,18 @@ export function ProjectDetailPage() {
                           <p key={String(a._id || a)} className="text-sm">
                             {a.firstName ? `${a.firstName} ${a.lastName}` : String(a)}
                           </p>
+                        ))}
+                      </div>
+                    ) : (
+                      <p className="text-sm italic text-slate-500 dark:text-slate-400">Not assigned yet</p>
+                    )}
+                  </DetailField>
+
+                  <DetailField label="Delivery / Installation Crew">
+                    {deliveryCrewNames.length > 0 ? (
+                      <div className="mt-1 space-y-1">
+                        {deliveryCrewNames.map((name) => (
+                          <p key={name} className="text-sm">{name}</p>
                         ))}
                       </div>
                     ) : (

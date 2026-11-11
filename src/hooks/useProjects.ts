@@ -1,6 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingFees } from '@/lib/types';
+import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingFees, FabricationStaffWorkload } from '@/lib/types';
+
+// Kept outside ['projects'] so project cache updates never touch the staff list.
+const FABRICATION_WORKLOAD_KEY = ['fabrication-staff-workload'] as const;
 
 const KEYS = {
   all: ['projects'] as const,
@@ -208,6 +211,36 @@ export function useAssignFabrication() {
     onSuccess: (project) => {
       syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
+    },
+  });
+}
+
+/** Fabrication staff with the projects they are on, for the engineer's team and crew pickers. */
+export function useFabricationStaffWorkload(enabled = true) {
+  return useQuery({
+    queryKey: FABRICATION_WORKLOAD_KEY,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<FabricationStaffWorkload[]>>('/projects/fabrication-staff/workload');
+      return data.data;
+    },
+    enabled,
+    staleTime: 0,
+  });
+}
+
+export function useAssignDeliveryCrew() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, deliveryCrewIds }: { id: string; deliveryCrewIds: string[] }) => {
+      const { data } = await api.post<ApiResponse<Project>>(`/projects/${id}/assign-delivery-crew`, {
+        deliveryCrewIds,
+      });
+      return data.data;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
     },
   });
 }
@@ -366,6 +399,8 @@ export interface ProjectOcularVisitInput {
   slotCode: string;
   customerLocation: { lat: number; lng: number };
   formattedAddress?: string;
+  /** The sales staff who takes the visit; left out, the project's own sales staff does. */
+  salesStaffId?: string;
 }
 
 /** Sales staff schedules the ocular visit after the signed contract is uploaded. */

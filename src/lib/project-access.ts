@@ -15,7 +15,8 @@ export function isAssignedEngineer(project: Project, userId?: string | null): bo
 export function isAssignedFabricationMember(project: Project, userId?: string | null): boolean {
   if (!userId) return false;
 
-  return [project.fabricationLeadId, ...project.fabricationAssistantIds].some(
+  // The delivery / installation crew works the project too (they log the delivery and on-site work).
+  return [project.fabricationLeadId, ...project.fabricationAssistantIds, ...(project.deliveryCrewIds || [])].some(
     (member) => getUserId(member as string | { _id: string } | undefined) === userId,
   );
 }

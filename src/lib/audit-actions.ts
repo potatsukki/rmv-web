@@ -78,6 +78,7 @@ export const AUDIT_ACTION_MAP: Record<string, AuditActionDisplay> = {
   cash_discrepancy:  { icon: AlertCircle,   label: 'Cash discrepancy',           color: 'text-red-600 bg-red-50' },
   // Fabrication
   fabrication_assigned: { icon: Wrench,     label: 'Fabrication assigned',       color: 'text-orange-600 bg-orange-50' },
+  delivery_crew_assigned: { icon: Users,    label: 'Delivery / installation crew assigned', color: 'text-orange-600 bg-orange-50' },
   fabrication_updated:  { icon: Hammer,     label: 'Fabrication updated',        color: 'text-orange-600 bg-orange-50' },
   // Visit Report
   visit_report_created:   { icon: ClipboardCheck, label: 'Visit report created',   color: 'text-cyan-600 bg-cyan-50' },

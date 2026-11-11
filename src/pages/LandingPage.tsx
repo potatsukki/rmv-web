@@ -2380,50 +2380,55 @@ export function LandingPage() {
       <LandingNavbar />
 
       <main>
-        <section id="hero" className="relative flex min-h-[720px] scroll-mt-16 items-end overflow-hidden border-b border-white/10 bg-[#090B0D] pt-16 lg:h-svh lg:min-h-[640px] lg:max-h-[900px] lg:pt-[72px]">
-          <img
-            src="/landing/hero/hero-stainless-railing-bg.png"
-            alt="Architectural stainless steel railing installation"
-            className="absolute inset-0 h-full w-full object-cover object-[62%_center] lg:object-center"
-          />
-          <div className="absolute inset-0 bg-black/28" />
-          <div className="absolute inset-0 bg-[linear-gradient(90deg,rgba(9,11,13,0.99)_0%,rgba(9,11,13,0.94)_28%,rgba(9,11,13,0.72)_48%,rgba(9,11,13,0.18)_82%)]" />
-          <div className="absolute inset-x-0 bottom-0 h-48 bg-gradient-to-t from-[#090B0D] via-[#090B0D]/70 to-transparent" />
+        {/* The section stays near-black behind the fixed navbar and the trust strip; the photo area between them is light. */}
+        <section id="hero" className="relative flex min-h-[720px] scroll-mt-16 flex-col overflow-hidden border-b border-white/10 bg-[#090B0D] pt-16 lg:h-svh lg:min-h-[640px] lg:max-h-[900px] lg:pt-[72px]">
+          <div className="relative flex flex-1 items-center bg-[#F7F7F5] text-[#111417]">
+            <img
+              src="/landing/services/railings/03-terrace-stainless-railing.png"
+              alt="Brushed stainless steel terrace railing in daylight"
+              className="absolute inset-0 h-full w-full object-cover object-[68%_center] lg:object-center"
+            />
+            <div className="absolute inset-0 bg-[#F7F7F5]/85 lg:hidden" />
+            <div className="absolute inset-0 hidden bg-[linear-gradient(90deg,rgba(247,247,245,0.97)_0%,rgba(247,247,245,0.95)_34%,rgba(247,247,245,0.8)_50%,rgba(247,247,245,0.35)_66%,rgba(247,247,245,0)_84%)] lg:block" />
 
-          <div className="relative mx-auto flex w-[min(calc(100%_-_32px),1480px)] flex-col justify-end pb-8 pt-16 sm:w-[min(calc(100%_-_48px),1480px)] sm:pb-10 lg:pb-6">
-            <div className="max-w-[860px] py-10 sm:py-14 lg:py-6">
-              <h1 className="font-['Sora',sans-serif] text-[clamp(2.6rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-white">
-                <span className="block text-[#F5B400]">Stainless Steel</span>
-                <span className="block">Built With</span>
-                <span className="block">Precision.</span>
-                <span className="block">Made to Last.</span>
-              </h1>
+            <div className="relative mx-auto w-[min(calc(100%_-_32px),1480px)] py-12 sm:w-[min(calc(100%_-_48px),1480px)] sm:py-16 lg:py-8">
+              <div className="max-w-[860px]">
+                <h1 className="font-['Sora',sans-serif] text-[clamp(2.6rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-[#111417]">
+                  <span className="block w-fit bg-[linear-gradient(180deg,#59616A_0%,#14191D_48%,#6B737C_100%)] bg-clip-text text-transparent">Stainless Steel</span>
+                  <span aria-hidden="true" className="my-3 block h-1.5 w-24 bg-[#F5B400] sm:my-4" />
+                  <span className="block">Built With</span>
+                  <span className="block">Precision.</span>
+                  <span className="block">Made to Last.</span>
+                </h1>
 
-              <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-white/78 sm:text-lg sm:leading-8">
-                Custom stainless steel railings, gates, kitchen counters, cabinets, and more for residential, commercial, and industrial projects.
-              </p>
+                <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-[#5D646B] sm:text-lg sm:leading-8">
+                  Custom stainless steel railings, gates, kitchen counters, cabinets, and more for residential, commercial, and industrial projects.
+                </p>
 
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <a
-                  href="#services"
-                  className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-[#F5B400] bg-[#F5B400] px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-[#090B0D] shadow-[0_16px_40px_rgba(245,180,0,0.2)] transition duration-200 hover:-translate-y-0.5 hover:border-[#FFD047] hover:bg-[#FFD047] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400] sm:min-w-48"
-                >
-                  Our Services
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </a>
-                <a
-                  href="#projects"
-                  className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-white/35 bg-black/30 px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-white backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#F5B400] hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400] sm:min-w-48"
-                >
-                  View Projects
-                  <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                </a>
+                <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+                  <a
+                    href="#services"
+                    className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-[#F5B400] bg-[#F5B400] px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-[#090B0D] shadow-[0_16px_40px_rgba(245,180,0,0.2)] transition duration-200 hover:-translate-y-0.5 hover:border-[#FFD047] hover:bg-[#FFD047] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#111417] sm:min-w-48"
+                  >
+                    Our Services
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                  <a
+                    href="#projects"
+                    className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-[#111417] bg-white/60 px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-[#111417] backdrop-blur-sm transition duration-200 hover:-translate-y-0.5 hover:bg-[#111417] hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#111417] sm:min-w-48"
+                  >
+                    View Projects
+                    <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                  </a>
+                </div>
               </div>
             </div>
+          </div>
 
-            <div className="grid border-t border-white/12 pt-5 sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4">
+          <div className="relative border-t border-white/10 bg-[#090B0D]">
+            <div className="mx-auto grid w-[min(calc(100%_-_32px),1480px)] py-2 sm:w-[min(calc(100%_-_48px),1480px)] sm:grid-cols-2 sm:gap-x-6 lg:grid-cols-4">
               {HERO_TRUST_ITEMS.map(({ title, Icon }) => (
-                <div key={title} className="flex min-h-14 items-center gap-3 border-b border-white/[0.08] py-3 sm:border-b-0 lg:px-3 lg:first:pl-0">
+                <div key={title} className="flex min-h-14 items-center gap-3 border-b border-white/[0.08] py-3 last:border-b-0 sm:border-b-0 lg:px-3 lg:first:pl-0">
                   <Icon className="h-5 w-5 shrink-0 text-[#F5B400]" strokeWidth={1.8} aria-hidden="true" />
                   <span className="max-w-[12rem] text-[0.66rem] font-bold uppercase leading-4 tracking-[0.08em] text-white/86">
                     {title}

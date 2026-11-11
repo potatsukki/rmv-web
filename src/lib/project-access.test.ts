@@ -57,6 +57,18 @@ describe('project access helpers', () => {
     expect(canManageFabricationUpdates(baseProject, makeUser('fabricator-3', [Role.FABRICATION_STAFF]))).toBe(false);
   });
 
+  it('treats the delivery / installation crew as assigned fabrication staff', () => {
+    const withCrew: Project = {
+      ...baseProject,
+      deliveryCrewIds: ['fabricator-3', { _id: 'fabricator-4', firstName: 'Crew', lastName: 'Member' }],
+    };
+    expect(isAssignedFabricationMember(withCrew, 'fabricator-3')).toBe(true);
+    expect(isAssignedFabricationMember(withCrew, 'fabricator-4')).toBe(true);
+    expect(isAssignedFabricationMember(withCrew, 'fabricator-5')).toBe(false);
+    expect(canViewFabricationUpdates(withCrew, makeUser('fabricator-3', [Role.FABRICATION_STAFF]))).toBe(true);
+    expect(canManageFabricationUpdates(withCrew, makeUser('fabricator-4', [Role.FABRICATION_STAFF]))).toBe(true);
+  });
+
   it('keeps admin access regardless of assignment', () => {
     expect(canViewFabricationUpdates(baseProject, makeUser('admin-1', [Role.ADMIN]))).toBe(true);
     expect(canManageFabricationUpdates(baseProject, makeUser('admin-1', [Role.ADMIN]))).toBe(true);
