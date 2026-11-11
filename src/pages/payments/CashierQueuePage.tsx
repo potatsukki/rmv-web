@@ -118,7 +118,8 @@ export function CashierQueuePage() {
         />
       )}
 
-      {isCashier && <GcashVerificationQueue />}
+      {/* Admin sees the same GCash queue and history, view-only; cashiers verify. */}
+      <GcashVerificationQueue readOnly={!isCashier} />
       {isLoading ? (
         <div className="space-y-3">
           {Array.from({ length: 3 }).map((_, i) => (
@@ -215,7 +216,7 @@ export function CashierQueuePage() {
       )}
 
       {/* ── Overdue Payments Section ── */}
-      {!isCashier && !overdueLoading && overduePaymentList.length > 0 && (
+      {!overdueLoading && overduePaymentList.length > 0 && (
         <Card className="rounded-xl border-red-200 bg-red-50/30 dark:border-red-900/60 dark:bg-red-950/30">
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg text-red-700">

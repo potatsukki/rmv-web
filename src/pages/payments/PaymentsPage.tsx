@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { format, differenceInDays } from 'date-fns';
-import { CreditCard, AlertTriangle, MapPin, QrCode, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck } from 'lucide-react';
+import { CreditCard, AlertTriangle, MapPin, QrCode, Banknote, Download, Receipt, Search, Calendar, Hash, Tag, AlertCircle, Clock, Lock, ArrowLeft, ChevronRight, CheckCircle, ShieldCheck, FolderOpen } from 'lucide-react';
 import { Link, useLocation, useSearchParams, useNavigate } from 'react-router';
 import toast from 'react-hot-toast';
 import { getCashPaymentAmountError } from '@/lib/money';
@@ -79,6 +79,7 @@ type PaymentListStatus = 'not_billed' | 'loading' | 'unavailable' | 'payment_pen
 type PaymentListProject = {
   _id: string;
   title: string;
+  projectNumber?: string;
   customerName?: string;
   customerId?: string | { _id: string; firstName?: string; lastName?: string };
   serviceType?: string;
@@ -201,6 +202,9 @@ function PaymentProjectRow({
       <div className="sm:hidden flex items-center gap-3">
         <div className="min-w-0 flex-1">
           <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)]">{String(project.title)}</p>
+          {project.projectNumber && (
+            <p className="mt-0.5 truncate font-mono text-[11px] font-semibold text-[var(--text-metal-color)]">{project.projectNumber}</p>
+          )}
           <p className="mt-0.5 truncate text-xs text-[var(--text-metal-color)]">
             {getPaymentProjectCustomerName(project)}
           </p>
@@ -217,6 +221,9 @@ function PaymentProjectRow({
       <div className="hidden sm:grid sm:grid-cols-[1fr_140px_140px_150px_32px] gap-3 items-center">
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold text-[var(--color-card-foreground)] group-hover:text-[var(--text-metal-color)] dark:group-hover:text-slate-200">{String(project.title)}</p>
+          {project.projectNumber && (
+            <p className="mt-0.5 truncate font-mono text-[11px] font-semibold text-[var(--text-metal-color)] dark:text-slate-300">{project.projectNumber}</p>
+          )}
           <p className="mt-0.5 truncate text-xs text-[var(--text-metal-color)] dark:text-slate-300">
             {getPaymentProjectCustomerName(project)}
           </p>
@@ -843,7 +850,7 @@ export function PaymentsPage() {
            ═══════════════════════════════════════════════════════ */
         <>
           {/* Header with back button */}
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
@@ -859,14 +866,27 @@ export function PaymentsPage() {
               <h1 className="text-xl font-bold tracking-tight text-[var(--color-card-foreground)] truncate">
                 {selectedProject ? String(selectedProject.title) : 'Payments'}
               </h1>
-              <p className="text-[var(--text-metal-color)] text-xs capitalize">
-                {selectedProject?.serviceType
-                  ? String(selectedProject.serviceType).replace(/_/g, ' ')
-                  : isCustomer ? 'Submit and track your payments' : 'View payment details'}
+              <p className="text-[var(--text-metal-color)] text-xs">
+                {selectedProject?.projectNumber && (
+                  <span className="font-mono font-semibold">{selectedProject.projectNumber} · </span>
+                )}
+                <span className="capitalize">
+                  {selectedProject?.serviceType
+                    ? String(selectedProject.serviceType).replace(/_/g, ' ')
+                    : isCustomer ? 'Submit and track your payments' : 'View payment details'}
+                </span>
               </p>
             </div>
             {selectedStatusBadge && (
               <StatusBadge status={selectedStatusBadge.key} label={selectedStatusBadge.label} />
+            )}
+            {selectedProjectId && (
+              <Button asChild variant="outline" size="sm" className="ml-auto rounded-lg">
+                <Link to={`/projects/${selectedProjectId}`}>
+                  <FolderOpen className="mr-1.5 h-4 w-4" />
+                  View Project
+                </Link>
+              </Button>
             )}
           </div>
 

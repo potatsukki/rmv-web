@@ -155,6 +155,9 @@ const PaymentsPage = lazy(() =>
   import('@/pages/payments/PaymentsPage').then((module) => ({ default: module.PaymentsPage })),
 );
 
+const TransactionHistoryPage = lazy(() =>
+  import('@/pages/payments/TransactionHistoryPage').then((module) => ({ default: module.TransactionHistoryPage })),
+);
 
 const CashCollectionsPage = lazy(() =>
   import('@/pages/cash/CashCollectionsPage').then((module) => ({
@@ -384,6 +387,9 @@ export default function App() {
                 <Route path="/payments" element={<PaymentsPage />} />
               </Route>
 
+              <Route element={<ProtectedRoute allowedRoles={[Role.CASHIER, Role.ADMIN]} />}>
+                <Route path="/transactions" element={<TransactionHistoryPage />} />
+              </Route>
 
 
               <Route

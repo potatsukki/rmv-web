@@ -15,6 +15,7 @@ import {
   LifeBuoy,
   Star,
   History,
+  Receipt,
   type LucideIcon,
 } from 'lucide-react';
 
@@ -76,6 +77,12 @@ export const sidebarNavGroups: NavGroup[] = [
         path: '/payments',
         icon: CreditCard,
         roles: [Role.CUSTOMER, Role.CASHIER, Role.ADMIN],
+      },
+      {
+        label: 'Transaction History',
+        path: '/transactions',
+        icon: Receipt,
+        roles: [Role.CASHIER, Role.ADMIN],
       },
       {
         label: 'Cash Flow',
