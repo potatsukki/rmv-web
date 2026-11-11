@@ -964,3 +964,56 @@ export interface VisitReport {
   createdAt: string;
   updatedAt: string;
 }
+
+// ── Transaction History (admin + cashier) ──
+export type TransactionType = 'project_payment' | 'design_fee' | 'revision_fee' | 'ocular_fee';
+export type TransactionStatus = 'verified' | 'pending' | 'rejected';
+
+export interface Transaction {
+  _id: string;
+  source: 'payment' | 'appointment';
+  date: string;
+  type: TransactionType;
+  description: string;
+  customerName: string;
+  projectId?: string;
+  projectNumber?: string;
+  appointmentId?: string;
+  appointmentNumber?: string;
+  method?: string;
+  amount: number;
+  status: TransactionStatus;
+  referenceNumber?: string;
+  receiptNumber?: string;
+  hasReceipt: boolean;
+  handledBy?: string;
+  handledAt?: string;
+  rejectionReason?: string;
+}
+
+export interface TransactionSummary {
+  count: number;
+  verifiedTotal: number;
+  pendingTotal: number;
+  rejectedCount: number;
+  byMethod: Array<{ method: string; amount: number }>;
+}
+
+export interface TransactionListResponse {
+  items: Transaction[];
+  total: number;
+  page: number;
+  limit: number;
+  summary: TransactionSummary;
+}
+
+export interface TransactionFilters {
+  search?: string;
+  dateFrom?: string;
+  dateTo?: string;
+  type?: TransactionType | 'all';
+  method?: string;
+  status?: TransactionStatus | 'all';
+  page?: number;
+  limit?: number;
+}

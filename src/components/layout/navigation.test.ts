@@ -16,4 +16,15 @@ describe('getSidebarNavGroups', () => {
   it('keeps the default order for other roles', () => {
     expect(titles([Role.CUSTOMER])).toEqual(['Overview', 'Project Management', 'Financials', 'Administration']);
   });
+
+  it('lists Transaction History for cashiers and admins only', () => {
+    const financialItems = (role: Role) => getSidebarNavGroups([role])
+      .find((group) => group.title === 'Financials')!.items
+      .filter((item) => item.roles.includes(role))
+      .map((item) => item.path);
+    expect(financialItems(Role.CASHIER)).toContain('/transactions');
+    expect(financialItems(Role.ADMIN)).toContain('/transactions');
+    expect(financialItems(Role.CUSTOMER)).not.toContain('/transactions');
+    expect(financialItems(Role.SALES_STAFF)).not.toContain('/transactions');
+  });
 });
