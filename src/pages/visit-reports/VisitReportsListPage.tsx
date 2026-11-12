@@ -1,7 +1,7 @@
 import { Fragment, useState, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
-import { format } from 'date-fns';
+import { format, parse } from 'date-fns';
 
 import { Button } from '@/components/ui/button';
 import { Skeleton } from '@/components/ui/skeleton';
@@ -22,7 +22,11 @@ import { useAuthStore } from '@/stores/auth.store';
 import { VisitReportStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import type { VisitReport } from '@/lib/types';
 import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
-import { normalizeVisitReportStatusFilter } from '@/lib/visit-report-filters';
+import {
+  displayVisitReportStatus,
+  isDisplayedStatusFilter,
+  normalizeVisitReportStatusFilter,
+} from '@/lib/visit-report-filters';
 
 /* ── Helpers ── */
 
@@ -50,7 +54,7 @@ function customerDisplayName(report: VisitReport): string {
 
 /** Derive an aggregate status for a group of reports. Priority: returned > draft > submitted > completed */
 function groupStatus(reports: VisitReport[]): string {
-  const statuses = new Set(reports.map((r) => r.status));
+  const statuses = new Set(reports.map(displayVisitReportStatus));
   if (statuses.has(VisitReportStatus.RETURNED)) return VisitReportStatus.RETURNED;
   if (statuses.has(VisitReportStatus.DRAFT)) return VisitReportStatus.DRAFT;
   if (statuses.has(VisitReportStatus.SUBMITTED)) return VisitReportStatus.SUBMITTED;
@@ -80,6 +84,25 @@ function updatedRelativeLabel(value: string): string {
   return `Last updated ${formatApiTimeAgo(date)}`;
 }
 
+/** The visit's booked day and time, from the populated appointment ("Nov 15, 2026 · 9:00 AM"). */
+function visitDateLabel(report: VisitReport): string | undefined {
+  const appointment = report.appointmentId;
+  if (!appointment || typeof appointment !== 'object' || !appointment.date) return undefined;
+  const day = parse(String(appointment.date).slice(0, 10), 'yyyy-MM-dd', new Date());
+  if (Number.isNaN(day.getTime())) return undefined;
+  const [hour, minute] = String(appointment.slotCode || '').split(':').map(Number);
+  const time = hour === undefined || Number.isNaN(hour)
+    ? ''
+    : ` · ${hour % 12 || 12}:${String(minute || 0).padStart(2, '0')} ${hour >= 12 ? 'PM' : 'AM'}`;
+  return `${format(day, 'MMM d, yyyy')}${time}`;
+}
+
+function submittedLabel(value?: string): string | undefined {
+  if (!value) return undefined;
+  const date = parseApiTimestamp(value);
+  return Number.isNaN(date.getTime()) ? undefined : format(date, 'MMM d, yyyy · h:mm a');
+}
+
 /** Group structure for one appointment's worth of reports. */
 interface AppointmentGroup {
   appointmentId: string;
@@ -88,6 +111,9 @@ interface AppointmentGroup {
   visitType: string;
   status: string;
   latestUpdate: string;
+  visitDate?: string;
+  /** Latest submission among the group's reports. */
+  submittedAt?: string;
 }
 
 interface ReportSection {
@@ -135,8 +161,11 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
   const statusFilter = normalizeVisitReportStatusFilter(searchParams.get('reportStatus'));
   const [search, setSearch] = useState('');
 
+  const filtersByDisplayedStatus = isDisplayedStatusFilter(statusFilter);
   const params: Record<string, string> = {};
-  if (statusFilter) params.status = statusFilter;
+  // Submitted / Completed also depend on the appointment, so those filter the loaded reports below.
+  if (statusFilter && !filtersByDisplayedStatus) params.status = statusFilter;
+  if (filtersByDisplayedStatus) params.limit = '100';
   if (search) params.search = search;
 
   const { data, isLoading, isError, refetch } = useVisitReports(params);
@@ -150,7 +179,10 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
 
   if (isError) return <PageError onRetry={refetch} />;
 
-  const reports = data?.items || [];
+  const loadedReports = data?.items || [];
+  const reports = filtersByDisplayedStatus
+    ? loadedReports.filter((report) => displayVisitReportStatus(report) === statusFilter)
+    : loadedReports;
 
   /* ── Group reports by appointment ── */
   const groups: AppointmentGroup[] = useMemo(() => {
@@ -166,6 +198,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
       // Sort so the most recently updated report comes first (clicked first)
       reps.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
       const first = reps[0]!; // guaranteed at least 1 entry per group
+      const submittedTimes = reps.map((report) => report.submittedAt).filter((value): value is string => Boolean(value));
       return {
         appointmentId: apptId,
         reports: reps,
@@ -173,6 +206,8 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
         visitType: first.visitType,
         status: groupStatus(reps),
         latestUpdate: first.updatedAt,
+        visitDate: visitDateLabel(first),
+        submittedAt: submittedTimes.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0],
       };
     }).sort((a, b) => new Date(b.latestUpdate).getTime() - new Date(a.latestUpdate).getTime());
   }, [reports]);
@@ -319,6 +354,10 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                       <span className="text-[#d2d2d7] dark:text-slate-500">·</span>
                       <span>{projectCount} item{projectCount !== 1 ? 's' : ''}</span>
                     </div>
+                    <div className="mt-1.5 ml-[18px] space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
+                      <p>Visit: {group.visitDate ?? '—'}</p>
+                      <p>Submitted: {submittedLabel(group.submittedAt) ?? '—'}</p>
+                    </div>
                     <p className="mt-1 ml-[18px] text-[10px] font-medium italic text-[#8b95a0] dark:text-slate-500">
                       {updatedRelativeLabel(group.latestUpdate)}
                     </p>
@@ -356,7 +395,9 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Visit Type</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Items</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Services</TableHead>
-                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] hidden lg:table-cell">Updated</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Visit Date</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Submitted</TableHead>
+                  <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] hidden xl:table-cell">Updated</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b]">Status</TableHead>
                   <TableHead className="text-xs font-semibold uppercase tracking-wider text-[#86868b] w-10 pr-5"><span className="sr-only">View</span></TableHead>
                 </TableRow>
@@ -421,8 +462,22 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                         </div>
                       </TableCell>
 
-                      {/* Updated — hidden below lg */}
-                      <TableCell className="py-5 hidden lg:table-cell">
+                      {/* Visit Date */}
+                      <TableCell className="py-5">
+                        <span className="whitespace-nowrap text-sm text-[#1d1d1f] dark:text-slate-100">
+                          {group.visitDate ?? '—'}
+                        </span>
+                      </TableCell>
+
+                      {/* Submitted */}
+                      <TableCell className="py-5">
+                        <span className="whitespace-nowrap text-sm text-[#6e6e73] dark:text-slate-300">
+                          {submittedLabel(group.submittedAt) ?? '—'}
+                        </span>
+                      </TableCell>
+
+                      {/* Updated — hidden below xl */}
+                      <TableCell className="py-5 hidden xl:table-cell">
                         <p className="text-[10px] font-medium italic text-[#8b95a0] dark:text-slate-500">
                           {updatedLabel(group.latestUpdate)}
                         </p>

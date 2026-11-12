@@ -33,6 +33,7 @@ import {
 } from '@/lib/constants';
 import type { VisitReport } from '@/lib/types';
 import { getReportItemCategory, getReportItemLabel } from '@/lib/design-selection';
+import { displayVisitReportStatus } from '@/lib/visit-report-filters';
 import {
   useVisitReportsByAppointment,
   useCreateVisitReport,
@@ -378,7 +379,8 @@ export function ProjectNavigator({
           const hasDesign = Boolean(report.selectedDesignTemplateId?.trim());
           // Renaming would turn the item into a Custom item and detach it from its booked design.
           const canRename = !hasDesign;
-          const style = STATUS_STYLES[report.status] ?? { dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-500' };
+          const shownStatus = displayVisitReportStatus(report);
+          const style = STATUS_STYLES[shownStatus] ?? { dot: 'bg-gray-400', bg: 'bg-gray-50', text: 'text-gray-500' };
 
           return (
             <div
@@ -451,7 +453,7 @@ export function ProjectNavigator({
                     >
                       <span className={cn('h-1.5 w-1.5 rounded-full', style.dot)} />
                       <span className={cn('text-[10px] font-medium leading-none', style.text)}>
-                        {STATUS_SHORT[report.status] ?? report.status}
+                        {STATUS_SHORT[shownStatus] ?? shownStatus}
                       </span>
                     </span>
                   </div>

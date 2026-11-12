@@ -1,10 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router';
-import { ArrowLeft, ArrowRight, Loader2, Mail } from 'lucide-react';
+import { ArrowLeft, Loader2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { AuthLayout } from '@/components/auth/AuthLayout';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { api } from '@/lib/api';
 import { resolvePostLoginPath } from '@/lib/auth-routing';
@@ -100,7 +99,8 @@ export function VerifyOTPPage() {
         <div className="auth-otp-row" onPaste={handlePaste} aria-label="Six digit verification code">
           {otp.map((digit, index) => <Input key={index} ref={(element) => { inputRefs.current[index] = element; }} className="auth-otp-input" type="text" inputMode="numeric" maxLength={1} value={digit} onChange={(event) => handleChange(index, event.target.value)} onKeyDown={(event) => handleKeyDown(index, event)} disabled={isSubmitting} autoComplete="one-time-code" aria-label={`Verification digit ${index + 1}`} />)}
         </div>
-        <Button type="button" className="auth-primary-button" onClick={handleSubmit} disabled={isSubmitting || otp.some((digit) => !digit)}>{isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : <Mail className="h-4 w-4" aria-hidden="true" />}{isSubmitting ? 'Verifying…' : 'Verify Code'}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>
+        {/* The code is checked automatically once all six digits are in, so there is no Verify button. */}
+        {isSubmitting && <p className="auth-otp-note flex items-center justify-center gap-2" role="status"><Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />Verifying…</p>}
         <p className="auth-otp-note">Didn’t receive the code? {cooldown > 0 ? <span>Resend in {cooldown}s</span> : <button type="button" className="auth-inline-button" onClick={handleResend} disabled={isResending}>{isResending ? 'Sending…' : 'Resend code'}</button>}</p>
       </div>
     </AuthLayout>

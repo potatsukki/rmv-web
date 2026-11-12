@@ -109,9 +109,9 @@ it.each(['draft', 'returned', 'loading', 'error'])('asks for the signed contract
   source.reportsLoading = status === 'loading';
   source.reportsError = status === 'error';
   const html = renderPage('/projects/create?pendingProjectId=project-1');
-  // Create Project appears inside the Signed Contract card only after a file is uploaded.
-  expect(html).toContain('Upload the signed contract to finish.');
-  expect(html).not.toMatch(/<button\b[^>]*type="submit"/);
+  // Submitting without an uploaded contract is refused with a toast.
+  expect(html).toContain('Signed Contract');
+  expect(html).toContain('It is required to create the project.');
 });
 
 it('offers to link a completed appointment when creating a project manually', () => {
@@ -136,9 +136,10 @@ it('does not offer to link an appointment when one is already carried in the URL
   expect(html).not.toContain('Appointment (optional)');
 });
 
-it('creates a For Ocular project without asking for the contract or ocular schedule', () => {
+it('asks for the signed contract when creating a For Ocular project, but not the ocular schedule', () => {
   const html = renderPage('/projects/create?customerId=customer-1');
-  expect(html).not.toContain('Upload the signed contract to finish.');
+  expect(html).toContain('Signed Contract');
+  expect(html).toContain('It is required to create the project.');
   expect(html).not.toContain('Ocular Visit Date');
   expect(html).not.toContain('Project Workflow');
   expect(html).toMatch(/<button\b[^>]*type="submit"/);

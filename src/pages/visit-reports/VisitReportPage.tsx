@@ -27,6 +27,7 @@ import { extractErrorMessage, extractLocalDateValue, cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cleanSalesNotes } from '@/lib/sales-notes';
+import { displayVisitReportStatus } from '@/lib/visit-report-filters';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -1119,7 +1120,7 @@ export function VisitReportPage() {
             </p>
           </div>
           <div className="flex items-center gap-2 shrink-0">
-            <StatusBadge status={report.status} />
+            <StatusBadge status={displayVisitReportStatus(report)} />
           </div>
         </div>
 

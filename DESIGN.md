@@ -128,7 +128,7 @@ Target review widths: `360`, `390`, `430`, `768`, `1024`, `1280`, and `1440` pix
 
 - Minimum desktop height: `720px`; mobile minimum approximately `700px` including trust row.
 - Copy aligned left and vertically centered below the fixed navigation, dark text (`#111417`, body `#5D646B`) on the light photo area.
-- Headline line breaks: `STAINLESS STEEL` / `BUILT WITH` / `PRECISION.` / `MADE TO LAST.`. `STAINLESS STEEL` is the emphasis: a restrained brushed-steel text gradient (`#59616A` → `#14191D` → `#6B737C`) with a short `#F5B400` bar beneath it. Yellow text is not used on the light hero.
+- Headline line breaks: `STAINLESS STEEL` / `BUILT FOR` / `EVERY KITCHEN.` / `HOME TO COMMERCIAL.`. `STAINLESS STEEL` is the emphasis: a restrained brushed-steel text gradient (`#59616A` → `#14191D` → `#6B737C`) with a short `#F5B400` bar beneath it. Yellow text is not used on the light hero.
 - CTAs stack on narrow mobile and sit inline from `640px`: the primary yellow button and the outline light-background button.
 - Trust row sits in a full-width near-black strip under the photo area, so the hero still ends dark before the warm-white Services section. Four equal items on desktop, two columns on mobile, yellow line icons, and no fabricated metrics.
 - The area behind the fixed navigation stays near-black, so the navigation looks the same as on dark sections.

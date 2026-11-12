@@ -2396,9 +2396,9 @@ export function LandingPage() {
                 <h1 className="font-['Sora',sans-serif] text-[clamp(2.6rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-[#111417]">
                   <span className="block w-fit bg-[linear-gradient(180deg,#59616A_0%,#14191D_48%,#6B737C_100%)] bg-clip-text text-transparent">Stainless Steel</span>
                   <span aria-hidden="true" className="my-3 block h-1.5 w-24 bg-[#F5B400] sm:my-4" />
-                  <span className="block">Built With</span>
-                  <span className="block">Precision.</span>
-                  <span className="block">Made to Last.</span>
+                  <span className="block">Built for</span>
+                  <span className="block">Every Kitchen.</span>
+                  <span className="block">Home to Commercial.</span>
                 </h1>
 
                 <p className="mt-6 max-w-xl font-['Inter',sans-serif] text-base leading-7 text-[#5D646B] sm:text-lg sm:leading-8">
