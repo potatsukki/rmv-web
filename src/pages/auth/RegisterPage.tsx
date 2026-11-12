@@ -60,12 +60,12 @@ const passwordRules = [
   { label: 'Special character', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
 ];
 
+/** Only two levels: Strong once every rule passes, Weak while any rule is missing. */
 function getStrength(password: string) {
   const score = passwordRules.filter((rule) => rule.test(password)).length;
-  if (score <= 1) return { score, label: 'Weak', color: '#e45858' };
-  if (score <= 2) return { score, label: 'Fair', color: '#e08a3a' };
-  if (score <= 3) return { score, label: 'Good', color: '#f5b400' };
-  return { score, label: score === 5 ? 'Very strong' : 'Strong', color: '#43a66b' };
+  return score === passwordRules.length
+    ? { score, label: 'Strong', color: '#43a66b' }
+    : { score, label: 'Weak', color: '#e45858' };
 }
 
 export function RegisterPage() {

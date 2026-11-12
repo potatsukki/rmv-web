@@ -180,6 +180,8 @@ export interface Appointment {
   canonicalAppointmentId?: string;
   /** Set on an ocular visit that a project scheduled; the ocular page links back to it. */
   linkedProject?: { _id: string; projectNumber?: string; title?: string };
+  /** Ocular tab list only: the project that scheduled this ocular visit. */
+  ocularProject?: { _id: string; projectNumber?: string };
   customerId: string;
   customerName?: string;
   customerNumber?: string;
@@ -983,6 +985,8 @@ export interface VisitReport {
   sketchKeys: string[];
   referenceImageKeys: string[];
   returnReason?: string;
+  /** When the report was last submitted. */
+  submittedAt?: string;
   sampleProjects?: AppointmentQueueSampleProject[];
   createdAt: string;
   updatedAt: string;

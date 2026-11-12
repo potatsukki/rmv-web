@@ -504,9 +504,8 @@ export function CreateProjectPage() {
       toast.error('Select a customer first.');
       return;
     }
-    // New projects start "For Ocular"; the signed contract and ocular visit are handled on the
-    // project page. Only the legacy Complete Project flow still uploads the contract here.
-    if (pendingProjectId && !contractFileKeys[0]) {
+    // The signed contract is uploaded here, so a new project starts with its contract on file.
+    if (!contractFileKeys[0]) {
       toast.error('Upload the signed contract before creating the project.');
       return;
     }
@@ -609,11 +608,11 @@ export function CreateProjectPage() {
         materialType: materialType || undefined,
         finishColor: finishColor || undefined,
         notes: value('notes') || undefined,
-        contractFileKey: pendingProjectId ? contractFileKeys[0] : undefined,
+        contractFileKey: contractFileKeys[0],
       });
       toast.success(pendingProjectId
         ? 'Project created successfully.'
-        : 'Project created. Upload the signed contract and schedule the ocular visit next.');
+        : 'Project created. Schedule the ocular visit next.');
       navigate(`/projects/${project._id}`);
     } catch (error) {
       toast.error(extractErrorMessage(error, 'Failed to create project.'));
@@ -647,7 +646,7 @@ export function CreateProjectPage() {
         <h1 className="text-2xl font-bold text-foreground">{pendingProjectId ? 'Complete Project' : 'Create Project'}</h1>
         <p className="text-sm text-muted-foreground">{pendingProjectId
           ? 'Enter the project details, then upload the signed contract.'
-          : 'Enter the project details. The project starts as For Ocular; upload the signed contract and schedule the ocular visit from the project page.'}</p>
+          : 'Enter the project details and upload the signed contract. The project starts as For Ocular; schedule the ocular visit from the project page.'}</p>
       </div>
 
       <form
@@ -863,11 +862,11 @@ export function CreateProjectPage() {
             </Card>
           )}
 
-          {/* Legacy Complete Project only; new projects upload the contract on the project page. */}
-          {pendingProjectId && <Card>
+          {/* Every project is created with its signed contract. */}
+          <Card>
             <CardHeader>
               <CardTitle>Signed Contract</CardTitle>
-              <CardDescription>Upload the signed contract to finish.</CardDescription>
+              <CardDescription>Upload the contract the customer signed. It is required to create the project.</CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <FileUpload
@@ -880,13 +879,12 @@ export function CreateProjectPage() {
                 onUploadComplete={setContractFileKeys}
                 onUploadingChange={(active) => setUploads((current) => current.contract === active ? current : { ...current, contract: active })}
               />
-              {contractFileKeys[0] && <div className="flex justify-end">{submitButton}</div>}
             </CardContent>
-          </Card>}
+          </Card>
 
           <div className="flex flex-wrap justify-end gap-3">
             <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            {!pendingProjectId && submitButton}
+            {submitButton}
           </div>
         </fieldset>
       </form>
@@ -895,7 +893,7 @@ export function CreateProjectPage() {
         open={ocularWarningOpen}
         onOpenChange={setOcularWarningOpen}
         title="No ocular visit yet"
-        description='This customer has no completed ocular visit. The project will start as "For Ocular": upload the signed contract, then schedule the ocular visit before it can move forward. Create the project anyway?'
+        description='This customer has no completed ocular visit. The project will start as "For Ocular": schedule the ocular visit from the project page before it can move forward. Create the project anyway?'
         confirmLabel="Create Project Anyway"
         cancelLabel="Cancel"
         onConfirm={() => {

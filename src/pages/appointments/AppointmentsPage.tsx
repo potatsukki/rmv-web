@@ -24,6 +24,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { Role, AppointmentStatus, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
 import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
+import { OcularVisitsList } from '@/pages/appointments/OcularVisitsList';
 import { APPOINTMENT_STATUS_GROUPS, resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
@@ -199,7 +200,16 @@ export function AppointmentsPage() {
   const canSeeVisitReports = Boolean(
     user?.roles.some((role) => [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN].includes(role)),
   );
-  const activeTab = canSeeVisitReports ? (searchParams.get('tab') || 'appointments') : 'appointments';
+  const canSeeOculars = Boolean(
+    user?.roles.some((role) => [Role.SALES_STAFF, Role.APPOINTMENT_AGENT, Role.ADMIN].includes(role)),
+  );
+  const tabs = [
+    { key: 'appointments', label: 'Appointments' },
+    ...(canSeeVisitReports ? [{ key: 'visit-reports', label: 'Visit Reports' }] : []),
+    ...(canSeeOculars ? [{ key: 'oculars', label: 'Ocular' }] : []),
+  ];
+  const requestedTab = searchParams.get('tab');
+  const activeTab = tabs.some((tab) => tab.key === requestedTab) ? requestedTab! : 'appointments';
 
   useEffect(() => {
     const timeoutId = window.setTimeout(() => {
@@ -412,19 +422,16 @@ export function AppointmentsPage() {
           </div>
         </section>
       )}
-      {canSeeVisitReports && (
+      {tabs.length > 1 && (
         <div className="flex items-center gap-1 overflow-x-auto rounded-xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-muted)]/40 p-1">
-          {[
-            { key: 'appointments', label: 'Appointments' },
-            { key: 'visit-reports', label: 'Visit Reports' },
-          ].map((tab) => (
+          {tabs.map((tab) => (
             <button
               key={tab.key}
               type="button"
               onClick={() => {
                 const nextParams = new URLSearchParams(searchParams);
                 nextParams.set('tab', tab.key);
-                if (tab.key === 'visit-reports') {
+                if (tab.key !== 'appointments') {
                   nextParams.delete('status');
                 }
                 navigate(`/appointments?${nextParams.toString()}`, { replace: true });
@@ -441,8 +448,10 @@ export function AppointmentsPage() {
         </div>
       )}
 
-      {activeTab === 'visit-reports' && canSeeVisitReports ? (
+      {activeTab === 'visit-reports' ? (
         <VisitReportsListPage isEmbedded />
+      ) : activeTab === 'oculars' ? (
+        <OcularVisitsList showSalesStaff={!isSalesOnly} />
       ) : (
       <>
       {/* Filters */}
