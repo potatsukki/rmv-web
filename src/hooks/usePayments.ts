@@ -2,6 +2,7 @@ import { useQuery, useQueries, useMutation, useQueryClient } from '@tanstack/rea
 import { api } from '@/lib/api';
 import type { ApiResponse, Payment, PaymentPlan } from '@/lib/types';
 import { extractItems } from '@/lib/utils';
+import { LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 
 const getActiveTabRefetchInterval = (ms: number) =>
   typeof document === 'undefined' || document.visibilityState === 'visible' ? ms : false;
@@ -43,6 +44,7 @@ export function usePaymentPlan(projectId: string, projectItemId?: string) {
     },
     enabled: !!projectId,
     refetchInterval: () => getActiveTabRefetchInterval(30_000),
+    ...LIVE_QUERY_OPTIONS,
   });
 }
 
@@ -59,6 +61,7 @@ export function useProjectPaymentPlans(projectId: string, projectItemIds: string
       },
       enabled: !!projectId && !!projectItemId,
       refetchInterval: () => getActiveTabRefetchInterval(30_000),
+      ...LIVE_QUERY_OPTIONS,
     })),
   });
 }
@@ -81,6 +84,7 @@ export function usePaymentPlanQueries(targets: PaymentPlanQueryTarget[]) {
       },
       enabled: !!target.projectId,
       refetchInterval: () => getActiveTabRefetchInterval(30_000),
+      ...LIVE_QUERY_OPTIONS,
     })),
   });
 }
@@ -97,6 +101,7 @@ export function usePaymentsByProject(projectId: string, projectItemId?: string) 
     },
     enabled: !!projectId,
     refetchInterval: () => getActiveTabRefetchInterval(30_000),
+    ...LIVE_QUERY_OPTIONS,
   });
 }
 

@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Textarea } from '@/components/ui/textarea';
 import { cleanSalesNotes } from '@/lib/sales-notes';
+import { visitReportStatusBadge } from '@/lib/visit-report-filters';
 import { Label } from '@/components/ui/label';
 import {
   Dialog,
@@ -1747,7 +1748,9 @@ export function ProjectDetailPage() {
                 )}
 
                 <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  <DetailField label="Report Status" value={visitReport.status} />
+                  <DetailField label="Report Status">
+                    <StatusBadge {...visitReportStatusBadge(visitReport)} />
+                  </DetailField>
                   {visitReport.actualVisitDateTime && (
                     <DetailField label="Actual Visit Date" value={format(new Date(visitReport.actualVisitDateTime), 'MMM d, yyyy h:mm a')} />
                   )}

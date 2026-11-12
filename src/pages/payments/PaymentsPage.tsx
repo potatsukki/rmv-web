@@ -105,7 +105,7 @@ type PaymentListProject = {
   paymentDue?: ProjectPaymentDue;
 };
 
-// Why a project with no payment plan yet still needs the customer (instead of "Not Yet Billed").
+// Why a project with no payment plan yet still needs the customer (instead of "No Payment").
 const getPaymentDueBadge = (project: PaymentListProject) => {
   if (project.paymentDue?.needsPlan) return { status: 'payment_pending', label: 'Choose Payment Plan' };
   if (project.paymentDue?.designFee) return { status: 'payment_pending', label: 'Design Fee Due' };
@@ -128,7 +128,8 @@ const getPaymentProjectCustomerName = (project: PaymentListProject) => {
 };
 
 const PAYMENT_STATUS_BADGES: Record<PaymentListStatus, { status: string; label: string }> = {
-  not_billed: { status: 'draft', label: 'Not Yet Billed' },
+  // Same label and color the customer sees before any payment (resolvePaymentWorkflowStatus).
+  not_billed: { status: 'no_payment', label: 'No Payment' },
   loading: { status: 'draft', label: 'Loading Payment Status' },
   unavailable: { status: 'declined', label: 'Payment Status Unavailable' },
   payment_pending: { status: 'payment_pending', label: 'Payment Pending' },
