@@ -917,6 +917,8 @@ export interface ConsultationSnapshot {
   noOcularReason?: string;
   recommendedOcularDate?: string;
   recommendedOcularSlot?: string;
+  /** When the consultation report was submitted. */
+  submittedAt?: string;
   capturedAt: string;
 }
 

@@ -24,8 +24,10 @@ import type { VisitReport } from '@/lib/types';
 import { formatApiTimeAgo, parseApiTimestamp } from '@/lib/utils';
 import {
   displayVisitReportStatus,
+  groupSubmittedState,
   isDisplayedStatusFilter,
   normalizeVisitReportStatusFilter,
+  type SubmittedState,
 } from '@/lib/visit-report-filters';
 
 /* ── Helpers ── */
@@ -97,10 +99,12 @@ function visitDateLabel(report: VisitReport): string | undefined {
   return `${format(day, 'MMM d, yyyy')}${time}`;
 }
 
-function submittedLabel(value?: string): string | undefined {
-  if (!value) return undefined;
-  const date = parseApiTimestamp(value);
-  return Number.isNaN(date.getTime()) ? undefined : format(date, 'MMM d, yyyy · h:mm a');
+/** "—" until a report is submitted; "Not recorded" for submissions from before times were saved. */
+function submittedLabel(state: SubmittedState): string {
+  if (state.kind === 'not_submitted') return '—';
+  if (state.kind === 'not_recorded') return 'Not recorded';
+  const date = parseApiTimestamp(state.at);
+  return Number.isNaN(date.getTime()) ? 'Not recorded' : format(date, 'MMM d, yyyy · h:mm a');
 }
 
 /** Group structure for one appointment's worth of reports. */
@@ -112,8 +116,8 @@ interface AppointmentGroup {
   status: string;
   latestUpdate: string;
   visitDate?: string;
-  /** Latest submission among the group's reports. */
-  submittedAt?: string;
+  /** Latest submission among the group's submitted reports. */
+  submitted: SubmittedState;
 }
 
 interface ReportSection {
@@ -198,7 +202,6 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
       // Sort so the most recently updated report comes first (clicked first)
       reps.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime());
       const first = reps[0]!; // guaranteed at least 1 entry per group
-      const submittedTimes = reps.map((report) => report.submittedAt).filter((value): value is string => Boolean(value));
       return {
         appointmentId: apptId,
         reports: reps,
@@ -207,7 +210,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
         status: groupStatus(reps),
         latestUpdate: first.updatedAt,
         visitDate: visitDateLabel(first),
-        submittedAt: submittedTimes.sort((a, b) => new Date(b).getTime() - new Date(a).getTime())[0],
+        submitted: groupSubmittedState(reps),
       };
     }).sort((a, b) => new Date(b.latestUpdate).getTime() - new Date(a.latestUpdate).getTime());
   }, [reports]);
@@ -356,7 +359,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                     </div>
                     <div className="mt-1.5 ml-[18px] space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
                       <p>Visit: {group.visitDate ?? '—'}</p>
-                      <p>Submitted: {submittedLabel(group.submittedAt) ?? '—'}</p>
+                      <p>Submitted: {submittedLabel(group.submitted)}</p>
                     </div>
                     <p className="mt-1 ml-[18px] text-[10px] font-medium italic text-[#8b95a0] dark:text-slate-500">
                       {updatedRelativeLabel(group.latestUpdate)}
@@ -472,7 +475,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                       {/* Submitted */}
                       <TableCell className="py-5">
                         <span className="whitespace-nowrap text-sm text-[#6e6e73] dark:text-slate-300">
-                          {submittedLabel(group.submittedAt) ?? '—'}
+                          {submittedLabel(group.submitted)}
                         </span>
                       </TableCell>
 

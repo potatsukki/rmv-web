@@ -11,6 +11,7 @@ import type {
 } from '@/lib/types';
 import type { SlotCode } from '@/lib/constants';
 import { extractItems } from '@/lib/utils';
+import { LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 
 // ── Keys ──
 const KEYS = {
@@ -53,7 +54,7 @@ export function useUpdateAppointmentSalesNotes() {
 // Appointment statuses change from other screens and other users, and each filter tab has its
 // own cache entry. Always revalidate (cached rows still render first) so a tab never shows a
 // list from before an appointment moved into it.
-const LIVE_LIST_OPTIONS = { staleTime: 0, refetchOnWindowFocus: true } as const;
+const LIVE_LIST_OPTIONS = LIVE_QUERY_OPTIONS;
 
 export function useAppointments(params?: Record<string, string>, enabled = true) {
   return useQuery({

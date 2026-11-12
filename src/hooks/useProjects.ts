@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingFees, FabricationStaffWorkload } from '@/lib/types';
 
 // Kept outside ['projects'] so project cache updates never touch the staff list.
@@ -49,6 +50,8 @@ export function useProjects(params?: Record<string, string>) {
       });
       return data.data;
     },
+    // Project stages change from other users' screens (engineer costing, customer approval).
+    ...LIVE_QUERY_OPTIONS,
   });
 }
 
@@ -60,6 +63,7 @@ export function useProject(id: string) {
       return data.data;
     },
     enabled: !!id,
+    ...LIVE_QUERY_OPTIONS,
   });
 }
 
@@ -532,6 +536,7 @@ export function useProjectFeeSummary(id: string | undefined, enabled = true) {
       return data.data;
     },
     enabled: Boolean(id) && enabled,
+    ...LIVE_QUERY_OPTIONS,
   });
 }
 

@@ -28,3 +28,38 @@ export function displayVisitReportStatus(report: { status: string; appointmentId
 export function isDisplayedStatusFilter(filter: string): boolean {
   return filter === VisitReportStatus.SUBMITTED || filter === VisitReportStatus.COMPLETED;
 }
+
+const VISIT_REPORT_STATUS_LABELS: Record<string, string> = {
+  [VisitReportStatus.DRAFT]: 'Draft',
+  [VisitReportStatus.SUBMITTED]: 'Submitted',
+  [VisitReportStatus.RETURNED]: 'Returned',
+  [VisitReportStatus.COMPLETED]: 'Completed',
+};
+
+/** Status badge for a visit report, the same on every staff page (list, report, project). */
+export function visitReportStatusBadge(report: { status: string; appointmentId?: unknown }): { status: string; label: string } {
+  const status = displayVisitReportStatus(report);
+  return { status, label: VISIT_REPORT_STATUS_LABELS[status] ?? status.replace(/_/g, ' ') };
+}
+
+export type SubmittedState =
+  | { kind: 'submitted'; at: string }
+  /** Submitted, but before submission times were saved (or the backfill has not run). */
+  | { kind: 'not_recorded' }
+  | { kind: 'not_submitted' };
+
+const SUBMITTED_REPORT_STATUSES = new Set<string>([VisitReportStatus.SUBMITTED, VisitReportStatus.COMPLETED]);
+
+/**
+ * When a group of reports was last submitted. Only submitted reports count, and only their own
+ * submission time: createdAt / updatedAt are never shown as a submission date.
+ */
+export function groupSubmittedState(reports: Array<{ status: string; submittedAt?: string }>): SubmittedState {
+  const submitted = reports.filter((report) => SUBMITTED_REPORT_STATUSES.has(report.status));
+  if (!submitted.length) return { kind: 'not_submitted' };
+  const times = submitted
+    .map((report) => report.submittedAt)
+    .filter((value): value is string => Boolean(value) && !Number.isNaN(new Date(value!).getTime()))
+    .sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
+  return times[0] ? { kind: 'submitted', at: times[0] } : { kind: 'not_recorded' };
+}

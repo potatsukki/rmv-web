@@ -32,6 +32,7 @@ import { GalleryUpload } from '@/components/shared/PhotoUploadGrid';
 import { extractErrorMessage } from '@/lib/utils';
 import { cleanSalesNotes, combineSalesNotes } from '@/lib/sales-notes';
 import { getReportItemKey } from '@/lib/design-selection';
+import { visitReportStatusBadge } from '@/lib/visit-report-filters';
 
 
 // The app's Select (not a native <select>): Brave on Linux closed native dropdowns on a plain click here.
@@ -159,7 +160,7 @@ function ItemDetailsFields({ idPrefix, heading, itemLabel, draft, fallbackTempla
             <CardTitle>{heading ? `${itemLabel || serviceLabel(serviceType, draft.serviceTypeCustom)} Details & Design` : 'Project Details & Design'}</CardTitle>
             {report && (
               <p className="mt-1 text-xs text-muted-foreground">
-                Visit report: <span className="capitalize">{String(report.status).replaceAll('_', ' ')}</span>
+                Visit report: <span>{visitReportStatusBadge(report).label}</span>
                 {report.status !== VisitReportStatus.SUBMITTED && report.status !== VisitReportStatus.COMPLETED && (
                   <> · <Link to={`/visit-reports/${report._id}`} target="_blank" rel="noopener noreferrer" className="font-semibold text-[#f5b400] underline underline-offset-4">Submit Visit Report</Link></>
                 )}
