@@ -15,6 +15,48 @@ const AUTOMATABLE_APPOINTMENT_STATUSES = new Set<string>([
   AppointmentStatus.READY_FOR_OCULAR,
 ]);
 
+/** A customer is a no-show once this many minutes have passed since the scheduled time (same as the server). */
+export const NO_SHOW_GRACE_MINUTES = 15;
+
+function manilaDate(date: Date) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Manila', year: 'numeric', month: '2-digit', day: '2-digit' }).format(date);
+}
+
+function manilaTime(date: Date) {
+  return new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', hour: 'numeric', minute: '2-digit' }).format(date);
+}
+
+export interface NoShowAvailability {
+  allowed: boolean;
+  /** Why the button is disabled, e.g. "Available on Nov 15 from 10:15 AM". */
+  hint?: string;
+  /** When it becomes allowed (on the appointment date), so the page can enable the button then. */
+  opensAt?: Date;
+}
+
+/**
+ * A no-show is recorded on the appointment date itself, from 15 minutes after the scheduled time
+ * (Manila time); never before, and never on another day. The server enforces the same rule.
+ */
+export function getNoShowAvailability(
+  date: string | undefined,
+  slotCode: string | undefined,
+  now = new Date(),
+): NoShowAvailability {
+  const day = String(date ?? '').slice(0, 10);
+  const start = new Date(`${day}T${slotCode ?? ''}:00+08:00`);
+  if (Number.isNaN(start.getTime())) return { allowed: false, hint: 'This appointment has no scheduled time.' };
+  const opensAt = new Date(start.getTime() + NO_SHOW_GRACE_MINUTES * 60 * 1000);
+  const today = manilaDate(now);
+  const dayLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric' }).format(start);
+
+  if (today > day) return { allowed: false, hint: `No-show could only be recorded on ${dayLabel}.` };
+  if (today < day || now < opensAt) {
+    return { allowed: false, hint: `Available on ${dayLabel} from ${manilaTime(opensAt)}`, opensAt };
+  }
+  return { allowed: true };
+}
+
 /** A finished attendance only means the customer was there; the consultation is completed separately. */
 export function consultationAttendanceLabel(status?: string) {
   return status === AppointmentAttendanceStatus.COMPLETED ? 'Present' : undefined;

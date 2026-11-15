@@ -326,7 +326,8 @@ export function BookAppointmentPage() {
         })),
       });
 
-      toast.success('Appointment booked successfully!');
+      // The request is forwarded to the team; it is confirmed once a sales staff member is assigned.
+      toast.success('Appointment request sent. Please wait for confirmation.');
       navigate(
         bookingMode === 'custom'
           ? `/appointments/${result._id}/site-details`
