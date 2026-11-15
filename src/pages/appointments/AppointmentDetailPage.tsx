@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { extractErrorMessage, cn } from '@/lib/utils';
 import { formatTravelDuration } from '@/components/shared/ScheduleOcularDialog';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
-import { consultationAttendanceLabel, getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
+import { consultationAttendanceLabel, getNextConsultationAttendanceBoundary, getNoShowAvailability } from '@/lib/consultation-attendance';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -242,6 +242,18 @@ export function AppointmentDetailPage() {
 
     return () => window.clearTimeout(timer);
   }, [appt, refetch]);
+
+  // Re-render when "Mark as No Show" opens (15 minutes after the scheduled time) so it enables itself.
+  const [, setNoShowClock] = useState(0);
+  const apptDate = appt?.date;
+  const apptSlotCode = appt?.slotCode;
+  useEffect(() => {
+    const { opensAt } = getNoShowAvailability(apptDate, apptSlotCode);
+    const wait = opensAt ? opensAt.getTime() - Date.now() : -1;
+    if (wait <= 0 || wait > 24 * 60 * 60 * 1000) return;
+    const timer = window.setTimeout(() => setNoShowClock((tick) => tick + 1), wait + 100);
+    return () => window.clearTimeout(timer);
+  }, [apptDate, apptSlotCode]);
 
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
@@ -518,6 +530,26 @@ export function AppointmentDetailPage() {
     }
   };
 
+  // No-show: only on the appointment date, from 15 minutes after the scheduled time (server rule too).
+  const noShow = getNoShowAvailability(appt.date, appt.slotCode);
+  const noShowButton = (
+    <div className="space-y-1.5">
+      <button
+        type="button"
+        onClick={() => updateAttendance('no_show')}
+        disabled={attendanceMutation.isPending || !noShow.allowed}
+        title={noShow.hint}
+        className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 text-sm font-semibold text-[#dc2626] transition-colors hover:bg-red-50 hover:text-[#b91c1c] disabled:pointer-events-none disabled:opacity-50 dark:border-white/12 dark:bg-transparent dark:text-[#ff6b63] dark:hover:bg-white/8 dark:hover:text-[#ff8a84]"
+      >
+        <CalendarX className="mr-2 h-4 w-4" />
+        Mark as No Show
+      </button>
+      {noShow.hint && (
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">{noShow.hint}</p>
+      )}
+    </div>
+  );
+
   const formatCurrency = (v: number) =>
     new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(v);
 
@@ -637,7 +669,9 @@ export function AppointmentDetailPage() {
               <Info className="h-4 w-4" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-[#2f3740] dark:text-slate-100">Pending</p>
+              <p className="text-sm font-semibold text-[#2f3740] dark:text-slate-100">
+                {isCustomer && !isOcularAppointment ? 'Waiting for confirmation' : 'Pending'}
+              </p>
               <p className="mt-0.5 text-xs text-[#69737d] dark:text-slate-400">
                 {isCustomer
                   ? isOcularAppointment && !hasCustomerSiteLocation
@@ -646,7 +680,7 @@ export function AppointmentDetailPage() {
                     ? 'Please pay the ocular visit fee to proceed. Your assigned sales staff will finalize your appointment once payment is received.'
                     : appt.salesStaffId
                       ? 'A sales staff member is reviewing your appointment. We will notify you once it is confirmed.'
-                      : 'Your appointment request has been received. An agent is checking sales staff availability.'
+                      : 'Your request was sent to our team. It is not confirmed yet: an agent is checking sales staff availability, and we will notify and email you once it is confirmed.'
                   : appt.salesStaffId
                     ? 'The assigned sales staff is reviewing this appointment.'
                     : 'Assign an available sales staff member for review.'}
@@ -923,15 +957,7 @@ export function AppointmentDetailPage() {
                       <Clock className="mr-2 h-4 w-4" />
                       Check In
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => updateAttendance('no_show')}
-                      disabled={attendanceMutation.isPending}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-slate-300 bg-white px-6 text-sm font-semibold text-[#dc2626] transition-colors hover:bg-red-50 hover:text-[#b91c1c] disabled:pointer-events-none disabled:opacity-50 dark:border-white/12 dark:bg-transparent dark:text-[#ff6b63] dark:hover:bg-white/8 dark:hover:text-[#ff8a84]"
-                    >
-                      <CalendarX className="mr-2 h-4 w-4" />
-                      Mark as No Show
-                    </button>
+                    {noShowButton}
                   </div>
                 )}
                 {[AppointmentAttendanceStatus.ON_TIME, AppointmentAttendanceStatus.LATE_ARRIVAL].includes(attendanceStatus as AppointmentAttendanceStatus) && (
@@ -948,7 +974,9 @@ export function AppointmentDetailPage() {
                   </div>
                 )}
                 {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
-                  <div className="grid gap-4 pt-1">
+                  <div className={cn('grid gap-4 pt-1', !appt.actualArrivalAt && 'sm:grid-cols-2')}>
+                    {/* Started automatically at the scheduled time, but the customer never checked in. */}
+                    {!appt.actualArrivalAt && noShowButton}
                     <button
                       type="button"
                       onClick={() => updateAttendance('customer_declined')}

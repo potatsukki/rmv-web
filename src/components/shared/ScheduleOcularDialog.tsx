@@ -105,7 +105,8 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
   const slots = useAvailableSlots(open ? date : '', 'ocular');
   const staff = useQuery({
     queryKey: ['users', 'sales-staff', 'ocular', date, slotCode],
-    queryFn: () => fetchSalesStaffLookup({ date, slotCode }),
+    // An ocular visit takes the staff member's whole day, so anyone with an appointment that day is disabled.
+    queryFn: () => fetchSalesStaffLookup({ date, slotCode, appointmentType: 'ocular' }),
     enabled: open && !!date && !!slotCode,
     staleTime: 0,
   });
@@ -231,14 +232,14 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
             </Select>
             {date && slots.isError && <p className="text-xs text-destructive">{extractErrorMessage(slots.error, 'Unable to load slots for this date.')}</p>}
             {date && !slots.isLoading && slots.data?.slots.every((slot) => !slot.available) && (
-              <p className="text-xs text-destructive">No available ocular slots on this date. Every sales staff member already has an appointment at each open time.</p>
+              <p className="text-xs text-destructive">No sales staff is free for an ocular visit on this date. An ocular visit takes a sales staff member&apos;s whole day, so choose another date.</p>
             )}
           </div>
 
           <div className="space-y-2 sm:col-span-2">
             <div>
               <Label id="schedule-ocular-staff-label">Ocular Staff</Label>
-              <p className="mt-1 text-xs text-muted-foreground">Who will go to the project site. The project stays with its own sales staff.</p>
+              <p className="mt-1 text-xs text-muted-foreground">Who will go to the project site. The project stays with its own sales staff. An ocular visit takes the staff member&apos;s whole day (travel included), so anyone with another appointment that day can&apos;t take it.</p>
             </div>
             {!date || !slotCode ? (
               <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">Select the date and time first to see who is available.</p>
