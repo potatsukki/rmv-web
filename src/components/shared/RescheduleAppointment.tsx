@@ -8,6 +8,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useAvailableSlots, useRequestReschedule } from '@/hooks/useAppointments';
 import { extractErrorMessage } from '@/lib/utils';
+import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
+import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
 import { MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
 
 // Rescheduling applies immediately once a date, time, and reason are given — there is
@@ -27,6 +29,9 @@ export function RescheduleAppointment({
   const [date, setDate] = useState('');
   const [slotCode, setSlotCode] = useState('');
   const [reason, setReason] = useState('');
+  // The customer's other appointment at the chosen time; shown until the date or time changes.
+  const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
+  const visibleConflict = conflictForSelection(scheduleConflict, date, slotCode);
   const rescheduleMutation = useRequestReschedule();
   const { data: slotsData, isLoading: slotsLoading, isError: slotsIsError, error: slotsError } = useAvailableSlots(date, type);
 
@@ -56,6 +61,7 @@ export function RescheduleAppointment({
       setReason('');
       onRescheduled?.();
     } catch (err) {
+      setScheduleConflict(getCustomerScheduleConflict(err));
       toast.error(extractErrorMessage(err, 'Failed to reschedule'));
     }
   };
@@ -105,6 +111,7 @@ export function RescheduleAppointment({
           )}
         </div>
       )}
+      {visibleConflict && <ScheduleConflictAlert conflict={visibleConflict} />}
       <div className="space-y-1.5">
         <Label htmlFor="reschedule-reason">Reason</Label>
         <Textarea
