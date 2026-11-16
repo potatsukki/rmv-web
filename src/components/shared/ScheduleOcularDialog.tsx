@@ -13,6 +13,8 @@ import { useScheduleProjectOcular } from '@/hooks/useProjects';
 import { fetchSalesStaffLookup } from '@/hooks/useUsers';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { cn, extractErrorMessage } from '@/lib/utils';
+import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
+import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
 import { MIN_BOOKING_LEAD_DAYS, OCULAR_MIN_DAYS_AFTER_CONSULTATION } from '@/lib/constants';
 
 const LazyLocationPicker = lazy(() =>
@@ -101,6 +103,9 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
   const [fee, setFee] = useState<OcularFeePreview | null>(null);
   const [feeLoading, setFeeLoading] = useState(false);
   const [feeError, setFeeError] = useState<string | null>(null);
+  // The customer's own appointment at the chosen time; shown until the date or time changes.
+  const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
+  const visibleConflict = conflictForSelection(scheduleConflict, date, slotCode);
   // A time is offered when any sales staff member is free; the list below shows who.
   const slots = useAvailableSlots(open ? date : '', 'ocular');
   const staff = useQuery({
@@ -187,6 +192,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
       toast.success('Ocular visit scheduled.');
       onOpenChange(false);
     } catch (error) {
+      setScheduleConflict(getCustomerScheduleConflict(error));
       toast.error(extractErrorMessage(error, 'Failed to schedule the ocular visit.'));
     }
   }
@@ -235,6 +241,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
               <p className="text-xs text-destructive">No sales staff is free for an ocular visit on this date. An ocular visit takes a sales staff member&apos;s whole day, so choose another date.</p>
             )}
           </div>
+          {visibleConflict && <ScheduleConflictAlert conflict={visibleConflict} className="sm:col-span-2" />}
 
           <div className="space-y-2 sm:col-span-2">
             <div>

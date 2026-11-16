@@ -17,6 +17,8 @@ import {
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
+import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
+import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -94,6 +96,9 @@ export function AgentBookAppointmentPage() {
   const { data: slotsData, isLoading: slotsLoading, isError: slotsIsError, error: slotsError } = useAvailableSlots(selectedDate, selectedType);
 
   const createMutation = useAgentCreateAppointment();
+  // The customer's own appointment at the chosen time; shown until the date or time changes.
+  const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
+  const visibleConflict = conflictForSelection(scheduleConflict, selectedDate, selectedSlot);
 
   useEffect(() => {
     if (canCreateOfficeForCustomer) return;
@@ -126,6 +131,7 @@ export function AgentBookAppointmentPage() {
 
       navigate('/appointments');
     } catch (error: unknown) {
+      setScheduleConflict(getCustomerScheduleConflict(error));
       toast.error(extractErrorMessage(error, 'Failed to create appointment'));
     }
   };
@@ -208,6 +214,7 @@ export function AgentBookAppointmentPage() {
                 onClick={() => {
                   setSelectedCustomer(null);
                   setSearchTerm('');
+                  setScheduleConflict(null);
                 }}
                 className="rounded-lg text-[#86868b] hover:text-[#6e6e73] dark:text-slate-500 dark:hover:bg-white/[0.06] dark:hover:text-slate-300"
               >
@@ -408,6 +415,7 @@ export function AgentBookAppointmentPage() {
               {errors.slotCode && (
                 <p className="mt-2 text-sm text-red-500">{errors.slotCode.message}</p>
               )}
+              {visibleConflict && <ScheduleConflictAlert conflict={visibleConflict} className="mt-3" />}
             </CardContent>
           </Card>
 

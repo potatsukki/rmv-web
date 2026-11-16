@@ -8,6 +8,8 @@ import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Loader2, Calendar, Fi
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
+import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
+import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
 import { buildAppointmentPurpose } from '@/lib/booking-intent';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
@@ -255,6 +257,9 @@ export function BookAppointmentPage() {
   ];
 
   const [currentStep, setCurrentStep] = useState(0);
+  // The customer's other appointment at the chosen time; shown until the date or time changes.
+  const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
+  const visibleConflict = conflictForSelection(scheduleConflict, selectedDate, selectedSlot);
   const activeAppointment = useMemo(() => {
     return activeAppointmentsQuery.data?.items.find((appointment) => [
       'requested',
@@ -358,6 +363,12 @@ export function BookAppointmentPage() {
         return;
       }
 
+      // Another appointment of theirs is at this time: back to Date & Time, where the reason is shown.
+      const conflict = getCustomerScheduleConflict(error);
+      if (conflict) {
+        setScheduleConflict(conflict);
+        setCurrentStep(steps.findIndex((step) => step.key === 'date'));
+      }
       toast.error(extractErrorMessage(error, 'Booking failed'));
     }
   };
@@ -754,6 +765,7 @@ export function BookAppointmentPage() {
                   </div>
                 )}
                 {errors.slotCode && <p className="mt-2 text-sm text-red-500">{errors.slotCode.message}</p>}
+                {visibleConflict && <ScheduleConflictAlert conflict={visibleConflict} className="mt-3" />}
               </CardContent>
             </Card>
           </>
