@@ -34,7 +34,10 @@ import { PhotoUploadGrid } from '@/components/shared/PhotoUploadGrid';
 import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DesignFeePanel } from '@/components/shared/DesignFeePanel';
 import { ProjectOcularSteps } from '@/components/shared/ProjectOcularSteps';
-import { FabricationStaffPicker, FabricationWorkloadWarning, workloadWarnings } from '@/components/shared/FabricationStaffPicker';
+import {
+  FabricationStaffPicker, FabricationWorkloadWarning, deliveryConflict, teamConflict, workloadWarnings,
+} from '@/components/shared/FabricationStaffPicker';
+import { deliveryDateError, describeDeliverySchedule, formatDeliveryDay, manilaToday } from '@/lib/delivery-schedule';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -671,6 +674,7 @@ export function ProjectDetailPage() {
   // ── Delivery / installation crew form state ──
   const [showCrewForm, setShowCrewForm] = useState(false);
   const [crewIds, setCrewIds] = useState<string[]>([]);
+  const [crewDate, setCrewDate] = useState('');
   const [designReviewNotes, setDesignReviewNotes] = useState('');
   const [projectReviewRating, setProjectReviewRating] = useState('5');
   const [projectReviewComment, setProjectReviewComment] = useState('');
@@ -1195,9 +1199,15 @@ export function ProjectDetailPage() {
       toast.error('Select at least one crew member');
       return;
     }
+    // An unchanged date may already be in the past; only a new date is checked here.
+    const dateError = crewDate === project?.deliverySchedule?.date ? null : deliveryDateError(crewDate);
+    if (dateError) {
+      toast.error(dateError);
+      return;
+    }
     try {
-      await assignDeliveryCrew.mutateAsync({ id: id!, deliveryCrewIds: crewIds });
-      toast.success('Delivery / installation crew assigned.');
+      await assignDeliveryCrew.mutateAsync({ id: id!, deliveryCrewIds: crewIds, deliveryDate: crewDate });
+      toast.success(`Delivery / installation crew assigned for ${formatDeliveryDay(crewDate)}.`);
       setShowCrewForm(false);
       refetch();
     } catch (err) {
@@ -3132,7 +3142,7 @@ export function ProjectDetailPage() {
                 </p>
 
                 <p className="text-xs text-[#6e6e73] dark:text-slate-400">
-                  Each fabricator shows whether they are available and the projects they are already on. Busy fabricators can still be assigned.
+                  Each fabricator shows whether they are available and the projects they are already on. A fabricator can work on one active project at a time, so anyone already leading or assisting another active project can't be picked.
                 </p>
 
                 <div>
@@ -3149,6 +3159,7 @@ export function ProjectDetailPage() {
                       setFabAssistantIds((prev) => prev.filter((assistantId) => assistantId !== staffId));
                     }}
                     currentProjectId={project._id}
+                    getBlockedReason={(member) => teamConflict(member, project._id)}
                   />
                 </div>
 
@@ -3164,6 +3175,7 @@ export function ProjectDetailPage() {
                     onToggle={toggleAssistant}
                     excludeIds={fabLeadId ? [fabLeadId] : []}
                     currentProjectId={project._id}
+                    getBlockedReason={(member) => teamConflict(member, project._id)}
                     emptyText="No other fabrication staff available"
                   />
                   {fabAssistantIds.length > 0 && (
@@ -3210,8 +3222,13 @@ export function ProjectDetailPage() {
                     <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
                       {deliveryCrewNames.length > 0
                         ? deliveryCrewNames.join(', ')
-                        : 'No crew assigned yet. Choose who goes with the delivery or on-site installation. Required before Installation / Ready for Delivery.'}
+                        : 'No crew assigned yet. Choose who goes with the delivery or on-site installation and the date. Required before Installation / Ready for Delivery.'}
                     </p>
+                    {project.deliverySchedule?.date && (
+                      <p className="mt-1 text-xs font-medium text-[#1d1d1f] dark:text-slate-200">
+                        Delivery / installation: {describeDeliverySchedule(project.deliverySchedule)}
+                      </p>
+                    )}
                   </div>
                   {canAssignDeliveryCrew && !showCrewForm && (
                     <Button
@@ -3220,6 +3237,7 @@ export function ProjectDetailPage() {
                       className="w-full shrink-0 sm:w-auto"
                       onClick={() => {
                         setCrewIds(deliveryCrew.map((member) => member._id));
+                        setCrewDate(project.deliverySchedule?.date || '');
                         setShowCrewForm(true);
                       }}
                     >
@@ -3231,6 +3249,22 @@ export function ProjectDetailPage() {
 
                 {canAssignDeliveryCrew && showCrewForm && (
                   <>
+                    <div className="space-y-1">
+                      <label htmlFor="delivery-date" className="block text-xs font-medium text-[#6e6e73] dark:text-slate-400">
+                        Delivery / Installation date *
+                      </label>
+                      <input
+                        id="delivery-date"
+                        type="date"
+                        min={manilaToday()}
+                        value={crewDate}
+                        onChange={(event) => setCrewDate(event.target.value)}
+                        className="h-10 w-full max-w-xs rounded-lg border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                      />
+                      <p className="text-[11px] text-[#6e6e73] dark:text-slate-400">
+                        Monday to Saturday. A delivery takes the crew's whole day because of travel, so crew already out on this date can't be picked. The customer is asked to confirm the date.
+                      </p>
+                    </div>
                     <FabricationStaffPicker
                       ariaLabel="Delivery and installation crew"
                       mode="multi"
@@ -3240,13 +3274,14 @@ export function ProjectDetailPage() {
                       selectedIds={crewIds}
                       onToggle={toggleCrewMember}
                       currentProjectId={project._id}
+                      getBlockedReason={(member) => deliveryConflict(member, crewDate, project._id)}
                     />
                     <FabricationWorkloadWarning warnings={workloadWarnings(fabWorkload.data, crewIds, project._id)} />
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         onClick={handleAssignDeliveryCrew}
-                        disabled={assignDeliveryCrew.isPending || crewIds.length === 0}
+                        disabled={assignDeliveryCrew.isPending || crewIds.length === 0 || !crewDate}
                       >
                         {assignDeliveryCrew.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
                         Save Crew

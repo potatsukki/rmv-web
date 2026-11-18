@@ -70,7 +70,7 @@ interface FabricationStatusResponse {
   latestUpdate: FabricationApiUpdate | null;
   allowedTransitions: string[];
   /** Installation / Ready for Delivery stay locked until a delivery / installation crew is assigned. */
-  crewGate?: { hasCrew: boolean; gatedStatuses: string[] };
+  crewGate?: { hasCrew: boolean; hasDeliveryDate?: boolean; gatedStatuses: string[] };
   paymentGate?: {
     allPaid: boolean;
     unpaidCount: number;

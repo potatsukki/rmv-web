@@ -52,6 +52,7 @@ import {
 } from '@/hooks/useFabrication';
 import { useConfirmInstallation, useProject } from '@/hooks/useProjects';
 import { getProjectDisplaySiteAddress } from '@/lib/project-display';
+import { describeDeliverySchedule, formatDeliveryDay } from '@/lib/delivery-schedule';
 import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { connectSocket } from '@/lib/socket';
@@ -362,7 +363,10 @@ export function FabricationTab({
   const terminalStatus = FabricationStatus.DONE;
   const confirmationGateStatus = fabricationStatus?.confirmationGateStatus;
   const crewGate = fabricationStatus?.crewGate;
-  const isCrewBlockedStatus = (value: string) => Boolean(crewGate && !crewGate.hasCrew && crewGate.gatedStatuses.includes(value));
+  const crewReady = Boolean(crewGate?.hasCrew && crewGate.hasDeliveryDate !== false);
+  const isCrewBlockedStatus = (value: string) => Boolean(crewGate && !crewReady && crewGate.gatedStatuses.includes(value));
+  const deliveryDay = project?.deliverySchedule?.date;
+  const awaitingDeliveryDate = deliveryType === DeliveryType.ON_SITE_INSTALLATION && !deliveryDay;
   const installationConfirmed = Boolean(
     selectedItem?.installationConfirmedAt
       || (!selectedFabricationItemId && installationConfirmedAt),
@@ -719,14 +723,16 @@ export function FabricationTab({
               </p>
               <p className="mt-0.5 text-xs text-blue-700 dark:text-blue-300">
                 {deliveryType === DeliveryType.ON_SITE_INSTALLATION
-                  ? 'Please confirm your installation schedule.'
-                  : 'Please confirm that the work is finished and ready for delivery.'}
+                  ? (deliveryDay
+                    ? `Installation is scheduled on ${describeDeliverySchedule(project?.deliverySchedule)}. Please confirm this schedule.`
+                    : 'RMV will set your installation date. You can confirm once it is scheduled.')
+                  : `Please confirm that the work is finished and ready for delivery.${deliveryDay ? ` Delivery is scheduled on ${formatDeliveryDay(deliveryDay)}.` : ''}`}
               </p>
             </div>
             <Button
               size="sm"
               className="bg-[linear-gradient(180deg,#c49a62_0%,#a07d4a_100%)] hover:bg-[linear-gradient(180deg,#d4aa72_0%,#b08d5a_100%)] text-white rounded-xl shrink-0 shadow-[0_2px_8px_rgba(196,154,98,0.3)]"
-              disabled={confirmInstallationMutation.isPending}
+              disabled={confirmInstallationMutation.isPending || awaitingDeliveryDate}
               onClick={handleConfirmInstallation}
             >
               {confirmInstallationMutation.isPending ? 'Confirming...' : `Confirm ${confirmationAction}`}
@@ -857,11 +863,11 @@ export function FabricationTab({
                         </p>
                       </div>
                     )}
-                    {crewGate && !crewGate.hasCrew && selectableStatuses.some((value) => crewGate.gatedStatuses.includes(value)) && (
+                    {crewGate && !crewReady && selectableStatuses.some((value) => crewGate.gatedStatuses.includes(value)) && (
                       <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-500/35 dark:bg-amber-500/10">
                         <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                         <p className="text-xs text-amber-700 dark:text-amber-300">
-                          Installation / Ready for Delivery needs a Delivery / Installation Crew. Ask the engineer or admin to assign the crew on the Fabrication tab.
+                          Installation / Ready for Delivery needs a Delivery / Installation Crew and date. Ask the engineer or admin to assign them on the Fabrication tab.
                         </p>
                       </div>
                     )}

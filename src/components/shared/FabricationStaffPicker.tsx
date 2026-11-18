@@ -1,4 +1,4 @@
-import { AlertTriangle, Check, Loader2 } from 'lucide-react';
+import { AlertTriangle, Check, Loader2, Lock } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import type { FabricationStaffWorkload, FabricationWorkloadStatus } from '@/lib/types';
@@ -35,6 +35,25 @@ export function effectiveWorkload(member: FabricationStaffWorkload, currentProje
   return { status, projects };
 }
 
+/**
+ * Lead / assistant on another active project. A fabricator works on one active project at a time,
+ * so the team picker blocks them. Being on another delivery crew does not count.
+ */
+export function teamConflict(member: FabricationStaffWorkload, currentProjectId?: string): string | null {
+  const project = member.activeProjects.find((item) => item._id !== currentProjectId
+    && item.roles.some((role) => role === 'lead' || role === 'assistant'));
+  if (!project) return null;
+  const role = project.roles.includes('lead') ? 'Lead' : 'Assistant';
+  return `Already on ${project.projectNumber || project.title} (${role})`;
+}
+
+/** Already out on another project's delivery / installation that day (a delivery takes the whole day). */
+export function deliveryConflict(member: FabricationStaffWorkload, date: string, currentProjectId?: string): string | null {
+  if (!date) return null;
+  const other = (member.deliveryDates || []).find((item) => item.date === date && item.projectId !== currentProjectId);
+  return other ? `Delivery that day (${other.projectNumber || 'another project'})` : null;
+}
+
 /** One line per selected person who is not simply available. Assigning them is still allowed. */
 export function workloadWarnings(
   staff: FabricationStaffWorkload[] | undefined,
@@ -67,9 +86,11 @@ interface FabricationStaffPickerProps {
   currentProjectId?: string;
   emptyText?: string;
   className?: string;
+  /** A reason makes the row unselectable (e.g. already on another project). Selected rows stay removable. */
+  getBlockedReason?: (member: FabricationStaffWorkload) => string | null;
 }
 
-/** Fabrication staff with Available / Busy and their active projects; busy people stay selectable. */
+/** Fabrication staff with Available / Busy and their active projects. Blocked people can't be picked. */
 export function FabricationStaffPicker({
   staff,
   isLoading,
@@ -82,6 +103,7 @@ export function FabricationStaffPicker({
   currentProjectId,
   emptyText = 'No fabrication staff found.',
   className,
+  getBlockedReason,
 }: FabricationStaffPickerProps) {
   if (isLoading) {
     return (
@@ -112,6 +134,9 @@ export function FabricationStaffPicker({
       {members.map((member) => {
         const { status, projects } = effectiveWorkload(member, currentProjectId);
         const selected = selectedIds.includes(member._id);
+        const blockedReason = getBlockedReason?.(member) ?? null;
+        // A blocked person who is already selected can still be unselected.
+        const disabled = Boolean(blockedReason) && !selected;
         const body = (
           <>
             {onToggle && (
@@ -138,6 +163,12 @@ export function FabricationStaffPicker({
                     .join(' · ')}
                 {member.availabilityNote && status !== 'available' && status !== 'busy' ? ` · ${member.availabilityNote}` : ''}
               </span>
+              {blockedReason && (
+                <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                  <Lock className="h-3 w-3" aria-hidden="true" />
+                  {blockedReason}
+                </span>
+              )}
             </span>
             <span className={cn('shrink-0 rounded-full border px-2 py-0.5 text-[11px] font-semibold', STATUS_CLASS[status])}>
               {STATUS_LABEL[status]}
@@ -152,10 +183,13 @@ export function FabricationStaffPicker({
             type="button"
             role={mode === 'single' ? 'radio' : 'checkbox'}
             aria-checked={selected}
+            aria-disabled={disabled}
+            disabled={disabled}
             onClick={() => onToggle(member._id)}
             className={cn(
               'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[#f5f5f7] dark:hover:bg-slate-800',
               selected && 'bg-violet-50 dark:bg-violet-950/40',
+              disabled && 'cursor-not-allowed opacity-60 hover:bg-transparent dark:hover:bg-transparent',
             )}
           >
             {body}
