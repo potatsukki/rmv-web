@@ -102,7 +102,16 @@ export interface FabricationStaffWorkload {
     title: string;
     status: string;
     roles: Array<'lead' | 'assistant' | 'delivery_crew'>;
+    currentStage?: string | null;
+    stageIndex?: number;
+    stageCount?: number;
+    progressPercent?: number;
+    estimatedCompletionDate?: string | null;
   }>;
+  /** When their lead / assistant projects are expected to finish (null if unknown or none). */
+  freeAt?: string | null;
+  lowestProgressPercent?: number;
+  hasTeamProject?: boolean;
   /** Upcoming delivery / installation days (YYYY-MM-DD) this person is on the crew for. */
   deliveryDates?: Array<{ projectId: string; projectNumber?: string; date: string }>;
 }

@@ -47,6 +47,39 @@ export function teamConflict(member: FabricationStaffWorkload, currentProjectId?
   return `Already on ${project.projectNumber || project.title} (${role})`;
 }
 
+type WorkloadProject = FabricationStaffWorkload['activeProjects'][number];
+
+const shortDate = (value: string) => new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric' }).format(new Date(value));
+const stageLabel = (stage: string) => stage.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
+
+/** e.g. "PRJ-2026-00051 (Lead) · Quality Check 6/8 · finishes ~Nov 22". */
+export function projectProgressLabel(project: WorkloadProject) {
+  const roles = project.roles.map((role) => ROLE_LABEL[role]).join(', ');
+  const parts = [`${project.projectNumber || project.title} (${roles})`];
+  if (project.status === 'payment_pending') parts.push('waiting for payment');
+  else if (project.currentStage && project.stageCount) parts.push(`${stageLabel(project.currentStage)} ${project.stageIndex}/${project.stageCount}`);
+  if (project.estimatedCompletionDate) parts.push(`finishes ~${shortDate(project.estimatedCompletionDate)}`);
+  return parts.join(' · ');
+}
+
+/**
+ * Who to suggest for the team: the first person free for workshop work ("Recommended"), or, when
+ * everyone is busy, the one who finishes soonest ("Finishes soonest"). The server already sorts the
+ * staff that way, so this picks the first eligible row.
+ */
+export function fabricatorRecommendation(
+  staff: FabricationStaffWorkload[] | undefined,
+  currentProjectId?: string,
+  excludeIds: string[] = [],
+): { id: string; label: string } | null {
+  const candidates = (staff || []).filter((member) => !excludeIds.includes(member._id)
+    && member.workloadStatus !== 'on_leave' && member.workloadStatus !== 'unavailable');
+  const free = candidates.find((member) => !teamConflict(member, currentProjectId));
+  if (free) return { id: free._id, label: 'Recommended' };
+  const soonest = candidates[0];
+  return soonest ? { id: soonest._id, label: 'Finishes soonest' } : null;
+}
+
 /** Already out on another project's delivery / installation that day (a delivery takes the whole day). */
 export function deliveryConflict(member: FabricationStaffWorkload, date: string, currentProjectId?: string): string | null {
   if (!date) return null;
@@ -88,6 +121,8 @@ interface FabricationStaffPickerProps {
   className?: string;
   /** A reason makes the row unselectable (e.g. already on another project). Selected rows stay removable. */
   getBlockedReason?: (member: FabricationStaffWorkload) => string | null;
+  /** Badge on one suggested person (see fabricatorRecommendation). */
+  recommendation?: { id: string; label: string } | null;
 }
 
 /** Fabrication staff with Available / Busy and their active projects. Blocked people can't be picked. */
@@ -104,6 +139,7 @@ export function FabricationStaffPicker({
   emptyText = 'No fabrication staff found.',
   className,
   getBlockedReason,
+  recommendation,
 }: FabricationStaffPickerProps) {
   if (isLoading) {
     return (
@@ -152,15 +188,18 @@ export function FabricationStaffPicker({
               </span>
             )}
             <span className="min-w-0 flex-1">
-              <span className="block truncate text-sm font-medium text-[#1d1d1f] dark:text-slate-100">
-                {member.firstName} {member.lastName}
+              <span className="flex items-center gap-2 text-sm font-medium text-[#1d1d1f] dark:text-slate-100">
+                <span className="truncate">{member.firstName} {member.lastName}</span>
+                {recommendation?.id === member._id && (
+                  <span className="shrink-0 rounded-full border border-sky-300 bg-sky-50 px-1.5 py-0.5 text-[10px] font-semibold text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200">
+                    {recommendation.label}
+                  </span>
+                )}
               </span>
               <span className="block text-xs text-[#6e6e73] dark:text-slate-400">
                 {projects.length === 0
                   ? 'No active projects'
-                  : projects
-                    .map((project) => `${project.projectNumber || project.title} (${project.roles.map((role) => ROLE_LABEL[role]).join(', ')})`)
-                    .join(' · ')}
+                  : projects.map(projectProgressLabel).join(' | ')}
                 {member.availabilityNote && status !== 'available' && status !== 'busy' ? ` · ${member.availabilityNote}` : ''}
               </span>
               {blockedReason && (

@@ -1,5 +1,6 @@
 import { Suspense, lazy, useState, useCallback, useMemo, useEffect, useRef } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router';
+import { isAxiosError } from 'axios';
 import { format } from 'date-fns';
 import {
   ArrowLeft, FileText, CreditCard, Hammer, Image, ScrollText,
@@ -35,7 +36,7 @@ import { ConfirmDialog } from '@/components/shared/ConfirmDialog';
 import { DesignFeePanel } from '@/components/shared/DesignFeePanel';
 import { ProjectOcularSteps } from '@/components/shared/ProjectOcularSteps';
 import {
-  FabricationStaffPicker, FabricationWorkloadWarning, deliveryConflict, teamConflict, workloadWarnings,
+  FabricationStaffPicker, FabricationWorkloadWarning, deliveryConflict, fabricatorRecommendation, teamConflict, workloadWarnings,
 } from '@/components/shared/FabricationStaffPicker';
 import { deliveryDateError, describeDeliverySchedule, formatDeliveryDay, manilaToday } from '@/lib/delivery-schedule';
 import {
@@ -68,7 +69,10 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { api } from '@/lib/api';
 import { ContractStatus, DELIVERY_TYPE_LABELS, DeliveryType, Role, StaffAvailabilityStatus, ProjectStatus, ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
-import { canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember } from '@/lib/project-access';
+import {
+  canManageFabricationUpdates, canViewFabricationUpdates, isAssignedEngineer as isProjectEngineerAssigned, isAssignedFabricationMember,
+  usesFabricationProjectScope,
+} from '@/lib/project-access';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications, visitReportHasMeasurements } from '@/lib/service-specifications';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { getItemScopedProjectValue, getProjectDisplaySiteAddress, getProjectSnapshotLabels } from '@/lib/project-display';
@@ -544,7 +548,7 @@ export function ProjectDetailPage() {
   };
 
   // ── Data queries ──
-  const { data: project, isLoading, isError, refetch } = useProject(id!);
+  const { data: project, error: projectError, isLoading, isError, refetch } = useProject(id!);
   const ocularAppointment = useAppointment(project?.ocularAppointmentId || '');
   // The consultation date sets the earliest ocular date while the project waits for its ocular visit.
   const consultationAppointment = useAppointment(
@@ -1265,6 +1269,9 @@ export function ProjectDetailPage() {
   };
 
   if (isLoading) return <PageLoader />;
+  if (usesFabricationProjectScope(user?.roles ?? []) && isAxiosError(projectError) && projectError.response?.status === 403) {
+    return <PageError message="You are not assigned to this project." />;
+  }
   if (isError || !project) return <PageError onRetry={refetch} />;
 
   const hasFabLead = project.fabricationLeadId && typeof project.fabricationLeadId !== 'string';
@@ -3142,7 +3149,7 @@ export function ProjectDetailPage() {
                 </p>
 
                 <p className="text-xs text-[#6e6e73] dark:text-slate-400">
-                  Each fabricator shows whether they are available and the projects they are already on. A fabricator can work on one active project at a time, so anyone already leading or assisting another active project can't be picked.
+                  Each fabricator shows whether they are available and the projects they are already on. A fabricator can work on one active project at a time, so anyone already leading or assisting another active project can't be picked. Recommended = free now; when everyone is busy, the list starts with whoever finishes their current project soonest.
                 </p>
 
                 <div>
@@ -3160,6 +3167,7 @@ export function ProjectDetailPage() {
                     }}
                     currentProjectId={project._id}
                     getBlockedReason={(member) => teamConflict(member, project._id)}
+                    recommendation={fabricatorRecommendation(fabWorkload.data, project._id)}
                   />
                 </div>
 
@@ -3176,6 +3184,7 @@ export function ProjectDetailPage() {
                     excludeIds={fabLeadId ? [fabLeadId] : []}
                     currentProjectId={project._id}
                     getBlockedReason={(member) => teamConflict(member, project._id)}
+                    recommendation={fabricatorRecommendation(fabWorkload.data, project._id, [fabLeadId, ...fabAssistantIds].filter(Boolean))}
                     emptyText="No other fabrication staff available"
                   />
                   {fabAssistantIds.length > 0 && (

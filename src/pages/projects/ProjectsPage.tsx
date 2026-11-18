@@ -23,6 +23,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, BlueprintStatus, Role, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { formatPersonName } from '@/lib/address';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { usesFabricationProjectScope } from '@/lib/project-access';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import {
   isProjectListingStage,
@@ -124,7 +125,8 @@ export function ProjectsPage() {
   });
   const [search, setSearch] = useState('');
   const { user } = useAuthStore();
-  const isCustomer = user?.roles?.some((r: string) => r === Role.CUSTOMER);
+  const isFabricator = usesFabricationProjectScope(user?.roles ?? []);
+  const isCustomer = !isFabricator && user?.roles.includes(Role.CUSTOMER);
   const isStaff = !isCustomer;
   const canCreateProject = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role as Role));
   const params: Record<string, string> = { limit: '100' };
@@ -202,7 +204,7 @@ export function ProjectsPage() {
 
       {/* Controls */}
       <CollectionToolbar
-        title={isCustomer ? 'Track your projects' : 'Find a project faster'}
+        title={isFabricator ? 'Assigned Projects' : isCustomer ? 'Track your projects' : 'Find a project faster'}
         description={isCustomer ? 'Review each project’s current stage, service details, and next action.' : 'Search by Project ID or service, then narrow the list by stage.'}
         searchPlaceholder="Search by Project ID or service"
         searchValue={search}
@@ -237,10 +239,10 @@ export function ProjectsPage() {
       ) : !projects.length ? (
         <EmptyState
           icon={<FolderOpen className="h-6 w-6" />}
-          title="No projects found"
+          title={isFabricator && !search && !statusFilter ? 'No assigned projects' : 'No projects found'}
           description={search || statusFilter
             ? 'Try adjusting your search terms or status filter.'
-            : 'New projects will appear here after they are created.'}
+            : isFabricator ? 'Your fabrication and delivery assignments will appear here.' : 'New projects will appear here after they are created.'}
           action={(search || statusFilter) ? (
             <Button
               variant="outline"
