@@ -87,6 +87,14 @@ export function FeeBreakdownCard({ summary, className }: { summary: ProjectFeeSu
             hint={summary.projectCost === null ? 'Shown after the engineer\'s quotation is approved.' : undefined}
             tone={summary.projectCost === null ? 'muted' : 'default'}
           />
+          {summary.deliveryFee && summary.deliveryFee.amount > 0 && (
+            <Row
+              label={summary.deliveryFee.label}
+              value={formatCurrency(summary.deliveryFee.amount)}
+              hint="Included in the project cost. Computed from the road distance and vehicle in the engineer's costing."
+              tone="muted"
+            />
+          )}
           {summary.installmentSurcharge > 0 && (
             <Row
               label="Installment Surcharge"

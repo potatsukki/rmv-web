@@ -361,6 +361,8 @@ export function FabricationTab({
   const fabricationStepMarkers = getFabricationStepMarkers(deliveryType);
   const terminalStatus = FabricationStatus.DONE;
   const confirmationGateStatus = fabricationStatus?.confirmationGateStatus;
+  const crewGate = fabricationStatus?.crewGate;
+  const isCrewBlockedStatus = (value: string) => Boolean(crewGate && !crewGate.hasCrew && crewGate.gatedStatuses.includes(value));
   const installationConfirmed = Boolean(
     selectedItem?.installationConfirmedAt
       || (!selectedFabricationItemId && installationConfirmedAt),
@@ -429,6 +431,10 @@ export function FabricationTab({
 
     if (status === confirmationGateStatus && !installationConfirmed) {
       toast.error('The customer must confirm the installation schedule before this stage can begin');
+      return;
+    }
+    if (isCrewBlockedStatus(status)) {
+      toast.error('Assign the delivery / installation crew before moving to this stage');
       return;
     }
 
@@ -810,7 +816,8 @@ export function FabricationTab({
                           const gate = fabricationStatus?.paymentGate?.stageGates?.[value];
                           const isPaymentBlocked = gate?.blocked === true;
                           const isConfirmationBlocked = value === confirmationGateStatus && !installationConfirmed;
-                          const isBlocked = isPaymentBlocked || isConfirmationBlocked;
+                          const isCrewBlocked = isCrewBlockedStatus(value);
+                          const isBlocked = isPaymentBlocked || isConfirmationBlocked || isCrewBlocked;
                           return (
                             <SelectItem key={value} value={value} disabled={isBlocked}>
                               <span className="flex items-center gap-2">
@@ -824,6 +831,11 @@ export function FabricationTab({
                                 {isConfirmationBlocked && (
                                   <span className="text-[11px] text-amber-600 font-normal">
                                     (awaiting customer)
+                                  </span>
+                                )}
+                                {isCrewBlocked && (
+                                  <span className="text-[11px] text-amber-600 font-normal">
+                                    (assign crew first)
                                   </span>
                                 )}
                               </span>
@@ -842,6 +854,14 @@ export function FabricationTab({
                           {fabricationStatus.paymentGate.stageGates[status]!.nextUnpaidLabel && (
                             <> Next: <span className="font-medium">{fabricationStatus.paymentGate.stageGates[status]!.nextUnpaidLabel}</span></>
                           )}
+                        </p>
+                      </div>
+                    )}
+                    {crewGate && !crewGate.hasCrew && selectableStatuses.some((value) => crewGate.gatedStatuses.includes(value)) && (
+                      <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-500/35 dark:bg-amber-500/10">
+                        <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
+                        <p className="text-xs text-amber-700 dark:text-amber-300">
+                          Installation / Ready for Delivery needs a Delivery / Installation Crew. Ask the engineer or admin to assign the crew on the Fabrication tab.
                         </p>
                       </div>
                     )}

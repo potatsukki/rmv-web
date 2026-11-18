@@ -60,6 +60,10 @@ const BLOCKED_CODE_MAP: Record<string, Omit<BlockedActionInfo, 'reason' | 'actio
     title: 'Installation confirmation required',
     actionLabel: 'View fabrication guidance',
   },
+  FABRICATION_CREW_REQUIRED: {
+    title: 'Delivery / installation crew required',
+    actionLabel: 'View fabrication guidance',
+  },
   INVALID_TRANSITION: {
     title: 'Action is not allowed in the current status',
     actionLabel: 'View workflow guidance',

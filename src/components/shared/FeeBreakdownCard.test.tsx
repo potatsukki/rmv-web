@@ -64,6 +64,18 @@ describe('FeeBreakdownCard', () => {
     expect(html).toContain('−₱590.00');
   });
 
+  it('shows the delivery fee as part of the project cost without changing the total', () => {
+    const html = text(renderToStaticMarkup(<FeeBreakdownCard summary={{
+      ...baseSummary,
+      deliveryFee: { amount: 2550, label: 'Delivery / Mobilization (25 km · Truck ×1 trip)' },
+    }} />));
+
+    expect(html).toMatch(/Delivery \/ Mobilization \(25 km · Truck ×1 trip\) Included in the project cost\..* ₱2,550\.00/);
+    expect(html).toContain('Included in the project cost');
+    expect(html).toContain('Total Amount Due ₱55,590.00');
+    expect(text(renderToStaticMarkup(<FeeBreakdownCard summary={baseSummary} />))).not.toContain('Delivery / Mobilization');
+  });
+
   it('shows the installment surcharge and paid revision fees', () => {
     const html = text(renderToStaticMarkup(<FeeBreakdownCard summary={{
       ...baseSummary,

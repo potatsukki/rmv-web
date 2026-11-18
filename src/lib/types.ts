@@ -739,6 +739,8 @@ export interface RevisionFee {
 export interface ProjectFeeSummary {
   projectId: string;
   projectCost: number | null;
+  /** Delivery / mobilization from the approved quotation; already included in projectCost. */
+  deliveryFee?: { amount: number; label: string } | null;
   installmentSurcharge: number;
   designFee: {
     amount: number;
