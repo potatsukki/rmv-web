@@ -33,6 +33,7 @@ import { ProjectStatus, Role } from '@/lib/constants';
 import type { Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { StatusBadge } from '@/components/shared/StatusBadge';
+import { usesFabricationProjectScope } from '@/lib/project-access';
 import { resolveProjectWorkflowStatus } from '@/lib/workflow-status';
 import { formatApiTimeAgo } from '@/lib/utils';
 import { getAuditDisplay, getAuditNavPath } from '@/lib/audit-actions';
@@ -234,8 +235,8 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       ];
     case Role.FABRICATION_STAFF:
       return [
-        activeProjects,
-        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Active jobs', detail: 'Projects currently assigned to the workshop and still under fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'fabrication' },
+        { ...activeProjects, path: '/projects?stage=active' },
+        { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Active jobs', detail: 'Your assigned projects currently in fabrication.', path: '/projects?stage=fabrication', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'fabrication' },
         { label: 'Completed Today', value: d?.completedToday ?? 0, icon: Activity, description: 'Finished', detail: 'Fabrication tasks or project stages marked complete today.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
       ];
     case Role.ADMIN:
@@ -294,8 +295,8 @@ function getRoleActions(role: Role): QuickAction[] {
       break;
     case Role.FABRICATION_STAFF:
       actions.push(
-        { label: 'Job Queue', path: '/projects', icon: Hammer, description: 'Active fabrication tasks', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
-        { label: 'Projects', path: '/projects', icon: FolderOpen, description: 'All assigned projects', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
+        { label: 'Job Queue', path: '/projects?stage=fabrication', icon: Hammer, description: 'Active fabrication tasks', color: 'from-[#1d1d1f] to-[#2d2d2f]' },
+        { label: 'Assigned Projects', path: '/projects', icon: FolderOpen, description: 'View your assignments', color: 'from-[#2d2d2f] to-[#1d1d1f]' },
         { label: 'Visit Reports', path: '/visit-reports', icon: FileText, description: 'Site inspection data', color: 'from-[#3a3a3e] to-[#2a2a2e]' },
       );
       break;
@@ -337,8 +338,9 @@ export function DashboardPage() {
   const activeProjects = projectsQuery.data?.items.filter(
     (project) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(project.status as ProjectStatus),
   );
-  // Customers keep the server count: it uses the same stage rule as the Projects "Active" filter.
-  const dashboardData = data && activeProjects && primaryRole !== Role.CUSTOMER
+  // Scoped dashboards use the server count for the full set of visible projects.
+  const useScopedProjectCount = primaryRole === Role.CUSTOMER || usesFabricationProjectScope(user?.roles ?? []);
+  const dashboardData = data && activeProjects && !useScopedProjectCount
     ? { ...data, activeProjects: activeProjects.length }
     : data;
   const kpis = getRoleKpis(

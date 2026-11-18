@@ -102,7 +102,26 @@ export interface FabricationStaffWorkload {
     title: string;
     status: string;
     roles: Array<'lead' | 'assistant' | 'delivery_crew'>;
+    currentStage?: string | null;
+    stageIndex?: number;
+    stageCount?: number;
+    progressPercent?: number;
+    estimatedCompletionDate?: string | null;
   }>;
+  /** When their lead / assistant projects are expected to finish (null if unknown or none). */
+  freeAt?: string | null;
+  lowestProgressPercent?: number;
+  hasTeamProject?: boolean;
+  /** Upcoming delivery / installation days (YYYY-MM-DD) this person is on the crew for. */
+  deliveryDates?: Array<{ projectId: string; projectNumber?: string; date: string }>;
+}
+
+/** Delivery / installation day set with the crew; it takes the crew's whole day. */
+export interface DeliverySchedule {
+  date: string; // YYYY-MM-DD Asia/Manila
+  scheduledAt?: string;
+  distanceKm?: number | null;
+  travelDurationMinutes?: number | null;
 }
 
 export interface SalesStaffLookupUser {
@@ -398,6 +417,7 @@ export interface Project {
   fabricationAssistantIds: (string | { _id: string; firstName: string; lastName: string })[];
   /** Fabrication staff who go with the delivery / on-site installation. */
   deliveryCrewIds?: (string | { _id: string; firstName: string; lastName: string })[];
+  deliverySchedule?: DeliverySchedule;
   visitReportId?: string | VisitReport;
   items?: ProjectItem[];
   mediaKeys: string[];

@@ -236,9 +236,10 @@ export function useFabricationStaffWorkload(enabled = true) {
 export function useAssignDeliveryCrew() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, deliveryCrewIds }: { id: string; deliveryCrewIds: string[] }) => {
+    mutationFn: async ({ id, deliveryCrewIds, deliveryDate }: { id: string; deliveryCrewIds: string[]; deliveryDate: string }) => {
       const { data } = await api.post<ApiResponse<Project>>(`/projects/${id}/assign-delivery-crew`, {
         deliveryCrewIds,
+        deliveryDate,
       });
       return data.data;
     },

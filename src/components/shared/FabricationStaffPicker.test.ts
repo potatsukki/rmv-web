@@ -1,5 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { effectiveWorkload, workloadWarnings } from './FabricationStaffPicker';
+import {
+  deliveryConflict, effectiveWorkload, fabricatorRecommendation, projectProgressLabel, teamConflict, workloadWarnings,
+} from './FabricationStaffPicker';
 import type { FabricationStaffWorkload } from '@/lib/types';
 
 function member(overrides: Partial<FabricationStaffWorkload>): FabricationStaffWorkload {
@@ -34,6 +36,59 @@ describe('effectiveWorkload', () => {
 
   it('keeps on leave even with no projects', () => {
     expect(effectiveWorkload(member({ workloadStatus: 'on_leave' })).status).toBe('on_leave');
+  });
+});
+
+describe('teamConflict (one active project per fabricator)', () => {
+  const crewOnly = { _id: 'project-c', projectNumber: 'PRJ-2026-00003', title: 'Fence', status: 'fabrication', roles: ['delivery_crew' as const] };
+
+  it('blocks a lead or assistant of another active project, naming it', () => {
+    expect(teamConflict(member({ activeProjects: [projectA] }), 'project-x')).toBe('Already on PRJ-2026-00001 (Lead)');
+    expect(teamConflict(member({ activeProjects: [projectB] }), 'project-x')).toBe('Already on PRJ-2026-00002 (Assistant)');
+  });
+
+  it('does not block for this project or for delivery crew duty elsewhere', () => {
+    expect(teamConflict(member({ activeProjects: [projectA] }), 'project-a')).toBeNull();
+    expect(teamConflict(member({ activeProjects: [crewOnly] }), 'project-x')).toBeNull();
+  });
+});
+
+describe('deliveryConflict (a delivery takes the whole day)', () => {
+  const withDelivery = member({ deliveryDates: [{ projectId: 'project-b', projectNumber: 'PRJ-2026-00002', date: '2026-11-25' }] });
+
+  it('blocks crew already out on another project that day', () => {
+    expect(deliveryConflict(withDelivery, '2026-11-25', 'project-x')).toBe('Delivery that day (PRJ-2026-00002)');
+  });
+
+  it('allows another day, this project, or no date yet', () => {
+    expect(deliveryConflict(withDelivery, '2026-11-26', 'project-x')).toBeNull();
+    expect(deliveryConflict(withDelivery, '2026-11-25', 'project-b')).toBeNull();
+    expect(deliveryConflict(withDelivery, '', 'project-x')).toBeNull();
+  });
+});
+
+describe('nearest to completion', () => {
+  const inProgress = {
+    ...projectA, currentStage: 'quality_check', stageIndex: 6, stageCount: 8, progressPercent: 75,
+    estimatedCompletionDate: '2026-11-22T09:00:00.000Z',
+  };
+
+  it('shows the stage and target finish of a busy fabricator', () => {
+    expect(projectProgressLabel(inProgress)).toBe('PRJ-2026-00001 (Lead) · Quality Check 6/8 · finishes ~Nov 22');
+    expect(projectProgressLabel(projectB)).toBe('PRJ-2026-00002 (Assistant) · waiting for payment');
+  });
+
+  it('recommends someone free now, otherwise the one who finishes soonest', () => {
+    const soonest = member({ _id: 'soonest', workloadStatus: 'busy', activeProjects: [inProgress] });
+    const later = member({ _id: 'later', workloadStatus: 'busy', activeProjects: [projectB] });
+    const free = member({ _id: 'free' });
+    const away = member({ _id: 'away', workloadStatus: 'on_leave' });
+
+    expect(fabricatorRecommendation([free, soonest, later], 'project-x')).toEqual({ id: 'free', label: 'Recommended' });
+    // The server lists busy staff by soonest finish, so the first busy one is suggested.
+    expect(fabricatorRecommendation([soonest, later, away], 'project-x')).toEqual({ id: 'soonest', label: 'Finishes soonest' });
+    expect(fabricatorRecommendation([free, soonest], 'project-x', ['free'])).toEqual({ id: 'soonest', label: 'Finishes soonest' });
+    expect(fabricatorRecommendation([away], 'project-x')).toBeNull();
   });
 });
 

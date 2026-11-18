@@ -6,6 +6,11 @@ function getUserId(value: string | { _id: string } | undefined): string | null {
   return typeof value === 'string' ? value : value._id;
 }
 
+export function usesFabricationProjectScope(roles: readonly Role[]) {
+  return roles.includes(Role.FABRICATION_STAFF)
+    && ![Role.ADMIN, Role.SALES_STAFF, Role.ENGINEER, Role.CASHIER].some((role) => roles.includes(role));
+}
+
 export function isAssignedEngineer(project: Project, userId?: string | null): boolean {
   if (!userId) return false;
 

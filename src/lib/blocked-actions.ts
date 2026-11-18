@@ -64,6 +64,14 @@ const BLOCKED_CODE_MAP: Record<string, Omit<BlockedActionInfo, 'reason' | 'actio
     title: 'Delivery / installation crew required',
     actionLabel: 'View fabrication guidance',
   },
+  FABRICATOR_ALREADY_ASSIGNED: {
+    title: 'Fabricator is on another active project',
+    actionLabel: 'View fabrication guidance',
+  },
+  DELIVERY_CREW_CONFLICT: {
+    title: 'Crew already has a delivery that day',
+    actionLabel: 'View fabrication guidance',
+  },
   INVALID_TRANSITION: {
     title: 'Action is not allowed in the current status',
     actionLabel: 'View workflow guidance',
