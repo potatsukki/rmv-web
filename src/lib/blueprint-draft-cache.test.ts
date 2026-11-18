@@ -39,8 +39,15 @@ describe('blueprint draft cache isolation', () => {
       costingFileMeta: null,
       quotMaterialCosts: [{ material: '', amount: '' }],
       quotWorkingDays: '',
+      quotDeliveryFee: null,
       ...defaults,
     });
+  });
+
+  it('keeps the delivery choices and drops a malformed entry', () => {
+    const fee = { enabled: true, haulingVehicle: 'truck', haulingTrips: '2', crewVehicle: '', crewDays: '', amount: '', overrideReason: '' };
+    expect(resolveBlueprintDraftCache(JSON.stringify({ quotDeliveryFee: fee }), defaults).quotDeliveryFee).toEqual(fee);
+    expect(resolveBlueprintDraftCache(JSON.stringify({ quotDeliveryFee: 'x' }), defaults).quotDeliveryFee).toBeNull();
   });
 
   it('keeps the working days the engineer typed', () => {

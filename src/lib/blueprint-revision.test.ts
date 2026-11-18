@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getBlueprintDraftChanges, getRevisionAllowance, getRevisionQuotation } from './blueprint-revision';
+import { getBlueprintDraftChanges, getRevisionAllowance, getRevisionQuotation, toDraftDeliveryFee } from './blueprint-revision';
 import type { Blueprint, BlueprintDraft } from './types';
 
 const file = (key: string) => ({ key, name: key, size: 1, type: 'application/pdf', uploadedAt: '2026-10-04' });
@@ -34,6 +34,33 @@ describe('blueprint revision draft changes', () => {
       total: '6000', validityDays: '45',
       lineItems: [{ label: 'Steel', quantity: 2, materials: '2500', labor: '500' }],
     });
+  });
+});
+
+describe('delivery fee in costing revisions', () => {
+  const fee = {
+    distanceKm: 25, haulingVehicle: 'truck', haulingTrips: 1, haulingTripCost: 2550, hauling: 2550,
+    crewVehicle: 'l300', crewDays: 3, crewTripCost: 1400, crew: 4200, computedAmount: 6750, amount: 6750,
+    ratesSnapshot: [],
+  };
+
+  it('keeps the vehicle choices and lets a computed amount follow the current rates', () => {
+    expect(toDraftDeliveryFee(fee)).toEqual({
+      enabled: true, haulingVehicle: 'truck', haulingTrips: '1', crewVehicle: 'l300', crewDays: '3', amount: '', overrideReason: '',
+    });
+  });
+
+  it('keeps an amount the engineer changed, with its reason', () => {
+    expect(toDraftDeliveryFee({ ...fee, amount: 5000, overrideReason: 'Shared trip' }))
+      .toMatchObject({ amount: '5000', overrideReason: 'Shared trip' });
+    expect(toDraftDeliveryFee({ ...fee, computedAmount: null, amount: 1800 })).toMatchObject({ amount: '1800' });
+  });
+
+  it('starts with delivery off when the revised quotation had none', () => {
+    const bp = { ...blueprint('costing'), quotation: { total: 6000 } };
+    expect(getRevisionQuotation(bp)?.deliveryFee).toMatchObject({ enabled: false });
+    expect(getRevisionQuotation({ ...bp, quotation: { total: 12750, deliveryFee: fee } })?.deliveryFee)
+      .toMatchObject({ enabled: true, haulingVehicle: 'truck' });
   });
 });
 

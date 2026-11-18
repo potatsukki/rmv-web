@@ -33,6 +33,7 @@ import {
 } from '@/hooks/useConfig';
 import type { MapPoint } from '@/lib/maps';
 import { GcashSettings } from '@/pages/payments/components/GcashSettings';
+import { DeliveryRatesSettings } from './DeliveryRatesSettings';
 
 export function SettingsPage() {
   const { data: configs, isLoading: configsLoading, error: configsError, refetch: refetchConfigs } = useConfigs();
@@ -574,6 +575,7 @@ export function SettingsPage() {
                   </CardContent>
                 </Card>
 
+                <DeliveryRatesSettings inputClasses={inputClasses} />
               </div>
             </div>
           </section>

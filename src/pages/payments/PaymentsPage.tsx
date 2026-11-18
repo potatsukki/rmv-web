@@ -58,6 +58,8 @@ import { isProjectListingStage, PROJECT_STAGE_LABELS } from '@/lib/project-stage
 import type { Project, ProjectPaymentDue } from '@/lib/types';
 import { getProjectDisplaySiteAddress } from '@/lib/project-display';
 import { summarizeProjectPaymentPlans } from '@/lib/project-payment-summary';
+import { describeDeliveryFee } from '@/lib/delivery-fee';
+import { useLatestBlueprint } from '@/hooks/useBlueprints';
 
 
 import { CashierQueuePage } from './CashierQueuePage';
@@ -386,6 +388,10 @@ export function PaymentsPage() {
   const selectedStatusBadge = plan?.stages?.length
     ? resolvePaymentWorkflowStatus([plan])
     : selectedProject ? resolveProjectWorkflowStatus({ project: selectedProject as unknown as Project }) : null;
+  // Delivery / mobilization is billed once per project, on the first item's quotation.
+  const deliveryBlueprintItemId = selectedProject?.items?.[0]?._id ? String(selectedProject.items[0]._id) : undefined;
+  const { data: deliveryBlueprint } = useLatestBlueprint(plan ? selectedProjectId : '', deliveryBlueprintItemId);
+  const planDeliveryFee = deliveryBlueprint?.quotation?.deliveryFee;
   const selectedProjectItemIds = useMemo(
     () => (selectedProject?.items || []).map((item) => String(item._id)),
     [selectedProject?.items],
@@ -1065,6 +1071,11 @@ export function PaymentsPage() {
                   </span>
                 )}
               </div>
+              {planDeliveryFee && planDeliveryFee.amount > 0 && (!plan.projectItemId || String(plan.projectItemId) === deliveryBlueprintItemId) && (
+                <p className="mt-1 text-xs text-[var(--text-metal-muted-color)] dark:text-slate-400">
+                  Includes {describeDeliveryFee(planDeliveryFee)}: {shouldHideAmount ? '***' : formatCurrency(planDeliveryFee.amount)}
+                </p>
+              )}
             </CardHeader>
 
             {/* Desktop table header */}
