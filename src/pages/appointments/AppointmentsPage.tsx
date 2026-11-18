@@ -33,7 +33,7 @@ const STATUS_FILTERS = [
   { label: 'All', value: '' },
   { label: 'Requested', value: 'requested' },
   { label: 'Assigned', value: 'assigned' },
-  { label: 'Confirmed', value: 'confirmed' },
+  { label: 'Appointed', value: 'confirmed' },
   { label: 'Completed', value: 'completed' },
 ];
 

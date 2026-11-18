@@ -129,7 +129,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
   });
 
-  it('labels office appointments Requested, Assigned, then Confirmed', () => {
+  it('labels office appointments Requested, Assigned, then Appointed', () => {
     const appointment = {
       status: AppointmentStatus.REQUESTED,
       type: 'office',
@@ -155,7 +155,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
       salesStaffId: 'sales-1',
     })).toMatchObject({
       key: 'appointment_confirmed',
-      label: 'Confirmed',
+      label: 'Appointed',
     });
   });
 
@@ -187,7 +187,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
   });
 
-  it('shows an unfinished visit as Confirmed even after its slot time has passed', () => {
+  it('shows an unfinished visit as Appointed even after its slot time has passed', () => {
     expect(resolveAppointmentWorkflowStatus({
       status: AppointmentStatus.IN_PROGRESS,
       type: 'ocular',
@@ -197,7 +197,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
       ocularFeePaid: true,
     })).toMatchObject({
       key: 'appointment_confirmed',
-      label: 'Confirmed',
+      label: 'Appointed',
       isTerminal: false,
     });
   });
@@ -206,12 +206,12 @@ describe('resolveAppointmentWorkflowStatus', () => {
     [AppointmentStatus.REQUESTED, undefined, 'Requested', undefined],
     [AppointmentStatus.REQUESTED, 'sales-1', 'Assigned', undefined],
     [AppointmentStatus.ASSIGNED, 'sales-1', 'Assigned', undefined],
-    [AppointmentStatus.CONFIRMED, 'sales-1', 'Confirmed', undefined],
-    [AppointmentStatus.PREPARING, 'sales-1', 'Confirmed', undefined],
-    [AppointmentStatus.ON_THE_WAY, 'sales-1', 'Confirmed', undefined],
-    [AppointmentStatus.ARRIVED_AT_SITE, 'sales-1', 'Confirmed', undefined],
-    [AppointmentStatus.IN_PROGRESS, 'sales-1', 'Confirmed', undefined],
-    [AppointmentStatus.RESCHEDULE_REQUESTED, 'sales-1', 'Confirmed', undefined],
+    [AppointmentStatus.CONFIRMED, 'sales-1', 'Appointed', undefined],
+    [AppointmentStatus.PREPARING, 'sales-1', 'Appointed', undefined],
+    [AppointmentStatus.ON_THE_WAY, 'sales-1', 'Appointed', undefined],
+    [AppointmentStatus.ARRIVED_AT_SITE, 'sales-1', 'Appointed', undefined],
+    [AppointmentStatus.IN_PROGRESS, 'sales-1', 'Appointed', undefined],
+    [AppointmentStatus.RESCHEDULE_REQUESTED, 'sales-1', 'Appointed', undefined],
     [AppointmentStatus.RESCHEDULE_REQUESTED, undefined, 'Requested', undefined],
     [AppointmentStatus.READY_FOR_OCULAR, 'sales-1', 'Completed', undefined],
     [AppointmentStatus.COMPLETED, 'sales-1', 'Completed', undefined],
@@ -221,7 +221,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     const result = resolveAppointmentWorkflowStatus({ status, salesStaffId });
     expect(result.label).toBe(label);
     expect(result.secondaryLabel).toBe(secondaryLabel);
-    expect(['Requested', 'Assigned', 'Confirmed', 'Completed']).toContain(result.label);
+    expect(['Requested', 'Assigned', 'Appointed', 'Completed']).toContain(result.label);
   });
 
   it('keeps a ready-for-ocular consultation in the upcoming list', () => {

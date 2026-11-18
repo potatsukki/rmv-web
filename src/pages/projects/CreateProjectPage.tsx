@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowLeft, FolderPlus, Loader2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
+import { ArrowLeft, ArrowRight, FolderPlus, Loader2, MapPin, Plus, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
@@ -267,6 +267,8 @@ export function CreateProjectPage() {
   const [initialDesignKeys, setInitialDesignKeys] = useState<string[]>([]);
   const [initialDesignNotes, setInitialDesignNotes] = useState('');
   const [contractFileKeys, setContractFileKeys] = useState<string[]>([]);
+  // The signed contract comes first; the project details open after Continue.
+  const [step, setStep] = useState<'contract' | 'details'>('contract');
   const [attachments, setAttachments] = useState({ photoKeys: [] as string[], videoKeys: [] as string[], sketchKeys: [] as string[], referenceImageKeys: [] as string[] });
   const [uploads, setUploads] = useState<Record<string, boolean>>({});
   const [isCheckingOcular, setIsCheckingOcular] = useState(false);
@@ -646,8 +648,8 @@ export function CreateProjectPage() {
       <div className="space-y-2">
         <h1 className="text-2xl font-bold text-foreground">{pendingProjectId ? 'Complete Project' : 'Create Project'}</h1>
         <p className="text-sm text-muted-foreground">{pendingProjectId
-          ? 'Enter the project details, then upload the signed contract.'
-          : 'Enter the project details and upload the signed contract. The project starts as For Ocular; schedule the ocular visit from the project page.'}</p>
+          ? 'Upload the signed contract first, then enter the project details.'
+          : 'Upload the signed contract first, then enter the project details. The project starts as For Ocular; schedule the ocular visit from the project page.'}</p>
       </div>
 
       <form
@@ -656,6 +658,39 @@ export function CreateProjectPage() {
         className="space-y-6"
       >
         <fieldset disabled={createProject.isPending || isCheckingOcular} className="min-w-0 space-y-6">
+          {/* Every project is created with its signed contract, so it is uploaded first. */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Signed Contract</CardTitle>
+              <CardDescription>Upload the contract the customer signed. It is required to create the project.</CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <FileUpload
+                folder="contracts"
+                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+                maxSizeMB={10}
+                maxFiles={1}
+                label="Upload Signed Contract"
+                existingKeys={contractFileKeys}
+                onUploadComplete={setContractFileKeys}
+                onUploadingChange={(active) => setUploads((current) => current.contract === active ? current : { ...current, contract: active })}
+              />
+            </CardContent>
+          </Card>
+
+          {step === 'contract' && (
+            <div className="flex flex-wrap justify-end gap-3">
+              <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
+              {contractFileKeys.length > 0 && !uploads.contract && (
+                <Button type="button" onClick={() => setStep('details')}>
+                  Continue<ArrowRight className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Kept mounted while hidden: the form reads some uncontrolled fields on submit. */}
+          <div hidden={step !== 'details'} className="space-y-6">
           {primaryReport?.visitType === 'ocular' && (
             <div className="flex items-start gap-3 rounded-xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 dark:border-emerald-500/40 dark:bg-emerald-500/10 dark:text-emerald-100">
               <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
@@ -863,29 +898,13 @@ export function CreateProjectPage() {
             </Card>
           )}
 
-          {/* Every project is created with its signed contract. */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Signed Contract</CardTitle>
-              <CardDescription>Upload the contract the customer signed. It is required to create the project.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <FileUpload
-                folder="contracts"
-                accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
-                maxSizeMB={10}
-                maxFiles={1}
-                label="Upload Signed Contract"
-                existingKeys={contractFileKeys}
-                onUploadComplete={setContractFileKeys}
-                onUploadingChange={(active) => setUploads((current) => current.contract === active ? current : { ...current, contract: active })}
-              />
-            </CardContent>
-          </Card>
-
-          <div className="flex flex-wrap justify-end gap-3">
-            <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
-            {submitButton}
+          {step === 'details' && (
+            <div className="flex flex-wrap justify-end gap-3">
+              <Button type="button" variant="ghost" onClick={() => setStep('contract')}><ArrowLeft className="h-4 w-4" />Back</Button>
+              <Button type="button" variant="outline" onClick={() => navigate('/projects')}>Cancel</Button>
+              {submitButton}
+            </div>
+          )}
           </div>
         </fieldset>
       </form>
