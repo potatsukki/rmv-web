@@ -142,8 +142,8 @@ export function resolveAppointmentStatusGroup(appointment: AppointmentWorkflowIn
 }
 
 /**
- * Every role sees four appointment statuses: Requested, Assigned, Confirmed, Completed.
- * Visit steps (preparing, on the way, in progress) show as Confirmed; cancelled and no-show
+ * Every role sees four appointment statuses: Requested, Assigned, Appointed, Completed.
+ * Visit steps (preparing, on the way, in progress) show as Appointed; cancelled and no-show
  * close as Completed with an outcome badge. Keep in sync with the server's status groups.
  */
 export function resolveAppointmentWorkflowStatus(
@@ -179,7 +179,7 @@ export function resolveAppointmentWorkflowStatus(
     CONFIRMED_APPOINTMENT_STATUSES.has(status)
     || (status === AppointmentStatus.RESCHEDULE_REQUESTED && hasSalesStaff)
   ) {
-    return { key: 'appointment_confirmed', label: 'Confirmed', tone: 'blue', stage: 'appointment', isTerminal: false };
+    return { key: 'appointment_confirmed', label: 'Appointed', tone: 'blue', stage: 'appointment', isTerminal: false };
   }
   if (status === AppointmentStatus.ASSIGNED || (status === AppointmentStatus.REQUESTED && hasSalesStaff)) {
     return { key: 'appointment_assigned', label: 'Assigned', tone: 'cyan', stage: 'appointment', isTerminal: false };

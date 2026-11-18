@@ -737,7 +737,7 @@ export function AppointmentDetailPage() {
                     ? 'A sales staff member has been assigned to your consultation. We will notify you once it is confirmed.'
                     : isAssignedSalesForReview
                       ? 'This appointment was assigned before automatic confirmation. Confirm it to add it to your schedule.'
-                      : 'The assigned sales staff needs to accept this appointment before it becomes Confirmed.'}
+                      : 'The assigned sales staff needs to accept this appointment before it becomes Appointed.'}
                 </p>
               </div>
             </div>
@@ -761,7 +761,7 @@ export function AppointmentDetailPage() {
             <Info className="h-5 w-5 text-blue-600 dark:text-blue-300 mt-0.5 shrink-0" />
             <div>
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                {isOcularAppointment ? 'Confirmed - Ready for Ocular Visit' : 'Confirmed - Office Consultation Scheduled'}
+                {isOcularAppointment ? 'Appointed - Ready for Ocular Visit' : 'Appointed - Office Consultation Scheduled'}
               </p>
               <p className="text-xs text-blue-700 dark:text-blue-200 mt-0.5">
                 {isCustomer

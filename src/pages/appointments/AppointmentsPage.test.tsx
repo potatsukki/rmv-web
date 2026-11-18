@@ -61,7 +61,7 @@ describe('AppointmentsPage consultation status', () => {
 
     const html = renderToStaticMarkup(<MemoryRouter><AppointmentsPage /></MemoryRouter>);
 
-    for (const label of ['All', 'Requested', 'Assigned', 'Confirmed', 'Completed']) {
+    for (const label of ['All', 'Requested', 'Assigned', 'Appointed', 'Completed']) {
       expect(html).toContain(`>${label}<`);
     }
     expect(html).not.toContain('>Cancelled<');

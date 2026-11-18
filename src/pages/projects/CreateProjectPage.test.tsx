@@ -142,5 +142,14 @@ it('asks for the signed contract when creating a For Ocular project, but not the
   expect(html).toContain('It is required to create the project.');
   expect(html).not.toContain('Ocular Visit Date');
   expect(html).not.toContain('Project Workflow');
-  expect(html).toMatch(/<button\b[^>]*type="submit"/);
+});
+
+it('shows the signed contract first and keeps the project details hidden until Continue', () => {
+  const html = renderPage('/projects/create?customerId=customer-1');
+  // Contract card comes before the rest of the form.
+  expect(html.indexOf('Signed Contract')).toBeLessThan(html.indexOf('Select Customer'));
+  expect(html).toMatch(/<div hidden=""[^>]*>/);
+  // No contract uploaded yet: no Continue and no Create Project submit button.
+  expect(html).not.toMatch(/<button\b[^>]*type="submit"/);
+  expect(html).not.toContain('Continue');
 });
