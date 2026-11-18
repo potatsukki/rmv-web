@@ -3210,7 +3210,7 @@ export function ProjectDetailPage() {
                     <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
                       {deliveryCrewNames.length > 0
                         ? deliveryCrewNames.join(', ')
-                        : 'No crew assigned yet. Choose who goes with the delivery or on-site installation.'}
+                        : 'No crew assigned yet. Choose who goes with the delivery or on-site installation. Required before Installation / Ready for Delivery.'}
                     </p>
                   </div>
                   {canAssignDeliveryCrew && !showCrewForm && (

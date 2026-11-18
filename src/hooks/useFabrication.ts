@@ -69,6 +69,8 @@ interface FabricationStatusResponse {
   currentStatus: string;
   latestUpdate: FabricationApiUpdate | null;
   allowedTransitions: string[];
+  /** Installation / Ready for Delivery stay locked until a delivery / installation crew is assigned. */
+  crewGate?: { hasCrew: boolean; gatedStatuses: string[] };
   paymentGate?: {
     allPaid: boolean;
     unpaidCount: number;
@@ -103,6 +105,7 @@ export function useFabricationStatus(projectId: string, enabled = true, projectI
           : null,
         allowedTransitions: data.data.allowedTransitions,
         paymentGate: data.data.paymentGate,
+        crewGate: data.data.crewGate,
       };
     },
     enabled: !!projectId && enabled,

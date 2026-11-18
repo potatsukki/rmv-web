@@ -245,6 +245,8 @@ export function useAssignDeliveryCrew() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
+      // The crew unlocks Installation / Ready for Delivery in the fabrication status.
+      qc.invalidateQueries({ queryKey: ['fabrication'] });
     },
   });
 }
