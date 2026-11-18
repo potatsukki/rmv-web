@@ -1270,7 +1270,6 @@ export function ProjectDetailPage() {
     && project.fabricationLeadId
     && [ProjectStatus.PAYMENT_PENDING, ProjectStatus.FABRICATION].includes(project.status as ProjectStatus),
   );
-  const canSeeFabricatorAvailability = Boolean(isAssignedEngineer || isAdmin);
   const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
   const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
   const headerTitle = activeProjectServiceLabel || projectServiceTitle;
@@ -3194,30 +3193,6 @@ export function ProjectDetailPage() {
                     Cancel
                   </Button>
                 </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Who is free, before a team is chosen (also while assignment is still locked). */}
-          {canSeeFabricatorAvailability && !hasFabLead && !showFabForm && (
-            <Card className="rounded-none border-x-0 sm:rounded-xl sm:border-x">
-              <CardContent className="space-y-3 p-4">
-                <div>
-                  <p className="flex items-center gap-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
-                    <Users className="h-4 w-4" />
-                    Fabricator Availability
-                  </p>
-                  <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
-                    Who is available and who is already on a project. Busy fabricators can still be assigned.
-                  </p>
-                </div>
-                <FabricationStaffPicker
-                  ariaLabel="Fabricator availability"
-                  staff={fabWorkload.data}
-                  isLoading={fabWorkload.isLoading}
-                  isError={fabWorkload.isError}
-                  currentProjectId={project._id}
-                />
               </CardContent>
             </Card>
           )}

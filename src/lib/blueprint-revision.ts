@@ -1,4 +1,31 @@
-import type { Blueprint, BlueprintDraft } from './types';
+import type { Blueprint, BlueprintDraft, DraftDeliveryFee, QuotationDeliveryFee } from './types';
+
+/** Empty strings mean "use the server defaults" (vehicle, trips, crew days, computed amount). */
+export const EMPTY_DRAFT_DELIVERY_FEE: DraftDeliveryFee = {
+  enabled: true,
+  haulingVehicle: '',
+  haulingTrips: '',
+  crewVehicle: '',
+  crewDays: '',
+  amount: '',
+  overrideReason: '',
+};
+
+/** Prefills a costing revision with the delivery choices of the quotation being revised. */
+export function toDraftDeliveryFee(fee?: QuotationDeliveryFee | null): DraftDeliveryFee {
+  if (!fee) return { ...EMPTY_DRAFT_DELIVERY_FEE };
+  const overridden = typeof fee.computedAmount !== 'number' || Boolean(fee.overrideReason);
+  return {
+    enabled: true,
+    haulingVehicle: fee.haulingVehicle || '',
+    haulingTrips: String(fee.haulingTrips ?? ''),
+    crewVehicle: fee.crewVehicle || '',
+    crewDays: String(fee.crewDays ?? ''),
+    // Keep a manual amount; a computed one is recomputed from the current rates.
+    amount: overridden ? String(fee.amount) : '',
+    overrideReason: fee.overrideReason || '',
+  };
+}
 
 export function getBlueprintDraftChanges(
   blueprint: Blueprint | null | undefined,
@@ -31,6 +58,10 @@ export function getRevisionQuotation(blueprint: Blueprint): BlueprintDraft['quot
     subtotal: String(quotation.subtotal ?? quotation.total),
     discount: String(quotation.discount ?? 0),
     fees: String(quotation.fees ?? 0),
+    deliveryFee: quotation.deliveryFee
+      ? toDraftDeliveryFee(quotation.deliveryFee)
+      // An older quotation without a delivery fee stays without one unless the engineer turns it on.
+      : { ...EMPTY_DRAFT_DELIVERY_FEE, enabled: false },
     validityDays: String(quotation.validityDays ?? 30),
     workingDays: quotation.workingDays ? String(quotation.workingDays) : '',
   };

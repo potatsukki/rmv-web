@@ -1,4 +1,4 @@
-import type { QuotationInternalCosts } from './types';
+import type { DraftDeliveryFee, QuotationInternalCosts } from './types';
 
 export type BlueprintDraftFileCache = {
   name: string;
@@ -23,6 +23,8 @@ export type BlueprintTabDraftCache = {
   quotSystemDuration: string;
   /** Engineer's working days, kept as typed (empty when not set). */
   quotWorkingDays: string;
+  /** Delivery / mobilization choices; null until the engineer or the saved draft sets them. */
+  quotDeliveryFee: DraftDeliveryFee | null;
 };
 
 type DraftCacheDefaults = Pick<
@@ -85,5 +87,9 @@ export function resolveBlueprintDraftCache(
       ? cached.quotSystemDuration
       : defaults.quotSystemDuration,
     quotWorkingDays: typeof cached.quotWorkingDays === 'string' ? cached.quotWorkingDays : '',
+    quotDeliveryFee: cached.quotDeliveryFee && typeof cached.quotDeliveryFee === 'object'
+      && typeof cached.quotDeliveryFee.enabled === 'boolean'
+      ? cached.quotDeliveryFee
+      : null,
   };
 }

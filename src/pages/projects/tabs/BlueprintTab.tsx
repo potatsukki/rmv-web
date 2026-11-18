@@ -53,8 +53,11 @@ import {
 } from '@/lib/blueprint-draft-cache';
 import { QUOTATION_COPY } from '@/lib/quotation-copy';
 import { submitLatestBlueprintDraft } from '@/lib/blueprint-draft-submission';
-import { DEFAULT_FREE_REVISIONS, getBlueprintDraftChanges, getRevisionAllowance, getRevisionQuotation } from '@/lib/blueprint-revision';
-import type { Blueprint, BlueprintDraft, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
+import {
+  DEFAULT_FREE_REVISIONS, EMPTY_DRAFT_DELIVERY_FEE, getBlueprintDraftChanges, getRevisionAllowance, getRevisionQuotation,
+} from '@/lib/blueprint-revision';
+import type { Blueprint, BlueprintDraft, DraftDeliveryFee, QuotationComplexity, QuotationInternalCosts } from '@/lib/types';
+import { DeliveryFeeSection, DeliveryFeeSummary } from './DeliveryFeeSection';
 import { resolveBlueprintWorkflowStatus } from '@/lib/workflow-status';
 
 interface BlueprintTabProps {
@@ -754,6 +757,9 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const [quotValidityDays, setQuotValidityDays] = useState('30');
   const [quotSystemDuration, setQuotSystemDuration] = useState('');
   const [quotWorkingDays, setQuotWorkingDays] = useState('');
+  const [quotDeliveryFee, setQuotDeliveryFee] = useState<DraftDeliveryFee>({ ...EMPTY_DRAFT_DELIVERY_FEE });
+  // Billed delivery amount reported by DeliveryFeeSection (the server recomputes it on send).
+  const [quotDeliveryAmount, setQuotDeliveryAmount] = useState(0);
   const [quotInitialized, setQuotInitialized] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
   const draftCacheKey = useMemo(
@@ -766,7 +772,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     () => quotMaterialCosts.reduce((sum, item) => sum + asMoney(item.amount), 0),
     [quotMaterialCosts],
   );
-  const quotGrandTotal = quotSubtotal;
+  const quotDeliveryBilled = quotDeliveryFee.enabled ? quotDeliveryAmount : 0;
+  const quotGrandTotal = quotSubtotal + quotDeliveryBilled;
   const quotEstimatedDuration = quotSystemDuration;
   const resolvedPreviewUrl = previewFile?.key?.startsWith('http') ? previewFile.key : previewFileUrl;
   const previewName = previewFile?.name || 'File';
@@ -789,6 +796,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     discount: '',
     subtotal: String(quotSubtotal || ''),
     total: String(quotGrandTotal || ''),
+    fees: String(quotDeliveryBilled || ''),
+    deliveryFee: quotDeliveryFee,
     validityDays: quotValidityDays,
     // The server turns working days into the duration text ("10 working days") when set.
     workingDays: quotWorkingDays.trim(),
@@ -801,6 +810,8 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     paymentMilestones: [],
   }), [
     costingServiceType,
+    quotDeliveryBilled,
+    quotDeliveryFee,
     quotEstimatedDuration,
     quotGrandTotal,
     quotMaterialCosts,
@@ -845,6 +856,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     setQuotValidityDays(cached.quotValidityDays);
     setQuotSystemDuration(cached.quotSystemDuration);
     setQuotWorkingDays(cached.quotWorkingDays);
+    setQuotDeliveryFee(cached.quotDeliveryFee ?? { ...EMPTY_DRAFT_DELIVERY_FEE });
     setPreviewFile(null);
     lastSavedQuotation.current = emptyQuotation;
     setQuotInitialized(false);
@@ -863,6 +875,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       quotValidityDays,
       quotSystemDuration,
       quotWorkingDays,
+      quotDeliveryFee,
     };
     sessionStorage.setItem(draftCacheKey, JSON.stringify(payload));
   }, [
@@ -871,6 +884,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
     designFileMeta,
     draftCacheKey,
     hydratedDraftCacheKey,
+    quotDeliveryFee,
     quotInternalCosts,
     quotMaterialCosts,
     quotSystemDuration,
@@ -926,6 +940,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
         setQuotValidityDays(nextQuotation.validityDays || '30');
         setQuotSystemDuration(nextQuotation.systemEstimatedDuration);
         setQuotWorkingDays(nextQuotation.workingDays);
+        setQuotDeliveryFee(savedQuotation.deliveryFee ?? { ...EMPTY_DRAFT_DELIVERY_FEE });
       }
       lastSavedQuotation.current = nextQuotation;
       setQuotInitialized(true);
@@ -1226,11 +1241,25 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
               + Add material
             </button>
             <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>
-              Total: {formatCurrency(quotGrandTotal)}
+              Materials & work: {formatCurrency(quotSubtotal)}
             </p>
           </div>
         </div>
       </section>
+      <DeliveryFeeSection
+        projectId={projectId}
+        projectItemId={projectItemId}
+        workingDays={quotWorkingDays}
+        value={quotDeliveryFee}
+        onChange={setQuotDeliveryFee}
+        onBilledAmountChange={setQuotDeliveryAmount}
+        disabled={uploading}
+        isDark={isDark}
+        inputCls={inputCls}
+      />
+      <p className={`text-right text-base font-bold ${isDark ? 'text-slate-50' : 'text-[#1d1d1f]'}`}>
+        Quotation total: {formatCurrency(quotGrandTotal)}
+      </p>
       <section className={`rounded-xl border p-4 ${isDark ? 'border-slate-700/70 bg-slate-950/45' : 'border-[#d2d2d7] bg-white/70'}`}>
         <label className="block max-w-xs">
           <span className={`mb-1 block text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Working days (work duration)</span>
@@ -1417,6 +1446,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       setQuotMaterialCosts([{ material: '', amount: '' }]);
       setQuotValidityDays('30');
       setQuotWorkingDays('');
+      setQuotDeliveryFee({ ...EMPTY_DRAFT_DELIVERY_FEE });
       setQuotInitialized(false);
       sessionStorage.removeItem(draftCacheKey);
       lastSavedQuotation.current = currentQuotation;
@@ -1587,6 +1617,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                               <p className={`mt-1 text-2xl font-bold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
                                 {formatCurrency(getPayableQuotationTotal(blueprint))}
                               </p>
+                              <DeliveryFeeSummary quotation={blueprint.quotation} isDark={isDark} />
                               {blueprint.quotation?.estimatedDuration && (
                                 <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>
                                   {QUOTATION_COPY.estimatedTimeLabel}: {blueprint.quotation.estimatedDuration}
@@ -2113,6 +2144,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                                 {item.blueprint?.quotation?.estimatedDuration && (
                                   <p className={`text-xs ${isDark ? 'text-slate-400' : 'text-[var(--text-metal-muted-color)]'}`}>{QUOTATION_COPY.estimatedTimeLabel}: {item.blueprint.quotation.estimatedDuration}</p>
                                 )}
+                                <DeliveryFeeSummary quotation={item.blueprint?.quotation} isDark={isDark} />
                               </div>
                               <p className={`shrink-0 text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-slate-800'}`}>{formatCurrency(getPayableQuotationTotal(item.blueprint))}</p>
                             </div>
@@ -2136,6 +2168,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
                         <p className={`mt-1 text-2xl font-bold ${isDark ? 'text-slate-50' : 'text-[var(--color-card-foreground)]'}`}>
                           {formatCurrency(getPayableQuotationTotal(bp))}
                         </p>
+                        <DeliveryFeeSummary quotation={bp.quotation} isDark={isDark} />
                         {bp.quotation?.estimatedDuration && (
                           <p className={`mt-1 text-sm ${isDark ? 'text-slate-300' : 'text-[var(--text-metal-color)]'}`}>{QUOTATION_COPY.estimatedTimeLabel}: {bp.quotation.estimatedDuration}</p>
                         )}

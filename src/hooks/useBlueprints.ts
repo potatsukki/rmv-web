@@ -5,6 +5,7 @@ import type {
   Blueprint,
   BlueprintDraft,
   BlueprintDraftFile,
+  DeliveryFeeEstimate,
 } from '@/lib/types';
 
 const KEYS = {
@@ -98,6 +99,36 @@ export function useBlueprintDraft(projectId: string, options?: { enabled?: boole
     gcTime: 1000 * 60 * 60,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
+  });
+}
+
+export interface DeliveryFeeEstimateParams {
+  projectItemId?: string;
+  haulingVehicle?: string;
+  haulingTrips?: string;
+  crewVehicle?: string;
+  crewDays?: string;
+  workingDays?: string;
+}
+
+/** Road km × vehicle rates, computed by the server for the costing form. */
+export function useDeliveryFeeEstimate(projectId: string, params: DeliveryFeeEstimateParams, options?: { enabled?: boolean }) {
+  const cleanParams = Object.fromEntries(
+    Object.entries(params).filter(([, value]) => value !== undefined && String(value).trim() !== ''),
+  );
+  return useQuery({
+    queryKey: [...KEYS.all, 'delivery-fee', projectId, cleanParams] as const,
+    queryFn: async () => {
+      const { data } = await api.get<ApiResponse<DeliveryFeeEstimate>>(
+        `/blueprints/project/${projectId}/delivery-fee-estimate`,
+        { params: cleanParams },
+      );
+      return data.data;
+    },
+    enabled: !!projectId && (options?.enabled ?? true),
+    staleTime: 1000 * 60 * 5,
+    placeholderData: (previous) => previous,
+    refetchOnWindowFocus: false,
   });
 }
 

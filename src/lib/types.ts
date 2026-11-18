@@ -507,6 +507,58 @@ export interface QuotationMilestone {
   trigger?: string;
 }
 
+export interface DeliveryVehicleRate {
+  key: string;
+  label: string;
+  baseFee: number;
+  baseCoveredKm: number;
+  perKmRate: number;
+}
+
+/** Server-computed delivery / mobilization fee; `amount` is billed as the quotation `fees`. */
+export interface QuotationDeliveryFee {
+  distanceKm?: number | null;
+  haulingVehicle?: string;
+  haulingTrips: number;
+  haulingTripCost: number;
+  hauling: number;
+  crewVehicle?: string;
+  crewDays: number;
+  crewTripCost: number;
+  crew: number;
+  computedAmount?: number | null;
+  amount: number;
+  overrideReason?: string;
+  ratesSnapshot: DeliveryVehicleRate[];
+  computedAt?: string;
+}
+
+export interface DraftDeliveryFee {
+  enabled: boolean;
+  haulingVehicle: string;
+  haulingTrips: string;
+  crewVehicle: string;
+  crewDays: string;
+  amount: string;
+  overrideReason: string;
+}
+
+export type DeliveryFeeEstimate =
+  | {
+    available: true;
+    siteAddress: string;
+    defaults: { haulingVehicle: string; haulingTrips: number; crewVehicle: string; crewDays: number };
+    breakdown: Omit<QuotationDeliveryFee, 'amount' | 'overrideReason' | 'computedAt'> & { computedAmount: number; distanceKm: number };
+    vehicles: DeliveryVehicleRate[];
+  }
+  | {
+    available: false;
+    reason: 'no_site_location' | 'route_unavailable' | 'charged_on_other_item';
+    message: string;
+    primaryItemTitle?: string;
+    vehicles: DeliveryVehicleRate[];
+  };
+
 export interface Blueprint {
   _id: string;
   projectId: string;
@@ -557,6 +609,7 @@ export interface Blueprint {
     materials?: number;
     labor?: number;
     fees?: number;
+    deliveryFee?: QuotationDeliveryFee;
     lineItems?: {
       label: string;
       quantity: number;
@@ -611,6 +664,7 @@ export interface BlueprintDraft {
       labor: string;
     }[];
     fees?: string;
+    deliveryFee?: DraftDeliveryFee;
     validityDays?: string;
     workingDays?: string;
     breakdown?: string;
