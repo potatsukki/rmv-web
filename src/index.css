@@ -1275,6 +1275,7 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   .auth-shell--register .auth-shell__frame {
     min-height: 0;
     height: 100%;
+    grid-template-rows: minmax(0, 1fr);
   }
 
   .auth-trust-strip,
@@ -1288,6 +1289,8 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   .auth-visual__proofs span { font-size: 0.58rem; }
   .auth-visual__est { margin-top: 14px; }
 
+  /* The form scrolls inside its panel when it is taller than the screen (e.g. register + password rules). */
+  .auth-form-panel { min-height: 0; overflow-y: auto; }
   .auth-form-panel__inner { padding: 30px 42px; }
   .auth-back-link { min-height: 32px; margin-bottom: 20px; font-size: 0.86rem; }
   .auth-form-eyebrow { margin-bottom: 8px; font-size: 0.68rem; }

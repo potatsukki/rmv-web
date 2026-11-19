@@ -1199,8 +1199,9 @@ export function ProjectDetailPage() {
   };
 
   const handleAssignDeliveryCrew = async () => {
-    if (crewIds.length === 0) {
-      toast.error('Select at least one crew member');
+    const needsCrew = project?.deliveryType === DeliveryType.ON_SITE_INSTALLATION;
+    if (needsCrew && crewIds.length === 0) {
+      toast.error('Select at least one installation crew member');
       return;
     }
     // An unchanged date may already be in the past; only a new date is checked here.
@@ -1210,12 +1211,14 @@ export function ProjectDetailPage() {
       return;
     }
     try {
-      await assignDeliveryCrew.mutateAsync({ id: id!, deliveryCrewIds: crewIds, deliveryDate: crewDate });
-      toast.success(`Delivery / installation crew assigned for ${formatDeliveryDay(crewDate)}.`);
+      await assignDeliveryCrew.mutateAsync({ id: id!, deliveryCrewIds: needsCrew ? crewIds : [], deliveryDate: crewDate });
+      toast.success(needsCrew
+        ? `Installation crew assigned for ${formatDeliveryDay(crewDate)}.`
+        : `Delivery date set for ${formatDeliveryDay(crewDate)}.`);
       setShowCrewForm(false);
       refetch();
     } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to assign the delivery / installation crew'));
+      toast.error(extractErrorMessage(err, needsCrew ? 'Failed to assign the installation crew' : 'Failed to set the delivery date'));
     }
   };
 
@@ -1281,6 +1284,10 @@ export function ProjectDetailPage() {
       : { _id: member._id, name: `${member.firstName} ${member.lastName}`.trim() }
   ));
   const deliveryCrewNames = deliveryCrew.map((member) => member.name).filter(Boolean);
+  // On-site installation uses RMV's own crew; a delivery goes out with a third-party courier (date only).
+  const isOnSiteInstallation = project.deliveryType === DeliveryType.ON_SITE_INSTALLATION;
+  const scheduleTitle = isOnSiteInstallation ? 'Installation Crew' : 'Delivery Date (third-party courier)';
+  const deliveryDateLocked = project.deliveryDateUnlocked === false;
   // Engineer or admin picks the crew once the fabrication team exists, until the project is completed.
   const canAssignDeliveryCrew = Boolean(
     (isAssignedEngineer || isAdmin)
@@ -3218,24 +3225,36 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          {/* Delivery / installation crew: separate from the workshop team, never blocks a stage. */}
-          {(canAssignDeliveryCrew || (isStaff && deliveryCrewNames.length > 0)) && (
+          {/* Installation crew (on-site) or delivery date (shop, third-party courier); separate from the workshop team. */}
+          {(canAssignDeliveryCrew || (isStaff && (deliveryCrewNames.length > 0 || Boolean(project.deliverySchedule?.date)))) && (
             <Card className="rounded-none border-x-0 sm:rounded-xl sm:border-x">
               <CardContent className="space-y-3 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
                       <Truck className="h-4 w-4" />
-                      Delivery / Installation Crew
+                      {scheduleTitle}
                     </p>
-                    <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
-                      {deliveryCrewNames.length > 0
-                        ? deliveryCrewNames.join(', ')
-                        : 'No crew assigned yet. Choose who goes with the delivery or on-site installation and the date. Required before Installation / Ready for Delivery.'}
-                    </p>
+                    {isOnSiteInstallation ? (
+                      <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
+                        {deliveryCrewNames.length > 0
+                          ? deliveryCrewNames.join(', ')
+                          : 'No crew assigned yet. Choose who does the on-site installation and the date. Required before Installation.'}
+                      </p>
+                    ) : !project.deliverySchedule?.date && (
+                      <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
+                        RMV books the courier (e.g. Lalamove) outside the system. Set the delivery date; required before Ready for Delivery.
+                      </p>
+                    )}
                     {project.deliverySchedule?.date && (
                       <p className="mt-1 text-xs font-medium text-[#1d1d1f] dark:text-slate-200">
-                        Delivery / installation: {describeDeliverySchedule(project.deliverySchedule)}
+                        {isOnSiteInstallation ? 'Installation' : 'Delivery'}: {describeDeliverySchedule(project.deliverySchedule)}
+                      </p>
+                    )}
+                    {canAssignDeliveryCrew && deliveryDateLocked && (
+                      <p className="mt-1 flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
+                        <LockKeyhole className="h-3 w-3" aria-hidden="true" />
+                        {project.deliverySchedule?.date ? 'A new date' : 'The date'} opens once fabrication reaches {project.deliveryDateUnlockStage || 'the last workshop stage'}.
                       </p>
                     )}
                   </div>
@@ -3244,14 +3263,17 @@ export function ProjectDetailPage() {
                       size="sm"
                       variant="outline"
                       className="w-full shrink-0 sm:w-auto"
+                      disabled={deliveryDateLocked && !project.deliverySchedule?.date}
                       onClick={() => {
                         setCrewIds(deliveryCrew.map((member) => member._id));
                         setCrewDate(project.deliverySchedule?.date || '');
                         setShowCrewForm(true);
                       }}
                     >
-                      <Users className="mr-1.5 h-4 w-4" />
-                      {deliveryCrewNames.length > 0 ? 'Change Crew' : 'Assign Crew'}
+                      {isOnSiteInstallation ? <Users className="mr-1.5 h-4 w-4" /> : <CalendarDays className="mr-1.5 h-4 w-4" />}
+                      {isOnSiteInstallation
+                        ? (deliveryCrewNames.length > 0 ? 'Change Crew' : 'Assign Crew')
+                        : (project.deliverySchedule?.date ? 'Change Date' : 'Set Date')}
                     </Button>
                   )}
                 </div>
@@ -3260,40 +3282,47 @@ export function ProjectDetailPage() {
                   <>
                     <div className="space-y-1">
                       <label htmlFor="delivery-date" className="block text-xs font-medium text-[#6e6e73] dark:text-slate-400">
-                        Delivery / Installation date *
+                        {isOnSiteInstallation ? 'Installation date *' : 'Delivery date *'}
                       </label>
                       <input
                         id="delivery-date"
                         type="date"
                         min={manilaToday()}
                         value={crewDate}
+                        disabled={deliveryDateLocked}
                         onChange={(event) => setCrewDate(event.target.value)}
-                        className="h-10 w-full max-w-xs rounded-lg border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
+                        className="h-10 w-full max-w-xs rounded-lg border border-[#d2d2d7] bg-white px-3 text-sm text-[#1d1d1f] disabled:opacity-60 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-100"
                       />
                       <p className="text-[11px] text-[#6e6e73] dark:text-slate-400">
-                        Monday to Saturday. A delivery takes the crew's whole day because of travel, so crew already out on this date can't be picked. The customer is asked to confirm the date.
+                        {isOnSiteInstallation
+                          ? "Monday to Saturday. An installation takes the crew's whole day, so crew already out on this date can't be picked. The customer is asked to confirm the date."
+                          : 'Monday to Saturday. The customer is told the delivery date.'}
                       </p>
                     </div>
-                    <FabricationStaffPicker
-                      ariaLabel="Delivery and installation crew"
-                      mode="multi"
-                      staff={fabWorkload.data}
-                      isLoading={fabWorkload.isLoading}
-                      isError={fabWorkload.isError}
-                      selectedIds={crewIds}
-                      onToggle={toggleCrewMember}
-                      currentProjectId={project._id}
-                      getBlockedReason={(member) => deliveryConflict(member, crewDate, project._id)}
-                    />
-                    <FabricationWorkloadWarning warnings={workloadWarnings(fabWorkload.data, crewIds, project._id)} />
+                    {isOnSiteInstallation && (
+                      <>
+                        <FabricationStaffPicker
+                          ariaLabel="Installation crew"
+                          mode="multi"
+                          staff={fabWorkload.data}
+                          isLoading={fabWorkload.isLoading}
+                          isError={fabWorkload.isError}
+                          selectedIds={crewIds}
+                          onToggle={toggleCrewMember}
+                          currentProjectId={project._id}
+                          getBlockedReason={(member) => deliveryConflict(member, crewDate, project._id)}
+                        />
+                        <FabricationWorkloadWarning warnings={workloadWarnings(fabWorkload.data, crewIds, project._id)} />
+                      </>
+                    )}
                     <div className="flex gap-2">
                       <Button
                         size="sm"
                         onClick={handleAssignDeliveryCrew}
-                        disabled={assignDeliveryCrew.isPending || crewIds.length === 0 || !crewDate}
+                        disabled={assignDeliveryCrew.isPending || (isOnSiteInstallation && crewIds.length === 0) || !crewDate}
                       >
                         {assignDeliveryCrew.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                        Save Crew
+                        {isOnSiteInstallation ? 'Save Crew' : 'Save Date'}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setShowCrewForm(false)}>
                         Cancel
@@ -3380,17 +3409,19 @@ export function ProjectDetailPage() {
                     )}
                   </DetailField>
 
-                  <DetailField label="Delivery / Installation Crew">
-                    {deliveryCrewNames.length > 0 ? (
-                      <div className="mt-1 space-y-1">
-                        {deliveryCrewNames.map((name) => (
-                          <p key={name} className="text-sm">{name}</p>
-                        ))}
-                      </div>
-                    ) : (
-                      <p className="text-sm italic text-slate-500 dark:text-slate-400">Not assigned yet</p>
-                    )}
-                  </DetailField>
+                  {(isOnSiteInstallation || deliveryCrewNames.length > 0) && (
+                    <DetailField label="Installation Crew">
+                      {deliveryCrewNames.length > 0 ? (
+                        <div className="mt-1 space-y-1">
+                          {deliveryCrewNames.map((name) => (
+                            <p key={name} className="text-sm">{name}</p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm italic text-slate-500 dark:text-slate-400">Not assigned yet</p>
+                      )}
+                    </DetailField>
+                  )}
                 </div>
 
                 {canReassignProjectSales && (

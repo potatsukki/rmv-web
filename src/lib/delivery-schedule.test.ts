@@ -17,10 +17,10 @@ describe('delivery schedule helpers', () => {
     expect(deliveryDateError('', NOW)).toMatch('Choose');
   });
 
-  it('describes the date with travel time and distance', () => {
+  it('describes the date only', () => {
     expect(formatDeliveryDay('2026-11-25')).toBe('Nov 25, 2026');
-    expect(describeDeliverySchedule({ date: '2026-11-25', travelDurationMinutes: 45, distanceKm: 18.24 })).toBe('Nov 25, 2026 · ~45 min drive (18.2 km)');
-    expect(describeDeliverySchedule({ date: '2026-11-25', travelDurationMinutes: 95 })).toBe('Nov 25, 2026 · ~1 hr 35 min drive');
+    // The drive time / distance is no longer shown, even on older schedules that stored it.
+    expect(describeDeliverySchedule({ date: '2026-11-25', travelDurationMinutes: 45, distanceKm: 18.24 })).toBe('Nov 25, 2026');
     expect(describeDeliverySchedule({ date: '2026-11-25', travelDurationMinutes: null })).toBe('Nov 25, 2026');
     expect(describeDeliverySchedule(undefined)).toBe('');
   });

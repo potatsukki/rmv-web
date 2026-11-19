@@ -758,7 +758,7 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
   const [quotSystemDuration, setQuotSystemDuration] = useState('');
   const [quotWorkingDays, setQuotWorkingDays] = useState('');
   const [quotDeliveryFee, setQuotDeliveryFee] = useState<DraftDeliveryFee>({ ...EMPTY_DRAFT_DELIVERY_FEE });
-  // Billed delivery amount reported by DeliveryFeeSection (the server recomputes it on send).
+  // Billed delivery amount reported by DeliveryFeeSection (the engineer's typed third-party estimate).
   const [quotDeliveryAmount, setQuotDeliveryAmount] = useState(0);
   const [quotInitialized, setQuotInitialized] = useState(false);
   const [isSavingDraft, setIsSavingDraft] = useState(false);
@@ -1249,7 +1249,6 @@ export function BlueprintTab({ projectId, projectItemId, mode = 'blueprint' }: B
       <DeliveryFeeSection
         projectId={projectId}
         projectItemId={projectItemId}
-        workingDays={quotWorkingDays}
         value={quotDeliveryFee}
         onChange={setQuotDeliveryFee}
         onBilledAmountChange={setQuotDeliveryAmount}

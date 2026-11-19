@@ -363,7 +363,12 @@ export function FabricationTab({
   const terminalStatus = FabricationStatus.DONE;
   const confirmationGateStatus = fabricationStatus?.confirmationGateStatus;
   const crewGate = fabricationStatus?.crewGate;
-  const crewReady = Boolean(crewGate?.hasCrew && crewGate.hasDeliveryDate !== false);
+  // Installation needs RMV's crew and the date; a delivery (third-party courier) needs the date only.
+  const crewRequired = crewGate?.crewRequired ?? true;
+  const crewReady = Boolean((!crewRequired || crewGate?.hasCrew) && crewGate?.hasDeliveryDate !== false);
+  const crewGateMessage = crewRequired
+    ? 'Installation needs the installation crew and date. Ask the engineer or admin to assign them on the Fabrication tab.'
+    : 'Ready for Delivery needs the delivery date. Ask the engineer or admin to set it on the Fabrication tab.';
   const isCrewBlockedStatus = (value: string) => Boolean(crewGate && !crewReady && crewGate.gatedStatuses.includes(value));
   const deliveryDay = project?.deliverySchedule?.date;
   const awaitingDeliveryDate = deliveryType === DeliveryType.ON_SITE_INSTALLATION && !deliveryDay;
@@ -438,7 +443,7 @@ export function FabricationTab({
       return;
     }
     if (isCrewBlockedStatus(status)) {
-      toast.error('Assign the delivery / installation crew before moving to this stage');
+      toast.error(crewRequired ? 'Assign the installation crew and date before moving to this stage' : 'Set the delivery date before moving to this stage');
       return;
     }
 
@@ -867,7 +872,7 @@ export function FabricationTab({
                       <div className="mt-1.5 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 dark:border-amber-500/35 dark:bg-amber-500/10">
                         <Lock className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
                         <p className="text-xs text-amber-700 dark:text-amber-300">
-                          Installation / Ready for Delivery needs a Delivery / Installation Crew and date. Ask the engineer or admin to assign them on the Fabrication tab.
+                          {crewGateMessage}
                         </p>
                       </div>
                     )}

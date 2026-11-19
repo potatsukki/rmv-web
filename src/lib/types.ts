@@ -415,9 +415,13 @@ export interface Project {
   engineerIds: (string | { _id: string; firstName: string; lastName: string; phone?: string })[];
   fabricationLeadId?: string | { _id: string; firstName: string; lastName: string };
   fabricationAssistantIds: (string | { _id: string; firstName: string; lastName: string })[];
-  /** Fabrication staff who go with the delivery / on-site installation. */
+  /** Installation crew (on-site installation only; delivery uses a third-party courier). */
   deliveryCrewIds?: (string | { _id: string; firstName: string; lastName: string })[];
   deliverySchedule?: DeliverySchedule;
+  /** False until fabrication reaches the stage that opens the delivery / installation date. */
+  deliveryDateUnlocked?: boolean;
+  /** e.g. "Welding / Assembly" (on-site) or "Quality Check" (shop). */
+  deliveryDateUnlockStage?: string;
   visitReportId?: string | VisitReport;
   items?: ProjectItem[];
   mediaKeys: string[];
@@ -535,7 +539,7 @@ export interface DeliveryVehicleRate {
   perKmRate: number;
 }
 
-/** Server-computed delivery / mobilization fee; `amount` is billed as the quotation `fees`. */
+/** Delivery fee on a quotation; `amount` is billed as the quotation `fees`. New fees are the engineer's manual third-party estimate (no distance / trips); older ones were auto-computed. */
 export interface QuotationDeliveryFee {
   distanceKm?: number | null;
   haulingVehicle?: string;
@@ -563,21 +567,10 @@ export interface DraftDeliveryFee {
   overrideReason: string;
 }
 
-export type DeliveryFeeEstimate =
-  | {
-    available: true;
-    siteAddress: string;
-    defaults: { haulingVehicle: string; haulingTrips: number; crewVehicle: string; crewDays: number };
-    breakdown: Omit<QuotationDeliveryFee, 'amount' | 'overrideReason' | 'computedAt'> & { computedAmount: number; distanceKm: number };
-    vehicles: DeliveryVehicleRate[];
-  }
-  | {
-    available: false;
-    reason: 'no_site_location' | 'route_unavailable' | 'charged_on_other_item';
-    message: string;
-    primaryItemTitle?: string;
-    vehicles: DeliveryVehicleRate[];
-  };
+/** Whether this item carries the project's delivery fee (charged once per project, on the first item). */
+export type DeliveryChargeInfo =
+  | { chargedHere: true }
+  | { chargedHere: false; primaryItemTitle: string; message: string };
 
 export interface Blueprint {
   _id: string;
