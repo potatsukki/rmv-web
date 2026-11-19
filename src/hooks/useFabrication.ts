@@ -70,7 +70,8 @@ interface FabricationStatusResponse {
   latestUpdate: FabricationApiUpdate | null;
   allowedTransitions: string[];
   /** Installation / Ready for Delivery stay locked until a delivery / installation crew is assigned. */
-  crewGate?: { hasCrew: boolean; hasDeliveryDate?: boolean; gatedStatuses: string[] };
+  /** crewRequired: on-site installation needs RMV's crew; shop delivery (third-party courier) needs the date only. */
+  crewGate?: { hasCrew: boolean; hasDeliveryDate?: boolean; gatedStatuses: string[]; crewRequired?: boolean };
   paymentGate?: {
     allPaid: boolean;
     unpaidCount: number;

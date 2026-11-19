@@ -27,18 +27,8 @@ export function deliveryDateError(date: string, now = new Date()): string | null
   return null;
 }
 
-function travelLabel(minutes: number) {
-  if (minutes < 60) return `${minutes} min`;
-  const hours = Math.floor(minutes / 60);
-  const rest = minutes % 60;
-  return rest ? `${hours} hr ${rest} min` : `${hours} hr`;
-}
-
-/** e.g. "Nov 25, 2026 · ~45 min drive (18.2 km)". */
+/** e.g. "Nov 25, 2026". The drive time / distance is no longer shown. */
 export function describeDeliverySchedule(schedule?: DeliverySchedule | null) {
   if (!schedule?.date) return '';
-  const travel = typeof schedule.travelDurationMinutes === 'number'
-    ? ` · ~${travelLabel(schedule.travelDurationMinutes)} drive${typeof schedule.distanceKm === 'number' ? ` (${schedule.distanceKm.toFixed(1)} km)` : ''}`
-    : '';
-  return `${formatDeliveryDay(schedule.date)}${travel}`;
+  return formatDeliveryDay(schedule.date);
 }

@@ -5,7 +5,7 @@ import type {
   Blueprint,
   BlueprintDraft,
   BlueprintDraftFile,
-  DeliveryFeeEstimate,
+  DeliveryChargeInfo,
 } from '@/lib/types';
 
 const KEYS = {
@@ -102,32 +102,20 @@ export function useBlueprintDraft(projectId: string, options?: { enabled?: boole
   });
 }
 
-export interface DeliveryFeeEstimateParams {
-  projectItemId?: string;
-  haulingVehicle?: string;
-  haulingTrips?: string;
-  crewVehicle?: string;
-  crewDays?: string;
-  workingDays?: string;
-}
-
-/** Road km × vehicle rates, computed by the server for the costing form. */
-export function useDeliveryFeeEstimate(projectId: string, params: DeliveryFeeEstimateParams, options?: { enabled?: boolean }) {
-  const cleanParams = Object.fromEntries(
-    Object.entries(params).filter(([, value]) => value !== undefined && String(value).trim() !== ''),
-  );
+/** Whether this item carries the project's third-party delivery fee (it is charged once per project). */
+export function useDeliveryChargeInfo(projectId: string, projectItemId?: string, options?: { enabled?: boolean }) {
+  const params = projectItemId ? { projectItemId } : {};
   return useQuery({
-    queryKey: [...KEYS.all, 'delivery-fee', projectId, cleanParams] as const,
+    queryKey: [...KEYS.all, 'delivery-fee', projectId, params] as const,
     queryFn: async () => {
-      const { data } = await api.get<ApiResponse<DeliveryFeeEstimate>>(
+      const { data } = await api.get<ApiResponse<DeliveryChargeInfo>>(
         `/blueprints/project/${projectId}/delivery-fee-estimate`,
-        { params: cleanParams },
+        { params },
       );
       return data.data;
     },
     enabled: !!projectId && (options?.enabled ?? true),
     staleTime: 1000 * 60 * 5,
-    placeholderData: (previous) => previous,
     refetchOnWindowFocus: false,
   });
 }

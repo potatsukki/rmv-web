@@ -1,8 +1,16 @@
 import type { QuotationDeliveryFee } from './types';
 
-/** e.g. "Delivery / Mobilization (25 km · Truck ×1 trip + crew 3 days)"; same wording as the contract. */
+/** Label of the engineer's manual courier fee; same wording as the server and the contract. */
+export const THIRD_PARTY_DELIVERY_LABEL = 'Transport / Delivery (third party)';
+
+/**
+ * Manual third-party fees read THIRD_PARTY_DELIVERY_LABEL; older auto-computed fees keep
+ * "Delivery / Mobilization (25 km · Truck ×1 trip + crew 3 days)".
+ */
 export function describeDeliveryFee(fee?: QuotationDeliveryFee | null) {
-  if (!fee) return 'Delivery / Mobilization';
+  if (!fee) return THIRD_PARTY_DELIVERY_LABEL;
+  const isLegacyComputed = typeof fee.distanceKm === 'number' || Boolean(fee.haulingTrips) || Boolean(fee.crewDays);
+  if (!isLegacyComputed) return THIRD_PARTY_DELIVERY_LABEL;
   const label = (key?: string) => fee.ratesSnapshot?.find((rate) => rate.key === key)?.label || key || '';
   const parts: string[] = [];
   if (fee.haulingTrips) parts.push(`${label(fee.haulingVehicle)} ×${fee.haulingTrips} trip${fee.haulingTrips === 1 ? '' : 's'}`.trim());
