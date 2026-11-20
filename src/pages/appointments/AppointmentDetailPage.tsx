@@ -685,6 +685,12 @@ export function AppointmentDetailPage() {
                     ? 'The assigned sales staff is reviewing this appointment.'
                     : 'Assign an available sales staff member for review.'}
               </p>
+              {isCustomer && !isOcularAppointment && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                  <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  Please arrive on time. If you are 15 minutes late, your appointment will be cancelled and marked as No Show.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -774,6 +780,12 @@ export function AppointmentDetailPage() {
                     ? 'Mark yourself as "On the Way" when heading to the site.'
                     : 'This consultation is scheduled at the RMV office. Review the customer details and prepare for the appointment.'}
               </p>
+              {isCustomer && !isOcularAppointment && (
+                <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
+                  <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                  Please arrive on time. If you are 15 minutes late, your appointment will be cancelled and marked as No Show.
+                </p>
+              )}
             </div>
           </CardContent>
         </Card>
