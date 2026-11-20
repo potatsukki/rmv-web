@@ -1292,6 +1292,18 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   /* The form scrolls inside its panel when it is taller than the screen (e.g. register + password rules). */
   .auth-form-panel { min-height: 0; overflow-y: auto; }
   .auth-form-panel__inner { padding: 30px 42px; }
+
+  /* Register is taller than the screen: the whole page scrolls, so the scrollbar sits at the window edge, not mid-frame. */
+  .auth-shell--register { height: auto; min-height: 100svh; overflow: visible; }
+  /* overflow: clip (not hidden) so the brand panel can stay sticky while the form scrolls. */
+  .auth-shell--register .auth-shell__frame { height: auto; overflow: clip; }
+  .auth-shell--register .auth-form-panel { overflow: visible; }
+  .auth-shell--register .auth-visual {
+    position: sticky;
+    top: 16px;
+    align-self: start;
+    height: calc(100svh - 32px);
+  }
   .auth-back-link { min-height: 32px; margin-bottom: 20px; font-size: 0.86rem; }
   .auth-form-eyebrow { margin-bottom: 8px; font-size: 0.68rem; }
   .auth-form-title { font-size: clamp(1.9rem, 2.6vw, 2.3rem); }

@@ -1,6 +1,6 @@
 import { useParams, useNavigate, Link, useLocation } from 'react-router';
 import { format } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, CalendarX, Hash, Ticket } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users, FileText, Camera, Image, Loader2, Banknote, Info, CalendarX, Hash, Ticket, Ruler } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
@@ -36,6 +36,7 @@ import {
 import { useSubmitVisitReport, useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { useActivityHistory } from '@/hooks/useReports';
 import { ActivityTimeline } from '@/components/shared/ActivityTimeline';
+import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { getVisitReportReferenceId } from '@/lib/visit-report-cache';
 
 import { useAuthStore } from '@/stores/auth.store';
@@ -1469,6 +1470,40 @@ export function AppointmentDetailPage() {
                 The customer must submit their site address and map pin before you can start the ocular site visit workflow.
               </p>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Staff: measurements already recorded on the project, to verify during the ocular visit */}
+      {!isCustomer && isOcularAppointment && appt.linkedProject?.items && appt.linkedProject.items.length > 0 && (
+        <Card className="rounded-xl border-[#c8c8cd]/50 shadow-sm">
+          <CardHeader className="pb-2">
+            <CardTitle className="flex items-center gap-2 text-lg text-[#1d1d1f] dark:text-slate-100">
+              <Ruler className="h-5 w-5 text-[#6e6e73] dark:text-slate-400" />
+              Measurements
+            </CardTitle>
+            <p className="text-sm text-[#6e6e73] dark:text-slate-400">
+              Recorded on project {appt.linkedProject.projectNumber || appt.linkedProject.title || ''}. Verify these on site.
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-5">
+            {appt.linkedProject.items.map((item) => (
+              <div key={item._id} className="space-y-2">
+                {appt.linkedProject!.items!.length > 1 && (
+                  <p className="text-sm font-semibold text-[#3a3a3e] dark:text-slate-200">
+                    {item.title || formatServiceTypeList([], item.serviceType, item.serviceTypeCustom)}
+                  </p>
+                )}
+                <LineItemsEditor
+                  items={item.lineItems}
+                  unit={item.measurementUnit || 'cm'}
+                  onItemsChange={() => {}}
+                  onUnitChange={() => {}}
+                  disabled
+                  showNotes={false}
+                />
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}

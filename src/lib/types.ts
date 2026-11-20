@@ -198,7 +198,20 @@ export interface Appointment {
   appointmentNumber?: string;
   canonicalAppointmentId?: string;
   /** Set on an ocular visit that a project scheduled; the ocular page links back to it. */
-  linkedProject?: { _id: string; projectNumber?: string; title?: string };
+  linkedProject?: {
+    _id: string;
+    projectNumber?: string;
+    title?: string;
+    /** Ocular visit: measurements already recorded on the project, to verify on site. */
+    items?: Array<{
+      _id: string;
+      title?: string;
+      serviceType?: string;
+      serviceTypeCustom?: string;
+      measurementUnit?: string;
+      lineItems: LineItem[];
+    }>;
+  };
   /** Ocular tab list only: the project that scheduled this ocular visit. */
   ocularProject?: { _id: string; projectNumber?: string };
   customerId: string;

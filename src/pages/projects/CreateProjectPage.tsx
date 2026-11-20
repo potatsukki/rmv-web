@@ -211,8 +211,9 @@ function ItemDetailsFields({ idPrefix, heading, itemLabel, draft, fallbackTempla
 
       <Card>
         <CardHeader><CardTitle>{heading ? `${serviceLabel(serviceType, draft.serviceTypeCustom)} Attachments` : 'Project Attachments'}</CardTitle></CardHeader>
-        <CardContent className="grid min-w-0 gap-5 sm:grid-cols-2">
-          <div className="min-w-0 space-y-2">
+        {/* Each column is a title / description / upload subgrid so both upload boxes start at the same height. */}
+        <CardContent className="grid min-w-0 gap-5 sm:grid-cols-2 sm:gap-y-2">
+          <div className="min-w-0 space-y-2 sm:grid sm:row-span-3 sm:grid-rows-subgrid sm:space-y-0">
             <p className="text-sm font-medium">Gallery</p>
             <p className="text-xs text-muted-foreground">Photos and videos from your gallery. Videos are optional (up to 20 photos and 5 videos).</p>
             <GalleryUpload
@@ -222,8 +223,9 @@ function ItemDetailsFields({ idPrefix, heading, itemLabel, draft, fallbackTempla
               onUploadingChange={(active) => onUploadingChange(`${idPrefix}-gallery`, active)}
             />
           </div>
-          <div className="min-w-0 space-y-2">
+          <div className="min-w-0 space-y-2 sm:grid sm:row-span-3 sm:grid-rows-subgrid sm:space-y-0">
             <p className="text-sm font-medium">Reference Images</p>
+            <p className="text-xs text-muted-foreground">Design references, sketches, or PDF files (up to 10 files, 10MB each).</p>
             <FileUpload folder="visit-references" accept="image/*,.pdf" maxSizeMB={10} maxFiles={10} label="Reference Images" existingKeys={draft.referenceImageKeys} onUploadComplete={(referenceImageKeys) => onChange({ referenceImageKeys })} onUploadingChange={(active) => onUploadingChange(`${idPrefix}-referenceImageKeys`, active)} />
           </div>
         </CardContent>
