@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useLocation, useNavigate } from 'react-router';
@@ -44,7 +44,7 @@ const registerSchema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50).regex(/^[a-zA-Z\s'-]+$/, 'Special characters are not allowed'),
   lastName: z.string().min(1, 'Last name is required').max(50).regex(/^[a-zA-Z\s'-]+$/, 'Special characters are not allowed'),
   email: z.string().email('Enter a valid email address'),
-  phone: z.string().regex(/^(09|\+639)\d{9}$/, 'Use a valid Philippine mobile number (09XXXXXXXXX)'),
+  phone: z.string().regex(/^09\d{9}$/, 'Enter a valid mobile number'),
   password: z.string().min(8, 'Use at least 8 characters').regex(/[A-Z]/, 'Include an uppercase letter').regex(/[a-z]/, 'Include a lowercase letter').regex(/\d/, 'Include a number').regex(/[^A-Za-z0-9]/, 'Include a special character'),
   confirmPassword: z.string().min(1, 'Confirm your password'),
   agreeToTerms: z.literal(true, { message: 'You must agree to the Terms of Service and Privacy Policy' }),
@@ -135,6 +135,23 @@ export function RegisterPage() {
     ['firstName', 'lastName', 'email', 'phone', 'confirmPassword', 'agreeToTerms'],
   );
   const isEmpty = (value?: string) => !value?.trim();
+
+  // Mobile number: digits only, max 11; live hint until it is a valid 09XXXXXXXXX.
+  const [phoneRejected, setPhoneRejected] = useState(false);
+  const phoneRegistration = register('phone');
+  const phoneField: UseFormRegisterReturn<'phone'> = {
+    ...phoneRegistration,
+    onChange: (e) => {
+      const raw: string = e.target.value;
+      const digits = raw.replace(/\D/g, '');
+      setPhoneRejected(digits !== raw || digits.length > 11);
+      e.target.value = digits.slice(0, 11);
+      return phoneRegistration.onChange(e);
+    },
+  };
+  const phoneHint = !/^09\d{9}$/.test(phoneValue ?? '') && (phoneRejected || phoneValue) ? (
+    <p className="auth-field-hint" data-state="error" aria-live="polite"><X aria-hidden="true" />Enter a valid mobile number</p>
+  ) : null;
 
   // Live "email already registered" check while typing (the server still checks on submit).
   const [emailLookup, setEmailLookup] = useState<{ email: string; available: boolean | null } | null>(null);
@@ -291,7 +308,7 @@ export function RegisterPage() {
           <AuthField id="lastName" label="Last Name" requiredMark={isEmpty(lastNameValue)} placeholder="Enter your last name" autoComplete="family-name" icon={UserRound} error={errors.lastName?.message} disabled={isLocked} registration={register('lastName')} />
         </div>
         <AuthField id="email" label="Email Address" requiredMark={isEmpty(emailValue)} type="email" placeholder="Enter your email address" autoComplete="email" icon={Mail} error={errors.email?.message} hint={emailHint} disabled={isLocked} registration={register('email')} />
-        <AuthField id="phone" label="Mobile Number" requiredMark={isEmpty(phoneValue)} type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} disabled={isLocked} registration={register('phone')} />
+        <AuthField id="phone" label="Mobile Number" requiredMark={isEmpty(phoneValue)} type="tel" inputMode="numeric" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} hint={phoneHint} disabled={isLocked} registration={phoneField} />
         <PasswordField id="password" label="Password" requiredMark={isEmpty(passwordValue)} placeholder="Create a password" autoComplete="new-password" error={errors.password?.message} disabled={isLocked} registration={register('password')} />
         {strength ? (
           <div className="auth-password-strength" aria-live="polite">
