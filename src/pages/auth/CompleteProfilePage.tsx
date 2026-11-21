@@ -1,9 +1,9 @@
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, type UseFormRegisterReturn } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router';
-import { ArrowLeft, ArrowRight, Loader2, Phone, UserRound } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Phone, UserRound, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { signOut } from 'firebase/auth';
 
@@ -17,7 +17,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useAuthPageScrollbar } from '@/pages/auth/useAuthPageScrollbar';
 const schema = z.object({
   firstName: z.string().min(1, 'First name is required').max(50), lastName: z.string().min(1, 'Last name is required').max(50),
-  phone: z.string().regex(/^(09|\+639)\d{9}$/, 'Use a valid Philippine mobile number (09XXXXXXXXX)'),
+  phone: z.string().regex(/^09\d{9}$/, 'Enter a valid mobile number'),
   agreeToTerms: z.literal(true, { message: 'You must agree to the Terms of Service and Privacy Policy' }),
 });
 type CompleteProfileForm = z.infer<typeof schema>;
@@ -28,6 +28,7 @@ export function CompleteProfilePage() {
   useAuthPageScrollbar();
   const { setCsrfToken } = useAuthStore();
   const [submitting, setSubmitting] = useState(false);
+  const [phoneRejected, setPhoneRejected] = useState(false);
   const state = location.state as { email?: string; googleName?: string; googleFirstName?: string; googleLastName?: string; googlePhoto?: string; idToken?: string; from?: unknown } | null;
   const from = normalizeAuthContinuationPath(state?.from) || getStoredAuthContinuationPath() || '/dashboard';
   if (!state?.idToken) return <Navigate to="/register" state={{ from }} replace />;
@@ -39,7 +40,24 @@ export function CompleteProfilePage() {
     await signOut(auth).catch(() => undefined);
     navigate('/register', { replace: true, state: { from } });
   };
-  const { register, handleSubmit, formState: { errors } } = useForm<CompleteProfileForm>({ resolver: zodResolver(schema), defaultValues: { firstName: defaultFirstName, lastName: defaultLastName, phone: '' } });
+  const { register, handleSubmit, watch, formState: { errors } } = useForm<CompleteProfileForm>({ resolver: zodResolver(schema), defaultValues: { firstName: defaultFirstName, lastName: defaultLastName, phone: '' } });
+
+  // Mobile number: digits only, max 11; live hint until it is a valid 09XXXXXXXXX.
+  const phoneValue = watch('phone');
+  const phoneRegistration = register('phone');
+  const phoneField: UseFormRegisterReturn<'phone'> = {
+    ...phoneRegistration,
+    onChange: (e) => {
+      const raw: string = e.target.value;
+      const digits = raw.replace(/\D/g, '');
+      setPhoneRejected(digits !== raw || digits.length > 11);
+      e.target.value = digits.slice(0, 11);
+      return phoneRegistration.onChange(e);
+    },
+  };
+  const phoneHint = !/^09\d{9}$/.test(phoneValue ?? '') && (phoneRejected || phoneValue) ? (
+    <p className="auth-field-hint" data-state="error" aria-live="polite"><X aria-hidden="true" />Enter a valid mobile number</p>
+  ) : null;
 
   const onSubmit = async (data: CompleteProfileForm) => {
     setSubmitting(true);
@@ -64,7 +82,7 @@ export function CompleteProfilePage() {
       <p className="auth-form-switch">Not you? <button type="button" onClick={switchGoogleAccount} className="font-semibold underline underline-offset-2">Use another Google account</button></p>
       <form className="auth-form auth-form--register" onSubmit={handleSubmit(onSubmit)} noValidate>
         <div className="auth-name-grid"><AuthField id="firstName" label="First Name" placeholder="Enter your first name" autoComplete="given-name" icon={UserRound} error={errors.firstName?.message} registration={register('firstName')} /><AuthField id="lastName" label="Last Name" placeholder="Enter your last name" autoComplete="family-name" icon={UserRound} error={errors.lastName?.message} registration={register('lastName')} /></div>
-        <AuthField id="phone" label="Mobile Number" requiredMark type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} registration={register('phone')} />
+        <AuthField id="phone" label="Mobile Number" requiredMark type="tel" inputMode="numeric" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} hint={phoneHint} registration={phoneField} />
         <div><label className="auth-terms"><input id="agreeToTerms" type="checkbox" aria-invalid={Boolean(errors.agreeToTerms)} aria-describedby={errors.agreeToTerms ? 'terms-error' : undefined} {...register('agreeToTerms')} /><span>I agree to the <Link to="/terms" target="_blank">Terms of Service</Link> and <Link to="/privacy" target="_blank">Privacy Policy</Link>.</span></label>{errors.agreeToTerms ? <p id="terms-error" className="auth-terms-error">{errors.agreeToTerms.message}</p> : null}</div>
         <Button type="submit" className="auth-primary-button" disabled={submitting}>{submitting ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" /> : null}{submitting ? 'Completing Registration…' : 'Complete Registration'}<ArrowRight className="h-4 w-4" aria-hidden="true" /></Button>
       </form>
