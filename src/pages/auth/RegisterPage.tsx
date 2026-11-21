@@ -167,8 +167,6 @@ export function RegisterPage() {
         : emailLookup.available ? 'available' : 'taken';
   const emailHint = emailStatus === 'checking' ? (
     <p className="auth-field-hint" data-state="checking" aria-live="polite"><Loader2 className="animate-spin" aria-hidden="true" />Checking email…</p>
-  ) : emailStatus === 'available' ? (
-    <p className="auth-field-hint" data-state="ok" aria-live="polite"><Check aria-hidden="true" />Email is available</p>
   ) : emailStatus === 'taken' ? (
     <p className="auth-field-hint" data-state="error" aria-live="polite"><X aria-hidden="true" />This email is already registered.&nbsp;<Link to="/login" state={{ from }}>Sign in instead</Link></p>
   ) : null;
