@@ -60,6 +60,11 @@ const passwordRules = [
   { label: 'Special character', test: (value: string) => /[^A-Za-z0-9]/.test(value) },
 ];
 
+const emailFormat = z.string().email();
+const EMAIL_CHECK_DELAY_MS = 500;
+
+type EmailStatus = 'idle' | 'checking' | 'available' | 'taken';
+
 /** Only two levels: Strong once every rule passes, Weak while any rule is missing. */
 function getStrength(password: string) {
   const score = passwordRules.filter((rule) => rule.test(password)).length;
@@ -130,6 +135,52 @@ export function RegisterPage() {
     ['firstName', 'lastName', 'email', 'phone', 'confirmPassword', 'agreeToTerms'],
   );
   const isEmpty = (value?: string) => !value?.trim();
+
+  // Live "email already registered" check while typing (the server still checks on submit).
+  const [emailLookup, setEmailLookup] = useState<{ email: string; available: boolean | null } | null>(null);
+  const normalizedEmail = (emailValue ?? '').trim().toLowerCase();
+  const emailFormatValid = emailFormat.safeParse(normalizedEmail).success;
+  useEffect(() => {
+    if (!emailFormatValid) return;
+    let cancelled = false;
+    const timer = window.setTimeout(() => {
+      api.get<{ data: { available: boolean } }>('/auth/email-available', { params: { email: normalizedEmail } })
+        .then(({ data }) => {
+          if (!cancelled) setEmailLookup({ email: normalizedEmail, available: data.data.available });
+        })
+        .catch(() => {
+          // Unknown (network/rate limit): show nothing; registration still validates the email.
+          if (!cancelled) setEmailLookup({ email: normalizedEmail, available: null });
+        });
+    }, EMAIL_CHECK_DELAY_MS);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [normalizedEmail, emailFormatValid]);
+  const emailStatus: EmailStatus = !emailFormatValid
+    ? 'idle'
+    : emailLookup?.email !== normalizedEmail
+      ? 'checking'
+      : emailLookup.available === null
+        ? 'idle'
+        : emailLookup.available ? 'available' : 'taken';
+  const emailHint = emailStatus === 'checking' ? (
+    <p className="auth-field-hint" data-state="checking" aria-live="polite"><Loader2 className="animate-spin" aria-hidden="true" />Checking email…</p>
+  ) : emailStatus === 'available' ? (
+    <p className="auth-field-hint" data-state="ok" aria-live="polite"><Check aria-hidden="true" />Email is available</p>
+  ) : emailStatus === 'taken' ? (
+    <p className="auth-field-hint" data-state="error" aria-live="polite"><X aria-hidden="true" />This email is already registered.&nbsp;<Link to="/login" state={{ from }}>Sign in instead</Link></p>
+  ) : null;
+
+  // Live match indicator for Confirm Password.
+  const confirmPasswordHint = confirmPasswordValue ? (
+    confirmPasswordValue === passwordValue ? (
+      <p className="auth-field-hint" data-state="ok" aria-live="polite"><Check aria-hidden="true" />Passwords match</p>
+    ) : (
+      <p className="auth-field-hint" data-state="error" aria-live="polite"><X aria-hidden="true" />Passwords do not match</p>
+    )
+  ) : null;
 
   const recordFailedAttempt = useCallback((message: string) => {
     const newCount = attempts + 1;
@@ -202,6 +253,10 @@ export function RegisterPage() {
 
   const onSubmit = async (data: RegisterForm) => {
     if (isLocked) return;
+    if (emailStatus === 'taken') {
+      setServerError('This email is already registered. Sign in instead.');
+      return;
+    }
     setServerError(null);
     try {
       const csrfToken = await fetchCsrfToken();
@@ -237,7 +292,7 @@ export function RegisterPage() {
           <AuthField id="firstName" label="First Name" requiredMark={isEmpty(firstNameValue)} placeholder="Enter your first name" autoComplete="given-name" icon={UserRound} error={errors.firstName?.message} disabled={isLocked} registration={register('firstName')} />
           <AuthField id="lastName" label="Last Name" requiredMark={isEmpty(lastNameValue)} placeholder="Enter your last name" autoComplete="family-name" icon={UserRound} error={errors.lastName?.message} disabled={isLocked} registration={register('lastName')} />
         </div>
-        <AuthField id="email" label="Email Address" requiredMark={isEmpty(emailValue)} type="email" placeholder="Enter your email address" autoComplete="email" icon={Mail} error={errors.email?.message} disabled={isLocked} registration={register('email')} />
+        <AuthField id="email" label="Email Address" requiredMark={isEmpty(emailValue)} type="email" placeholder="Enter your email address" autoComplete="email" icon={Mail} error={errors.email?.message} hint={emailHint} disabled={isLocked} registration={register('email')} />
         <AuthField id="phone" label="Mobile Number" requiredMark={isEmpty(phoneValue)} type="tel" inputMode="tel" placeholder="09XXXXXXXXX" autoComplete="tel" icon={Phone} error={errors.phone?.message} disabled={isLocked} registration={register('phone')} />
         <PasswordField id="password" label="Password" requiredMark={isEmpty(passwordValue)} placeholder="Create a password" autoComplete="new-password" error={errors.password?.message} disabled={isLocked} registration={register('password')} />
         {strength ? (
@@ -258,7 +313,7 @@ export function RegisterPage() {
             </div>
           </div>
         ) : null}
-        <PasswordField id="confirmPassword" label="Confirm Password" requiredMark={isEmpty(confirmPasswordValue)} placeholder="Confirm your password" autoComplete="new-password" error={errors.confirmPassword?.message} disabled={isLocked} registration={register('confirmPassword')} />
+        <PasswordField id="confirmPassword" label="Confirm Password" requiredMark={isEmpty(confirmPasswordValue)} placeholder="Confirm your password" autoComplete="new-password" error={errors.confirmPassword?.message} hint={confirmPasswordHint} disabled={isLocked} registration={register('confirmPassword')} />
         <div>
           <label className="auth-terms">
             <input type="checkbox" aria-invalid={Boolean(errors.agreeToTerms)} aria-describedby={errors.agreeToTerms ? 'terms-error' : undefined} disabled={isLocked} {...register('agreeToTerms')} />

@@ -74,7 +74,7 @@ describe('FabricationTab project site address', () => {
   it.each([Role.CUSTOMER, Role.FABRICATION_STAFF, Role.SALES_STAFF, Role.ENGINEER])('shows the six on-site lifecycle markers in order to %s', (role) => {
     state.user.roles = [role];
     state.project.deliveryType = DeliveryType.ON_SITE_INSTALLATION;
-    state.fabricationStatus = { deliveryType: DeliveryType.ON_SITE_INSTALLATION, currentStatus: 'installation', allowedTransitions: ['finishing'], confirmationGateStatus: 'done' };
+    state.fabricationStatus = { deliveryType: DeliveryType.ON_SITE_INSTALLATION, currentStatus: 'installation', allowedTransitions: ['finishing'], confirmationGateStatus: 'installation' };
     const html = renderTab(true, role === Role.FABRICATION_STAFF || role === Role.ENGINEER);
     const labels = [...html.matchAll(/<span[^>]*>\d<\/span>([^<]+)<\/p>/g)].map((match) => match[1]);
     expect(labels).toEqual(['Preparing Materials', 'Welding / Assembly', 'Installation', 'Finishing', 'Quality Check', 'Done']);
@@ -93,7 +93,7 @@ describe('FabricationTab project site address', () => {
   ])('uses six-stage item progress at %s', (currentStatus, next, step, progress) => {
     state.project.deliveryType = DeliveryType.ON_SITE_INSTALLATION;
     state.project.items = ['item-1', 'item-2'].map((_id) => ({ _id, projectId: 'project-1', title: _id, serviceType: 'railings', status: currentStatus === 'done' ? 'completed' : 'fabrication', installationConfirmedAt: '2026-01-01T00:00:00Z', createdAt: '', updatedAt: '' }));
-    state.fabricationStatus = { currentStatus, deliveryType: DeliveryType.ON_SITE_INSTALLATION, allowedTransitions: next ? [next] : [], confirmationGateStatus: 'done' };
+    state.fabricationStatus = { currentStatus, deliveryType: DeliveryType.ON_SITE_INSTALLATION, allowedTransitions: next ? [next] : [], confirmationGateStatus: 'installation' };
     const html = renderTab(true, true);
     expect(html).toContain(`Step ${step} of 6`);
     expect(html.match(new RegExp(`width:${progress}%`, 'g'))).toHaveLength(2);
@@ -111,11 +111,66 @@ describe('FabricationTab project site address', () => {
 
   it.each([DeliveryType.SHOP_FABRICATED, undefined])('preserves the eight shop markers for delivery type %s', (deliveryType) => {
     state.project.deliveryType = deliveryType;
-    state.fabricationStatus = { deliveryType: DeliveryType.SHOP_FABRICATED, currentStatus: 'assembly', allowedTransitions: ['finishing'], confirmationGateStatus: null };
+    state.fabricationStatus = { deliveryType: DeliveryType.SHOP_FABRICATED, currentStatus: 'assembly', allowedTransitions: ['finishing'], confirmationGateStatus: 'done' };
     const html = renderTab();
     const labels = [...html.matchAll(/<span[^>]*>\d<\/span>([^<]+)<\/p>/g)].map((match) => match[1]);
     expect(labels).toEqual(['Material Prep', 'Cutting', 'Welding', 'Assembly', 'Finishing', 'Quality Check', 'Ready for Delivery', 'Done']);
     expect(html).toContain('Step 4 of 8');
     expect(html).toContain('grid-cols-8');
+  });
+});
+
+describe('FabricationTab customer confirmation banners', () => {
+  beforeEach(() => {
+    state.user = { _id: 'fabricator-1', roles: [Role.FABRICATION_STAFF] };
+    state.project = {
+      _id: 'project-1', title: 'Railings', customerId: 'customer-1', status: 'fabrication',
+      fabricationLeadId: 'fabricator-1', fabricationAssistantIds: [], engineerIds: [],
+      mediaKeys: [], createdAt: '', updatedAt: '', deliverySchedule: { date: '2026-11-25' },
+    } as Project;
+  });
+
+  const onSiteAt = (currentStatus: string, next: string) => {
+    state.project.deliveryType = DeliveryType.ON_SITE_INSTALLATION;
+    state.fabricationStatus = { currentStatus, deliveryType: DeliveryType.ON_SITE_INSTALLATION, allowedTransitions: [next], confirmationGateStatus: 'installation' };
+  };
+  const shopAt = (currentStatus: string, next: string) => {
+    state.project.deliveryType = DeliveryType.SHOP_FABRICATED;
+    state.fabricationStatus = { currentStatus, deliveryType: DeliveryType.SHOP_FABRICATED, allowedTransitions: [next], confirmationGateStatus: 'done' };
+  };
+
+  it('shows the on-site installation confirmation at Welding / Assembly, before Installation', () => {
+    onSiteAt('welding_assembly', 'installation');
+    const staffHtml = renderTab(true, true);
+    expect(staffHtml).toContain('Awaiting Customer Confirmation');
+    expect(staffHtml).toContain('before you can move this to Installation');
+
+    state.user = { _id: 'customer-1', roles: [Role.CUSTOMER] };
+    const customerHtml = renderTab();
+    expect(customerHtml).toContain('Installation at your location');
+    expect(customerHtml).toContain('Confirm Installation');
+  });
+
+  it('no longer shows the on-site confirmation at Quality Check', () => {
+    onSiteAt('quality_check', 'done');
+    expect(renderTab(true, true)).not.toContain('Awaiting Customer Confirmation');
+  });
+
+  it('asks a delivery customer to confirm receipt at Ready for Delivery, before Done', () => {
+    shopAt('ready_for_delivery', 'done');
+    const staffHtml = renderTab(true, true);
+    expect(staffHtml).toContain('Awaiting Customer Confirmation');
+    expect(staffHtml).toContain('must confirm they received the order before you can mark this as Done');
+
+    state.user = { _id: 'customer-1', roles: [Role.CUSTOMER] };
+    const customerHtml = renderTab();
+    expect(customerHtml).toContain('Confirm you received your order');
+    expect(customerHtml).toContain('Confirm Order Received');
+  });
+
+  it('does not ask a delivery customer anything before Ready for Delivery', () => {
+    shopAt('quality_check', 'ready_for_delivery');
+    state.user = { _id: 'customer-1', roles: [Role.CUSTOMER] };
+    expect(renderTab()).not.toContain('Confirm Order Received');
   });
 });

@@ -175,6 +175,13 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
   });
 
+  it('shows a cancelled appointment as Completed only, without a Cancelled badge', () => {
+    const status = resolveAppointmentWorkflowStatus({ status: AppointmentStatus.CANCELLED, type: 'office' });
+    expect(status).toMatchObject({ key: 'appointment_completed', label: 'Completed', isTerminal: true });
+    expect(status.secondaryKey).toBeUndefined();
+    expect(status.secondaryLabel).toBeUndefined();
+  });
+
   it('keeps the existing completed label for ocular appointments', () => {
     expect(resolveAppointmentWorkflowStatus({
       status: AppointmentStatus.COMPLETED,
@@ -215,7 +222,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     [AppointmentStatus.RESCHEDULE_REQUESTED, undefined, 'Requested', undefined],
     [AppointmentStatus.READY_FOR_OCULAR, 'sales-1', 'Completed', undefined],
     [AppointmentStatus.COMPLETED, 'sales-1', 'Completed', undefined],
-    [AppointmentStatus.CANCELLED, undefined, 'Completed', 'Cancelled'],
+    [AppointmentStatus.CANCELLED, undefined, 'Completed', undefined],
     [AppointmentStatus.NO_SHOW, 'sales-1', 'Completed', 'No Show'],
   ])('shows %s (sales staff: %s) as %s', (status, salesStaffId, label, secondaryLabel) => {
     const result = resolveAppointmentWorkflowStatus({ status, salesStaffId });

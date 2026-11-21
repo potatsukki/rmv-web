@@ -15,7 +15,13 @@ import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/l
 import { cn, extractErrorMessage } from '@/lib/utils';
 import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
 import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
-import { MIN_BOOKING_LEAD_DAYS, OCULAR_MIN_DAYS_AFTER_CONSULTATION } from '@/lib/constants';
+import {
+  MIN_BOOKING_LEAD_DAYS,
+  OCULAR_MIN_DAYS_AFTER_CONSULTATION,
+  OCULAR_NEAR_SHOP_KM,
+  OCULAR_SITE_MINUTES,
+  OCULAR_TRAFFIC_BUFFER_MINUTES,
+} from '@/lib/constants';
 
 const LazyLocationPicker = lazy(() =>
   import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
@@ -36,12 +42,48 @@ export function formatTravelDuration(minutes: number) {
   return rest ? `${hours} hr ${rest} min` : `${hours} hr`;
 }
 
-/** Latest time to leave the shop to reach the site by the slot's start (never before midnight). */
-export function departureTime(slotCode: string, travelMinutes: number) {
-  const [hour = 0, minute = 0] = slotCode.split(':').map(Number);
-  const leaveAt = Math.max(0, hour * 60 + minute - Math.max(0, Math.round(travelMinutes)));
-  return formatSlotTime(`${Math.floor(leaveAt / 60)}:${String(leaveAt % 60).padStart(2, '0')}`);
+/** True when the site is close enough to the shop to skip the traffic allowance. */
+export function isNearShop(distanceKm?: number | null) {
+  return typeof distanceKm === 'number' && Number.isFinite(distanceKm) && distanceKm <= OCULAR_NEAR_SHOP_KM;
 }
+
+/** One-way trip to the site with the traffic allowance (none for a site near the shop); same rule as the server. */
+export function ocularLegMinutes(travelMinutes: number, distanceKm?: number | null) {
+  return Math.ceil(Math.max(0, travelMinutes)) + (isNearShop(distanceKm) ? 0 : OCULAR_TRAFFIC_BUFFER_MINUTES);
+}
+
+function slotMinutes(slotCode: string) {
+  const [hour = 0, minute = 0] = slotCode.split(':').map(Number);
+  return hour * 60 + minute;
+}
+
+function formatMinutes(totalMinutes: number) {
+  const minutes = Math.min(Math.max(0, Math.round(totalMinutes)), 24 * 60 - 1);
+  return formatSlotTime(`${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`);
+}
+
+/** Latest time to leave the shop to reach the site by the slot's start, traffic included (never before midnight). */
+export function departureTime(slotCode: string, travelMinutes: number, distanceKm?: number | null) {
+  return formatMinutes(slotMinutes(slotCode) - ocularLegMinutes(travelMinutes, distanceKm));
+}
+
+/** When the time on site ends (slot + 1.5 hr). */
+export function ocularVisitEnd(slotCode: string) {
+  return formatMinutes(slotMinutes(slotCode) + OCULAR_SITE_MINUTES);
+}
+
+/** Minutes of the day the staff is back at the shop: slot + time on site + the trip back, traffic included. */
+export function returnMinutes(slotCode: string, travelMinutes: number, distanceKm?: number | null) {
+  return slotMinutes(slotCode) + OCULAR_SITE_MINUTES + ocularLegMinutes(travelMinutes, distanceKm);
+}
+
+/** When the staff is back at the shop, traffic included. */
+export function returnTime(slotCode: string, travelMinutes: number, distanceKm?: number | null) {
+  return formatMinutes(returnMinutes(slotCode, travelMinutes, distanceKm));
+}
+
+/** End of the last slot (5:00 PM): getting back later than this is shown as a warning. */
+const WORKDAY_END_MINUTES = 17 * 60;
 
 /** Today's date (yyyy-MM-dd) in Asia/Manila, whatever the browser's time zone. */
 function manilaToday(now: Date = new Date()) {
@@ -106,12 +148,15 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
   // The customer's own appointment at the chosen time; shown until the date or time changes.
   const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
   const visibleConflict = conflictForSelection(scheduleConflict, date, slotCode);
+  // The pinned site's route: with it, staff are only busy from leaving the shop until back
+  // (travel + traffic allowance + 1.5 hr on site). Before a pin, an ocular visit holds the whole day.
+  const route = fee ? { travelMinutes: Math.ceil(fee.route.durationMinutes), distanceKm: fee.route.distanceKm } : undefined;
   // A time is offered when any sales staff member is free; the list below shows who.
-  const slots = useAvailableSlots(open ? date : '', 'ocular');
+  const slots = useAvailableSlots(open ? date : '', 'ocular', undefined, route);
   const staff = useQuery({
-    queryKey: ['users', 'sales-staff', 'ocular', date, slotCode],
-    // An ocular visit takes the staff member's whole day, so anyone with an appointment that day is disabled.
-    queryFn: () => fetchSalesStaffLookup({ date, slotCode, appointmentType: 'ocular' }),
+    queryKey: ['users', 'sales-staff', 'ocular', date, slotCode, route?.travelMinutes ?? '', route?.distanceKm ?? ''],
+    // Anyone with an appointment during the visit's busy time is disabled with the reason.
+    queryFn: () => fetchSalesStaffLookup({ date, slotCode, appointmentType: 'ocular', ...route }),
     enabled: open && !!date && !!slotCode,
     staleTime: 0,
   });
@@ -238,7 +283,12 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
             </Select>
             {date && slots.isError && <p className="text-xs text-destructive">{extractErrorMessage(slots.error, 'Unable to load slots for this date.')}</p>}
             {date && !slots.isLoading && slots.data?.slots.every((slot) => !slot.available) && (
-              <p className="text-xs text-destructive">No sales staff is free for an ocular visit on this date. An ocular visit takes a sales staff member&apos;s whole day, so choose another date.</p>
+              <p className="text-xs text-destructive">
+                No sales staff is free for an ocular visit on this date.{' '}
+                {route
+                  ? 'Each time needs the staff free from leaving the shop until back (travel, traffic allowance and 1.5 hr on site), so choose another date.'
+                  : 'Until the site is pinned, an ocular visit needs a staff member’s whole day. Pin the site below to see more times, or choose another date.'}
+              </p>
             )}
           </div>
           {visibleConflict && <ScheduleConflictAlert conflict={visibleConflict} className="sm:col-span-2" />}
@@ -246,7 +296,10 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
           <div className="space-y-2 sm:col-span-2">
             <div>
               <Label id="schedule-ocular-staff-label">Ocular Staff</Label>
-              <p className="mt-1 text-xs text-muted-foreground">Who will go to the project site. The project stays with its own sales staff. An ocular visit takes the staff member&apos;s whole day (travel included), so anyone with another appointment that day can&apos;t take it.</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Who will go to the project site. The project stays with its own sales staff. The visit keeps them busy from leaving the shop until back (travel, traffic allowance and 1.5 hr on site), so anyone with an appointment in that time can&apos;t take it; other times that day stay open.
+                {!route && ' Pin the site below to see who is free at this time.'}
+              </p>
             </div>
             {!date || !slotCode ? (
               <p className="rounded-lg border border-dashed p-3 text-xs text-muted-foreground">Select the date and time first to see who is available.</p>
@@ -330,12 +383,27 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
                     Travel time: ~{formatTravelDuration(fee.route.durationMinutes)} from the RMV shop ({fee.route.distanceKm.toFixed(1)} km)
                   </p>
                   {slotCode && (
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {selectedStaff ? `${selectedStaff.firstName} ${selectedStaff.lastName}` : 'The ocular staff'} should leave the shop by{' '}
-                      {departureTime(slotCode, fee.route.durationMinutes)} to arrive for the {formatSlotTime(slotCode)} visit.
-                    </p>
+                    <>
+                      <p className="mt-2 text-xs font-medium">
+                        {selectedStaff ? `${selectedStaff.firstName} ${selectedStaff.lastName}` : 'The ocular staff'}&apos;s schedule:
+                      </p>
+                      <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
+                        <li>Leave the shop by {departureTime(slotCode, fee.route.durationMinutes, fee.route.distanceKm)}</li>
+                        <li>Measuring {formatSlotTime(slotCode)}–{ocularVisitEnd(slotCode)} ({OCULAR_SITE_MINUTES / 60} hr)</li>
+                        <li>Back at the shop around {returnTime(slotCode, fee.route.durationMinutes, fee.route.distanceKm)}</li>
+                      </ul>
+                      {returnMinutes(slotCode, fee.route.durationMinutes, fee.route.distanceKm) > WORKDAY_END_MINUTES && (
+                        <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
+                          The staff gets back after 5:00 PM. Choose an earlier time if possible.
+                        </p>
+                      )}
+                    </>
                   )}
-                  <p className="mt-1 text-xs text-muted-foreground">Estimated one-way drive. Traffic is not included.</p>
+                  <p className="mt-2 text-xs text-muted-foreground">
+                    {isNearShop(fee.route.distanceKm)
+                      ? `Near the shop (within ${OCULAR_NEAR_SHOP_KM} km): no traffic allowance added.`
+                      : `Includes ${OCULAR_TRAFFIC_BUFFER_MINUTES} min for traffic each way (sites more than ${OCULAR_NEAR_SHOP_KM} km from the shop).`}
+                  </p>
                 </div>
                 <div className="rounded-lg border bg-background p-3 text-sm">
                   <p className="font-semibold">

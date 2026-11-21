@@ -143,8 +143,8 @@ export function resolveAppointmentStatusGroup(appointment: AppointmentWorkflowIn
 
 /**
  * Every role sees four appointment statuses: Requested, Assigned, Appointed, Completed.
- * Visit steps (preparing, on the way, in progress) show as Appointed; cancelled and no-show
- * close as Completed with an outcome badge. Keep in sync with the server's status groups.
+ * Visit steps (preparing, on the way, in progress) show as Appointed; cancelled closes as plain
+ * Completed, no-show as Completed with an outcome badge. Keep in sync with the server's status groups.
  */
 export function resolveAppointmentWorkflowStatus(
   appointment: AppointmentWorkflowInput,
@@ -155,8 +155,9 @@ export function resolveAppointmentWorkflowStatus(
     key: 'appointment_completed', label: 'Completed', tone: 'green', stage: 'completed', isTerminal: true, ...extra,
   });
 
+  // Cancelled appointments show "Completed" only (QA 11/20: no separate "Cancelled" badge).
   if (status === AppointmentStatus.CANCELLED) {
-    return completed({ secondaryKey: 'cancelled', secondaryLabel: 'Cancelled' });
+    return completed();
   }
   if (status === AppointmentStatus.NO_SHOW) {
     return completed({ secondaryKey: 'no_show', secondaryLabel: 'No Show' });

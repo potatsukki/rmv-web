@@ -4,9 +4,9 @@ import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users,
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
-import { formatTravelDuration } from '@/components/shared/ScheduleOcularDialog';
+import { departureTime, formatTravelDuration, ocularVisitEnd, returnTime } from '@/components/shared/ScheduleOcularDialog';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
-import { consultationAttendanceLabel, getNextConsultationAttendanceBoundary, getNoShowAvailability } from '@/lib/consultation-attendance';
+import { consultationAttendanceLabel, getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from '@/lib/consultation-attendance';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -244,7 +244,8 @@ export function AppointmentDetailPage() {
     return () => window.clearTimeout(timer);
   }, [appt, refetch]);
 
-  // Re-render when "Mark as No Show" opens (15 minutes after the scheduled time) so it enables itself.
+  // Re-render when "Mark as No Show" opens (15 minutes after the scheduled time) so it enables itself,
+  // then reload once the server's every-minute automatic no-show has had time to run.
   const [, setNoShowClock] = useState(0);
   const apptDate = appt?.date;
   const apptSlotCode = appt?.slotCode;
@@ -253,8 +254,12 @@ export function AppointmentDetailPage() {
     const wait = opensAt ? opensAt.getTime() - Date.now() : -1;
     if (wait <= 0 || wait > 24 * 60 * 60 * 1000) return;
     const timer = window.setTimeout(() => setNoShowClock((tick) => tick + 1), wait + 100);
-    return () => window.clearTimeout(timer);
-  }, [apptDate, apptSlotCode]);
+    const reload = window.setTimeout(() => { void refetch(); }, wait + 75_000);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearTimeout(reload);
+    };
+  }, [apptDate, apptSlotCode, refetch]);
 
   if (isLoading) return <PageLoader />;
   if (isError || !appt) return <PageError onRetry={refetch} />;
@@ -533,6 +538,23 @@ export function AppointmentDetailPage() {
 
   // No-show: only on the appointment date, from 15 minutes after the scheduled time (server rule too).
   const noShow = getNoShowAvailability(appt.date, appt.slotCode);
+  // Without a check-in, the server closes the consultation as No Show 15 minutes after its time.
+  const awaitingCheckIn = !appt.actualArrivalAt && (
+    attendanceStatus === AppointmentAttendanceStatus.SCHEDULED
+    || attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS
+  );
+  const autoNoShowNotice = awaitingCheckIn ? getAutoNoShowNotice(appt.date, appt.slotCode) : undefined;
+  const checkInButton = (
+    <button
+      type="button"
+      onClick={() => updateAttendance('check_in')}
+      disabled={attendanceMutation.isPending}
+      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-[#4f77f2] bg-[#315bd8] px-6 text-sm font-semibold text-white transition-colors hover:border-[#5f86ff] hover:bg-[#3d68e8] disabled:pointer-events-none disabled:opacity-50"
+    >
+      <Clock className="mr-2 h-4 w-4" />
+      Check In
+    </button>
+  );
   const noShowButton = (
     <div className="space-y-1.5">
       <button
@@ -689,7 +711,7 @@ export function AppointmentDetailPage() {
               {isCustomer && !isOcularAppointment && (
                 <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                   <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Please arrive on time. If you are 15 minutes late, your appointment will be cancelled and marked as No Show.
+                  Please arrive on time. If you are 15 minutes late, your appointment will be marked as No Show.
                 </p>
               )}
             </div>
@@ -784,7 +806,7 @@ export function AppointmentDetailPage() {
               {isCustomer && !isOcularAppointment && (
                 <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                   <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Please arrive on time. If you are 15 minutes late, your appointment will be cancelled and marked as No Show.
+                  Please arrive on time. If you are 15 minutes late, your appointment will be marked as No Show.
                 </p>
               )}
             </div>
@@ -958,18 +980,16 @@ export function AppointmentDetailPage() {
               </div>
             )}
             {canUpdateAttendance && (
-              <div className="pt-1">
+              <div className="space-y-4 pt-1">
+                {autoNoShowNotice && (
+                  <div className="flex items-start gap-2 rounded-xl border border-amber-200 bg-amber-50 p-3 text-sm leading-6 text-amber-900 dark:border-amber-500/25 dark:bg-amber-500/10 dark:text-amber-100">
+                    <Clock className="mt-1 h-4 w-4 shrink-0" />
+                    {autoNoShowNotice}
+                  </div>
+                )}
                 {attendanceStatus === AppointmentAttendanceStatus.SCHEDULED && (
                   <div className="grid gap-4 sm:grid-cols-2">
-                    <button
-                      type="button"
-                      onClick={() => updateAttendance('check_in')}
-                      disabled={attendanceMutation.isPending}
-                      className="inline-flex h-12 w-full items-center justify-center gap-2 rounded-md border border-[#4f77f2] bg-[#315bd8] px-6 text-sm font-semibold text-white transition-colors hover:border-[#5f86ff] hover:bg-[#3d68e8] disabled:pointer-events-none disabled:opacity-50"
-                    >
-                      <Clock className="mr-2 h-4 w-4" />
-                      Check In
-                    </button>
+                    {checkInButton}
                     {noShowButton}
                   </div>
                 )}
@@ -986,8 +1006,12 @@ export function AppointmentDetailPage() {
                     </button>
                   </div>
                 )}
+                {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && !appt.actualArrivalAt && (
+                  // Started automatically at the scheduled time; a customer who arrives within the grace period can still check in.
+                  checkInButton
+                )}
                 {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS && (
-                  <div className={cn('grid gap-4 pt-1', !appt.actualArrivalAt && 'sm:grid-cols-2')}>
+                  <div className={cn('grid gap-4', !appt.actualArrivalAt && 'sm:grid-cols-2')}>
                     {/* Started automatically at the scheduled time, but the customer never checked in. */}
                     {!appt.actualArrivalAt && noShowButton}
                     <button
@@ -1174,6 +1198,18 @@ export function AppointmentDetailPage() {
                 <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                   {appt.distanceKm.toFixed(1)} km
                   {appt.travelDurationMinutes != null && ` · ~${formatTravelDuration(appt.travelDurationMinutes)} drive from the RMV shop`}
+                </p>
+              </div>
+            )}
+
+            {/* The ocular visit's time: staff see their whole trip (traffic allowance included), customers the visit itself. */}
+            {isOcularAppointment && appt.slotCode && appt.travelDurationMinutes != null && (
+              <div>
+                <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">{isCustomer ? 'Site Visit' : 'Visit Schedule'}</p>
+                <p className="text-sm text-[#6e6e73] dark:text-slate-300">
+                  {isCustomer
+                    ? `${formatSlotTime(appt.slotCode)}–${ocularVisitEnd(appt.slotCode)} (about 1.5 hr)`
+                    : `Leave ${departureTime(appt.slotCode, appt.travelDurationMinutes, appt.distanceKm)} · Measuring ${formatSlotTime(appt.slotCode)}–${ocularVisitEnd(appt.slotCode)} · Back ~${returnTime(appt.slotCode, appt.travelDurationMinutes, appt.distanceKm)}`}
                 </p>
               </div>
             )}
