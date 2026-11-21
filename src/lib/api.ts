@@ -30,6 +30,7 @@ let lastTransientSessionToastAt = 0;
 const PUBLIC_AUTH_PATHS = [
   '/auth/login',
   '/auth/register',
+  '/auth/email-available',
   '/auth/google',
   '/auth/google/complete',
   '/auth/verify-email',

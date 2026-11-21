@@ -209,8 +209,11 @@ export async function fetchSalesStaffLookup(params?: {
   date?: string;
   slotCode?: string;
   appointmentId?: string;
-  /** What is being scheduled when there is no appointment yet: an ocular visit takes the whole day. */
+  /** What is being scheduled when there is no appointment yet. */
   appointmentType?: 'office' | 'ocular';
+  /** A new ocular visit's pinned site: one-way drive and route km. Without them it takes the whole day. */
+  travelMinutes?: number;
+  distanceKm?: number;
   search?: string;
 }) {
   const { data } = await api.get<ApiResponse<SalesStaffLookupUser[]>>('/users/sales-staff', {

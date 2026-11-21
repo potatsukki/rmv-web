@@ -357,8 +357,19 @@ export function FabricationTab({
   }
 
   const deliveryType = fabricationStatus?.deliveryType || project?.deliveryType || DeliveryType.SHOP_FABRICATED;
-  const confirmationAction = deliveryType === DeliveryType.ON_SITE_INSTALLATION ? 'Installation' : 'Completion';
-  const confirmationSubject = deliveryType === DeliveryType.ON_SITE_INSTALLATION ? 'installation schedule' : 'completed work';
+  // Customer confirmation: on-site work confirms the installation schedule before Installation;
+  // a delivery confirms the order was received before Done (the server sends confirmationGateStatus).
+  const isOnSiteWork = deliveryType === DeliveryType.ON_SITE_INSTALLATION;
+  const confirmButtonLabel = isOnSiteWork ? 'Confirm Installation' : 'Confirm Order Received';
+  const awaitingConfirmationText = isOnSiteWork
+    ? 'The customer has been notified and must confirm the installation schedule before you can move this to Installation.'
+    : 'The customer has been notified and must confirm they received the order before you can mark this as Done.';
+  const confirmedText = isOnSiteWork
+    ? 'Customer confirmed the installation schedule — you may proceed to Installation.'
+    : 'Customer confirmed they received the order — you may mark this as Done.';
+  const confirmationBlockedText = isOnSiteWork
+    ? 'The customer must confirm the installation schedule before Installation can begin'
+    : 'The customer must confirm they received the order before this can be marked as Done';
   const fabricationStepMarkers = getFabricationStepMarkers(deliveryType);
   const terminalStatus = FabricationStatus.DONE;
   const confirmationGateStatus = fabricationStatus?.confirmationGateStatus;
@@ -388,14 +399,14 @@ export function FabricationTab({
         projectItemId: selectedFabricationItemId,
       });
       toast.success(
-        deliveryType === DeliveryType.ON_SITE_INSTALLATION
-          ? 'Installation confirmed! The fabrication team can now complete the on-site work.'
-          : 'Completion confirmed! Our team will coordinate delivery.',
+        isOnSiteWork
+          ? 'Installation schedule confirmed! The crew can now proceed with the installation.'
+          : 'Thank you! The team can now mark your order as Done.',
         { duration: 5000 },
       );
     } catch (err) {
       setBlockedAction(resolveBlockedAction(err, '/help/projects-fabrication/fabrication-gates-and-payments#overview'));
-      toast.error(extractErrorMessage(err, `Failed to confirm ${confirmationAction.toLowerCase()}`));
+      toast.error(extractErrorMessage(err, isOnSiteWork ? 'Failed to confirm installation' : 'Failed to confirm receipt'));
     }
   };
 
@@ -439,7 +450,7 @@ export function FabricationTab({
     }
 
     if (status === confirmationGateStatus && !installationConfirmed) {
-      toast.error('The customer must confirm the installation schedule before this stage can begin');
+      toast.error(confirmationBlockedText);
       return;
     }
     if (isCrewBlockedStatus(status)) {
@@ -722,16 +733,14 @@ export function FabricationTab({
             <CalendarCheck className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                {deliveryType === DeliveryType.ON_SITE_INSTALLATION
-                  ? 'Installation at your location'
-                  : 'Confirm your order is complete'}
+                {isOnSiteWork ? 'Installation at your location' : 'Confirm you received your order'}
               </p>
               <p className="mt-0.5 text-xs text-blue-700 dark:text-blue-300">
-                {deliveryType === DeliveryType.ON_SITE_INSTALLATION
+                {isOnSiteWork
                   ? (deliveryDay
                     ? `Installation is scheduled on ${describeDeliverySchedule(project?.deliverySchedule)}. Please confirm this schedule.`
                     : 'RMV will set your installation date. You can confirm once it is scheduled.')
-                  : `Please confirm that the work is finished and ready for delivery.${deliveryDay ? ` Delivery is scheduled on ${formatDeliveryDay(deliveryDay)}.` : ''}`}
+                  : `Your order is out for delivery${deliveryDay ? ` (scheduled on ${formatDeliveryDay(deliveryDay)})` : ''}. Confirm once you have received it.`}
               </p>
             </div>
             <Button
@@ -740,7 +749,7 @@ export function FabricationTab({
               disabled={confirmInstallationMutation.isPending || awaitingDeliveryDate}
               onClick={handleConfirmInstallation}
             >
-              {confirmInstallationMutation.isPending ? 'Confirming...' : `Confirm ${confirmationAction}`}
+              {confirmInstallationMutation.isPending ? 'Confirming...' : confirmButtonLabel}
             </Button>
           </CardContent>
         </Card>
@@ -753,7 +762,7 @@ export function FabricationTab({
             <div>
               <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">Awaiting Customer Confirmation</p>
               <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
-                The customer has been notified and must confirm the {confirmationSubject} before you can mark this as Done.
+                {awaitingConfirmationText}
               </p>
             </div>
           </CardContent>
@@ -765,7 +774,7 @@ export function FabricationTab({
           <CardContent className="p-4 flex items-center gap-3">
             <PackageCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />
             <p className="text-sm font-medium text-emerald-800 dark:text-emerald-100">
-              Customer confirmed the {confirmationSubject} — you may proceed to the next stage.
+              {confirmedText}
             </p>
           </CardContent>
         </Card>

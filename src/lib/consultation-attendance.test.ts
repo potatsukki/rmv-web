@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getNextConsultationAttendanceBoundary, getNoShowAvailability } from './consultation-attendance';
+import { getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from './consultation-attendance';
 import {
   AppointmentAttendanceStatus,
   AppointmentStatus,
@@ -63,5 +63,23 @@ describe('getNoShowAvailability (appointment date only, 15 minutes after the sch
   it('uses the Manila date, whatever the browser time zone', () => {
     expect(check(new Date('2026-11-15T15:30:00Z')).allowed).toBe(true);
     expect(check(new Date('2026-11-15T16:30:00Z')).allowed).toBe(false);
+  });
+});
+
+describe('getAutoNoShowNotice (automatic No Show 15 minutes after the scheduled time)', () => {
+  const at = (manilaTime: string, day = '2026-11-15') => new Date(`${day}T${manilaTime}:00+08:00`);
+  const notice = (now: Date) => getAutoNoShowNotice('2026-11-15', '10:00', now);
+
+  it('tells staff the check-in deadline, with the date when it is not today', () => {
+    expect(notice(at('09:30'))).toBe('Check in the customer by 10:15 AM. After that, the system marks this consultation as No Show automatically.');
+    expect(notice(at('09:30', '2026-11-14'))).toContain('by 10:15 AM on Nov 15');
+  });
+
+  it('says the grace period has passed once it is 10:15 AM', () => {
+    expect(notice(at('10:16'))).toContain('grace period has passed');
+  });
+
+  it('shows nothing after the appointment date', () => {
+    expect(notice(at('09:00', '2026-11-16'))).toBeUndefined();
   });
 });

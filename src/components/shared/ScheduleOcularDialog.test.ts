@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { departureTime, formatTravelDuration, localDateAfter, ocularMinDate } from './ScheduleOcularDialog';
+import {
+  departureTime,
+  formatTravelDuration,
+  localDateAfter,
+  ocularLegMinutes,
+  ocularMinDate,
+  ocularVisitEnd,
+  returnMinutes,
+  returnTime,
+} from './ScheduleOcularDialog';
 
 // Nov 10, 2026, 10:00 AM in Manila.
 const NOV_10 = new Date('2026-11-10T02:00:00Z');
@@ -32,9 +41,27 @@ describe('ocular travel time', () => {
     expect(formatTravelDuration(120)).toBe('2 hr');
   });
 
-  it('tells when to leave the shop for the visit time', () => {
-    expect(departureTime('09:00', 45)).toBe('8:15 AM');
-    expect(departureTime('13:00', 80)).toBe('11:40 AM');
+  it('adds 45 min of traffic to each one-way trip, except within 4 km of the shop', () => {
+    expect(ocularLegMinutes(45, 18)).toBe(90);
+    expect(ocularLegMinutes(10, 3)).toBe(10);
+    expect(ocularLegMinutes(10, 4)).toBe(10);
+    // Unknown distance: the traffic allowance is kept (the server does the same).
+    expect(ocularLegMinutes(44.2)).toBe(90);
+  });
+
+  it('tells when to leave the shop for the visit time, traffic included', () => {
+    expect(departureTime('13:00', 45, 18)).toBe('11:30 AM');
+    expect(departureTime('09:00', 45, 18)).toBe('7:30 AM');
+    // Near the shop: just the drive.
+    expect(departureTime('13:00', 10, 3)).toBe('12:50 PM');
+  });
+
+  it('tells when the measuring ends and when the staff is back at the shop', () => {
+    expect(ocularVisitEnd('13:00')).toBe('2:30 PM');
+    expect(returnTime('13:00', 45, 18)).toBe('4:00 PM');
+    expect(returnTime('13:00', 10, 3)).toBe('2:40 PM');
+    // A 4 PM far visit gets back after 5 PM (the dialog warns about it).
+    expect(returnMinutes('16:00', 45, 18)).toBe(19 * 60);
   });
 
   it('never goes before midnight for a very long drive', () => {

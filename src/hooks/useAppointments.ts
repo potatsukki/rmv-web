@@ -114,13 +114,28 @@ export function useAppointment(id: string) {
 }
 
 /** `salesStaffId` (staff only) shows just that sales staff member's free days. */
-export function useAvailableSlots(date: string, type: string, salesStaffId?: string) {
+export function useAvailableSlots(
+  date: string,
+  type: string,
+  salesStaffId?: string,
+  /** Ocular only: the pinned site's route, so only the visit's busy time must be free (else the whole day). */
+  route?: { travelMinutes?: number | null; distanceKm?: number | null },
+) {
+  const travelMinutes = route?.travelMinutes ?? undefined;
+  const distanceKm = route?.distanceKm ?? undefined;
   return useQuery({
-    queryKey: [...KEYS.slots(date, type), salesStaffId ?? ''],
+    queryKey: [...KEYS.slots(date, type), salesStaffId ?? '', travelMinutes ?? '', distanceKm ?? ''],
     queryFn: async () => {
       const { data } = await api.get<
         ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number }[] }>
-      >('/appointments/slots', { params: { date, type, ...(salesStaffId ? { salesStaffId } : {}) } });
+      >('/appointments/slots', {
+        params: {
+          date,
+          type,
+          ...(salesStaffId ? { salesStaffId } : {}),
+          ...(travelMinutes != null ? { travelMinutes: Math.ceil(travelMinutes), ...(distanceKm != null ? { distanceKm } : {}) } : {}),
+        },
+      });
       return data.data;
     },
     enabled: !!date && !!type,

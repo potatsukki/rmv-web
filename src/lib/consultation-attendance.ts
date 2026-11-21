@@ -57,6 +57,28 @@ export function getNoShowAvailability(
   return { allowed: true };
 }
 
+/**
+ * Staff reminder for an office consultation that has no check-in yet: the server closes it as a
+ * No Show automatically once the grace period passes (processAutomaticConsultationNoShows).
+ */
+export function getAutoNoShowNotice(
+  date: string | undefined,
+  slotCode: string | undefined,
+  now = new Date(),
+): string | undefined {
+  const day = String(date ?? '').slice(0, 10);
+  const start = new Date(`${day}T${slotCode ?? ''}:00+08:00`);
+  if (Number.isNaN(start.getTime())) return undefined;
+  const closesAt = new Date(start.getTime() + NO_SHOW_GRACE_MINUTES * 60 * 1000);
+  const today = manilaDate(now);
+  if (today > day) return undefined;
+  if (today === day && now >= closesAt) {
+    return `The ${NO_SHOW_GRACE_MINUTES}-minute grace period has passed. Without a check-in, the system marks this consultation as No Show automatically.`;
+  }
+  const dayLabel = new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric' }).format(start);
+  return `Check in the customer by ${manilaTime(closesAt)}${today === day ? '' : ` on ${dayLabel}`}. After that, the system marks this consultation as No Show automatically.`;
+}
+
 /** A finished attendance only means the customer was there; the consultation is completed separately. */
 export function consultationAttendanceLabel(status?: string) {
   return status === AppointmentAttendanceStatus.COMPLETED ? 'Present' : undefined;

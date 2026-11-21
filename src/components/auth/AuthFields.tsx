@@ -16,9 +16,11 @@ interface AuthFieldProps extends InputHTMLAttributes<HTMLInputElement> {
   labelAction?: ReactNode;
   /** Shows a red asterisk after the label. */
   requiredMark?: boolean;
+  /** Live status line under the field (hidden while a validation error is shown). */
+  hint?: ReactNode;
 }
 
-export function AuthField({ id, label, registration, icon: Icon, error, labelAction, requiredMark, className, ...inputProps }: AuthFieldProps) {
+export function AuthField({ id, label, registration, icon: Icon, error, labelAction, requiredMark, hint, className, ...inputProps }: AuthFieldProps) {
   const errorId = `${id}-error`;
 
   return (
@@ -41,14 +43,14 @@ export function AuthField({ id, label, registration, icon: Icon, error, labelAct
           {...registration}
         />
       </div>
-      {error ? <p id={errorId} className="auth-field__error">{error}</p> : null}
+      {error ? <p id={errorId} className="auth-field__error">{error}</p> : hint}
     </div>
   );
 }
 
 interface PasswordFieldProps extends Omit<AuthFieldProps, 'type' | 'icon'> {}
 
-export function PasswordField({ id, label, registration, error, labelAction, requiredMark, className, ...inputProps }: PasswordFieldProps) {
+export function PasswordField({ id, label, registration, error, labelAction, requiredMark, hint, className, ...inputProps }: PasswordFieldProps) {
   const [visible, setVisible] = useState(false);
   const errorId = `${id}-error`;
 
@@ -80,7 +82,7 @@ export function PasswordField({ id, label, registration, error, labelAction, req
           {visible ? <EyeOff aria-hidden="true" /> : <Eye aria-hidden="true" />}
         </button>
       </div>
-      {error ? <p id={errorId} className="auth-field__error">{error}</p> : null}
+      {error ? <p id={errorId} className="auth-field__error">{error}</p> : hint}
     </div>
   );
 }

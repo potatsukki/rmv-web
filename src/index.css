@@ -1128,6 +1128,14 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-password-toggle:focus-visible { outline: 2px solid #f5b400; outline-offset: 1px; }
 .auth-password-toggle svg { width: 19px; height: 19px; }
 .auth-field__error { margin: 0; color: #ff9898; font: 500 0.78rem/1.35 'Inter', system-ui, sans-serif; }
+/* Live status under a field: email availability, password match. */
+.auth-field-hint { display: flex; flex-wrap: wrap; align-items: center; gap: 0 5px; margin: 0; color: #8f969d; font: 500 0.75rem/1.35 'Inter', system-ui, sans-serif; }
+.auth-field-hint svg { width: 13px; height: 13px; flex-shrink: 0; }
+.auth-field-hint[data-state='ok'] { color: #cfe9d9; }
+.auth-field-hint[data-state='ok'] svg { color: #43a66b; }
+.auth-field-hint[data-state='error'] { color: #ff9898; }
+.auth-field-hint[data-state='error'] svg { color: #e45858; }
+.auth-field-hint a { color: #f5b400; font-weight: 600; text-decoration: underline; text-underline-offset: 2px; }
 
 .auth-primary-button,
 .auth-google-button {
@@ -1300,9 +1308,9 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   .auth-shell--register .auth-form-panel { overflow: visible; }
   .auth-shell--register .auth-visual {
     position: sticky;
-    top: 16px;
+    top: 0;
     align-self: start;
-    height: calc(100svh - 32px);
+    height: 100svh;
   }
   .auth-back-link { min-height: 32px; margin-bottom: 20px; font-size: 0.86rem; }
   .auth-form-eyebrow { margin-bottom: 8px; font-size: 0.68rem; }
