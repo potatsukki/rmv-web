@@ -19,7 +19,7 @@ import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
 import { useAvailableSlots, useRequestAppointment } from '@/hooks/useAppointments';
 import { useAppointments } from '@/hooks/useAppointments';
 import { useHolidays } from '@/hooks/useConfig';
-import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS, MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
+import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS, MIN_BOOKING_LEAD_DAYS, MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import {
@@ -260,16 +260,21 @@ export function BookAppointmentPage() {
   // The customer's other appointment at the chosen time; shown until the date or time changes.
   const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
   const visibleConflict = conflictForSelection(scheduleConflict, selectedDate, selectedSlot);
-  const activeAppointment = useMemo(() => {
-    return activeAppointmentsQuery.data?.items.find((appointment) => [
+  // Not-yet-finished appointments (same statuses the server counts). A customer may hold several,
+  // each at its own date and time, up to MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER.
+  const activeAppointments = useMemo(() => {
+    return (activeAppointmentsQuery.data?.items ?? []).filter((appointment) => [
       'requested',
       'assigned',
       'confirmed',
       'preparing',
       'on_the_way',
+      'arrived_at_site',
+      'in_progress',
       'reschedule_requested',
     ].includes(appointment.status));
   }, [activeAppointmentsQuery.data?.items]);
+  const activeLimitReached = activeAppointments.length >= MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER;
 
   const canProceed = useMemo(() => {
     const stepKey = steps[currentStep]?.key;
@@ -340,26 +345,13 @@ export function BookAppointmentPage() {
       );
     } catch (error: unknown) {
       const apiError = (error as {
-        response?: {
-          data?: {
-            error?: {
-              code?: string;
-              message?: string;
-              details?: { activeAppointmentId?: unknown };
-            };
-          };
-        };
+        response?: { data?: { error?: { code?: string } } };
       })?.response?.data?.error;
-      const activeAppointmentId =
-        typeof apiError?.details?.activeAppointmentId === 'string'
-          ? apiError.details.activeAppointmentId
-          : undefined;
 
-      if (apiError?.code === 'DUPLICATE_ENTRY' && activeAppointmentId) {
-        toast.error(`${extractErrorMessage(error, 'Booking failed')} Redirecting you to that appointment now.`, {
-          duration: 5000,
-        });
-        navigate(`/appointments/${activeAppointmentId}`);
+      // Already holding the maximum number of active appointments: show them on the Appointments page.
+      if (apiError?.code === 'ACTIVE_APPOINTMENT_LIMIT') {
+        toast.error(extractErrorMessage(error, 'Booking failed'), { duration: 6000 });
+        navigate('/appointments');
         return;
       }
 
@@ -437,7 +429,7 @@ export function BookAppointmentPage() {
         })}
       </div>
 
-      {activeAppointment && (
+      {activeLimitReached && (
         <Card className="rounded-2xl border border-[#f3c7cf] bg-[linear-gradient(135deg,rgba(255,255,255,1)_0%,rgba(255,244,246,0.95)_55%,rgba(255,248,240,0.98)_100%)] shadow-sm dark:border-red-900/40 dark:bg-[linear-gradient(135deg,rgba(40,20,25,0.9)_0%,rgba(25,12,15,0.85)_100%)]">
           <CardContent className="space-y-4 p-5">
             <div className="flex items-start gap-3">
@@ -446,17 +438,26 @@ export function BookAppointmentPage() {
               </div>
               <div className="min-w-0 space-y-1">
                 <div className="flex flex-wrap items-center gap-2">
-                  <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">You already have an active appointment</p>
+                  <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
+                    You already have {activeAppointments.length} active appointments
+                  </p>
                   <span className="rounded-full bg-white/80 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.08em] text-[#b42318] ring-1 ring-[#f3c7cf] dark:bg-red-500/20 dark:text-red-200 dark:ring-red-500/30">
                     Booking blocked
                   </span>
                 </div>
                 <p className="text-sm leading-6 text-[#6e6e73] dark:text-slate-300">
-                  View your current appointment before starting a new booking. To change its date or time, contact an appointment agent.
+                  You can hold up to {MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER} active appointments at a time. Complete or cancel one before booking another. To change a date or time, contact an appointment agent.
                 </p>
-                <p className="text-xs text-[#86868b] dark:text-slate-400">
-                  Current status: <span className="font-semibold text-[#1d1d1f] dark:text-slate-100">{resolveAppointmentWorkflowStatus(activeAppointment).label}</span>
-                </p>
+                <ul className="space-y-0.5 text-xs text-[#86868b] dark:text-slate-400">
+                  {activeAppointments.map((appointment) => (
+                    <li key={appointment._id}>
+                      <span className="font-semibold text-[#1d1d1f] dark:text-slate-100">{appointment.appointmentNumber || 'Appointment'}</span>
+                      {appointment.date ? ` · ${format(new Date(`${appointment.date.slice(0, 10)}T00:00:00`), 'MMM d, yyyy')}` : ''}
+                      {appointment.slotCode ? `, ${formatSlotTime(appointment.slotCode)}` : ''}
+                      {` · ${resolveAppointmentWorkflowStatus(appointment).label}`}
+                    </li>
+                  ))}
+                </ul>
               </div>
             </div>
             <div className="flex flex-col gap-2 sm:flex-row sm:justify-end">
@@ -465,13 +466,22 @@ export function BookAppointmentPage() {
                 variant="outline"
                 className="h-11 rounded-xl border-white/80 bg-white/80 text-[#3a3a3e] shadow-sm hover:bg-white dark:border-red-500/20 dark:bg-red-500/10 dark:text-red-200 dark:hover:bg-red-500/20 dark:hover:text-red-100"
               >
-                <button type="button" onClick={() => navigate(`/appointments/${activeAppointment._id}`)}>
-                  View Active Appointment
+                <button type="button" onClick={() => navigate('/appointments')}>
+                  View Appointments
                 </button>
               </Button>
             </div>
           </CardContent>
         </Card>
+      )}
+
+      {!activeLimitReached && activeAppointments.length > 0 && (
+        <div className="flex items-start gap-3 rounded-xl border border-[#d2d2d7]/50 bg-[#f0f0f5]/70 p-3.5 dark:border-white/10 dark:bg-white/[0.04]">
+          <Info className="mt-0.5 h-4 w-4 shrink-0 text-[#6e6e73] dark:text-slate-300" />
+          <p className="text-sm text-[#3a3a3e] dark:text-slate-300">
+            You have {activeAppointments.length} active appointment{activeAppointments.length === 1 ? '' : 's'}. You can book another one on a different date or time (up to {MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER} active at a time).
+          </p>
+        </div>
       )}
 
       <form onSubmit={(e) => e.preventDefault()} className="space-y-6">
@@ -678,6 +688,7 @@ export function BookAppointmentPage() {
                     <ul className="list-inside list-disc space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
                       <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least {MIN_BOOKING_LEAD_DAYS} days</span> in advance</li>
                       <li>Bookings are open <span className="font-medium text-[#1d1d1f] dark:text-slate-100">every day, including weekends</span> (holidays excluded)</li>
+                      <li>You can hold <span className="font-medium text-[#1d1d1f] dark:text-slate-100">up to {MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER} active appointments</span>, each on a different date or time</li>
                     </ul>
                   </div>
                 </div>
