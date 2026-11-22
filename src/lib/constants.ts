@@ -56,6 +56,8 @@ export const SLOT_CODES = ['09:00', '10:00', '11:00', '13:00', '14:00', '15:00',
 
 // Minimum days between today and a bookable date; keep in sync with rmv-server.
 export const MIN_BOOKING_LEAD_DAYS = 3;
+// A customer may hold this many active appointments at once (each on its own date and time); keep in sync with rmv-server.
+export const MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER = 3;
 // An ocular visit is scheduled at least this many days after its consultation; keep in sync with rmv-server.
 export const OCULAR_MIN_DAYS_AFTER_CONSULTATION = 3;
 // An ocular visit keeps its sales staff away from leaving the shop until back: the drive plus a
