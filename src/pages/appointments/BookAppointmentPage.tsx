@@ -686,7 +686,7 @@ export function BookAppointmentPage() {
                   <div className="space-y-0.5 text-sm text-[#3a3a3e] dark:text-slate-300">
                     <p className="font-medium">Scheduling Rules</p>
                     <ul className="list-inside list-disc space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
-                      <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least {MIN_BOOKING_LEAD_DAYS} days</span> in advance</li>
+                      <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least {MIN_BOOKING_LEAD_DAYS} day{MIN_BOOKING_LEAD_DAYS === 1 ? '' : 's'}</span> in advance</li>
                       <li>Bookings are open <span className="font-medium text-[#1d1d1f] dark:text-slate-100">every day, including weekends</span> (holidays excluded)</li>
                       <li>You can hold <span className="font-medium text-[#1d1d1f] dark:text-slate-100">up to {MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER} active appointments</span>, each on a different date or time</li>
                     </ul>

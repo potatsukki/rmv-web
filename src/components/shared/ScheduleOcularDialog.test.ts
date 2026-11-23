@@ -9,6 +9,7 @@ import {
   returnMinutes,
   returnTime,
 } from './ScheduleOcularDialog';
+import { MIN_BOOKING_LEAD_DAYS } from '@/lib/constants';
 
 // Nov 10, 2026, 10:00 AM in Manila.
 const NOV_10 = new Date('2026-11-10T02:00:00Z');
@@ -24,8 +25,11 @@ describe('ocularMinDate', () => {
   });
 
   it('falls back to the advance-booking lead for an old consultation', () => {
-    expect(ocularMinDate('2026-11-01', NOV_10).minDate).toBe('2026-11-13');
-    expect(ocularMinDate(undefined, NOV_10).minDate).toBe('2026-11-13');
+    // MIN_BOOKING_LEAD_DAYS days after Nov 10 (Manila).
+    const leadMinDate = localDateAfter(MIN_BOOKING_LEAD_DAYS, NOV_10);
+    expect(leadMinDate).toBe(`2026-11-${String(10 + MIN_BOOKING_LEAD_DAYS).padStart(2, '0')}`);
+    expect(ocularMinDate('2026-11-01', NOV_10).minDate).toBe(leadMinDate);
+    expect(ocularMinDate(undefined, NOV_10).minDate).toBe(leadMinDate);
   });
 
   it('uses the Manila date, not the browser time zone', () => {
