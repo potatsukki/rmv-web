@@ -32,7 +32,7 @@ function AuthVisualPanel() {
           <img src="/rmv-logo-256.png" alt="" aria-hidden="true" />
           <p><strong>RMV</strong> FABRICATION</p>
           <span>EST. 2018</span>
-          <small>HIGH-GRADE INDUSTRIAL SOLUTIONS<br />PRECISION ENGINEERED</small>
+          <small>Built for Every Kitchen.<br />Home to Commercial</small>
         </div>
       </div>
     </aside>
