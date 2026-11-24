@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from './consultation-attendance';
+import { consultationClosedAtLabel, getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from './consultation-attendance';
 import {
   AppointmentAttendanceStatus,
   AppointmentStatus,
@@ -81,5 +81,27 @@ describe('getAutoNoShowNotice (automatic No Show 15 minutes after the scheduled 
 
   it('shows nothing after the appointment date', () => {
     expect(notice(at('09:00', '2026-11-16'))).toBeUndefined();
+  });
+});
+
+describe('consultationClosedAtLabel (what the consultationCompletedAt time means)', () => {
+  it('labels the time a consultation was closed as No Show, never as Marked Present', () => {
+    expect(consultationClosedAtLabel(AppointmentAttendanceStatus.NO_SHOW)).toEqual({
+      label: 'Marked No Show',
+      hint: 'When the consultation was closed as No Show',
+    });
+  });
+
+  it('keeps Marked Present for every other outcome (Customer Declined is unchanged)', () => {
+    for (const status of [
+      AppointmentAttendanceStatus.COMPLETED,
+      AppointmentAttendanceStatus.CUSTOMER_DECLINED,
+      undefined,
+    ]) {
+      expect(consultationClosedAtLabel(status)).toEqual({
+        label: 'Marked Present',
+        hint: 'Set when the consultation report is submitted',
+      });
+    }
   });
 });

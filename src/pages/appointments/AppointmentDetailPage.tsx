@@ -6,7 +6,7 @@ import toast from 'react-hot-toast';
 import { extractErrorMessage, cn } from '@/lib/utils';
 import { departureTime, formatTravelDuration, ocularVisitEnd, returnTime } from '@/components/shared/ScheduleOcularDialog';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
-import { consultationAttendanceLabel, getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from '@/lib/consultation-attendance';
+import { consultationAttendanceLabel, consultationClosedAtLabel, getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from '@/lib/consultation-attendance';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -446,6 +446,9 @@ export function AppointmentDetailPage() {
 
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
+  // A No Show consultation closes as Completed; attendanceStatus keeps the No Show outcome.
+  const isNoShowConsultation = isOfficeConsultation && attendanceStatus === AppointmentAttendanceStatus.NO_SHOW;
+  const closedAt = consultationClosedAtLabel(attendanceStatus);
   const appointmentWorkflowStatus = resolveAppointmentWorkflowStatus(appt);
   const selectedDesignTemplates = appt.selectedDesignTemplates?.length
     ? appt.selectedDesignTemplates
@@ -877,7 +880,22 @@ export function AppointmentDetailPage() {
           </CardContent>
         </Card>
       )}
-      {appt.status === AppointmentStatus.COMPLETED && (
+      {appt.status === AppointmentStatus.COMPLETED && isNoShowConsultation && (
+        <Card className="rounded-xl border-slate-200 bg-slate-50/70 dark:border-slate-700/60 dark:bg-slate-900/50">
+          <CardContent className="flex items-start gap-3 py-3 px-4">
+            <CalendarX className="h-5 w-5 text-slate-500 dark:text-slate-300 mt-0.5 shrink-0" />
+            <div>
+              <p className="text-sm font-semibold text-slate-900 dark:text-slate-100">Closed as No Show</p>
+              <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5">
+                {isCustomer
+                  ? 'This consultation was closed as No Show because no check-in was recorded. Book a new consultation when you are ready.'
+                  : 'No check-in was recorded, so this consultation was closed as No Show. No visit report is needed.'}
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+      {appt.status === AppointmentStatus.COMPLETED && !isNoShowConsultation && (
         <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 dark:border-emerald-900/60 dark:bg-emerald-950/40">
           <CardContent className="flex items-start gap-3 py-3 px-4">
             <CheckCircle2 className="h-5 w-5 text-emerald-600 dark:text-emerald-300 mt-0.5 shrink-0" />
@@ -923,11 +941,13 @@ export function AppointmentDetailPage() {
                     <StatusBadge status={attendanceStatus} label={consultationAttendanceLabel(attendanceStatus)} />
                   </div>
                   <p className="mt-3 text-sm text-slate-500 dark:text-slate-400">
-                    {attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS
-                      ? 'Started automatically at the scheduled time'
-                      : attendanceStatus === AppointmentAttendanceStatus.COMPLETED
-                        ? 'Marked present automatically at the end of the time slot'
-                        : 'Will start automatically at the scheduled time'}
+                    {attendanceStatus === AppointmentAttendanceStatus.NO_SHOW
+                      ? 'The customer did not check in. The consultation is closed.'
+                      : attendanceStatus === AppointmentAttendanceStatus.IN_PROGRESS
+                        ? 'Started automatically at the scheduled time'
+                        : attendanceStatus === AppointmentAttendanceStatus.COMPLETED
+                          ? 'Marked present automatically at the end of the time slot'
+                          : 'Will start automatically at the scheduled time'}
                   </p>
                 </div>
               </div>
@@ -939,7 +959,9 @@ export function AppointmentDetailPage() {
                 <div className="min-w-0">
                   <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Arrival</p>
                   <p className="mt-1 text-[17px] font-semibold text-slate-950 dark:text-slate-100">{formatDateTime(appt.actualArrivalAt)}</p>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Check-in when you arrive</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">
+                    {isNoShowConsultation ? 'No check-in was recorded' : 'Check-in when you arrive'}
+                  </p>
                 </div>
               </div>
 
@@ -948,9 +970,9 @@ export function AppointmentDetailPage() {
                   <CheckCircle2 className="h-5 w-5" />
                 </div>
                 <div className="min-w-0">
-                  <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Marked Present</p>
+                  <p className="text-[12px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{closedAt.label}</p>
                   <p className="mt-1 text-[17px] font-semibold text-slate-950 dark:text-slate-100">{formatDateTime(appt.consultationCompletedAt)}</p>
-                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">Set when the consultation report is submitted</p>
+                  <p className="mt-2 text-sm text-slate-500 dark:text-slate-400">{closedAt.hint}</p>
                 </div>
               </div>
             </div>
