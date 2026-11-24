@@ -680,7 +680,7 @@ export function AppLayout() {
 
       <main className="min-h-screen bg-[#090b0d] transition-all duration-300 md:pl-[280px]">
         <header className="sticky top-0 z-30 hidden border-b border-white/[.08] bg-[#090b0d]/95 backdrop-blur-xl md:block">
-          <div className="flex h-[76px] items-center justify-between px-6 lg:px-8">
+          <div className="flex h-[76px] items-center justify-between gap-4 px-6 lg:px-8">
             <div className="flex min-w-0 items-center gap-3">
               <button
                 type="button"
@@ -691,18 +691,23 @@ export function AppLayout() {
               </button>
               <div className="h-8 w-px bg-white/10" />
               <div className="flex min-w-0 flex-col justify-center">
-                <div className="mb-0.5 flex items-center gap-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
-                  <span>Workspace</span>
-                  {breadcrumbs.length > 0 && <span className="h-1 w-1 rounded-full bg-[#b3bcc6]" />}
+                <div className="mb-0.5 flex min-w-0 items-center gap-2 overflow-hidden whitespace-nowrap text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                  <span className="shrink-0">Workspace</span>
+                  {breadcrumbs.length > 0 && <span className="h-1 w-1 shrink-0 rounded-full bg-[#b3bcc6]" />}
                   <span className="truncate text-slate-400">{meta.title}</span>
                 </div>
                 {breadcrumbs.length > 1 ? (
-                  <nav className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <nav className="flex min-w-0 items-center gap-1.5 overflow-hidden whitespace-nowrap text-xs text-muted-foreground">
                     {breadcrumbs.map((crumb, i) => (
-                      <span key={crumb.path} className="flex items-center gap-2">
-                        {i > 0 && <ChevronRight className="h-3.5 w-3.5" />}
+                      <span
+                        key={crumb.path}
+                        className={`flex items-center gap-2 ${crumb.isLast ? 'min-w-0' : 'shrink-0'}`}
+                      >
+                        {i > 0 && <ChevronRight className="h-3.5 w-3.5 shrink-0" />}
                         {crumb.isLast ? (
-                          <span className="font-semibold text-foreground">{crumb.label}</span>
+                          <span className="truncate font-semibold text-foreground" title={crumb.label}>
+                            {crumb.label}
+                          </span>
                         ) : (
                           <Link to={crumb.path} className="hover:text-foreground transition-colors">
                             {crumb.label}
@@ -712,12 +717,12 @@ export function AppLayout() {
                     ))}
                   </nav>
                 ) : (
-                  <p className="text-xs text-slate-400">{meta.description}</p>
+                  <p className="truncate text-xs text-slate-400">{meta.description}</p>
                 )}
               </div>
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center gap-3">
               <div ref={searchContainerRef} className="relative">
                 <div className="relative">
                   <Search className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -915,10 +920,11 @@ export function AppLayout() {
                 <button
                   type="button"
                   onClick={() => setIsProfileModalOpen(true)}
+                  title={`Profile ${profileChecks.percent}%`}
                   className="metal-pill hidden h-10 items-center gap-2 rounded-xl px-3 text-xs text-muted-foreground transition-colors hover:text-foreground lg:flex"
                 >
                   <CircleCheckBig className="h-4 w-4" />
-                  <span className="font-medium">
+                  <span className="hidden font-medium xl:inline">
                     Profile {profileChecks.percent}%
                   </span>
                   <span className="rounded-full bg-white/65 px-1.5 py-0.5 text-[10px] font-semibold text-foreground dark:bg-slate-800/85 dark:text-slate-100">
@@ -936,7 +942,7 @@ export function AppLayout() {
                     {user.firstName[0]}
                     {user.lastName[0]}
                   </div>
-                  <div className="hidden lg:block text-left">
+                  <div className="hidden xl:block text-left">
                     <p className="text-sm font-semibold text-foreground leading-none">{user.firstName}</p>
                     <p className="text-[10px] text-muted-foreground capitalize mt-0.5">
                       {user.roles[0]?.replace(/_/g, ' ')}

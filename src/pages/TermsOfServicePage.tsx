@@ -1,4 +1,4 @@
-import { PublicNavbar } from '@/components/shared/PublicNavbar';
+import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { FileText } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -7,7 +7,7 @@ const SMOOTH_240: [number, number, number, number] = [0.22, 1, 0.36, 1];
 export function TermsOfServicePage() {
   return (
     <div className="landing-atelier min-h-screen bg-[#0a0a0b] text-white/90 selection:bg-[#FFD700]/30 selection:text-white">
-      <PublicNavbar />
+      <LandingNavbar />
 
       <main className="relative pt-32 pb-40 lg:pt-48">
         <div className="blueprint-grid absolute inset-0 pointer-events-none opacity-20" />

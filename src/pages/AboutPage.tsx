@@ -15,7 +15,7 @@ import {
   type LucideIcon,
 } from 'lucide-react';
 import { useNavigate } from 'react-router';
-import { PublicNavbar } from '@/components/shared/PublicNavbar';
+import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { useAuthStore } from '@/stores/auth.store';
 
 type StoryItem = {
@@ -163,7 +163,7 @@ export function AboutPage() {
 
   return (
     <div className="min-h-screen bg-black text-white">
-      <PublicNavbar />
+      <LandingNavbar />
 
       <main>
         <section className="relative isolate flex min-h-[560px] items-center overflow-hidden pt-20 sm:min-h-[600px]">
