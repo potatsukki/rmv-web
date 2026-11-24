@@ -63,6 +63,7 @@ function AuthTrustStrip() {
 function AuthFooter() {
   return (
     <footer className="auth-footer">
+      <p>© {new Date().getFullYear()} RMV Stainless Steel Fabrication. All rights reserved.</p>
       <nav aria-label="Legal links">
         <a href="/privacy">Privacy Policy</a>
         <span aria-hidden="true">•</span>
