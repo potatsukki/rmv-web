@@ -84,6 +84,16 @@ export function consultationAttendanceLabel(status?: string) {
   return status === AppointmentAttendanceStatus.COMPLETED ? 'Present' : undefined;
 }
 
+/**
+ * consultationCompletedAt is when the consultation closed: the report submit when the customer was
+ * present, or the moment it was marked No Show (by staff or automatically). Label it by that outcome.
+ */
+export function consultationClosedAtLabel(status?: string) {
+  return status === AppointmentAttendanceStatus.NO_SHOW
+    ? { label: 'Marked No Show', hint: 'When the consultation was closed as No Show' }
+    : { label: 'Marked Present', hint: 'Set when the consultation report is submitted' };
+}
+
 export function getNextConsultationAttendanceBoundary(
   appointment: {
     type?: string;

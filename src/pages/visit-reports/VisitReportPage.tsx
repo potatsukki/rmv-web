@@ -62,7 +62,7 @@ import {
 import type { LineItem, ServiceSpecifications, SiteConditions, VisitReport } from '@/lib/types';
 import { getDesignTemplatePlaceholderImage } from '@/lib/design-templates';
 import { getServiceSpecificationSchema, hasMeaningfulSpecifications, mergeSpecificationsWithDefaults, normalizeServiceSpecifications, visitReportHasMeasurements } from '@/lib/service-specifications';
-import { consultationAttendanceLabel, getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
+import { consultationAttendanceLabel, consultationClosedAtLabel, getNextConsultationAttendanceBoundary } from '@/lib/consultation-attendance';
 
 
 const DEFAULT_SITE_CONDITIONS: SiteConditions = {
@@ -1546,7 +1546,7 @@ export function VisitReportPage() {
                       <p>Checked in: {format(new Date(appointmentRecord.actualArrivalAt), 'MMM d, yyyy h:mm a')}</p>
                     )}
                     {appointmentRecord?.consultationCompletedAt && (
-                      <p>Marked present: {format(new Date(appointmentRecord.consultationCompletedAt), 'MMM d, yyyy h:mm a')}</p>
+                      <p>{consultationClosedAtLabel(attendanceStatus).label}: {format(new Date(appointmentRecord.consultationCompletedAt), 'MMM d, yyyy h:mm a')}</p>
                     )}
                   </div>
                 </div>
