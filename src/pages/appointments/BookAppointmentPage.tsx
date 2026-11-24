@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { addDays, format, startOfDay, startOfMonth } from 'date-fns';
-import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Clock, Loader2, Calendar, FileText, Image as ImageIcon, Info, Wrench, X } from 'lucide-react';
+import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Loader2, Calendar, FileText, Image as ImageIcon, Info, Wrench, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
@@ -855,13 +855,6 @@ export function BookAppointmentPage() {
                   <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-[#1d1d1f] dark:text-slate-100">{notes}</p>
                 </div>
               )}
-
-              <div className="flex items-start gap-3 rounded-xl border border-amber-300 bg-amber-50 p-3.5 dark:border-amber-500/30 dark:bg-amber-500/10">
-                <Clock className="mt-0.5 h-4 w-4 shrink-0 text-amber-600 dark:text-amber-300" />
-                <p className="text-sm text-amber-900 dark:text-amber-100/90">
-                  <span className="font-semibold">Please arrive on time.</span> If you are 15 minutes late, your appointment will be marked as No Show.
-                </p>
-              </div>
             </CardContent>
           </Card>
         )}

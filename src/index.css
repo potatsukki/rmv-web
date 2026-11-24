@@ -14,6 +14,13 @@ html {
   text-rendering: optimizeLegibility;
 }
 
+/* Auto-scale: laptop-size screens use a 16px root (≈ the 90% zoom look); phones and wide screens keep 18px */
+@media (min-width: 768px) and (max-width: 1535.98px) {
+  html {
+    font-size: 100%;
+  }
+}
+
 * {
   -webkit-tap-highlight-color: transparent;
 }
@@ -847,23 +854,13 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 
 .auth-visual__image {
   z-index: -2;
-  background-repeat: no-repeat;
-  background-size: cover;
+  /* Photo only (no baked-in text or frames), so it can cover the panel at every size. */
+  background: url('/landing/auth-welder.jpg') center 35% / cover no-repeat;
   transform: scale(1.01);
-}
-
-.auth-visual--register .auth-visual__image {
-  background-size: 250% auto;
 }
 
 .auth-visual__wash {
   z-index: -1;
-  background:
-    linear-gradient(90deg, rgba(5, 7, 8, 0.91) 0%, rgba(5, 7, 8, 0.63) 55%, rgba(5, 7, 8, 0.28) 100%),
-    linear-gradient(0deg, rgba(5, 7, 8, 0.68) 0%, rgba(5, 7, 8, 0.05) 52%, rgba(5, 7, 8, 0.34) 100%);
-}
-
-.auth-visual--register .auth-visual__wash {
   background:
     linear-gradient(180deg, rgba(5, 7, 8, 0.66) 0%, rgba(5, 7, 8, 0.47) 52%, rgba(5, 7, 8, 0.83) 100%),
     linear-gradient(90deg, rgba(5, 7, 8, 0.54), rgba(5, 7, 8, 0.16));
@@ -895,15 +892,6 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-logo strong { font-family: 'Sora', system-ui, sans-serif; font-size: 1.2rem; letter-spacing: -0.06em; }
 .auth-logo small { font: 700 0.52rem/1.22 'Inter', system-ui, sans-serif; letter-spacing: 0.18em; }
 
-.auth-visual__login-copy {
-  display: grid;
-  max-width: 540px;
-  gap: 18px;
-  margin-top: auto;
-}
-
-.auth-kicker,
-.auth-visual__est,
 .auth-visual__brand-frame > span {
   margin: 0;
   color: #f5b400;
@@ -911,45 +899,6 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   letter-spacing: 0.17em;
   text-transform: uppercase;
 }
-
-.auth-visual h1 {
-  max-width: 10ch;
-  margin: 0;
-  font-family: 'Sora', system-ui, sans-serif;
-  font-size: clamp(2.7rem, 4.5vw, 5.15rem);
-  font-weight: 800;
-  line-height: 0.96;
-  letter-spacing: -0.07em;
-}
-
-.auth-visual h1 em { color: #f5b400; font-style: normal; }
-
-.auth-visual__description {
-  max-width: 40ch;
-  margin: 0;
-  color: #d4d7da;
-  font: 500 1rem/1.62 'Inter', system-ui, sans-serif;
-}
-
-.auth-visual__proofs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px 28px;
-  margin-top: 24px;
-}
-
-.auth-visual__proofs span {
-  display: inline-flex;
-  align-items: center;
-  gap: 9px;
-  color: #f7f7f5;
-  font: 700 0.68rem/1.3 'Inter', system-ui, sans-serif;
-  letter-spacing: 0.055em;
-  text-transform: uppercase;
-}
-
-.auth-visual__proofs svg { width: 22px; height: 22px; color: #f5b400; stroke-width: 1.8; }
-.auth-visual__est { margin-top: 26px; color: rgba(247, 247, 245, 0.64); }
 
 .auth-visual__brand-frame {
   display: grid;
@@ -970,7 +919,6 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-visual__brand-frame img { width: 108px; height: 108px; object-fit: contain; }
 .auth-visual__brand-frame p { margin: 0; font: 400 clamp(1.75rem, 2.7vw, 3rem)/1 'Sora', system-ui, sans-serif; letter-spacing: -0.06em; }
 .auth-visual__brand-frame p strong { color: #f5b400; font-weight: 800; }
-.auth-visual__brand-frame > span { color: #f5b400; }
 .auth-visual__brand-frame small { color: #d4d7da; font: 600 0.64rem/1.85 'Inter', system-ui, sans-serif; letter-spacing: 0.25em; }
 
 .auth-form-panel {
@@ -1209,8 +1157,7 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-trust-strip__item strong { color: #f7f7f5; font: 700 0.72rem/1.2 'Inter', system-ui, sans-serif; letter-spacing: 0.07em; text-transform: uppercase; }
 .auth-trust-strip__item small { color: #8f969d; font: 400 0.78rem/1.2 'Inter', system-ui, sans-serif; }
 
-.auth-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 32px 22px; color: #8f969d; font: 400 0.78rem/1.4 'Inter', system-ui, sans-serif; }
-.auth-footer p { margin: 0; }
+.auth-footer { display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding: 18px 32px 22px; color: #8f969d; font: 400 0.78rem/1.4 'Inter', system-ui, sans-serif; }
 .auth-footer nav { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .auth-footer a { color: #d4d7da; text-decoration: none; }
 .auth-footer a:hover { color: #f5b400; }
@@ -1221,10 +1168,6 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   .auth-shell--register .auth-shell__frame { min-height: 720px; }
   .auth-visual__content { padding: 32px; }
   .auth-form-panel__inner { padding: 40px; }
-  .auth-visual h1 { font-size: clamp(2.35rem, 5.4vw, 3.8rem); }
-  .auth-visual__proofs { gap: 14px; }
-  .auth-visual__proofs span { font-size: 0.6rem; }
-  .auth-visual__proofs svg { width: 19px; height: 19px; }
   .auth-trust-strip__item { padding: 0 18px; }
 }
 
@@ -1242,17 +1185,12 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   .auth-shell__main { display: block; padding: 0; }
   .auth-shell__frame { display: flex; flex-direction: column; min-height: 100svh !important; border: 0; box-shadow: none; }
   .auth-visual { order: 0 !important; min-height: 172px; max-height: 235px; flex: none; }
-  .auth-visual__image { background-position: center 46% !important; }
-  .auth-visual--register .auth-visual__image { background-size: 180% auto; background-position: left center !important; }
-  .auth-visual__wash { background: linear-gradient(90deg, rgba(5,7,8,0.88), rgba(5,7,8,0.38)), linear-gradient(0deg, rgba(5,7,8,0.75), transparent); }
-  .auth-visual--register .auth-visual__wash { background: linear-gradient(90deg, rgba(5,7,8,0.8), rgba(5,7,8,0.32)); }
+  .auth-visual__wash { background: linear-gradient(90deg, rgba(5,7,8,0.8), rgba(5,7,8,0.32)); }
   .auth-visual__content { min-height: 100%; padding: 20px 24px; }
   .auth-logo img { width: 38px; height: 38px; }
   .auth-logo strong { font-size: 1rem; }
   .auth-logo small { font-size: 0.45rem; }
-  .auth-visual__login-copy { gap: 0; }
-  .auth-kicker, .auth-visual__description, .auth-visual__proofs, .auth-visual__est, .auth-visual__brand-frame { display: none; }
-  .auth-visual h1 { max-width: none; margin-top: auto; font-size: clamp(1.9rem, 9vw, 2.55rem); }
+  .auth-visual__brand-frame { display: none; }
   .auth-form-panel { display: block; flex: 1; }
   .auth-form-panel__inner { width: 100%; padding: 28px 24px 36px; }
   .auth-back-link { margin-bottom: 26px; }
@@ -1290,12 +1228,6 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
   .auth-footer { display: none; }
 
   .auth-visual__content { padding: 30px 34px; }
-  .auth-visual__login-copy { gap: 12px; }
-  .auth-visual h1 { font-size: clamp(2.35rem, 4.1vw, 4.35rem); }
-  .auth-visual__description { font-size: 0.9rem; line-height: 1.48; }
-  .auth-visual__proofs { gap: 10px 20px; margin-top: 14px; }
-  .auth-visual__proofs span { font-size: 0.58rem; }
-  .auth-visual__est { margin-top: 14px; }
 
   /* The form scrolls inside its panel when it is taller than the screen (e.g. register + password rules). */
   .auth-form-panel { min-height: 0; overflow-y: auto; }

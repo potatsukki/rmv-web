@@ -2393,7 +2393,7 @@ export function LandingPage() {
 
             <div className="relative mx-auto w-[min(calc(100%_-_32px),1480px)] py-12 sm:w-[min(calc(100%_-_48px),1480px)] sm:py-16 lg:py-8">
               <div className="max-w-[860px]">
-                <h1 className="font-['Sora',sans-serif] text-[clamp(2.6rem,5.2vw,5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-[#111417]">
+                <h1 className="font-['Sora',sans-serif] text-[clamp(2rem,9vw,2.6rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-[#111417] sm:text-[clamp(2.6rem,5.2vw,5rem)]">
                   <span className="block w-fit bg-[linear-gradient(180deg,#59616A_0%,#14191D_48%,#6B737C_100%)] bg-clip-text text-transparent">Stainless Steel</span>
                   <span aria-hidden="true" className="my-3 block h-1.5 w-24 bg-[#F5B400] sm:my-4" />
                   <span className="block">Built for</span>
@@ -2445,7 +2445,7 @@ export function LandingPage() {
         >
           <div className="mx-auto grid w-[min(calc(100%_-_32px),1440px)] gap-10 sm:w-[min(calc(100%_-_48px),1440px)] lg:grid-cols-[260px_minmax(0,1fr)] lg:gap-12 xl:grid-cols-[290px_minmax(0,1fr)] xl:gap-16">
             <div className="lg:pt-3">
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Our</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#805B00]">Our</p>
               <h2 className="mt-2 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
                 Services
               </h2>
@@ -2548,15 +2548,15 @@ export function LandingPage() {
           <div className="mx-auto grid w-[min(calc(100%_-_32px),1240px)] items-center gap-10 sm:w-[min(calc(100%_-_48px),1240px)] lg:grid-cols-2 lg:gap-16">
             <div className="overflow-hidden rounded-lg bg-[#12161A] shadow-[0_18px_50px_rgba(12,16,20,0.12)]">
               <img
-                src="/landing/completed-works/project-1.jpg"
-                alt="RMV stainless fabrication work in progress"
+                src="/landing/about-rmv-fabrication.jpg"
+                alt="RMV Stainless Steel Fabrication sign over a grayscale worksite"
                 className="aspect-[4/3] h-full w-full object-cover"
                 loading="lazy"
               />
             </div>
 
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">About RMV</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#805B00]">About RMV</p>
               <h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
                 Stainless Steel Specialists.<br />Trusted Service.
               </h2>
@@ -2603,7 +2603,7 @@ export function LandingPage() {
         <section id="materials" className="scroll-mt-16 border-b border-[#E4E6E8] bg-[#F7F7F5] py-16 text-[#111417] sm:py-20 lg:scroll-mt-[72px] lg:py-28">
           <div className="mx-auto grid w-[min(calc(100%_-_32px),1320px)] items-center gap-12 sm:w-[min(calc(100%_-_48px),1320px)] lg:grid-cols-[0.78fr_1.22fr] lg:gap-16">
             <div>
-              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Materials &amp; Process</p>
+              <p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#805B00]">Materials &amp; Process</p>
               <h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.75rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">
                 Quality Stainless.<br />Precise Fabrication.
               </h2>
@@ -2707,7 +2707,7 @@ export function LandingPage() {
           <div className="mx-auto grid w-[min(calc(100%_-_32px),1440px)] gap-10 py-14 sm:w-[min(calc(100%_-_48px),1440px)] sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_1fr_1.35fr_0.9fr] lg:gap-8 lg:py-16">
             <div>
               <div className="flex items-center gap-3">
-                <img src="/RMV_circle_true_transparent_v2.png" alt="" className="h-12 w-12 object-contain" />
+                <img src="/rmv-logo-256.png" alt="" className="h-12 w-12 object-contain" />
                 <div>
                   <p className="font-['Sora',sans-serif] text-lg font-extrabold text-white">RMV</p>
                   <p className="text-[0.55rem] font-bold uppercase tracking-[0.18em] text-white/55">Stainless Fabrication</p>
@@ -2779,7 +2779,6 @@ export function LandingPage() {
 
           <div className="border-t border-white/10">
             <div className="mx-auto flex w-[min(calc(100%_-_32px),1440px)] flex-col gap-3 py-5 text-xs text-white/42 sm:w-[min(calc(100%_-_48px),1440px)] sm:flex-row sm:items-center sm:justify-between">
-              <p>© 2026 RMV Stainless Steel Fabrication. All rights reserved.</p>
               <div className="flex gap-5">
                 <a href="/privacy" className="hover:text-[#F5B400]">Privacy Policy</a>
                 <a href="/terms" className="hover:text-[#F5B400]">Terms of Service</a>

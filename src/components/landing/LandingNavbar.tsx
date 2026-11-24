@@ -17,7 +17,10 @@ const NAV_ITEMS = [
 export function LandingNavbar() {
   const { user } = useAuthStore();
   const quoteTarget = user ? '/appointments/book' : '/login';
-  const isServicesPage = useLocation().pathname.startsWith('/services/');
+  const { pathname } = useLocation();
+  const currentPath = pathname.replace(/\/+$/, '') || '/';
+  const isHomePage = currentPath === '/';
+  const isServicesPage = currentPath.startsWith('/services/');
   const [menuOpen, setMenuOpen] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
   const [mobileServicesOpen, setMobileServicesOpen] = useState(false);
@@ -61,7 +64,7 @@ export function LandingNavbar() {
           aria-label="RMV Stainless Steel Fabrication home"
         >
           <img
-            src="/RMV_circle_true_transparent_v2.png"
+            src="/rmv-logo-256.png"
             alt=""
             className="h-10 w-10 shrink-0 object-contain lg:h-11 lg:w-11"
           />
@@ -80,16 +83,17 @@ export function LandingNavbar() {
             <a
               key={item.label}
               href={item.href}
+              aria-current={isHomePage ? 'page' : undefined}
               className={cn(
                 'group relative flex min-w-[84px] items-center justify-center px-3 text-[0.68rem] font-bold uppercase tracking-[0.09em] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400] xl:min-w-[96px]',
-                !isServicesPage ? 'text-[#F5B400]' : 'text-white/78 hover:text-white',
+                isHomePage ? 'text-[#F5B400]' : 'text-white/78 hover:text-white',
               )}
             >
               {item.label}
               <span
                 className={cn(
                   'absolute inset-x-4 bottom-0 h-0.5 origin-left bg-[#F5B400] transition-transform duration-200',
-                  !isServicesPage ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100',
+                  isHomePage ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100',
                 )}
               />
             </a>
@@ -152,10 +156,17 @@ export function LandingNavbar() {
             <a
               key={item.label}
               href={item.href}
-              className="group relative flex min-w-[84px] items-center justify-center px-3 text-[0.68rem] font-bold uppercase tracking-[0.09em] text-white/78 transition-colors duration-200 hover:text-white focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400] xl:min-w-[96px]"
+              aria-current={item.href === currentPath ? 'page' : undefined}
+              className={cn(
+                'group relative flex min-w-[84px] items-center justify-center px-3 text-[0.68rem] font-bold uppercase tracking-[0.09em] transition-colors duration-200 focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400] xl:min-w-[96px]',
+                item.href === currentPath ? 'text-[#F5B400]' : 'text-white/78 hover:text-white',
+              )}
             >
               {item.label}
-              <span className="absolute inset-x-4 bottom-0 h-0.5 origin-left bg-[#F5B400] transition-transform duration-200 scale-x-0 group-hover:scale-x-100" />
+              <span className={cn(
+                'absolute inset-x-4 bottom-0 h-0.5 origin-left bg-[#F5B400] transition-transform duration-200',
+                item.href === currentPath ? 'scale-x-100' : 'scale-x-0 group-hover:scale-x-100',
+              )} />
             </a>
           ))}
         </nav>
@@ -192,9 +203,10 @@ export function LandingNavbar() {
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
+                aria-current={isHomePage ? 'page' : undefined}
                 className={cn(
                   'flex min-h-12 items-center border-b border-white/[0.08] text-sm font-bold uppercase tracking-[0.12em] transition-colors hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400]',
-                  !isServicesPage ? 'text-[#F5B400]' : 'text-white/78',
+                  isHomePage ? 'text-[#F5B400]' : 'text-white/78',
                 )}
               >
                 {item.label}
@@ -226,7 +238,11 @@ export function LandingNavbar() {
                 key={item.label}
                 href={item.href}
                 onClick={() => setMenuOpen(false)}
-                className="flex min-h-12 items-center border-b border-white/[0.08] text-sm font-bold uppercase tracking-[0.12em] text-white/78 transition-colors hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400]"
+                aria-current={item.href === currentPath ? 'page' : undefined}
+                className={cn(
+                  'flex min-h-12 items-center border-b border-white/[0.08] text-sm font-bold uppercase tracking-[0.12em] transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-[#F5B400]',
+                  item.href === currentPath ? 'text-[#F5B400]' : 'text-white/78 hover:text-[#F5B400]',
+                )}
               >
                 {item.label}
               </a>

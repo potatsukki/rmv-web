@@ -17,7 +17,7 @@ export function PublicFooter() {
       <div className="mx-auto grid w-[min(calc(100%_-_32px),1440px)] gap-10 py-14 sm:w-[min(calc(100%_-_48px),1440px)] sm:grid-cols-2 lg:grid-cols-[1.35fr_0.8fr_1fr_1.35fr_0.9fr] lg:gap-8 lg:py-16">
         <div>
           <div className="flex items-center gap-3">
-            <img src="/RMV_circle_true_transparent_v2.png" alt="" className="h-12 w-12 object-contain" />
+            <img src="/rmv-logo-256.png" alt="" className="h-12 w-12 object-contain" />
             <div>
               <p className="font-['Sora',sans-serif] text-lg font-extrabold text-white">RMV</p>
               <p className="text-[0.55rem] font-bold uppercase tracking-[0.18em] text-white/55">Stainless Fabrication</p>
@@ -60,7 +60,12 @@ export function PublicFooter() {
           <div className="mt-5 grid gap-3 text-sm leading-6 text-white/58"><p>Quezon City</p><p>Metro Manila</p><p>Project coverage confirmed during consultation.</p></div>
         </div>
       </div>
-      <div className="border-t border-white/10"><div className="mx-auto flex w-[min(calc(100%_-_32px),1440px)] flex-col gap-3 py-5 text-xs text-white/42 sm:w-[min(calc(100%_-_48px),1440px)] sm:flex-row sm:items-center sm:justify-between"><p>© 2026 RMV Stainless Steel Fabrication. All rights reserved.</p><div className="flex gap-5"><Link to="/privacy" className="hover:text-[#F5B400]">Privacy Policy</Link><Link to="/terms" className="hover:text-[#F5B400]">Terms of Service</Link></div></div></div>
+      <div className="border-t border-white/10">
+        <nav aria-label="Legal links" className="mx-auto flex w-[min(calc(100%_-_32px),1440px)] flex-wrap gap-5 py-5 text-xs text-white/42 sm:w-[min(calc(100%_-_48px),1440px)] sm:justify-end">
+          <Link to="/privacy" className="hover:text-[#F5B400]">Privacy Policy</Link>
+          <Link to="/terms" className="hover:text-[#F5B400]">Terms of Service</Link>
+        </nav>
+      </div>
     </footer>
   );
 }

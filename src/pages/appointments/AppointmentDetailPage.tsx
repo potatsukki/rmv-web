@@ -696,7 +696,11 @@ export function AppointmentDetailPage() {
             </div>
             <div>
               <p className="text-sm font-semibold text-[#2f3740] dark:text-slate-100">
-                {isCustomer && !isOcularAppointment ? 'Waiting for confirmation' : 'Pending'}
+                {isCustomer && !isOcularAppointment
+                  ? appt.salesStaffId
+                    ? 'Waiting for confirmation'
+                    : 'Appointed - Waiting for Sales Staff Assignment'
+                  : 'Pending'}
               </p>
               <p className="mt-0.5 text-xs text-[#69737d] dark:text-slate-400">
                 {isCustomer
@@ -706,15 +710,18 @@ export function AppointmentDetailPage() {
                     ? 'Please pay the ocular visit fee to proceed. Your assigned sales staff will finalize your appointment once payment is received.'
                     : appt.salesStaffId
                       ? 'A sales staff member is reviewing your appointment. We will notify you once it is confirmed.'
-                      : 'Your request was sent to our team. It is not confirmed yet: an agent is checking sales staff availability, and we will notify and email you once it is confirmed.'
+                      : isOcularAppointment
+                        ? 'Your request was sent to our team. It is not confirmed yet: an agent is checking sales staff availability, and we will notify and email you once it is confirmed.'
+                        : 'Your consultation request is received. An appointment agent will assign a Sales Staff to your appointment. You will be notified once the assignment is confirmed.'
                   : appt.salesStaffId
                     ? 'The assigned sales staff is reviewing this appointment.'
                     : 'Assign an available sales staff member for review.'}
               </p>
+              {/* No No Show warning yet: it applies only once a Sales Staff is assigned (QA 11/24). */}
               {isCustomer && !isOcularAppointment && (
                 <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                   <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Please arrive on time. If you are 15 minutes late, your appointment will be marked as No Show.
+                  Please check this page or your notifications for updates before the scheduled date.
                 </p>
               )}
             </div>
@@ -801,12 +808,15 @@ export function AppointmentDetailPage() {
                     ? hasCustomerSiteLocation
                       ? 'Your ocular appointment is confirmed. The assigned sales staff will visit your site on the scheduled date.'
                       : 'Your ocular appointment is confirmed. Submit your site location below so we can calculate any required ocular fee before the visit starts.'
-                    : 'Your consultation is confirmed. Please visit the RMV office on the scheduled date.'
+                    : apptSalesStaffName
+                      ? `Your consultation is confirmed with ${apptSalesStaffName}. Please visit the RMV office on the scheduled date.`
+                      : 'Your consultation is confirmed. Please visit the RMV office on the scheduled date.'
                   : isOcularAppointment
                     ? 'Mark yourself as "On the Way" when heading to the site.'
                     : 'This consultation is scheduled at the RMV office. Review the customer details and prepare for the appointment.'}
               </p>
-              {isCustomer && !isOcularAppointment && (
+              {/* No Show applies only once a Sales Staff is assigned (QA 11/24). */}
+              {isCustomer && !isOcularAppointment && Boolean(appt.salesStaffId) && (
                 <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                   <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
                   Please arrive on time. If you are 15 minutes late, your appointment will be marked as No Show.
