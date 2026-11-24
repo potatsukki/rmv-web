@@ -168,7 +168,7 @@ export function AboutPage() {
       <main>
         <section className="relative isolate flex min-h-[560px] items-center overflow-hidden pt-20 sm:min-h-[600px]">
           <img
-            src="/landing/hero/hero-stainless-railing-bg.png"
+            src="/landing/hero/hero-stainless-railing-bg.jpg"
             alt="Stainless railing fabrication background"
             className="absolute inset-0 -z-20 h-full w-full object-cover object-center"
           />

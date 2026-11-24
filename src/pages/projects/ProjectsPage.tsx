@@ -198,7 +198,7 @@ export function ProjectsPage() {
           eyebrow="Projects"
           title={<>Follow every project <em>clearly.</em></>}
           description="See the latest stage, service details, and next action for your RMV fabrication work."
-          image="/landing/services/gates/01-gates-double-swing-stainless-gate.png"
+          image="/landing/services/gates/01-gates-double-swing-stainless-gate.jpg"
         />
       )}
 
