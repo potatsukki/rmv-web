@@ -17,6 +17,7 @@ import {
 import { useNavigate } from 'react-router';
 import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { useAuthStore } from '@/stores/auth.store';
+import { isStaffViewer } from '@/lib/auth-routing';
 
 type StoryItem = {
   label: string;
@@ -155,7 +156,9 @@ const missionVision = [
 export function AboutPage() {
   const navigate = useNavigate();
   const { user } = useAuthStore();
-  const bookingTarget = user ? '/appointments/book' : '/login';
+  // Staff cannot self-book (customer-only page), so the booking button takes them to the dashboard.
+  const isStaff = isStaffViewer(user?.roles);
+  const bookingTarget = isStaff ? '/dashboard' : user ? '/appointments/book' : '/login';
 
   const goToBooking = () => {
     navigate(bookingTarget);
@@ -346,7 +349,7 @@ export function AboutPage() {
                 onClick={goToBooking}
                 className="label-font inline-flex h-14 cursor-pointer items-center justify-center gap-5 rounded-[10px] bg-black px-8 text-[12px] font-black uppercase tracking-[0.2em] text-white transition-all duration-300 hover:-translate-y-0.5 hover:bg-zinc-900 active:translate-y-0"
               >
-                Book Project Visit
+                {isStaff ? 'Go to Dashboard' : 'Book Project Visit'}
                 <PackageCheck className="h-5 w-5" />
               </button>
             </div>

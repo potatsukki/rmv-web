@@ -73,6 +73,11 @@ export function canAccessPath(pathname: string, roles: Role[]): boolean {
   return roles.some((role) => matchingRule.allowedRoles?.includes(role));
 }
 
+/** Signed in but not allowed to self-book (staff): public booking buttons send them to the dashboard. */
+export function isStaffViewer(roles?: Role[] | null): boolean {
+  return Boolean(roles?.length) && !canAccessPath('/appointments/book', roles ?? []);
+}
+
 export function resolvePostLoginPath(pathname: string | null | undefined, roles: Role[]) {
   if (!pathname) {
     return { path: getDefaultAuthenticatedPath(), redirectReason: null as string | null };

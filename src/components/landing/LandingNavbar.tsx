@@ -16,7 +16,8 @@ const NAV_ITEMS = [
 
 export function LandingNavbar() {
   const { user } = useAuthStore();
-  const quoteTarget = user ? '/appointments/book' : '/login';
+  // Signed-in users (customer or staff) go to their dashboard; guests start the booking at login.
+  const quoteTarget = user ? '/dashboard' : '/login';
   const { pathname } = useLocation();
   const currentPath = pathname.replace(/\/+$/, '') || '/';
   const isHomePage = currentPath === '/';
@@ -176,8 +177,8 @@ export function LandingNavbar() {
             to={quoteTarget}
             className="inline-flex min-h-11 items-center justify-center rounded-md border border-[#F5B400] bg-[#F5B400] px-3 text-[0.61rem] font-extrabold uppercase tracking-[0.08em] text-[#090B0D] transition duration-200 hover:-translate-y-0.5 hover:border-[#FFD047] hover:bg-[#FFD047] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400] min-[430px]:px-4 lg:px-5"
           >
-            <span className="lg:hidden">Appointment</span>
-            <span className="hidden lg:inline">Book an Appointment</span>
+            <span className="lg:hidden">{user ? 'Dashboard' : 'Appointment'}</span>
+            <span className="hidden lg:inline">{user ? 'Go to Dashboard' : 'Book an Appointment'}</span>
           </Link>
           <button
             type="button"
