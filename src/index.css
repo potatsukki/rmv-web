@@ -1157,7 +1157,8 @@ body.auth-page-scrollbar::-webkit-scrollbar-thumb:hover {
 .auth-trust-strip__item strong { color: #f7f7f5; font: 700 0.72rem/1.2 'Inter', system-ui, sans-serif; letter-spacing: 0.07em; text-transform: uppercase; }
 .auth-trust-strip__item small { color: #8f969d; font: 400 0.78rem/1.2 'Inter', system-ui, sans-serif; }
 
-.auth-footer { display: flex; align-items: center; justify-content: flex-end; gap: 20px; padding: 18px 32px 22px; color: #8f969d; font: 400 0.78rem/1.4 'Inter', system-ui, sans-serif; }
+.auth-footer { display: flex; align-items: center; justify-content: space-between; gap: 20px; padding: 18px 32px 22px; color: #8f969d; font: 400 0.78rem/1.4 'Inter', system-ui, sans-serif; }
+.auth-footer p { margin: 0; }
 .auth-footer nav { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; }
 .auth-footer a { color: #d4d7da; text-decoration: none; }
 .auth-footer a:hover { color: #f5b400; }

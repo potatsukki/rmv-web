@@ -61,10 +61,13 @@ export function PublicFooter() {
         </div>
       </div>
       <div className="border-t border-white/10">
-        <nav aria-label="Legal links" className="mx-auto flex w-[min(calc(100%_-_32px),1440px)] flex-wrap gap-5 py-5 text-xs text-white/42 sm:w-[min(calc(100%_-_48px),1440px)] sm:justify-end">
-          <Link to="/privacy" className="hover:text-[#F5B400]">Privacy Policy</Link>
-          <Link to="/terms" className="hover:text-[#F5B400]">Terms of Service</Link>
-        </nav>
+        <div className="mx-auto flex w-[min(calc(100%_-_32px),1440px)] flex-col gap-3 py-5 text-xs text-white/42 sm:w-[min(calc(100%_-_48px),1440px)] sm:flex-row sm:items-center sm:justify-between">
+          <p>© {new Date().getFullYear()} RMV Stainless Steel Fabrication. All rights reserved.</p>
+          <nav aria-label="Legal links" className="flex flex-wrap gap-x-5 gap-y-2">
+            <Link to="/privacy" className="hover:text-[#F5B400]">Privacy Policy</Link>
+            <Link to="/terms" className="hover:text-[#F5B400]">Terms of Service</Link>
+          </nav>
+        </div>
       </div>
     </footer>
   );
