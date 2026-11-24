@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { Role } from '@/lib/constants';
 import { normalizeAuthContinuationPath } from '@/lib/auth-session';
-import { canAccessPath, getDefaultAuthenticatedPath, resolvePostLoginPath } from '@/lib/auth-routing';
+import { canAccessPath, getDefaultAuthenticatedPath, isStaffViewer, resolvePostLoginPath } from '@/lib/auth-routing';
 
 describe('auth routing guards', () => {
   it('reserves project creation for sales staff and administrators while retaining project visibility', () => {
@@ -47,6 +47,20 @@ describe('auth routing guards', () => {
     expect(canAccessPath('/appointments/book', [Role.CUSTOMER])).toBe(true);
     expect(canAccessPath('/appointments/book', [Role.SALES_STAFF])).toBe(false);
     expect(canAccessPath('/appointments/book', [Role.APPOINTMENT_AGENT])).toBe(false);
+  });
+
+  it('treats signed-in users who cannot self-book as staff viewers', () => {
+    for (const role of [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ENGINEER, Role.CASHIER, Role.FABRICATION_STAFF, Role.ADMIN]) {
+      expect(isStaffViewer([role])).toBe(true);
+    }
+    expect(isStaffViewer([Role.CUSTOMER])).toBe(false);
+    expect(isStaffViewer([Role.CUSTOMER, Role.SALES_STAFF])).toBe(false);
+  });
+
+  it('does not treat guests as staff viewers', () => {
+    expect(isStaffViewer(undefined)).toBe(false);
+    expect(isStaffViewer(null)).toBe(false);
+    expect(isStaffViewer([])).toBe(false);
   });
 
   it('restricts customer site-detail follow-up pages to customers only', () => {

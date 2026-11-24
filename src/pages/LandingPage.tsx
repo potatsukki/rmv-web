@@ -48,6 +48,7 @@ import { useAuthStore } from '@/stores/auth.store';
 import { ServiceType, SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { buildBookingIntentPath } from '@/lib/booking-intent';
 import { setStoredAuthContinuationPath } from '@/lib/auth-session';
+import { isStaffViewer } from '@/lib/auth-routing';
 import { cn } from '@/lib/utils';
 
 type LandingService = {
@@ -2337,7 +2338,13 @@ export function LandingPage() {
   const [selectedService, setSelectedService] = useState<LandingService | null>(null);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
 
+  // Staff cannot self-book (customer-only page), so their booking buttons go to the dashboard instead.
+  const isStaff = isStaffViewer(user?.roles);
   const goToBooking = () => {
+    if (isStaff) {
+      navigate('/dashboard');
+      return;
+    }
     const bookingTarget = '/appointments/book';
     if (user) {
       navigate(bookingTarget);
@@ -2358,6 +2365,10 @@ export function LandingPage() {
   const displayPrice = selectedVariant?.estimatedPrice ?? selectedServiceDetail?.estimatedPrice;
   const customerDetailItems = getCustomerServiceDetails(activeSpecGroups);
   const bookService = (service: LandingService) => {
+    if (isStaff) {
+      navigate('/dashboard');
+      return;
+    }
     const bookingTarget = buildBookingIntentPath({
       serviceType: service.type,
       serviceId: service.type.replace(/_/g, '-'),
@@ -2515,7 +2526,7 @@ export function LandingPage() {
                 onClick={goToBooking}
                 className="mt-7 inline-flex min-h-12 items-center justify-center gap-3 rounded-md border border-white/35 px-5 text-[0.68rem] font-extrabold uppercase tracking-[0.11em] text-white transition duration-200 hover:-translate-y-0.5 hover:border-[#F5B400] hover:text-[#F5B400] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#F5B400]"
               >
-                Start a Project
+                {isStaff ? 'Go to Dashboard' : 'Start a Project'}
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </button>
             </div>
@@ -2697,7 +2708,7 @@ export function LandingPage() {
               onClick={goToBooking}
               className="inline-flex min-h-[52px] items-center justify-center gap-4 rounded-md border border-[#090B0D] bg-[#090B0D] px-7 text-[0.7rem] font-extrabold uppercase tracking-[0.12em] text-white transition duration-200 hover:-translate-y-0.5 hover:bg-[#191E23] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-3 focus-visible:outline-[#090B0D]"
             >
-              Avail Service
+              {isStaff ? 'Go to Dashboard' : 'Avail Service'}
               <ArrowRight className="h-4 w-4" aria-hidden="true" />
             </button>
           </div>
@@ -2954,7 +2965,7 @@ export function LandingPage() {
                   style={{ backgroundColor: '#FFD700', backgroundImage: 'none' }}
                   className="inline-flex h-11 w-full min-w-0 cursor-pointer items-center justify-center rounded-md border border-[#FFD700] px-5 text-[10px] font-black uppercase tracking-[0.12em] text-black shadow-[0_14px_38px_rgba(255,215,0,0.24)] transition-all duration-200 hover:-translate-y-0.5 hover:border-[#ffe766] hover:brightness-110 hover:shadow-[0_18px_46px_rgba(255,215,0,0.36)] active:translate-y-0 active:scale-[0.98] sm:w-auto sm:px-6 sm:text-[11px] sm:tracking-[0.16em]"
                 >
-                  {selectedVariant ? 'Avail This Design' : 'Avail Service'}
+                  {isStaff ? 'Go to Dashboard' : selectedVariant ? 'Avail This Design' : 'Avail Service'}
                   <ArrowRight className="ml-2 h-4 w-4 text-black" />
                 </button>
               </DialogFooter>

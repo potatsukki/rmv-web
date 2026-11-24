@@ -24,6 +24,7 @@ import {
 } from '@/lib/service-catalog';
 import { buildBookingIntentPath } from '@/lib/booking-intent';
 import { setStoredAuthContinuationPath } from '@/lib/auth-session';
+import { isStaffViewer } from '@/lib/auth-routing';
 
 const OFFICE = {
   tel: '02-9506187',
@@ -147,8 +148,11 @@ export function ServiceDetailsPage() {
         designImage: currentProject.image,
       })
     : quoteBookingTarget;
-  const quoteTarget = user ? quoteBookingTarget : '/login';
-  const designRequestTarget = user ? designBookingTarget : '/login';
+  // Staff cannot self-book (customer-only page), so their booking buttons go to the dashboard instead.
+  const isStaff = isStaffViewer(user?.roles);
+  const bookingLabel = (label: string) => (isStaff ? 'Go to Dashboard' : label);
+  const quoteTarget = isStaff ? '/dashboard' : user ? quoteBookingTarget : '/login';
+  const designRequestTarget = isStaff ? '/dashboard' : user ? designBookingTarget : '/login';
   const rememberGuestBooking = (target: string) => {
     if (!user) setStoredAuthContinuationPath(target);
   };
@@ -177,7 +181,7 @@ export function ServiceDetailsPage() {
               <p className="text-xs font-extrabold uppercase tracking-[0.2em] text-[#F5B400]">{service.eyebrow}</p>
               <h1 className="mt-4 font-['Sora',sans-serif] text-[clamp(2.7rem,7vw,6.5rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.05em]">{service.label}</h1>
               <p className="mt-6 max-w-2xl text-base leading-8 text-white/78 sm:text-lg">{service.shortDescription}</p>
-              <div className="mt-8 flex"><Link to={quoteTarget} state={user ? undefined : { from: quoteBookingTarget }} onClick={() => rememberGuestBooking(quoteBookingTarget)} className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md bg-[#F5B400] px-7 text-xs font-extrabold uppercase tracking-[0.12em] text-[#090B0D] transition hover:-translate-y-0.5 hover:bg-[#FFD047]">Avail Service<ArrowRight className="h-4 w-4" /></Link></div>
+              <div className="mt-8 flex"><Link to={quoteTarget} state={user ? undefined : { from: quoteBookingTarget }} onClick={() => rememberGuestBooking(quoteBookingTarget)} className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md bg-[#F5B400] px-7 text-xs font-extrabold uppercase tracking-[0.12em] text-[#090B0D] transition hover:-translate-y-0.5 hover:bg-[#FFD047]">{bookingLabel('Avail Service')}<ArrowRight className="h-4 w-4" /></Link></div>
             </div>
           </div>
         </section>
@@ -190,7 +194,7 @@ export function ServiceDetailsPage() {
 
         <section className="bg-[#F7F7F5] py-16 text-[#111417] sm:py-20"><div className="mx-auto grid w-[min(calc(100%_-_32px),1240px)] gap-10 sm:w-[min(calc(100%_-_48px),1240px)] lg:grid-cols-[0.8fr_1.2fr] lg:items-center"><div><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#D99C00]">Service systems</p><h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.5rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">Built around your requirements.</h2><p className="mt-6 text-base leading-8 text-[#535B62]">Every project is confirmed against its site conditions, intended use, and approved fabrication scope.</p></div><div className="grid gap-3 sm:grid-cols-2">{service.systems.map((system) => <div key={system} className="flex min-h-24 items-center gap-4 border border-[#D7DADF] bg-white p-5 text-sm font-bold"><span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#F5B400] text-[#090B0D]"><CheckCircle2 className="h-5 w-5" /></span>{system}</div>)}</div></div></section>
 
-        <section className="relative overflow-hidden bg-[#F5B400] py-14 text-[#090B0D]"><img src={service.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-10 mix-blend-multiply" /><div className="relative mx-auto grid w-[min(calc(100%_-_32px),1240px)] gap-8 sm:w-[min(calc(100%_-_48px),1240px)] lg:grid-cols-[1fr_0.8fr_auto] lg:items-center"><div><p className="text-xs font-extrabold uppercase tracking-[0.15em]">Start your project</p><h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,4rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">Talk to RMV about your {service.label.toLowerCase()} project.</h2></div><div className="grid gap-3 text-sm font-semibold"><a href="tel:029506187" className="flex items-center gap-3"><Phone className="h-5 w-5" />{OFFICE.tel} / {OFFICE.mobile}</a><a href={`mailto:${OFFICE.email}`} className="flex items-center gap-3"><Mail className="h-5 w-5" />{OFFICE.email}</a><a href={OFFICE.directionsUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3"><MapPin className="h-5 w-5" />Workshop directions</a><p className="flex items-center gap-3"><Clock3 className="h-5 w-5" />{OFFICE.hours}</p></div><Link to={quoteTarget} state={user ? undefined : { from: quoteBookingTarget }} onClick={() => rememberGuestBooking(quoteBookingTarget)} className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md bg-[#090B0D] px-7 text-xs font-extrabold uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5">Avail Service<ArrowRight className="h-4 w-4" /></Link></div></section>
+        <section className="relative overflow-hidden bg-[#F5B400] py-14 text-[#090B0D]"><img src={service.coverImage} alt="" className="absolute inset-0 h-full w-full object-cover opacity-10 mix-blend-multiply" /><div className="relative mx-auto grid w-[min(calc(100%_-_32px),1240px)] gap-8 sm:w-[min(calc(100%_-_48px),1240px)] lg:grid-cols-[1fr_0.8fr_auto] lg:items-center"><div><p className="text-xs font-extrabold uppercase tracking-[0.15em]">Start your project</p><h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,4rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">Talk to RMV about your {service.label.toLowerCase()} project.</h2></div><div className="grid gap-3 text-sm font-semibold"><a href="tel:029506187" className="flex items-center gap-3"><Phone className="h-5 w-5" />{OFFICE.tel} / {OFFICE.mobile}</a><a href={`mailto:${OFFICE.email}`} className="flex items-center gap-3"><Mail className="h-5 w-5" />{OFFICE.email}</a><a href={OFFICE.directionsUrl} target="_blank" rel="noreferrer" className="flex items-center gap-3"><MapPin className="h-5 w-5" />Workshop directions</a><p className="flex items-center gap-3"><Clock3 className="h-5 w-5" />{OFFICE.hours}</p></div><Link to={quoteTarget} state={user ? undefined : { from: quoteBookingTarget }} onClick={() => rememberGuestBooking(quoteBookingTarget)} className="inline-flex min-h-[52px] items-center justify-center gap-3 rounded-md bg-[#090B0D] px-7 text-xs font-extrabold uppercase tracking-[0.12em] text-white transition hover:-translate-y-0.5">{bookingLabel('Avail Service')}<ArrowRight className="h-4 w-4" /></Link></div></section>
 
         <section className="bg-[#12161A] py-16 sm:py-20"><div className="mx-auto w-[min(calc(100%_-_32px),1320px)] sm:w-[min(calc(100%_-_48px),1320px)]"><p className="text-xs font-extrabold uppercase tracking-[0.18em] text-[#F5B400]">Explore more</p><h2 className="mt-3 font-['Sora',sans-serif] text-[clamp(2rem,4vw,3.5rem)] font-extrabold uppercase leading-[0.98] tracking-[-0.04em]">Other services</h2><div className="mt-9 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">{SERVICE_CATALOG.filter((item) => item.id !== service.id).slice(0, 4).map((item) => <Link key={item.id} to={`/services/${item.id}`} className="group border border-white/10 bg-[#191E23] p-6 transition hover:-translate-y-1 hover:border-[#F5B400]"><item.icon className="h-6 w-6 text-[#F5B400]" /><h3 className="mt-10 font-['Sora',sans-serif] text-lg font-bold">{item.label}</h3><p className="mt-3 text-sm leading-6 text-white/58">{item.shortDescription}</p><span className="mt-6 inline-flex items-center gap-2 text-xs font-extrabold uppercase tracking-[0.1em] text-[#F5B400]">Explore<ArrowRight className="h-4 w-4" /></span></Link>)}</div></div></section>
       </main>
@@ -240,7 +244,7 @@ export function ServiceDetailsPage() {
                 <p className="mt-4 rounded-lg border border-white/10 bg-black/25 px-3 py-2.5 text-[11px] leading-5 text-white/52">
                   {CUSTOMER_TECHNICAL_NOTE}
                 </p>
-                <Link to={designRequestTarget} state={user ? undefined : { from: designBookingTarget }} onClick={() => rememberGuestBooking(designBookingTarget)} className="mt-5 inline-flex min-h-12 items-center justify-center gap-3 rounded-md bg-[#F5B400] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#090B0D] transition hover:bg-[#FFD047]">Avail This Design<ArrowRight className="h-4 w-4" /></Link>
+                <Link to={designRequestTarget} state={user ? undefined : { from: designBookingTarget }} onClick={() => rememberGuestBooking(designBookingTarget)} className="mt-5 inline-flex min-h-12 items-center justify-center gap-3 rounded-md bg-[#F5B400] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#090B0D] transition hover:bg-[#FFD047]">{bookingLabel('Avail This Design')}<ArrowRight className="h-4 w-4" /></Link>
               </div>
             </div>
           )}
