@@ -94,22 +94,22 @@ export function toCustomerFacingServiceNote(note?: string): string | undefined {
 }
 
 const SERVICE_IMAGE_PATHS: Record<ServiceType, string> = {
-  [ServiceType.RAILINGS]: '/landing/services/railings.png',
-  [ServiceType.GRILLS]: '/landing/services/grills.png',
-  [ServiceType.GATES]: '/landing/services/gates.png',
-  [ServiceType.FENCES]: '/landing/services/fences.png',
-  [ServiceType.KITCHEN_COUNTER]: '/landing/services/kitchen-counter.png',
-  [ServiceType.KITCHEN_CABINET]: '/landing/services/kitchen-cabinet.png',
-  [ServiceType.TABLE]: '/landing/services/table.png',
-  [ServiceType.CHAIR]: '/landing/services/chair.png',
-  [ServiceType.SHELVING]: '/landing/services/shelving.png',
-  [ServiceType.DOOR]: '/landing/services/door.png',
-  [ServiceType.WINDOW_FRAME]: '/landing/services/window-frame.png',
-  [ServiceType.CANOPY]: '/landing/services/canopy.png',
-  [ServiceType.STAIRCASE]: '/landing/services/staircase.png',
-  [ServiceType.BALUSTRADE]: '/landing/services/balustrade.png',
-  [ServiceType.SIGNAGE]: '/landing/services/signage.png',
-  [ServiceType.CUSTOM]: '/landing/services/custom.png',
+  [ServiceType.RAILINGS]: '/landing/services/railings.jpg',
+  [ServiceType.GRILLS]: '/landing/services/grills.jpg',
+  [ServiceType.GATES]: '/landing/services/gates.jpg',
+  [ServiceType.FENCES]: '/landing/services/fences.jpg',
+  [ServiceType.KITCHEN_COUNTER]: '/landing/services/kitchen-counter.jpg',
+  [ServiceType.KITCHEN_CABINET]: '/landing/services/kitchen-cabinet.jpg',
+  [ServiceType.TABLE]: '/landing/services/table.jpg',
+  [ServiceType.CHAIR]: '/landing/services/chair.jpg',
+  [ServiceType.SHELVING]: '/landing/services/shelving.jpg',
+  [ServiceType.DOOR]: '/landing/services/door.jpg',
+  [ServiceType.WINDOW_FRAME]: '/landing/services/window-frame.jpg',
+  [ServiceType.CANOPY]: '/landing/services/canopy.jpg',
+  [ServiceType.STAIRCASE]: '/landing/services/staircase.jpg',
+  [ServiceType.BALUSTRADE]: '/landing/services/balustrade.jpg',
+  [ServiceType.SIGNAGE]: '/landing/services/signage.jpg',
+  [ServiceType.CUSTOM]: '/landing/services/custom.jpg',
 };
 
 const SERVICE_ICONS: Record<ServiceType, LucideIcon> = {
@@ -625,7 +625,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
   {
     id: 'corner-open-shelf',
     title: 'Corner Counter with Open Shelf',
-    image: '/landing/services/kitchen-counter/01-kitchen-counter-corner-open-shelf.png',
+    image: '/landing/services/kitchen-counter/01-kitchen-counter-corner-open-shelf.jpg',
     description:
       'A space-saving corner stainless counter layout with sink, open lower shelving, and mixed storage. Good for small kitchens, food businesses, prep corners, and layouts that need practical storage without making the area feel crowded.',
     estimatedPrice: '₱30,000 – ₱85,000',
@@ -670,7 +670,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
   {
     id: 'sink-drainer-drawers',
     title: 'Sink & Drainer Stainless Counter',
-    image: '/landing/services/kitchen-counter/02-kitchen-counter-sink-drainer-drawers.png',
+    image: '/landing/services/kitchen-counter/02-kitchen-counter-sink-drainer-drawers.jpg',
     description:
       'A stainless counter with integrated sink, drainboard, drawers, and lower storage. Best for washing, rinsing, food preparation, and kitchen areas that need clean water flow with organized storage.',
     estimatedPrice: '₱25,000 – ₱65,000',
@@ -715,7 +715,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
   {
     id: 'island-prep-table',
     title: 'Island Prep Table',
-    image: '/landing/services/kitchen-counter/03-kitchen-counter-island-prep-table.png',
+    image: '/landing/services/kitchen-counter/03-kitchen-counter-island-prep-table.jpg',
     description:
       'A heavy-duty stainless island prep table with an open lower shelf. Ideal for food preparation, sorting, packing, baking, and commercial kitchen work areas that need a durable center workstation.',
     estimatedPrice: '₱15,000 – ₱55,000',
@@ -760,7 +760,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
   {
     id: 'drawer-base-workstation',
     title: 'Drawer Base Workstation Counter',
-    image: '/landing/services/kitchen-counter/04-kitchen-counter-drawer-base-workstation.png',
+    image: '/landing/services/kitchen-counter/04-kitchen-counter-drawer-base-workstation.jpg',
     description:
       'A premium stainless workstation counter with sink, drawers, cabinet storage, backsplash, and wide prep surface. Good for kitchens that need both working space and organized storage.',
     estimatedPrice: '₱35,000 – ₱95,000',
@@ -805,7 +805,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
   {
     id: 'sink-sliding-storage',
     title: 'Sink Counter with Sliding Storage',
-    image: '/landing/services/kitchen-counter/05-kitchen-counter-sink-sliding-storage.png',
+    image: '/landing/services/kitchen-counter/05-kitchen-counter-sink-sliding-storage.jpg',
     description:
       'A straight stainless kitchen counter with built-in sink, backsplash, and sliding-door base storage. Good for washing, food prep, and compact commercial or home kitchen layouts.',
     estimatedPrice: '₱18,000 – ₱45,000',
@@ -850,7 +850,7 @@ const KITCHEN_COUNTER_VARIANTS: ServiceVariant[] = [
   {
     id: 'l-shape-commercial',
     title: 'L-Type Commercial Kitchen Counter',
-    image: '/landing/services/kitchen-counter/06-kitchen-counter-l-shape-commercial.png',
+    image: '/landing/services/kitchen-counter/06-kitchen-counter-l-shape-commercial.jpg',
     description:
       'An L-shaped stainless counter layout for commercial kitchens, food stalls, prep rooms, and restaurants. Built around wall dimensions, appliance placement, plumbing points, and storage needs.',
     estimatedPrice: '₱45,000 – ₱120,000',
@@ -898,7 +898,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
   {
     id: 'tall-storage',
     title: 'Tall Stainless Storage Cabinet',
-    image: '/landing/services/kitchen-cabinet/01-kitchen-cabinet-tall-storage.png',
+    image: '/landing/services/kitchen-cabinet/01-kitchen-cabinet-tall-storage.jpg',
     description:
       'A tall freestanding stainless steel storage cabinet with double doors, internal shelving, sturdy legs, and durable brushed finish. Best for storing cookware, containers, dry goods, supplies, and kitchen tools in food businesses, stockrooms, and heavy-use kitchens.',
     estimatedPrice: '₱28,000 – ₱85,000',
@@ -943,7 +943,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
   {
     id: 'drawers-open-shelves',
     title: 'Drawers & Open Shelves Cabinet',
-    image: '/landing/services/kitchen-cabinet/02-kitchen-cabinet-drawers-open-shelves.png',
+    image: '/landing/services/kitchen-cabinet/02-kitchen-cabinet-drawers-open-shelves.jpg',
     description:
       'A custom stainless base cabinet with drawers, swing-door storage, and open shelf sections. Good for kitchens that need organized storage, quick-access shelves, and a durable stainless work surface.',
     estimatedPrice: '₱35,000 – ₱95,000',
@@ -988,7 +988,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
   {
     id: 'overhead-wall-mounted',
     title: 'Overhead Wall-Mounted Cabinet',
-    image: '/landing/services/kitchen-cabinet/03-kitchen-cabinet-overhead-wall-mounted.png',
+    image: '/landing/services/kitchen-cabinet/03-kitchen-cabinet-overhead-wall-mounted.jpg',
     description:
       'A wall-mounted stainless kitchen cabinet with swing doors and open shelf sections. Ideal for overhead storage above counters, prep areas, dishwashing zones, and compact kitchens that need extra storage without using floor space.',
     estimatedPrice: '₱22,000 – ₱70,000',
@@ -1033,7 +1033,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
   {
     id: 'full-system',
     title: 'Full Stainless Cabinet System',
-    image: '/landing/services/kitchen-cabinet/04-kitchen-cabinet-full-system.png',
+    image: '/landing/services/kitchen-cabinet/04-kitchen-cabinet-full-system.jpg',
     description:
       'A complete stainless kitchen cabinet system with base cabinets, drawers, overhead cabinets, backsplash, and sink-area storage. Best for restaurants, food businesses, commercial kitchens, and heavy-use home kitchens.',
     estimatedPrice: '₱80,000 – ₱220,000',
@@ -1078,7 +1078,7 @@ const KITCHEN_CABINET_VARIANTS: ServiceVariant[] = [
   {
     id: 'base-storage',
     title: 'Base Stainless Kitchen Cabinet',
-    image: '/landing/services/kitchen-cabinet/05-kitchen-cabinet-base-storage.png',
+    image: '/landing/services/kitchen-cabinet/05-kitchen-cabinet-base-storage.jpg',
     description:
       'A simple under-counter stainless base cabinet with brushed stainless doors, practical handles, sturdy legs, and clean storage space. Good for compact kitchens, washing areas, prep counters, and commercial storage.',
     estimatedPrice: '₱20,000 – ₱60,000',
@@ -1126,7 +1126,7 @@ const RAILINGS_VARIANTS: ServiceVariant[] = [
   {
     id: 'commercial-guardrail',
     title: 'Commercial Stainless Guardrail',
-    image: '/landing/services/railings/01-commercial-stainless-guardrail.png',
+    image: '/landing/services/railings/01-commercial-stainless-guardrail.jpg',
     description:
       'A heavy-duty stainless guardrail for storefronts, ramps, entrances, and commercial walkways. Built with strong posts, horizontal rails, rounded handrail ends, and secure base plates for practical safety and clean appearance.',
     estimatedPrice: '₱3,500 – ₱9,500 per linear meter',
@@ -1171,7 +1171,7 @@ const RAILINGS_VARIANTS: ServiceVariant[] = [
   {
     id: 'outdoor-stair-railing',
     title: 'Outdoor Stainless Stair Railing',
-    image: '/landing/services/railings/02-outdoor-stainless-stair-railing.png',
+    image: '/landing/services/railings/02-outdoor-stainless-stair-railing.jpg',
     description:
       'A stainless railing system for exterior concrete stairs, building entrances, and outdoor steps. Designed with angled handrails, horizontal bars, sturdy posts, and visible base plates for safe access.',
     estimatedPrice: '₱4,000 – ₱10,500 per linear meter',
@@ -1216,7 +1216,7 @@ const RAILINGS_VARIANTS: ServiceVariant[] = [
   {
     id: 'terrace-railing',
     title: 'Terrace Stainless Railing',
-    image: '/landing/services/railings/03-terrace-stainless-railing.png',
+    image: '/landing/services/railings/03-terrace-stainless-railing.jpg',
     description:
       'A stainless railing system for terrace, deck, balcony edge, or open outdoor areas. Built with horizontal rails, sturdy posts, top handrail, and secure base plates for safety and a clean modern look.',
     estimatedPrice: '₱3,800 – ₱10,000 per linear meter',
@@ -1261,7 +1261,7 @@ const RAILINGS_VARIANTS: ServiceVariant[] = [
   {
     id: 'indoor-stair-railing',
     title: 'Indoor Stainless Stair Railing',
-    image: '/landing/services/railings/04-indoor-stainless-stair-railing.png',
+    image: '/landing/services/railings/04-indoor-stainless-stair-railing.jpg',
     description:
       'An indoor stainless stair railing for residential or commercial stairs. Built with angled top handrail, vertical posts, horizontal bars, and clean mounting plates following the staircase slope.',
     estimatedPrice: '₱3,500 – ₱9,000 per linear meter',
@@ -1306,7 +1306,7 @@ const RAILINGS_VARIANTS: ServiceVariant[] = [
   {
     id: 'glass-stainless-balcony',
     title: 'Glass Stainless Balcony Railing',
-    image: '/landing/services/railings/05-glass-stainless-balcony-railing.png',
+    image: '/landing/services/railings/05-glass-stainless-balcony-railing.jpg',
     description:
       'A modern glass and stainless balcony railing with stainless posts, clear glass panels, clamps, top rail, and secure base plates. Good for balconies, terraces, and commercial frontage where visibility and safety matter.',
     estimatedPrice: '₱7,500 – ₱16,500 per linear meter',
@@ -1351,7 +1351,7 @@ const RAILINGS_VARIANTS: ServiceVariant[] = [
   {
     id: 'wall-mounted-handrail',
     title: 'Wall-Mounted Stainless Handrail',
-    image: '/landing/services/railings/06-wall-mounted-stainless-handrail.png',
+    image: '/landing/services/railings/06-wall-mounted-stainless-handrail.jpg',
     description:
       'A wall-mounted stainless safety handrail for hallways, ramps, clinics, shops, homes, and commercial spaces. Built with round stainless tubing, wall brackets, screw plates, and clean practical installation.',
     estimatedPrice: '₱2,800 – ₱7,500 per linear meter',
@@ -1396,7 +1396,7 @@ const RAILINGS_VARIANTS: ServiceVariant[] = [
   {
     id: 'balcony-horizontal-railing',
     title: 'Balcony Horizontal Stainless Railing',
-    image: '/landing/services/railings/07-balcony-horizontal-stainless-railing.png',
+    image: '/landing/services/railings/07-balcony-horizontal-stainless-railing.jpg',
     description:
       'A horizontal stainless balcony railing for residential balconies and elevated edges. Built with round posts, multiple horizontal rails, top handrail, base plates, and clean stainless finish.',
     estimatedPrice: '₱3,500 – ₱9,500 per linear meter',
@@ -1444,7 +1444,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
   {
     id: 'double-swing-stainless-gate',
     title: 'Double Swing Stainless Gate',
-    image: '/landing/services/gates/01-gates-double-swing-stainless-gate.png',
+    image: '/landing/services/gates/01-gates-double-swing-stainless-gate.jpg',
     description:
       'A double swing stainless gate for residential driveways, home entrances, and small compounds. Built with two hinged panels, sturdy side posts, vertical bars, horizontal rails, latch hardware, and clean stainless fabrication for secure daily use.',
     estimatedPrice: '₱35,000 – ₱120,000',
@@ -1491,7 +1491,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
   {
     id: 'modern-mixed-metal-gate',
     title: 'Modern Mixed Metal Gate',
-    image: '/landing/services/gates/02-gates-modern-mixed-metal-gate.png',
+    image: '/landing/services/gates/02-gates-modern-mixed-metal-gate.jpg',
     description:
       'A modern custom metal gate using a painted steel frame with stainless steel accent strips or panels. Good for residential front gates that need a clean modern look while staying practical, durable, and buildable.',
     estimatedPrice: '₱45,000 – ₱150,000',
@@ -1537,7 +1537,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
   {
     id: 'commercial-security-gate',
     title: 'Commercial Security Gate',
-    image: '/landing/services/gates/03-gates-commercial-security-gate.png',
+    image: '/landing/services/gates/03-gates-commercial-security-gate.jpg',
     description:
       'A heavy-duty commercial security gate for storefronts, warehouses, service entrances, and business properties. Built with strong vertical bars, reinforced frame, secure posts, heavy hinges, and lock hardware for practical access control.',
     estimatedPrice: '₱40,000 – ₱160,000',
@@ -1583,7 +1583,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
   {
     id: 'pedestrian-stainless-gate',
     title: 'Pedestrian Stainless Gate',
-    image: '/landing/services/gates/04-gates-pedestrian-stainless-gate.png',
+    image: '/landing/services/gates/04-gates-pedestrian-stainless-gate.jpg',
     description:
       'A single pedestrian stainless gate for side entrances, walkways, utility access, and home entry points. Built with a compact frame, vertical bars, hinge post, latch handle, lockset, and clean welded joints.',
     estimatedPrice: '₱12,000 – ₱45,000',
@@ -1629,7 +1629,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
   {
     id: 'sliding-stainless-gate',
     title: 'Sliding Stainless Gate',
-    image: '/landing/services/gates/05-gates-sliding-stainless-gate.png',
+    image: '/landing/services/gates/05-gates-sliding-stainless-gate.jpg',
     description:
       'A stainless sliding gate for residential driveways and property entrances. Built with a strong rectangular frame, horizontal bars or panels, bottom track, rollers, guide post, lock area, and proper concrete floor contact.',
     estimatedPrice: '₱45,000 – ₱180,000',
@@ -1675,7 +1675,7 @@ const GATES_VARIANTS: ServiceVariant[] = [
   {
     id: 'decorative-stainless-gate',
     title: 'Decorative Stainless Gate',
-    image: '/landing/services/gates/06-gates-decorative-stainless-gate.png',
+    image: '/landing/services/gates/06-gates-decorative-stainless-gate.jpg',
     description:
       'A stainless residential gate with simple decorative bar patterns, balanced vertical and horizontal bars, clean welds, proper hinges, latch hardware, side posts, and durable stainless finish. Elegant but still practical and buildable.',
     estimatedPrice: '₱35,000 – ₱140,000',
@@ -1724,7 +1724,7 @@ const CANOPY_VARIANTS: ServiceVariant[] = [
   {
     id: 'walkway-stainless-canopy',
     title: 'Walkway Stainless Canopy',
-    image: '/landing/services/canopy/01-canopy-walkway-stainless-canopy.png',
+    image: '/landing/services/canopy/01-canopy-walkway-stainless-canopy.jpg',
     description:
       'A long stainless or painted steel walkway canopy for building sides, entrance paths, and covered walkways. Built with evenly spaced posts, roof framing, metal or polycarbonate roofing, base plates, wall anchors, and practical rain protection.',
     estimatedPrice: '₱4,500 – ₱12,000 per square meter',
@@ -1770,7 +1770,7 @@ const CANOPY_VARIANTS: ServiceVariant[] = [
   {
     id: 'garage-carport-canopy',
     title: 'Garage / Carport Canopy',
-    image: '/landing/services/canopy/02-canopy-garage-carport-canopy.png',
+    image: '/landing/services/canopy/02-canopy-garage-carport-canopy.jpg',
     description:
       'A heavy-duty metal garage or carport canopy for residential driveways and parking areas. Built with steel posts, cross beams, metal roof sheets, base plates, roof slope, gutter provision, and durable outdoor fabrication.',
     estimatedPrice: '₱55,000 – ₱250,000',
@@ -1816,7 +1816,7 @@ const CANOPY_VARIANTS: ServiceVariant[] = [
   {
     id: 'storefront-metal-canopy',
     title: 'Storefront Metal Canopy',
-    image: '/landing/services/canopy/03-canopy-storefront-metal-canopy.png',
+    image: '/landing/services/canopy/03-canopy-storefront-metal-canopy.jpg',
     description:
       'A metal canopy for storefronts, shop entrances, business fronts, and commercial doors. Built with wall brackets, steel frame, support posts when needed, roof panels, wall anchors, clean welds, and practical drainage.',
     estimatedPrice: '₱25,000 – ₱120,000',
@@ -1862,7 +1862,7 @@ const CANOPY_VARIANTS: ServiceVariant[] = [
   {
     id: 'polycarbonate-entrance-canopy',
     title: 'Polycarbonate Entrance Canopy',
-    image: '/landing/services/canopy/04-canopy-polycarbonate-entrance-canopy.png',
+    image: '/landing/services/canopy/04-canopy-polycarbonate-entrance-canopy.jpg',
     description:
       'A lightweight polycarbonate entrance canopy for homes, offices, and small business entrances. Built with a steel support frame, translucent roof sheets, wall brackets, proper bolts, clean seams, and weather-protective coverage.',
     estimatedPrice: '₱18,000 – ₱85,000',
@@ -1911,7 +1911,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
   {
     id: 'stainless-storage-cabinet',
     title: 'Stainless Storage Cabinet',
-    image: '/landing/services/custom/01-custom-stainless-storage-cabinet.png',
+    image: '/landing/services/custom/01-custom-stainless-storage-cabinet.jpg',
     description:
       'A fully custom fabricated stainless steel storage cabinet designed for kitchens, stockrooms, laundry areas, food businesses, clinics, restaurants, and utility spaces. Built to customer dimensions with heavy-duty construction, adjustable shelves, durable hinges, brushed stainless finish, and long service life.',
     estimatedPrice: '₱18,000 – ₱95,000',
@@ -1956,7 +1956,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
   {
     id: 'food-cart-kiosk',
     title: 'Food Cart / Kiosk Frame',
-    image: '/landing/services/custom/02-custom-food-cart-kiosk-frame.png',
+    image: '/landing/services/custom/02-custom-food-cart-kiosk-frame.jpg',
     description:
       'Custom stainless and painted steel food carts, kiosks, mobile counters, and business carts built around your concept. Suitable for milk tea, coffee, street food, snack bars, and retail kiosks.',
     estimatedPrice: '₱35,000 – ₱180,000',
@@ -2002,7 +2002,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
   {
     id: 'metal-partition',
     title: 'Metal Partition / Utility Frame',
-    image: '/landing/services/custom/03-custom-metal-partition-utility-frame.png',
+    image: '/landing/services/custom/03-custom-metal-partition-utility-frame.jpg',
     description:
       'Custom fabricated steel and stainless partitions, divider frames, protective barriers, utility frames, storage frames, and structural metal works for residential and commercial applications.',
     estimatedPrice: '₱15,000 – ₱120,000',
@@ -2048,7 +2048,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
   {
     id: 'stainless-work-table',
     title: 'Stainless Work Table',
-    image: '/landing/services/custom/04-custom-stainless-work-table.png',
+    image: '/landing/services/custom/04-custom-stainless-work-table.jpg',
     description:
       'Heavy-duty stainless work tables fabricated to your required dimensions for food preparation, restaurants, commissaries, bakeries, hospitals, laboratories, and commercial kitchens.',
     estimatedPrice: '₱10,000 – ₱65,000',
@@ -2094,7 +2094,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
   {
     id: 'stainless-storage-rack',
     title: 'Stainless Shelving & Storage Rack',
-    image: '/landing/services/custom/05-custom-stainless-shelves-racks.png',
+    image: '/landing/services/custom/05-custom-stainless-shelves-racks.jpg',
     description:
       'Custom stainless storage shelves and commercial racks fabricated for kitchens, bakeries, restaurants, clinics, pharmacies, stockrooms, warehouses, and utility rooms.',
     estimatedPrice: '₱8,000 – ₱60,000',
@@ -2140,7 +2140,7 @@ const CUSTOM_VARIANTS: ServiceVariant[] = [
   {
     id: 'stainless-sink-station',
     title: 'Stainless Sink & Utility Station',
-    image: '/landing/services/custom/06-custom-stainless-sink-utility-station.png',
+    image: '/landing/services/custom/06-custom-stainless-sink-utility-station.jpg',
     description:
       'Custom stainless sink stations for restaurants, food preparation, wash areas, commissaries, laboratories, and commercial kitchens. Fabricated with integrated work surfaces, backsplashes, shelving, and plumbing provisions.',
     estimatedPrice: '₱12,000 – ₱90,000',
@@ -2237,22 +2237,22 @@ const FEATURED_PROJECTS = [
   {
     title: 'Commercial Kitchen Fit-Out',
     category: 'Commercial',
-    image: '/landing/commercial-kitchens/cover.png',
+    image: '/landing/commercial-kitchens/cover.jpg',
   },
   {
     title: 'Stainless Kitchen System',
     category: 'Stainless Installation',
-    image: '/landing/hotel-kitchens/cover.png',
+    image: '/landing/hotel-kitchens/cover.jpg',
   },
   {
     title: 'Food Stall Fabrication',
     category: 'Custom Fabrication',
-    image: '/landing/food-stall-works/cover.png',
+    image: '/landing/food-stall-works/cover.jpg',
   },
   {
     title: 'Custom Stainless Metalwork',
     category: 'Residential',
-    image: '/landing/custom-metalworks/project-1.png',
+    image: '/landing/custom-metalworks/project-1.jpg',
   },
 ];
 
@@ -2384,7 +2384,7 @@ export function LandingPage() {
         <section id="hero" className="relative flex min-h-[720px] scroll-mt-16 flex-col overflow-hidden border-b border-white/10 bg-[#090B0D] pt-16 lg:h-svh lg:min-h-[640px] lg:max-h-[900px] lg:pt-[72px]">
           <div className="relative flex flex-1 items-center bg-[#F7F7F5] text-[#111417]">
             <img
-              src="/landing/services/railings/03-terrace-stainless-railing.png"
+              src="/landing/services/railings/03-terrace-stainless-railing.jpg"
               alt="Brushed stainless steel terrace railing in daylight"
               className="absolute inset-0 h-full w-full object-cover object-[68%_center] lg:object-center"
             />
@@ -2579,7 +2579,7 @@ export function LandingPage() {
         </section>
 
         <section className="relative overflow-hidden border-b border-white/10 bg-[#12161A]">
-          <img src="/landing/completed-works/cover.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-[0.08]" />
+          <img src="/landing/completed-works/cover.jpg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-[0.08]" />
           <div className="absolute inset-0 bg-[#090B0D]/85" />
           <div className="relative mx-auto grid w-[min(calc(100%_-_32px),1440px)] grid-cols-2 sm:w-[min(calc(100%_-_48px),1440px)] lg:grid-cols-4">
             {PROCESS_TRUST_ITEMS.map(({ title, description, Icon }, index) => (
@@ -2638,20 +2638,20 @@ export function LandingPage() {
               />
               <div className="aspect-[4/3] overflow-hidden rounded-lg bg-[#12161A]">
                 <img
-                  src="/landing/custom-metalworks/project-1.png"
+                  src="/landing/custom-metalworks/project-1.jpg"
                   alt="Custom stainless fabrication installation"
                   className="h-full w-full object-cover"
                   loading="lazy"
                 />
               </div>
               <img
-                src="/landing/services/railings/01-commercial-stainless-guardrail.png"
+                src="/landing/services/railings/01-commercial-stainless-guardrail.jpg"
                 alt="Finished stainless steel guardrail"
                 className="aspect-[4/3] h-full w-full rounded-lg object-cover"
                 loading="lazy"
               />
               <img
-                src="/landing/services/kitchen-counter/01-kitchen-counter-corner-open-shelf.png"
+                src="/landing/services/kitchen-counter/01-kitchen-counter-corner-open-shelf.jpg"
                 alt="Brushed stainless steel kitchen counter finish"
                 className="col-span-2 aspect-[2/0.72] h-full w-full rounded-lg object-cover"
                 loading="lazy"
@@ -2684,7 +2684,7 @@ export function LandingPage() {
         </section>
 
         <section className="relative overflow-hidden bg-[#F5B400] py-10 text-[#090B0D] sm:py-12">
-          <img src="/landing/completed-works/cover.png" alt="" className="absolute inset-0 h-full w-full object-cover opacity-[0.08] mix-blend-multiply" />
+          <img src="/landing/completed-works/cover.jpg" alt="" className="absolute inset-0 h-full w-full object-cover opacity-[0.08] mix-blend-multiply" />
           <div className="relative mx-auto grid w-[min(calc(100%_-_32px),1320px)] items-center gap-7 sm:w-[min(calc(100%_-_48px),1320px)] lg:grid-cols-[1.1fr_1fr_auto] lg:gap-12">
             <h2 className="font-['Sora',sans-serif] text-[clamp(2rem,4vw,4rem)] font-extrabold uppercase leading-[0.95] tracking-[-0.04em]">
               Ready to Start<br />Your Project?

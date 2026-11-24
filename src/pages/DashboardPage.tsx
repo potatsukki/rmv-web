@@ -701,7 +701,7 @@ function CustomerDashboard({
         eyebrow="Customer workspace"
         title={<><span>Good to see you, </span><em>{firstName}.</em></>}
         description="Track your project, review important updates, and take the next step whenever you are ready."
-        image="/landing/hero/hero-stainless-railing-bg.png"
+        image="/landing/hero/hero-stainless-railing-bg.jpg"
         actions={<Link to="/appointments/book" className="workspace-focus inline-flex min-h-12 items-center justify-center gap-2 rounded-md bg-[#f5b400] px-5 text-sm font-bold text-[#090b0d] hover:bg-[#ffd047]"><CalendarPlus className="h-4 w-4" /> BOOK AN APPOINTMENT <ArrowRight className="h-4 w-4" /></Link>}
       />
 

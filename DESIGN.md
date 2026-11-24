@@ -105,7 +105,7 @@ Target review widths: `360`, `390`, `430`, `768`, `1024`, `1280`, and `1440` pix
 
 - Use repository images only; no remote stock URLs.
 - All content images use `object-fit: cover`, explicit aspect ratios, and meaningful alt text.
-- Hero: `/landing/services/railings/03-terrace-stainless-railing.png` (daylight brushed-stainless railing), positioned center on desktop and 68% center on mobile. The hero is the one light photographic section: stainless steel must read clearly, never as a night scene.
+- Hero: `/landing/services/railings/03-terrace-stainless-railing.jpg` (daylight brushed-stainless railing), positioned center on desktop and 68% center on mobile. The hero is the one light photographic section: stainless steel must read clearly, never as a night scene.
 - Hero overlay: left-to-right warm-white fade from `rgba(247,247,245,0.97)` through `rgba(247,247,245,0.8)` to fully transparent at about 84% on desktop; a uniform `rgba(247,247,245,0.85)` veil below `1024px`. No dark overlay and no bottom fade.
 - Service image overlay: top transparent-to-bottom near-black, with an additional low-opacity full black wash.
 - About image: crop the left fabrication portion of `/landing/about-legacy-welder.png` so its embedded legacy copy is never displayed.

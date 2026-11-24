@@ -377,7 +377,7 @@ export function AppointmentsPage() {
           eyebrow="Appointments"
           title={<>Your visits, <em>organized.</em></>}
           description="Book a consultation, review confirmations, and keep every project visit in one place."
-          image="/landing/services/railings/01-commercial-stainless-guardrail.png"
+          image="/landing/services/railings/01-commercial-stainless-guardrail.jpg"
         />
       )}
       {isCustomer && customerQueueQuery.data && (

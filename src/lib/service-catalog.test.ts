@@ -45,7 +45,7 @@ describe('service project references', () => {
       id: 'railings-commercial-stainless-guardrail',
       serviceId: 'railings',
       serviceType: 'railings',
-      image: '/landing/services/railings/01-commercial-stainless-guardrail.png',
+      image: '/landing/services/railings/01-commercial-stainless-guardrail.jpg',
     });
   });
 
@@ -54,7 +54,7 @@ describe('service project references', () => {
       serviceId: 'kitchen-cabinet',
       designId: 'tall-storage',
       designName: 'Tall Stainless Storage Cabinet',
-      designImage: '/landing/services/kitchen-cabinet/01-kitchen-cabinet-tall-storage.png',
+      designImage: '/landing/services/kitchen-cabinet/01-kitchen-cabinet-tall-storage.jpg',
     });
 
     expect(project?.title).toBe('Tall Storage Cabinet');

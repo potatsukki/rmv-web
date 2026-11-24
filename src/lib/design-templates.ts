@@ -25,29 +25,29 @@ export interface DesignTemplate {
 
 const images = {
   grill: [
-    '/landing/grill-concepts/cover.png',
-    '/landing/grill-concepts/project-1.png',
-    '/landing/grill-concepts/project-2.png',
+    '/landing/grill-concepts/cover.jpg',
+    '/landing/grill-concepts/project-1.jpg',
+    '/landing/grill-concepts/project-2.jpg',
   ],
   metal: [
-    '/landing/custom-metalworks/cover.png',
-    '/landing/custom-metalworks/project-1.png',
-    '/landing/custom-metalworks/project-2.png',
+    '/landing/custom-metalworks/cover.jpg',
+    '/landing/custom-metalworks/project-1.jpg',
+    '/landing/custom-metalworks/project-2.jpg',
   ],
   kitchen: [
-    '/landing/commercial-kitchens/cover.png',
+    '/landing/commercial-kitchens/cover.jpg',
     '/landing/commercial-kitchens/project-1.jpg',
-    '/landing/commercial-kitchens/project-2.png',
+    '/landing/commercial-kitchens/project-2.jpg',
   ],
   completed: [
-    '/landing/completed-works/cover.png',
+    '/landing/completed-works/cover.jpg',
     '/landing/completed-works/project-1.jpg',
-    '/landing/completed-works/project-2.png',
+    '/landing/completed-works/project-2.jpg',
   ],
   stall: [
-    '/landing/food-stall-systems/cover.png',
-    '/landing/food-stall-systems/project-1.png',
-    '/landing/food-stall-systems/project-2.png',
+    '/landing/food-stall-systems/cover.jpg',
+    '/landing/food-stall-systems/project-1.jpg',
+    '/landing/food-stall-systems/project-2.jpg',
   ],
 } as const;
 

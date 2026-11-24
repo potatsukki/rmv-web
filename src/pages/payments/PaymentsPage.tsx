@@ -575,7 +575,7 @@ export function PaymentsPage() {
           eyebrow="Payments"
           title={<>Track <em>payments</em> with confidence.</>}
           description="Review project payment stages, receipts, and actions that may be needed to keep work moving."
-          image="/landing/hero/hero-stainless-railing-bg.png"
+          image="/landing/hero/hero-stainless-railing-bg.jpg"
         />
       )}
 
