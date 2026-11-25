@@ -21,6 +21,7 @@ import {
   OCULAR_NEAR_SHOP_KM,
   OCULAR_SITE_MINUTES,
   OCULAR_TRAFFIC_BUFFER_MINUTES,
+  OCULAR_TRAVEL_STEP_MINUTES,
 } from '@/lib/constants';
 
 const LazyLocationPicker = lazy(() =>
@@ -42,14 +43,24 @@ export function formatTravelDuration(minutes: number) {
   return rest ? `${hours} hr ${rest} min` : `${hours} hr`;
 }
 
+/** Drive time rounded up to the next 30 min (48 → 60, 70 → 90); 0 stays 0. Same rule as the server. */
+export function roundTravelMinutes(travelMinutes: number) {
+  return Math.ceil(Math.max(0, travelMinutes) / OCULAR_TRAVEL_STEP_MINUTES) * OCULAR_TRAVEL_STEP_MINUTES;
+}
+
+/** The ocular drive time as shown to staff: "30 min", "1 hr", "1 hr 30 min". */
+export function ocularTravelLabel(travelMinutes: number) {
+  return formatTravelDuration(roundTravelMinutes(travelMinutes));
+}
+
 /** True when the site is close enough to the shop to skip the traffic allowance. */
 export function isNearShop(distanceKm?: number | null) {
   return typeof distanceKm === 'number' && Number.isFinite(distanceKm) && distanceKm <= OCULAR_NEAR_SHOP_KM;
 }
 
-/** One-way trip to the site with the traffic allowance (none for a site near the shop); same rule as the server. */
+/** One-way trip to the site: rounded drive + the traffic allowance (none for a site near the shop); same rule as the server. */
 export function ocularLegMinutes(travelMinutes: number, distanceKm?: number | null) {
-  return Math.ceil(Math.max(0, travelMinutes)) + (isNearShop(distanceKm) ? 0 : OCULAR_TRAFFIC_BUFFER_MINUTES);
+  return roundTravelMinutes(travelMinutes) + (isNearShop(distanceKm) ? 0 : OCULAR_TRAFFIC_BUFFER_MINUTES);
 }
 
 function slotMinutes(slotCode: string) {
@@ -380,7 +391,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
                 <div className="rounded-lg border bg-background p-3 text-sm">
                   <p className="flex items-center gap-2 font-semibold">
                     <Car className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    Travel time: ~{formatTravelDuration(fee.route.durationMinutes)} from the RMV shop ({fee.route.distanceKm.toFixed(1)} km)
+                    Travel time: ~{ocularTravelLabel(fee.route.durationMinutes)} from the RMV shop ({fee.route.distanceKm.toFixed(1)} km)
                   </p>
                   {slotCode && (
                     <>
@@ -402,7 +413,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
                   <p className="mt-2 text-xs text-muted-foreground">
                     {isNearShop(fee.route.distanceKm)
                       ? `Near the shop (within ${OCULAR_NEAR_SHOP_KM} km): no traffic allowance added.`
-                      : `Includes ${OCULAR_TRAFFIC_BUFFER_MINUTES} min for traffic each way (sites more than ${OCULAR_NEAR_SHOP_KM} km from the shop).`}
+                      : `Includes ${formatTravelDuration(OCULAR_TRAFFIC_BUFFER_MINUTES)} for traffic each way (sites more than ${OCULAR_NEAR_SHOP_KM} km from the shop).`}
                   </p>
                 </div>
                 <div className="rounded-lg border bg-background p-3 text-sm">

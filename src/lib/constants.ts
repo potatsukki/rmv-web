@@ -61,12 +61,13 @@ export const MIN_BOOKING_LEAD_DAYS = 1;
 export const MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER = 3;
 // An ocular visit is scheduled at least this many days after its consultation; keep in sync with rmv-server.
 export const OCULAR_MIN_DAYS_AFTER_CONSULTATION = 3;
-// An ocular visit keeps its sales staff away from leaving the shop until back: the drive plus a
-// traffic allowance each way (none for a site near the shop) and the time on site. Keep in sync
-// with rmv-server (availability-session.service.ts).
+// An ocular visit keeps its sales staff away from leaving the shop until back: the drive (rounded
+// up to 30 min) plus a traffic allowance each way (none for a site near the shop) and the time on
+// site. Keep in sync with rmv-server (availability-session.service.ts).
 export const OCULAR_SITE_MINUTES = 90;
-export const OCULAR_TRAFFIC_BUFFER_MINUTES = 45;
+export const OCULAR_TRAFFIC_BUFFER_MINUTES = 60;
 export const OCULAR_NEAR_SHOP_KM = 4;
+export const OCULAR_TRAVEL_STEP_MINUTES = 30;
 export type SlotCode = (typeof SLOT_CODES)[number];
 
 // ── Project ──
