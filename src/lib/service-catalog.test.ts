@@ -25,15 +25,30 @@ describe('service project references', () => {
     ]);
   });
 
-  it('uses title case for fence design names', () => {
+  it('shows only the fence design under Fences (the gate photos belong to Gates)', () => {
     const fenceService = getServiceById('fences');
 
-    expect(fenceService?.projects.map((project) => project.title)).toEqual([
-      'Custom Metal Fence',
-      'Decorative Stainless Gate',
-      'Commercial Security Gate',
-      'Modern Mixed Metal Gate',
-    ]);
+    expect(fenceService?.projects.map((project) => project.title)).toEqual(['Custom Metal Fence']);
+  });
+
+  it('shows only the staircase design under Staircase (the railing photos belong to Railings)', () => {
+    const staircaseService = getServiceById('staircase');
+
+    expect(staircaseService?.projects.map((project) => project.title)).toEqual(['Stainless Staircase Installation']);
+  });
+
+  it('shows every service only its own photos, on the service page and in Book Appointment', () => {
+    const borrowed: string[] = [];
+
+    for (const service of SERVICE_CATALOG) {
+      for (const project of service.projects) {
+        const ownPhoto = project.image === service.coverImage
+          || project.image.startsWith(`/landing/services/${service.id}/`);
+        if (!ownPhoto) borrowed.push(`${service.id}: ${project.title} (${project.image})`);
+      }
+    }
+
+    expect(borrowed).toEqual([]);
   });
 
   it('creates stable design references from the centralized catalog', () => {
