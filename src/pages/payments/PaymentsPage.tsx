@@ -254,14 +254,23 @@ function PaymentProjectRow({
 
 const HISTORY_GREEN_BADGE = 'border border-[#7aa18a] bg-[linear-gradient(180deg,#e1f1e6_0%,#c6e0cf_100%)] text-[#234b32] shadow-[inset_0_1px_0_rgba(255,255,255,0.62)] dark:border-emerald-600/50 dark:bg-[linear-gradient(180deg,rgba(39,84,59,0.9)_0%,rgba(24,53,38,0.92)_100%)] dark:text-emerald-100';
 
+const HISTORY_AMBER_BADGE = 'border border-[#c49a62] bg-[linear-gradient(180deg,#f4e6d2_0%,#e5cfab_100%)] text-[#6d4b1f] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-amber-600/50 dark:bg-[linear-gradient(180deg,rgba(102,70,24,0.92)_0%,rgba(67,45,16,0.92)_100%)] dark:text-amber-100';
+const HISTORY_BLUE_BADGE = 'border border-[#7899b4] bg-[linear-gradient(180deg,#e0edf7_0%,#c7dced_100%)] text-[#274860] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-blue-600/50 dark:bg-[linear-gradient(180deg,rgba(36,69,96,0.92)_0%,rgba(23,45,63,0.92)_100%)] dark:text-blue-100';
+const HISTORY_RED_BADGE = 'border border-[#bf7d77] bg-[linear-gradient(180deg,#f6e2df_0%,#e6c4bf_100%)] text-[#6b2d28] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-red-600/50 dark:bg-[linear-gradient(180deg,rgba(100,45,41,0.92)_0%,rgba(69,29,26,0.92)_100%)] dark:text-red-100';
+
 const historyStatusConfig: Record<string, { label: string; className: string }> = {
   verified: { label: 'Paid', className: HISTORY_GREEN_BADGE },
   // Newer records report paymentStatus 'paid' instead of status 'verified'; same meaning.
   paid: { label: 'Paid', className: HISTORY_GREEN_BADGE },
   approved: { label: 'Approved', className: HISTORY_GREEN_BADGE },
-  pending: { label: 'Pending', className: 'border border-[#c49a62] bg-[linear-gradient(180deg,#f4e6d2_0%,#e5cfab_100%)] text-[#6d4b1f] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-amber-600/50 dark:bg-[linear-gradient(180deg,rgba(102,70,24,0.92)_0%,rgba(67,45,16,0.92)_100%)] dark:text-amber-100' },
-  proof_submitted: { label: 'Awaiting Cashier Verification', className: 'border border-[#7899b4] bg-[linear-gradient(180deg,#e0edf7_0%,#c7dced_100%)] text-[#274860] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-blue-600/50 dark:bg-[linear-gradient(180deg,rgba(36,69,96,0.92)_0%,rgba(23,45,63,0.92)_100%)] dark:text-blue-100' },
-  declined: { label: 'Declined', className: 'border border-[#bf7d77] bg-[linear-gradient(180deg,#f6e2df_0%,#e6c4bf_100%)] text-[#6b2d28] shadow-[inset_0_1px_0_rgba(255,255,255,0.58)] dark:border-red-600/50 dark:bg-[linear-gradient(180deg,rgba(100,45,41,0.92)_0%,rgba(69,29,26,0.92)_100%)] dark:text-red-100' },
+  pending: { label: 'Pending', className: HISTORY_AMBER_BADGE },
+  proof_submitted: { label: 'Awaiting Cashier Verification', className: HISTORY_BLUE_BADGE },
+  declined: { label: 'Declined', className: HISTORY_RED_BADGE },
+  // Newer payment records (GCash flow) use these paymentStatus values; never show the raw word.
+  pending_verification: { label: 'Awaiting Cashier Verification', className: HISTORY_BLUE_BADGE },
+  rejected: { label: 'Rejected', className: HISTORY_RED_BADGE },
+  unpaid: { label: 'Unpaid', className: HISTORY_AMBER_BADGE },
+  cash_pending: { label: 'Unpaid', className: HISTORY_AMBER_BADGE },
 };
 
 export function PaymentsPage() {
@@ -650,7 +659,7 @@ export function PaymentsPage() {
                   <p className="text-sm font-semibold">Unpaid Ocular Fees</p>
                 </div>
                 <p className="mb-3 text-xs text-amber-200/80">
-                  Pay these first so the appointment can be confirmed.
+                  Pay online now, or in cash or GCash to your sales staff during the ocular visit.
                 </p>
                 <div className="space-y-2">
                   {actionableOcularFees.map((appt) => (
@@ -679,7 +688,7 @@ export function PaymentsPage() {
                       >
                         <Link to={`/appointments/${appt._id}/pay-ocular-fee`}>
                           <CreditCard className="mr-2 h-4 w-4" />
-                          Pay Ocular Fee
+                          {appt.ocularFeeStatus === 'declined' ? 'Pay Again' : 'Pay Ocular Fee'}
                         </Link>
                       </Button>
                     </div>
@@ -1533,7 +1542,7 @@ export function PaymentsPage() {
       <Dialog open={!!gcashStageId} onOpenChange={(open) => !open && setGcashStageId('')}>
         <DialogContent className="metal-panel-strong max-h-[90vh] overflow-y-auto sm:max-w-2xl">
           <DialogHeader><DialogTitle>GCash Payment</DialogTitle></DialogHeader>
-          {gcashStageId && <GcashPayment key={gcashStageId} target={{ stageId: gcashStageId }} allowCash={false} />}
+          {gcashStageId && <GcashPayment key={gcashStageId} target={{ stageId: gcashStageId }} />}
         </DialogContent>
       </Dialog>
       {/* Payment History Detail Modal */}
@@ -1562,6 +1571,20 @@ export function PaymentsPage() {
                   {historyStatusConfig[selectedHistoryPayment.status]?.label || selectedHistoryPayment.status}
                 </span>
               </div>
+
+              {/* An ocular fee the customer can still pay: online now, or in person at the visit. */}
+              {selectedHistoryPayment.type === 'ocular_fee'
+                && selectedHistoryPayment.bookingId
+                && ['unpaid', 'rejected', 'pending', 'declined', 'cash_pending'].includes(selectedHistoryPayment.status) && (
+                <div className="flex justify-center px-6">
+                  <Button asChild className="w-full rounded-xl">
+                    <Link to={`/appointments/${selectedHistoryPayment.bookingId}/pay-ocular-fee`}>
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      {['rejected', 'declined'].includes(selectedHistoryPayment.status) ? 'Pay Again' : 'Pay Ocular Fee'}
+                    </Link>
+                  </Button>
+                </div>
+              )}
 
               {selectedHistoryPayment.status === 'verified' && selectedHistoryPayment.receiptKey && (
                 <div className="flex justify-center px-6">

@@ -9,6 +9,8 @@ const getActiveTabRefetchInterval = (ms: number) =>
 
 export interface PaymentHistoryItem {
   _id: string;
+  /** Ocular fee rows: the appointment the fee belongs to. */
+  bookingId?: string;
   type: 'project_payment' | 'ocular_fee';
   amount: number;
   status: string;

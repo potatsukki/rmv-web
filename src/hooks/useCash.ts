@@ -27,6 +27,8 @@ export interface PendingCashAppointment {
   type: string;
   ocularFee: number;
   ocularFeeStatus: string;
+  ocularFeeNonRefundableAckAt?: string | null;
+  appointmentNumber?: string;
   ocularFeeBreakdown?: {
     label: string;
     isWithinNCR: boolean;
@@ -104,6 +106,49 @@ export function useRecordCashCollection() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: KEYS.all });
     },
+  });
+}
+
+export interface OnsiteCashBody {
+  /** The sales staff confirms the customer acknowledged in person that the fee is non-refundable. */
+  customerAcknowledgedInPerson?: boolean;
+  notes?: string;
+}
+
+export interface OnsiteCashResult {
+  /** The customer's acknowledgement number (the official receipt comes from the cashier later). */
+  collectionNumber?: string;
+  collection: CashCollection;
+}
+
+/** Everything that shows a fee's status: the ocular appointment, its report, the project, payments, Cash Flow. */
+function invalidateAfterOnsiteCash(qc: ReturnType<typeof useQueryClient>) {
+  for (const queryKey of [KEYS.all, ['appointments'], ['visit-reports'], ['projects'], ['payments'], ['gcash']]) {
+    qc.invalidateQueries({ queryKey });
+  }
+}
+
+/** Sales staff: the customer paid the ocular fee in cash during the visit (paid at once; the cashier receives it later). */
+export function useCollectOcularFeeOnSite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ appointmentId, ...body }: OnsiteCashBody & { appointmentId: string }) => {
+      const { data } = await api.post<ApiResponse<OnsiteCashResult>>(`/cash/onsite/ocular-fee/${appointmentId}`, body);
+      return data.data;
+    },
+    onSuccess: () => invalidateAfterOnsiteCash(qc),
+  });
+}
+
+/** Sales staff: the customer paid the design fee in cash after the ocular visit (the blueprint can start). */
+export function useCollectDesignFeeOnSite() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, ...body }: OnsiteCashBody & { projectId: string }) => {
+      const { data } = await api.post<ApiResponse<OnsiteCashResult>>(`/cash/onsite/design-fee/${projectId}`, body);
+      return data.data;
+    },
+    onSuccess: () => invalidateAfterOnsiteCash(qc),
   });
 }
 

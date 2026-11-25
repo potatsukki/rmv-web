@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { AlertTriangle, CheckCircle2, Loader2, Wallet } from 'lucide-react';
+import { AlertTriangle, Banknote, CheckCircle2, Loader2, Wallet } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { FeeBreakdownCard } from '@/components/shared/FeeBreakdownCard';
 import { GcashPayment } from '@/pages/payments/components/GcashPayment';
+import { OnsiteCashDialog } from '@/components/shared/OnsiteCashDialog';
 import {
   usePendingFees,
   useProjectFeeSummary,
@@ -136,13 +137,17 @@ export function DesignFeePanel({
   projectId,
   isCustomer,
   canRecord,
+  canCollectOnSite = false,
 }: {
   projectId: string;
   isCustomer: boolean;
   canRecord: boolean;
+  /** Project or ocular sales staff: the customer may pay the design fee in cash right after the ocular visit. */
+  canCollectOnSite?: boolean;
 }) {
   const { data: summary, isLoading, isError } = useProjectFeeSummary(projectId);
   const [feeToRecord, setFeeToRecord] = useState<FeeToRecord | null>(null);
+  const [collectOpen, setCollectOpen] = useState(false);
 
   if (isLoading) return <p className="text-sm text-muted-foreground">Loading fee breakdown…</p>;
   if (isError || !summary) return null;
@@ -160,10 +165,23 @@ export function DesignFeePanel({
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
               <p>
                 {isCustomer
-                  ? `A non-refundable design fee of ${formatCurrency(summary.designFee.amount)} is due before the blueprint starts. Pay it below with GCash, or in cash at the RMV cashier. It will be deducted from your final payment.`
-                  : `Design fee of ${formatCurrency(summary.designFee.amount)} is unpaid. The blueprint cannot start until the cashier records it.`}
+                  ? `A non-refundable design fee of ${formatCurrency(summary.designFee.amount)} is due before the blueprint starts. Pay it online below, or in person. It will be deducted from your final payment.`
+                  : canCollectOnSite
+                    ? `Design fee of ${formatCurrency(summary.designFee.amount)} is unpaid. The blueprint cannot start until it is paid. If the customer pays you in cash, record it here.`
+                    : `Design fee of ${formatCurrency(summary.designFee.amount)} is unpaid. The blueprint cannot start until it is paid.`}
               </p>
             </div>
+            {canCollectOnSite && !canRecord && (
+              <Button
+                type="button"
+                size="sm"
+                className="shrink-0"
+                onClick={() => setCollectOpen(true)}
+              >
+                <Banknote className="mr-2 h-4 w-4" />
+                Collect Design Fee (Cash)
+              </Button>
+            )}
             {canRecord && (
               <Button
                 type="button"
@@ -224,6 +242,13 @@ export function DesignFeePanel({
         </div>
       ))}
       <FeeBreakdownCard summary={summary} />
+      {canCollectOnSite && designFeePending && (
+        <OnsiteCashDialog
+          target={{ kind: 'design', projectId, amount: summary.designFee.amount, customerAcknowledged: Boolean(acknowledgedAt) }}
+          open={collectOpen}
+          onOpenChange={setCollectOpen}
+        />
+      )}
       {canRecord && feeToRecord && (
         <RecordFeeDialog
           fee={feeToRecord}
