@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router';
 import {
   Armchair,
@@ -334,7 +334,7 @@ export function getCustomerServiceDetails(groups: ServiceSpecGroup[]): CustomerS
   return details.slice(0, CUSTOMER_DETAIL_LIMIT);
 }
 
-const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata>> = {
+export const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata>> = {
   [ServiceType.KITCHEN_COUNTER]: {
     fullDescription:
       'Fabricated stainless kitchen counters for prep, washing, service, and daily commercial or home kitchen use. Built around your working layout, plumbing points, cutouts, and preferred finish.',
@@ -513,6 +513,22 @@ const SERVICE_DETAIL_METADATA: Partial<Record<ServiceType, ServiceDetailMetadata
     estimatedPrice: '₱28,000 – ₱120,000',
     priceNote:
       'Estimate-only range for custom gate fabrication; automation, large spans, decorative panels, and site preparation can increase cost.',
+  },
+  [ServiceType.STAIRCASE]: {
+    fullDescription:
+      'A made-to-measure metal staircase system planned around the floor-to-floor height, available footprint, landing position, access route, and intended daily use. The frame, treads, railings, and mounting points are coordinated as one installation.',
+    specGroups: [],
+    estimatedPrice: '₱80,000 – ₱250,000 per project',
+    priceNote:
+      'Estimate-only range for a complete staircase project; floor-to-floor height, layout, landings, railings, finish, and installation access affect final cost.',
+  },
+  [ServiceType.FENCES]: {
+    fullDescription:
+      'A made-to-measure metal fence for residential or commercial boundaries. The panel layout, post spacing, height, visibility, gate connection, finish, and footing requirements are planned around the actual property line and ground condition.',
+    specGroups: [],
+    estimatedPrice: '₱30,000 – ₱150,000 per project',
+    priceNote:
+      'Estimate-only range for a complete fence project; total length, height, panel style, gate connection, footing, and finish affect final cost.',
   },
   [ServiceType.CANOPY]: {
     fullDescription:
@@ -2204,7 +2220,7 @@ const REAL_SERVICES: LandingService[] = SERVICE_ORDER.map((type) => ({
   variants: LANDING_SERVICE_VARIANTS[type],
 }));
 
-const FEATURED_SERVICES = [
+export const FEATURED_SERVICES = [
   ServiceType.RAILINGS,
   ServiceType.GATES,
   ServiceType.KITCHEN_COUNTER,
@@ -2337,6 +2353,18 @@ export function LandingPage() {
   const navigate = useNavigate();
   const [selectedService, setSelectedService] = useState<LandingService | null>(null);
   const [selectedVariantIndex, setSelectedVariantIndex] = useState(0);
+  const thumbStripRef = useRef<HTMLDivElement>(null);
+
+  // Keep the active design thumbnail in view when Next/Prev changes it (horizontal scroll only).
+  useEffect(() => {
+    const strip = thumbStripRef.current;
+    const thumb = strip?.children[selectedVariantIndex];
+    if (!strip || !thumb) return;
+    const stripRect = strip.getBoundingClientRect();
+    const thumbRect = thumb.getBoundingClientRect();
+    const offset = thumbRect.left + thumbRect.width / 2 - (stripRect.left + stripRect.width / 2);
+    strip.scrollBy({ left: offset, behavior: 'smooth' });
+  }, [selectedService, selectedVariantIndex]);
 
   // Staff cannot self-book (customer-only page), so their booking buttons go to the dashboard instead.
   const isStaff = isStaffViewer(user?.roles);
@@ -2356,14 +2384,12 @@ export function LandingPage() {
   };
   const selectedServiceDetail = selectedService ? SERVICE_DETAIL_METADATA[selectedService.type] : undefined;
   const selectedVariant = selectedService?.variants?.[selectedVariantIndex] ?? null;
-  const activeSpecGroups = selectedVariant?.confirmationGroups ?? selectedServiceDetail?.specGroups ?? [];
   const hasVariants = Boolean(selectedService?.variants?.length);
   const displayImage = selectedVariant?.image ?? selectedService?.imageUrl;
   const displayTitle = selectedVariant?.title ?? selectedService?.label;
   const displayDescription =
     selectedVariant?.description ?? selectedServiceDetail?.fullDescription ?? selectedService?.description;
   const displayPrice = selectedVariant?.estimatedPrice ?? selectedServiceDetail?.estimatedPrice;
-  const customerDetailItems = getCustomerServiceDetails(activeSpecGroups);
   const bookService = (service: LandingService) => {
     if (isStaff) {
       navigate('/dashboard');
@@ -2392,7 +2418,7 @@ export function LandingPage() {
 
       <main>
         {/* The section stays near-black behind the fixed navbar and the trust strip; the photo area between them is light. */}
-        <section id="hero" className="relative flex min-h-[720px] scroll-mt-16 flex-col overflow-hidden border-b border-white/10 bg-[#090B0D] pt-16 lg:h-svh lg:min-h-[640px] lg:max-h-[900px] lg:pt-[72px]">
+        <section id="hero" className="relative flex min-h-[720px] scroll-mt-16 flex-col overflow-hidden border-b border-white/10 bg-[#090B0D] pt-16 lg:min-h-[clamp(640px,100svh,900px)] lg:pt-[72px]">
           <div className="relative flex flex-1 items-center bg-[#F7F7F5] text-[#111417]">
             <img
               src="/landing/services/railings/03-terrace-stainless-railing.jpg"
@@ -2404,7 +2430,7 @@ export function LandingPage() {
 
             <div className="relative mx-auto w-[min(calc(100%_-_32px),1480px)] py-12 sm:w-[min(calc(100%_-_48px),1480px)] sm:py-16 lg:py-8">
               <div className="max-w-[860px]">
-                <h1 className="font-['Sora',sans-serif] text-[clamp(2rem,9vw,2.6rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-[#111417] sm:text-[clamp(2.6rem,5.2vw,5rem)]">
+                <h1 className="font-['Sora',sans-serif] text-[clamp(2rem,9vw,2.6rem)] font-extrabold uppercase leading-[0.92] tracking-[-0.055em] text-[#111417] sm:text-[clamp(2.6rem,5.2vw,5rem)] lg:text-[clamp(2.6rem,min(5.2vw,8.5svh),5rem)]">
                   <span className="block w-fit bg-[linear-gradient(180deg,#59616A_0%,#14191D_48%,#6B737C_100%)] bg-clip-text text-transparent">Stainless Steel</span>
                   <span aria-hidden="true" className="my-3 block h-1.5 w-24 bg-[#F5B400] sm:my-4" />
                   <span className="block">HIGH -GRADED INDUSTRIAL SOLUTIONS &amp; PRECISION ENGINEERED.</span>
@@ -2853,7 +2879,7 @@ export function LandingPage() {
                     </div>
 
                     {hasVariants && selectedService.variants && (
-                      <div className="-mx-1 mt-3 flex max-w-full gap-2 overflow-x-auto px-1 pb-2 sm:gap-3">
+                      <div ref={thumbStripRef} className="-mx-1 mt-3 flex max-w-full gap-2 overflow-x-auto px-1 pb-2 sm:gap-3">
                         {selectedService.variants.map((variant, index) => (
                           <button
                             key={variant.id}
@@ -2915,36 +2941,6 @@ export function LandingPage() {
                     </div>
                   </div>
                 </div>
-
-                <section className="min-w-0 space-y-4 border-t border-white/10 p-4 sm:p-5 lg:p-6">
-                  <div>
-                    <p className="label-font text-[10px] font-black uppercase tracking-[0.28em] text-[#FFD700]">
-                      Project Details Guide
-                    </p>
-                    <h3 className="headline-font mt-2 text-xl font-black uppercase tracking-[0.1em] text-white sm:text-2xl">
-                      What We Need From You
-                    </h3>
-                    <p className="mt-2 text-sm leading-6 text-white/52">
-                      Share these key details so RMV can prepare your quotation.
-                    </p>
-                  </div>
-
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {customerDetailItems.map((item) => (
-                      <article
-                        key={item.label}
-                        className="min-w-0 rounded-xl border border-white/10 bg-white/[0.025] p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)]"
-                      >
-                        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-white/55">{item.label}</p>
-                        <p className="mt-2 text-sm font-semibold leading-5 text-[#FFD700]/90">{item.value}</p>
-                      </article>
-                    ))}
-                  </div>
-
-                  <div className="rounded-xl border border-white/10 bg-black/35 px-4 py-3">
-                    <p className="text-xs leading-5 text-white/62">{CUSTOMER_TECHNICAL_NOTE}</p>
-                  </div>
-                </section>
               </div>
 
               <DialogFooter className="min-w-0 shrink-0 gap-3 border-t border-white/10 bg-[#06080a]/95 p-3 backdrop-blur sm:flex-row sm:justify-end sm:space-x-0 sm:p-4">

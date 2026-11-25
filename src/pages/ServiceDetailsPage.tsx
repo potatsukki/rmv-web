@@ -7,12 +7,9 @@ import { LandingNavbar } from '@/components/landing/LandingNavbar';
 import { PublicFooter } from '@/components/landing/PublicFooter';
 import {
   CUSTOMER_PRICE_NOTE,
-  CUSTOMER_TECHNICAL_NOTE,
-  getCustomerServiceDetails,
   LANDING_SERVICE_VARIANTS,
   toCustomerFacingServiceNote,
   toShortCustomerDescription,
-  type CustomerServiceDetailItem,
 } from '@/pages/LandingPage';
 import { useAuthStore } from '@/stores/auth.store';
 import {
@@ -69,17 +66,9 @@ const ADDITIONAL_PROJECT_PRICE_GUIDANCE: Record<string, string> = {
   'Utility Frame': '₱15,000 – ₱120,000+',
   'Stainless Work Table': '₱10,000 – ₱65,000+',
   'Decorative stainless gate': '₱35,000 – ₱140,000+',
+  'Stainless staircase installation': '₱80,000 – ₱250,000 per project',
+  'Custom metal fence': '₱30,000 – ₱150,000 per project',
 };
-
-const DEFAULT_CUSTOMER_PROJECT_DETAILS: CustomerServiceDetailItem[] = [
-  { label: 'Approximate Measurements', value: 'Rough length, width, and height' },
-  { label: 'Installation Location', value: 'Indoor or outdoor project area' },
-  { label: 'Preferred Style', value: 'Your selected design or a reference image' },
-  { label: 'Preferred Finish', value: 'Brushed, polished, painted, or powder-coated' },
-  { label: 'Mounting Surface', value: 'Concrete, tile, steel, wall, or freestanding' },
-  { label: 'Site Photos', value: 'Clear photos of the installation area and mounting surface' },
-  { label: 'Optional Add-ons', value: 'Any extra features you want included in the quotation' },
-];
 
 export function ServiceDetailsPage() {
   const { serviceId } = useParams();
@@ -159,9 +148,6 @@ export function ServiceDetailsPage() {
     ? Object.entries(ADDITIONAL_PROJECT_PRICE_GUIDANCE).find(([title]) => title.toLowerCase() === currentProject.title.toLowerCase())?.[1]
     : undefined;
   const priceEstimate = currentProject ? currentProject.estimatedPrice ?? priceGuidance?.estimate ?? additionalPriceEstimate : undefined;
-  const customerDetails = currentVariant
-    ? getCustomerServiceDetails(currentVariant.confirmationGroups)
-    : DEFAULT_CUSTOMER_PROJECT_DETAILS;
 
   return (
     <div className="min-h-screen overflow-x-clip bg-[#090B0D] text-white selection:bg-[#F5B400]/30">
@@ -225,21 +211,6 @@ export function ServiceDetailsPage() {
                   </div>
                 )}
 
-                <div className="mt-5 border-t border-white/10 pt-5">
-                  <p className="text-xs font-extrabold uppercase tracking-[0.14em] text-[#F5B400]">What We Need From You</p>
-                  <div className="mt-3 grid gap-2">
-                    {customerDetails.map((detail) => (
-                      <div key={detail.label} className="rounded-lg border border-white/10 bg-white/[0.025] px-3 py-2.5">
-                        <p className="text-[9px] font-extrabold uppercase tracking-[0.13em] text-white/48">{detail.label}</p>
-                        <p className="mt-1 text-xs font-semibold leading-5 text-white/78">{detail.value}</p>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                <p className="mt-4 rounded-lg border border-white/10 bg-black/25 px-3 py-2.5 text-[11px] leading-5 text-white/52">
-                  {CUSTOMER_TECHNICAL_NOTE}
-                </p>
                 <Link to={designRequestTarget} state={user ? undefined : { from: designBookingTarget }} onClick={() => rememberGuestBooking(designBookingTarget)} className="mt-5 inline-flex min-h-12 items-center justify-center gap-3 rounded-md bg-[#F5B400] px-5 text-xs font-extrabold uppercase tracking-[0.1em] text-[#090B0D] transition hover:bg-[#FFD047]">{bookingLabel('Avail This Design')}<ArrowRight className="h-4 w-4" /></Link>
               </div>
             </div>
