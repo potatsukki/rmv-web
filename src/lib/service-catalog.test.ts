@@ -8,10 +8,13 @@ import {
   getServiceProjectReferences,
 } from '@/lib/service-catalog';
 import {
+  FEATURED_SERVICES,
   getCustomerServiceDetails,
   LANDING_SERVICE_VARIANTS,
+  SERVICE_DETAIL_METADATA,
   toShortCustomerDescription,
 } from '@/pages/LandingPage';
+import { ServiceType } from '@/lib/constants';
 
 describe('service project references', () => {
   it('uses title case for custom fabrication design names', () => {
@@ -115,6 +118,21 @@ describe('service project references', () => {
     }
 
     expect(unresolved).toEqual([]);
+  });
+});
+
+describe('landing Our Services modal', () => {
+  it('has modal details for every service card, so no card opens an empty dialog', () => {
+    const missing = FEATURED_SERVICES
+      .filter((service) => !SERVICE_DETAIL_METADATA[service.type])
+      .map((service) => service.type);
+
+    expect(missing).toEqual([]);
+  });
+
+  it('shows the Staircase and Fences price ranges', () => {
+    expect(SERVICE_DETAIL_METADATA[ServiceType.STAIRCASE]?.estimatedPrice).toBe('₱80,000 – ₱250,000 per project');
+    expect(SERVICE_DETAIL_METADATA[ServiceType.FENCES]?.estimatedPrice).toBe('₱30,000 – ₱150,000 per project');
   });
 });
 
