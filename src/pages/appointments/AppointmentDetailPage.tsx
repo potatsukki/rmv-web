@@ -4,7 +4,7 @@ import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users,
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
-import { departureTime, formatTravelDuration, ocularVisitEnd, returnTime } from '@/components/shared/ScheduleOcularDialog';
+import { departureTime, ocularTravelLabel, ocularVisitEnd, returnTime } from '@/components/shared/ScheduleOcularDialog';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { consultationAttendanceLabel, consultationClosedAtLabel, getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from '@/lib/consultation-attendance';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
@@ -1229,7 +1229,7 @@ export function AppointmentDetailPage() {
                 <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Distance</p>
                 <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                   {appt.distanceKm.toFixed(1)} km
-                  {appt.travelDurationMinutes != null && ` · ~${formatTravelDuration(appt.travelDurationMinutes)} drive from the RMV shop`}
+                  {appt.travelDurationMinutes != null && ` · ~${ocularTravelLabel(appt.travelDurationMinutes)} drive from the RMV shop`}
                 </p>
               </div>
             )}
