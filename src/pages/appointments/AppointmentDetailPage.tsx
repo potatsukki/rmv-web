@@ -36,6 +36,8 @@ import {
 import { useSubmitVisitReport, useVisitReportsByAppointment } from '@/hooks/useVisitReports';
 import { useActivityHistory } from '@/hooks/useReports';
 import { ActivityTimeline } from '@/components/shared/ActivityTimeline';
+import { OnsiteCashDialog, type OnsiteCashTarget } from '@/components/shared/OnsiteCashDialog';
+import { canRecordOcularCashNow, isUnpaidOcularFeeStatus, ocularFeeAmount } from '@/lib/onsite-cash';
 import { LineItemsEditor } from '@/components/shared/LineItemsEditor';
 import { getVisitReportReferenceId } from '@/lib/visit-report-cache';
 
@@ -120,6 +122,7 @@ export function AppointmentDetailPage() {
 
   const [cancelOpen, setCancelOpen] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
+  const [onsiteCashOpen, setOnsiteCashOpen] = useState(false);
 
 
 
@@ -132,6 +135,15 @@ export function AppointmentDetailPage() {
     : appt?.salesStaffName;
   const canFinalizeOcular = !!isSalesStaff && !isViewOnlySales;
   const canCompleteAppointment = isSalesStaff && !isViewOnlySales;
+  // The assigned sales staff takes the customer's cash for the ocular fee at the site (or right after).
+  const ocularCashTarget: OnsiteCashTarget | null = appt && canCompleteAppointment && canRecordOcularCashNow(appt)
+    ? {
+      kind: 'ocular',
+      appointmentId: appt._id,
+      amount: ocularFeeAmount(appt),
+      customerAcknowledged: Boolean(appt.ocularFeeNonRefundableAckAt),
+    }
+    : null;
   const isStaff = user?.roles.some((role) =>
     [Role.APPOINTMENT_AGENT, Role.SALES_STAFF, Role.ADMIN].includes(
       String(role).trim().toLowerCase().replace(/[\s-]+/g, '_') as Role,
@@ -1279,13 +1291,13 @@ export function AppointmentDetailPage() {
                         {formatCurrency(appt.ocularFee)}
                       </p>
                     </>
-                  ) : appt.ocularFeeStatus === 'pending' && isCustomer ? (
+                  ) : isCustomer && isUnpaidOcularFeeStatus(appt.ocularFeeStatus) ? (
                     <div className="rounded-xl border border-slate-200 dark:border-white/10 bg-slate-50 dark:bg-[linear-gradient(135deg,rgba(18,24,34,0.96)_0%,rgba(10,17,26,0.98)_100%)] p-4 space-y-3 shadow-md shadow-black/5">
                       <div className="flex items-center justify-between">
                         <p className="text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">Ocular Fee Required</p>
                         <p className="text-lg font-bold text-[#1d1d1f] dark:text-slate-100">{formatCurrency(appt.ocularFee)}</p>
                       </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400">Pay before your appointment can be confirmed. This fee is non-refundable; toll fees are shouldered by RMV.</p>
+                      <p className="text-xs text-slate-500 dark:text-slate-400">Pay online now, or in cash or GCash to your sales staff during the ocular visit. This fee is non-refundable; toll fees are shouldered by RMV.</p>
                       <div className="grid grid-cols-1 gap-2 rounded-lg border border-blue-200/70 bg-blue-50/70 p-3 sm:grid-cols-2 dark:border-blue-400/20 dark:bg-blue-500/10">
                         <div>
                           <p className="text-xs font-semibold text-blue-700 dark:text-[#8dbcf2]">Ocular Visit Date</p>
@@ -1307,7 +1319,7 @@ export function AppointmentDetailPage() {
                       >
                         <Link to={`/appointments/${appt._id}/pay-ocular-fee`} className="text-inherit no-underline">
                           <CreditCard className="mr-2 h-4 w-4" />
-                          Pay {formatCurrency(appt.ocularFee)}
+                          {appt.ocularFeeStatus === 'declined' ? 'Pay again' : 'Pay'} {formatCurrency(appt.ocularFee)} online
                         </Link>
                       </Button>
                     </div>
@@ -2126,10 +2138,10 @@ export function AppointmentDetailPage() {
           </Card>
         )}
 
-        {/* Sales Staff: Record Cash Payment (for cash_pending appointments) */}
-        {canCompleteAppointment && appt.ocularFeeStatus === 'cash_pending' && (
+        {/* Sales Staff: the customer pays the ocular fee in cash at the site */}
+        {ocularCashTarget && (
           <Button
-            onClick={() => navigate('/cash')}
+            onClick={() => setOnsiteCashOpen(true)}
             variant="prominent"
             className="rounded-xl h-10 px-6"
           >
@@ -2138,6 +2150,9 @@ export function AppointmentDetailPage() {
           </Button>
         )}
       </div>
+      {ocularCashTarget && (
+        <OnsiteCashDialog target={ocularCashTarget} open={onsiteCashOpen} onOpenChange={setOnsiteCashOpen} />
+      )}
 
       {/* Cancel with reason dialog */}
       <Dialog open={cancelOpen} onOpenChange={(open) => { setCancelOpen(open); if (!open) setCancelReason(''); }}>

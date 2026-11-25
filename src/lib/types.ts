@@ -290,6 +290,8 @@ export interface Appointment {
   ocularFeeReferenceNumber?: string;
   ocularFeeStatus?: 'pending' | 'cash_pending' | 'proof_submitted' | 'verified' | 'declined';
   ocularFeeDeclineReason?: string;
+  /** When the customer confirmed the ocular fee is non-refundable (in the app or in person). */
+  ocularFeeNonRefundableAckAt?: string;
   paymongoCheckoutSessionId?: string;
   paymongoCheckoutUrl?: string;
   rescheduleReason?: string;
@@ -923,13 +925,24 @@ export interface AuditLogListResponse {
 }
 
 // ── Cash ──
+type CashPersonRef = string | { _id: string; firstName: string; lastName: string };
+
+/** Which fee the sales staff collected in cash during the ocular visit. */
+export type CashCollectionFeeType = 'ocular_fee' | 'design_fee';
+
 export interface CashCollection {
   _id: string;
-  appointmentId: string;
-  salesStaffId: string;
+  appointmentId: string | { _id: string; appointmentNumber?: string; date?: string };
+  salesStaffId: CashPersonRef;
   salesStaffName?: string;
-  customerId?: string;
+  customerId?: CashPersonRef;
   customerName?: string;
+  feeType?: CashCollectionFeeType;
+  /** Acknowledgement the customer got from the sales staff: CC-YYYY-NNNNN. */
+  collectionNumber?: string;
+  projectId?: string | { _id: string; title?: string; projectNumber?: string };
+  paymentId?: string;
+  receiptNumber?: string;
   amountCollected: number;
   amountReceived?: number;
   notes?: string;

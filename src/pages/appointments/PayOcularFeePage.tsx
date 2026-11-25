@@ -53,8 +53,7 @@ export function PayOcularFeePage() {
       ) : (
         <>
           {returnedFromCheckout && verifyCheckout.isPending && <p role="status" className="text-sm text-muted-foreground">Checking your QR Ph payment…</p>}
-          <GcashPayment target={{ bookingId }} allowCash={false} onQrPhCheckout={startQrPhCheckout} requireNonRefundableAck />
-          <p className="text-sm text-muted-foreground">Paying in cash at the RMV office? The cashier will record your payment there.</p>
+          <GcashPayment target={{ bookingId }} onQrPhCheckout={startQrPhCheckout} requireNonRefundableAck />
         </>
       )}
   </div>;

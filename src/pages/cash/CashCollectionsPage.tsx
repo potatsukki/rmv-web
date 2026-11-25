@@ -8,8 +8,9 @@ import { extractErrorMessage, extractItems } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { CashAmountWarning } from '@/components/shared/CashAmountWarning';
 import { Label } from '@/components/ui/label';
+import { OnsiteCashDialog, type OnsiteCashTarget } from '@/components/shared/OnsiteCashDialog';
+import { cashPersonName, describeCashCollection, describeCollectionReceipt, ONSITE_CASH_STATUSES } from '@/lib/onsite-cash';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Textarea } from '@/components/ui/textarea';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -21,12 +22,11 @@ import {
   useCashDiscrepancies,
   useReceiveCash,
   useResolveDiscrepancy,
-  useRecordCashCollection,
   usePendingCashAppointments,
 } from '@/hooks/useCash';
 import type { CashDiscrepancy, PendingCashAppointment } from '@/hooks/useCash';
 import { useAuthStore } from '@/stores/auth.store';
-import { Role, CashCollectionStatus, AppointmentStatus } from '@/lib/constants';
+import { Role, CashCollectionStatus } from '@/lib/constants';
 import type { CashCollection } from '@/lib/types';
 import {
   Dialog,
@@ -56,60 +56,30 @@ export function CashCollectionsPage() {
   const [resolveDialog, setResolveDialog] = useState({ open: false, id: '' });
   const [resolution, setResolution] = useState('');
 
-  // Record dialog state
-  const [recordDialog, setRecordDialog] = useState({ open: false, appointmentId: '', expectedAmount: 0, customerName: '' });
-  const [recordAmount, setRecordAmount] = useState('');
-  const [recordNotes, setRecordNotes] = useState('');
+  // The sales staff records the customer's cash for the ocular fee at the site.
+  const [recordTarget, setRecordTarget] = useState<OnsiteCashTarget | null>(null);
 
   const isCashier = user?.roles.some((r) => [Role.CASHIER, Role.ADMIN].includes(r));
   const isAdmin = user?.roles.some((r) => [Role.ADMIN].includes(r));
+  const isSalesStaff = user?.roles.includes(Role.SALES_STAFF);
 
   const { data: pendingAppointments, isLoading: pendingLoading, isError: pendingError, refetch: pendingRefetch } = usePendingCashAppointments();
   const { data: collections, isLoading: collectionsLoading } = useCashCollections();
   const { data: discrepancies } = useCashDiscrepancies(!!isCashier);
   const receiveMutation = useReceiveCash();
   const resolveMutation = useResolveDiscrepancy();
-  const recordMutation = useRecordCashCollection();
 
   const pendingCashList = extractItems<PendingCashAppointment>(pendingAppointments);
   const collectionList = extractItems<CashCollection>(collections);
   const discrepancyList = extractItems<CashDiscrepancy>(discrepancies);
 
   const openRecordDialog = (appt: PendingCashAppointment) => {
-    setRecordDialog({
-      open: true,
+    setRecordTarget({
+      kind: 'ocular',
       appointmentId: appt._id,
-      expectedAmount: appt.ocularFee,
-      customerName: appt.customerName ?? 'Customer',
+      amount: appt.ocularFee,
+      customerAcknowledged: Boolean(appt.ocularFeeNonRefundableAckAt),
     });
-    setRecordAmount(String(appt.ocularFee));
-    setRecordNotes('');
-  };
-
-  const handleRecord = async () => {
-    const amt = parseFloat(recordAmount);
-    if (isNaN(amt) || amt <= 0) {
-      toast.error('Enter a valid amount');
-      return;
-    }
-    if (amt > MAX_PAYMENT_AMOUNT) {
-      toast.error('Amount is too large');
-      return;
-    }
-    try {
-      await recordMutation.mutateAsync({
-        appointmentId: recordDialog.appointmentId,
-        amountCollected: amt,
-        notes: recordNotes.trim() || undefined,
-      });
-      toast.success('Cash payment recorded successfully');
-      setRecordDialog({ open: false, appointmentId: '', expectedAmount: 0, customerName: '' });
-      setRecordAmount('');
-      setRecordNotes('');
-      setExpandedId(null);
-    } catch (err) {
-      toast.error(extractErrorMessage(err, 'Failed to record cash payment'));
-    }
   };
 
   const handleReceive = async () => {
@@ -197,9 +167,7 @@ export function CashCollectionsPage() {
           <div className="space-y-3">
               {pendingCashList.map((appt) => {
               const isExpanded = expandedId === appt._id;
-              const canRecord =
-                appt.status === AppointmentStatus.ON_THE_WAY ||
-                appt.status === AppointmentStatus.COMPLETED;
+              const canRecord = ONSITE_CASH_STATUSES.includes(appt.status);
 
               return (
                 <Card
@@ -312,7 +280,11 @@ export function CashCollectionsPage() {
 
                       {/* Record Button */}
                       <div className="mt-4 border-t border-[#e5e5ea] pt-3 dark:border-slate-700">
-                        {canRecord ? (
+                        {!isSalesStaff ? (
+                          <p className="text-sm italic text-[#8e8e93] dark:text-slate-400">
+                            The sales staff records this cash at the site. If the customer pays at the office, record it in the Ocular Fee queue.
+                          </p>
+                        ) : canRecord ? (
                           <Button
                             variant="prominent"
                             onClick={() => openRecordDialog(appt)}
@@ -323,7 +295,7 @@ export function CashCollectionsPage() {
                           </Button>
                         ) : (
                           <p className="text-sm italic text-[#8e8e93] dark:text-slate-400">
-                            Cash can only be recorded when the appointment is &quot;On The Way&quot; or &quot;Completed&quot;.
+                            Record the cash once you are at the site (visit In Progress) or after the visit is completed.
                           </p>
                         )}
                       </div>
@@ -380,14 +352,20 @@ export function CashCollectionsPage() {
                         </p>
                         <StatusBadge status={String(c.status)} />
                       </div>
+                      <p className="text-sm text-[#3a3a3e] dark:text-slate-200">{describeCashCollection(c)}</p>
                       {c.amountReceived != null && (
                         <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                           Received: {formatCurrency(Number(c.amountReceived))}
                         </p>
                       )}
-                      {c.salesStaffName ? (
-                        <p className="text-xs text-[#8e8e93] dark:text-slate-400">From {String(c.salesStaffName)}</p>
+                      {(c.salesStaffName || cashPersonName(c.salesStaffId)) ? (
+                        <p className="text-xs text-[#8e8e93] dark:text-slate-400">
+                          Collected by {c.salesStaffName || cashPersonName(c.salesStaffId)}
+                        </p>
                       ) : null}
+                      {describeCollectionReceipt(c) && (
+                        <p className="text-xs text-[#8e8e93] dark:text-slate-400">{describeCollectionReceipt(c)}</p>
+                      )}
                       <p className="text-xs text-[#8e8e93] dark:text-slate-400">
                         {c.createdAt
                           ? format(new Date(String(c.createdAt)), 'MMM d, yyyy h:mm a')
@@ -473,7 +451,7 @@ export function CashCollectionsPage() {
           <DialogHeader>
             <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Receive Cash</DialogTitle>
             <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
-              Verify and record the actual amount of cash received from the sales staff.
+              Verify and record the actual amount of cash received from the sales staff. When it matches, the customer's official receipt is issued.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-1.5 py-2">
@@ -552,78 +530,19 @@ export function CashCollectionsPage() {
         </DialogContent>
       </Dialog>
 
-      {/* ═══ Record Cash Payment Dialog ═══ */}
-      <Dialog
-        open={recordDialog.open}
-        onOpenChange={(open) => {
-          if (!open) {
-            setRecordDialog({ open: false, appointmentId: '', expectedAmount: 0, customerName: '' });
-            setRecordAmount('');
-            setRecordNotes('');
-          }
-        }}
-      >
-        <DialogContent className={dialogContentClassName}>
-          <DialogHeader>
-            <DialogTitle className="text-[#1d1d1f] dark:text-slate-100">Record Cash Payment</DialogTitle>
-            <DialogDescription className="text-[#6e6e73] dark:text-slate-400">
-              Record cash collected from <span className="text-[#1d1d1f] dark:text-slate-200 font-semibold">{recordDialog.customerName}</span> for ocular fee.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-5 py-2">
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Expected Amount</Label>
-              <div className="text-2xl font-bold tracking-tight text-[#1d1d1f] dark:text-slate-50">
-                {formatCurrency(recordDialog.expectedAmount)}
-              </div>
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Amount Collected</Label>
-              <Input
-                type="number"
-                step="0.01"
-                max={MAX_PAYMENT_AMOUNT}
-                value={recordAmount}
-                onChange={(e) => setRecordAmount(e.target.value)}
-                aria-describedby="ocular-cash-amount-warning"
-                placeholder="Enter amount collected"
-                className={inputClassName}
-              />
-              <CashAmountWarning amount={recordAmount} amountDue={recordDialog.expectedAmount} id="ocular-cash-amount-warning" />
-            </div>
-            <div className="space-y-2">
-              <Label className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-300">Notes (optional)</Label>
-              <Textarea
-                value={recordNotes}
-                onChange={(e) => setRecordNotes(e.target.value)}
-                placeholder="Any additional notes..."
-                className={`${textareaClassName} min-h-[90px]`}
-              />
-            </div>
-          </div>
-          <DialogFooter className="gap-2">
-            <Button
-              variant="outline"
-              className="border-[#d2d2d7] rounded-xl dark:bg-slate-800 dark:text-slate-100 dark:hover:bg-slate-700 h-10 px-6"
-              onClick={() => {
-                setRecordDialog({ open: false, appointmentId: '', expectedAmount: 0, customerName: '' });
-                setRecordAmount('');
-                setRecordNotes('');
-              }}
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="prominent"
-              className="rounded-xl h-10 px-6"
-              onClick={handleRecord}
-              disabled={recordMutation.isPending}
-            >
-              {recordMutation.isPending ? <><Loader2 className="mr-2 h-4 w-4 animate-spin" />Recording...</> : 'Record Payment'}
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* ═══ Record Cash Payment (sales staff, at the site) ═══ */}
+      {recordTarget && (
+        <OnsiteCashDialog
+          target={recordTarget}
+          open={Boolean(recordTarget)}
+          onOpenChange={(open) => {
+            if (!open) {
+              setRecordTarget(null);
+              setExpandedId(null);
+            }
+          }}
+        />
+      )}
     </div>
   );
 }

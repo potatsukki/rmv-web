@@ -19,7 +19,10 @@ import {
   Wrench,
   Loader2,
   X,
+  Banknote,
 } from 'lucide-react';
+import { OnsiteCashDialog, type OnsiteCashTarget } from '@/components/shared/OnsiteCashDialog';
+import { canRecordOcularCashNow, ocularFeeAmount, type OcularFeeState } from '@/lib/onsite-cash';
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, extractLocalDateValue, cn } from '@/lib/utils';
@@ -359,6 +362,7 @@ export function VisitReportPage() {
   );
 
   const [submitOpen, setSubmitOpen] = useState(false);
+  const [onsiteCashOpen, setOnsiteCashOpen] = useState(false);
   const [returnOpen, setReturnOpen] = useState(false);
   const [reopenOpen, setReopenOpen] = useState(false);
   const [returnReason, setReturnReason] = useState('');
@@ -503,6 +507,22 @@ export function VisitReportPage() {
     !(appointment as any).ocularFeePaid;
 
   const isSubmissionBlocked = isOcularFeeUnpaidOutsideNcr;
+  // The assigned sales staff can take the customer's cash for the ocular fee right here, at the site.
+  const ocularFeeState = isPopulatedAppt
+    ? appointment as OcularFeeState & { _id?: string; ocularFeeNonRefundableAckAt?: string | null }
+    : null;
+  const ocularCashTarget: OnsiteCashTarget | null = ocularFeeState
+    && isOcularFeeUnpaidOutsideNcr
+    && isAssignedSalesStaff
+    && canRecordOcularCashNow(ocularFeeState)
+    && appointmentRecord?._id
+    ? {
+      kind: 'ocular',
+      appointmentId: rawId(appointmentRecord._id),
+      amount: ocularFeeAmount(ocularFeeState),
+      customerAcknowledged: Boolean(ocularFeeState.ocularFeeNonRefundableAckAt),
+    }
+    : null;
   // An ocular visit with several items is one report to the user: one Submit sends every item.
   const pendingOcularSiblings = effectiveVisitType === 'ocular'
     ? (siblingReports || []).filter((sibling) => (
@@ -1212,22 +1232,38 @@ export function VisitReportPage() {
                 Ocular Fee Payment Required
               </p>
               <p className="mt-1 text-sm text-amber-800/90 dark:text-amber-300/80 leading-relaxed">
-                This customer address is outside Metro Manila. You cannot submit this report until the ocular fee is fully paid and verified.
+                This customer address is outside Metro Manila. You cannot submit this report until the ocular fee is paid.
+                {ocularCashTarget && ' If the customer pays you in cash now, record it here.'}
               </p>
-              <Button
-                variant="outline"
-                size="sm"
-                className="mt-3.5 h-8 rounded-lg border-amber-200 bg-white text-xs font-medium text-amber-800 hover:bg-amber-100 hover:text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/20"
-                onClick={() => {
-                  const apptId = appointmentNavigationId || null;
-                  if (apptId) navigate(`/appointments/${apptId}`);
-                }}
-              >
-                Go to Appointment to record payment
-              </Button>
+              {ocularCashTarget ? (
+                <Button
+                  size="sm"
+                  variant="prominent"
+                  className="mt-3.5 h-9 rounded-lg text-xs font-semibold"
+                  onClick={() => setOnsiteCashOpen(true)}
+                >
+                  <Banknote className="mr-1.5 h-4 w-4" />
+                  Record Cash Payment
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3.5 h-8 rounded-lg border-amber-200 bg-white text-xs font-medium text-amber-800 hover:bg-amber-100 hover:text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200 dark:hover:bg-amber-500/20"
+                  onClick={() => {
+                    const apptId = appointmentNavigationId || null;
+                    if (apptId) navigate(`/appointments/${apptId}`);
+                  }}
+                >
+                  Go to Appointment to record payment
+                </Button>
+              )}
             </div>
           </div>
         </div>
+      )}
+      {ocularCashTarget && (
+        <OnsiteCashDialog target={ocularCashTarget} open={onsiteCashOpen} onOpenChange={setOnsiteCashOpen} />
       )}
 
       {/* ── READ-ONLY VIEWS (for non-editors) ── */}

@@ -12,6 +12,7 @@ import type {
 import type { SlotCode } from '@/lib/constants';
 import { extractItems } from '@/lib/utils';
 import { LIVE_QUERY_OPTIONS } from '@/lib/query-options';
+import { UNPAID_OCULAR_FEE_STATUSES } from '@/lib/onsite-cash';
 
 // ── Keys ──
 const KEYS = {
@@ -586,7 +587,8 @@ export function useUnpaidOcularFees() {
     queryFn: async () => {
       const { data } = await api.get<ApiResponse<PaginatedResponse<Appointment>>>(
         '/appointments',
-        { params: { type: 'ocular', ocularFeeStatus: 'pending', dateFrom, limit: '50' } },
+        // Every fee the customer can still pay: unpaid, the old "pay on-site" choice, or a rejected GCash.
+        { params: { type: 'ocular', ocularFeeStatus: UNPAID_OCULAR_FEE_STATUSES.join(','), dateFrom, limit: '50' } },
       );
       return extractItems<Appointment>(data.data);
     },

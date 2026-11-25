@@ -734,6 +734,12 @@ export function ProjectDetailPage() {
     if (!user?._id || !project?.salesStaffId) return false;
     return (typeof project.salesStaffId === 'string' ? project.salesStaffId : project.salesStaffId._id) === user._id;
   }, [project, user]);
+  // The staff who took a handed-over ocular visit can also collect the design fee at the site.
+  const ocularSalesStaff = ocularAppointment.data?.salesStaffId;
+  const isOcularSalesStaff = Boolean(
+    user?._id && user.roles.includes(Role.SALES_STAFF) && ocularSalesStaff
+    && (typeof ocularSalesStaff === 'string' ? ocularSalesStaff : ocularSalesStaff._id) === user._id,
+  );
   const currentSalesStaffId = useMemo(() => {
     if (!project?.salesStaffId) return '';
     return typeof project.salesStaffId === 'string' ? project.salesStaffId : project.salesStaffId._id;
@@ -2891,7 +2897,12 @@ export function ProjectDetailPage() {
 
       {/* ════════════════  PAYMENTS TAB  ════════════════ */}
       {activeTab === 'payments' && canViewFeeBreakdown && id && (
-        <DesignFeePanel projectId={id} isCustomer={Boolean(isCustomer)} canRecord={Boolean(isCashier || isAdmin)} />
+        <DesignFeePanel
+          projectId={id}
+          isCustomer={Boolean(isCustomer)}
+          canRecord={Boolean(isCashier || isAdmin)}
+          canCollectOnSite={Boolean(isAssignedSales || isOcularSalesStaff)}
+        />
       )}
       {activeTab === 'payments' && projectServiceItems.length > 1 && (
         <Card className="rounded-2xl border border-[color:var(--color-border)]/60 bg-white shadow-sm dark:bg-slate-950/45">
