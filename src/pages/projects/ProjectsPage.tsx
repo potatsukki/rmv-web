@@ -32,12 +32,16 @@ import {
 } from '@/lib/project-stage-filter';
 import type { Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
+import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
+import { OcularVisitsList } from '@/pages/appointments/OcularVisitsList';
+
+type ProjectListFilter = ProjectListingStage | 'declined';
 
 // The server filters by stage before paging, so every matching project can be listed.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  ...(['active', 'pending_ocular', 'review', 'design', 'billing', 'fabrication', 'completed', 'cancelled'] as const)
-    .map((stage) => ({ label: PROJECT_STAGE_LABELS[stage], value: stage })),
+  ...(['active', 'pending_ocular', 'review', 'declined', 'design', 'billing', 'fabrication', 'completed', 'cancelled'] as const)
+    .map((stage) => ({ label: stage === 'declined' ? 'Declined' : PROJECT_STAGE_LABELS[stage], value: stage })),
 ];
 
 function statusConfig(status: string) {
@@ -116,24 +120,80 @@ function getActionSortTime(project: any) {
 }
 
 export function ProjectsPage() {
+  const { user } = useAuthStore();
+  const [searchParams] = useSearchParams();
+  const canSeeVisitQueues = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role));
+  const showOcularSalesStaff = Boolean(user?.roles.some((role) => [Role.ADMIN, Role.APPOINTMENT_AGENT].includes(role)));
+
+  const tabs = [
+    { key: 'projects', label: 'Projects' },
+    ...(canSeeVisitQueues ? [
+      { key: 'returned', label: 'Returned' },
+      { key: 'oculars', label: 'Ocular' },
+    ] : []),
+  ];
+  const requestedTab = searchParams.get('tab');
+  const activeTab = tabs.some((tab) => tab.key === requestedTab) ? requestedTab : 'projects';
+
+  return (
+    <div className="space-y-6">
+      {tabs.length > 1 && (
+        <nav aria-label="Project views" className="flex items-center gap-1 overflow-x-auto rounded-xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-muted)]/40 p-1">
+          {tabs.map((tab) => {
+            const nextParams = new URLSearchParams(searchParams);
+            nextParams.delete('reportStatus');
+            if (tab.key !== 'projects') nextParams.set('tab', tab.key);
+            else nextParams.delete('tab');
+            const active = activeTab === tab.key;
+            return (
+              <Link
+                key={tab.key}
+                to={{ pathname: '/projects', search: nextParams.toString() }}
+                aria-current={active ? 'page' : undefined}
+                className={`whitespace-nowrap rounded-lg px-4 py-2 text-sm font-medium transition-all ${active
+                  ? 'bg-[color:var(--color-card)] text-[var(--color-card-foreground)] shadow-sm'
+                  : 'text-[var(--text-metal-color)] hover:text-[var(--color-card-foreground)] hover:bg-[color:var(--color-card)]/50'}`}
+              >
+                {tab.label}
+              </Link>
+            );
+          })}
+        </nav>
+      )}
+      {activeTab === 'returned' ? <VisitReportsListPage isEmbedded returnedOnly />
+        : activeTab === 'oculars' ? <OcularVisitsList showSalesStaff={showOcularSalesStaff} />
+        : <ProjectsList />}
+    </div>
+  );
+}
+
+function ProjectsList() {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { user } = useAuthStore();
+  const isEngineerViewer = user?.roles.includes(Role.ENGINEER)
+    && !user.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role));
+  const canFilterDeclined = user?.roles.some((role) => [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN].includes(role));
+  const statusFilters = STATUS_FILTERS.filter((filter) => (
+    (!isEngineerViewer || filter.value !== 'pending_ocular')
+    && (canFilterDeclined || filter.value !== 'declined')
+  ));
   // Dashboard cards open a stage directly, e.g. /projects?stage=active.
-  const [statusFilter, setStatusFilter] = useState<ProjectListingStage | ''>(() => {
+  const [statusFilter, setStatusFilter] = useState<ProjectListFilter | ''>(() => {
     const stage = searchParams.get('stage');
-    return isProjectListingStage(stage) ? stage : '';
+    return (stage === 'declined' || isProjectListingStage(stage)) && statusFilters.some((filter) => filter.value === stage) ? stage : '';
   });
   const [search, setSearch] = useState('');
-  const { user } = useAuthStore();
   const isFabricator = usesFabricationProjectScope(user?.roles ?? []);
   const isCustomer = !isFabricator && user?.roles.includes(Role.CUSTOMER);
   const isStaff = !isCustomer;
   const canCreateProject = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role as Role));
   const params: Record<string, string> = { limit: '100' };
-  if (statusFilter) params.stage = statusFilter;
+  if (statusFilter === 'declined') params.designReviewStatus = 'declined';
+  else if (statusFilter) params.stage = statusFilter;
   if (search) params.search = search;
 
-  const changeStatusFilter = (value: ProjectListingStage | '') => {
+  const changeStatusFilter = (value: ProjectListFilter | '') => {
     setStatusFilter(value);
     const next = new URLSearchParams(searchParams);
     if (value) next.set('stage', value);
@@ -206,13 +266,16 @@ export function ProjectsPage() {
       {/* Controls */}
       <CollectionToolbar
         title={isFabricator ? 'Assigned Projects' : isCustomer ? 'Track your projects' : 'Find a project faster'}
-        description={isCustomer ? 'Review each project’s current stage, service details, and next action.' : 'Search by Project ID or service, then narrow the list by stage.'}
+        description={statusFilter === 'declined'
+          ? 'Projects with an initial design declined by engineering. Open a project to review the notes and required changes.'
+          : isCustomer ? "Review each project's current stage, service details, and next action."
+          : 'Search by Project ID or service, then narrow the list by stage.'}
         searchPlaceholder="Search by Project ID or service"
         searchValue={search}
         onSearchChange={setSearch}
-        filters={STATUS_FILTERS}
+        filters={statusFilters}
         activeFilter={statusFilter}
-        onFilterChange={(value) => changeStatusFilter(value as ProjectListingStage | '')}
+        onFilterChange={(value) => changeStatusFilter(value as ProjectListFilter | '')}
         action={canCreateProject ? (
           <Button asChild className="shrink-0">
             <Link to="/projects/create"><FolderPlus className="h-4 w-4" />Create Project</Link>

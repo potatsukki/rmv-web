@@ -71,7 +71,7 @@ export function DeliveryFeeSection({
         <div>
           <div className="flex items-center gap-2">
             <Truck className={`h-4 w-4 ${isDark ? 'text-emerald-300' : 'text-emerald-700'}`} />
-            <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Transport / Delivery (third party)</p>
+            <p className={`text-sm font-semibold ${isDark ? 'text-slate-100' : 'text-[#1d1d1f]'}`}>Transport / Delivery</p>
             <Badge variant="outline" className={isDark ? 'border-emerald-300/40 text-emerald-200' : 'border-emerald-300 text-emerald-700'}>Manual</Badge>
           </div>
           <p className={`mt-1 text-xs ${muted}`}>

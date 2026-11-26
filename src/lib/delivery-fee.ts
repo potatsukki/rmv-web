@@ -1,7 +1,7 @@
 import type { QuotationDeliveryFee } from './types';
 
-/** Label of the engineer's manual courier fee; same wording as the server and the contract. */
-export const THIRD_PARTY_DELIVERY_LABEL = 'Transport / Delivery (third party)';
+/** Label of the engineer's manual courier fee; same wording as the server and the contract (no "(third party)"). */
+export const THIRD_PARTY_DELIVERY_LABEL = 'Transport / Delivery';
 
 /**
  * Manual third-party fees read THIRD_PARTY_DELIVERY_LABEL; older auto-computed fees keep

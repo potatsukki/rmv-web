@@ -85,7 +85,7 @@ const expectations: FileExpectation[] = [
     filePath: '../pages/appointments/AppointmentDetailPage.tsx',
     snippets: [
       'text-xs text-blue-600 hover:underline dark:text-blue-300',
-      'text-[11px] text-[#8e8e93] dark:text-slate-400',
+      // (The staff picker's shift / "Timed in" line and its 'text-[11px] text-[#8e8e93]' class were removed with shifts.)
       'text-sm text-[#6e6e73] dark:text-slate-300',
     ],
   },

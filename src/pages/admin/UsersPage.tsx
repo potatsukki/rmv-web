@@ -96,8 +96,6 @@ const userSchema = z.object({
   role: z.nativeEnum(Role),
   availabilityStatus: z.nativeEnum(StaffAvailabilityStatus).optional(),
   availabilityNote: z.string().max(240).optional().or(z.literal('')),
-  shiftStartAt: z.string().optional(),
-  shiftEndAt: z.string().optional(),
   password: z.string().optional(),
   employmentType: z.enum(['permanent', 'contract']),
   expiresAt: z.string().optional(),
@@ -124,18 +122,24 @@ const INTERNAL_AVAILABILITY_ROLES = [
   Role.FABRICATION_STAFF,
 ] as Role[];
 
-function toLocalDateTimeInput(value?: string | Date | null) {
-  if (!value) return '';
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
-}
-
-function localDateTimeToIso(value?: string) {
-  if (!value) return undefined;
-  const date = new Date(value);
-  return Number.isNaN(date.getTime()) ? undefined : date.toISOString();
+/**
+ * The availability fields an admin's save sends: only what changed, so a password / contract /
+ * name edit never touches availability. Status and note go together, because the note shown
+ * comes from the latest availability record, which only a status update creates.
+ */
+export function availabilityUpdate(
+  user: Pick<User, 'availabilityStatus' | 'availabilityNote'>,
+  data: Pick<UserFormData, 'role' | 'availabilityStatus' | 'availabilityNote'>,
+): { availabilityStatus?: StaffAvailabilityStatus; availabilityNote?: string | null } {
+  const changed = INTERNAL_AVAILABILITY_ROLES.includes(data.role)
+    && Boolean(data.availabilityStatus)
+    && (
+      data.availabilityStatus !== user.availabilityStatus
+      || (data.availabilityNote || '') !== (user.availabilityNote || '')
+    );
+  return changed
+    ? { availabilityStatus: data.availabilityStatus, availabilityNote: data.availabilityNote || null }
+    : {};
 }
 
 export function UsersPage() {
@@ -169,8 +173,6 @@ export function UsersPage() {
       password: '',
       availabilityStatus: undefined,
       availabilityNote: '',
-      shiftStartAt: '',
-      shiftEndAt: '',
       employmentType: 'permanent' as const,
       expiresAt: '',
     },
@@ -188,8 +190,6 @@ export function UsersPage() {
       password: '',
       availabilityStatus: undefined,
       availabilityNote: '',
-      shiftStartAt: '',
-      shiftEndAt: '',
       employmentType: 'permanent',
       expiresAt: '',
     });
@@ -208,8 +208,6 @@ export function UsersPage() {
       password: '',
       availabilityStatus: user.availabilityStatus as StaffAvailabilityStatus | undefined,
       availabilityNote: user.availabilityNote || '',
-      shiftStartAt: toLocalDateTimeInput(user.activeShift?.shiftStartAt || user.expiredShift?.shiftStartAt),
-      shiftEndAt: toLocalDateTimeInput(user.activeShift?.shiftEndAt || user.expiredShift?.shiftEndAt),
       employmentType: (user as any).expiresAt ? 'contract' : 'permanent',
       expiresAt: (user as any).expiresAt ? new Date((user as any).expiresAt).toISOString().split('T')[0] : '',
     });
@@ -219,7 +217,6 @@ export function UsersPage() {
   const onSubmit = async (data: UserFormData) => {
     try {
       if (editingUser) {
-        const managesAvailability = INTERNAL_AVAILABILITY_ROLES.includes(data.role) && Boolean(data.availabilityStatus);
         await updateUser.mutateAsync({
           id: editingUser._id,
           firstName: data.firstName,
@@ -228,10 +225,7 @@ export function UsersPage() {
           phone: data.phone || null,
           roles: [data.role],
           password: data.password?.trim() ? data.password.trim() : undefined,
-          availabilityStatus: managesAvailability ? data.availabilityStatus : undefined,
-          availabilityNote: managesAvailability ? data.availabilityNote || null : undefined,
-          shiftStartAt: managesAvailability ? localDateTimeToIso(data.shiftStartAt) : undefined,
-          shiftEndAt: managesAvailability ? localDateTimeToIso(data.shiftEndAt) : undefined,
+          ...availabilityUpdate(editingUser, data),
           expiresAt: data.employmentType === 'contract' && data.expiresAt
             ? new Date(data.expiresAt).toISOString()
             : data.employmentType === 'permanent' ? null : undefined,
@@ -293,32 +287,15 @@ export function UsersPage() {
   const isInternalAvailabilityUser = (user: User) =>
     user.roles.some((role) => INTERNAL_AVAILABILITY_ROLES.includes(role as Role));
 
+  // Staff are Available by default; only an admin's Unavailable / On Leave changes it.
   const availabilitySummaryLabel = (user: User) => {
     if (!isInternalAvailabilityUser(user)) return 'Not applicable';
-    if (user.availabilitySetupRequired) return 'Setup Required';
-    if (user.expiredShift) return 'Shift Ended';
-    if (user.availabilityStatus) return user.availabilityStatus.replace(/_/g, ' ');
-    return 'Not Set';
-  };
-
-  const availabilityShiftLabel = (user: User) => {
-    if (user.activeShift) {
-      return user.activeShift.shiftEndAt
-        ? `${new Date(user.activeShift.shiftStartAt).toLocaleString()} to ${new Date(user.activeShift.shiftEndAt).toLocaleString()}`
-        : `Timed in at ${new Date(user.activeShift.shiftStartAt).toLocaleString()}`;
-    }
-    if (user.expiredShift) {
-      return user.expiredShift.shiftEndAt
-        ? `Ended ${new Date(user.expiredShift.shiftEndAt).toLocaleString()}`
-        : 'Previous time-in session closed';
-    }
-    return user.availabilityNote || 'No shift details';
+    return (user.availabilityStatus || StaffAvailabilityStatus.AVAILABLE).replace(/_/g, ' ');
   };
 
   const userList = extractItems<User>(users);
   const selectedRole = form.watch('role');
   const canEditAvailability = Boolean(editingUser && INTERNAL_AVAILABILITY_ROLES.includes(selectedRole));
-  const selectedAvailability = form.watch('availabilityStatus');
 
   if (error) return <PageError message="Failed to load users" onRetry={refetch} />;
 
@@ -484,7 +461,9 @@ export function UsersPage() {
                   <div className="ml-[52px] mt-2 rounded-xl border border-[#d9dfe6] bg-white/50 px-3 py-2 dark:border-slate-700 dark:bg-slate-900/50">
                     <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-[#68727d] dark:text-slate-400">Availability</p>
                     <p className="mt-1 text-xs font-medium capitalize text-[#171b21] dark:text-slate-100">{availabilitySummaryLabel(u)}</p>
-                    <p className="mt-1 text-[11px] text-[#68727d] dark:text-slate-400">{availabilityShiftLabel(u)}</p>
+                    {u.availabilityNote && (
+                      <p className="mt-1 text-[11px] text-[#68727d] dark:text-slate-400">{u.availabilityNote}</p>
+                    )}
                   </div>
                 )}
               </div>
@@ -573,9 +552,11 @@ export function UsersPage() {
                         <p className="text-sm font-medium capitalize text-[#171b21] dark:text-slate-100">
                           {availabilitySummaryLabel(u)}
                         </p>
-                        <p className="mt-1 text-xs text-[#68727d] dark:text-slate-400">
-                          {availabilityShiftLabel(u)}
-                        </p>
+                        {isInternalAvailabilityUser(u) && u.availabilityNote && (
+                          <p className="mt-1 text-xs text-[#68727d] dark:text-slate-400">
+                            {u.availabilityNote}
+                          </p>
+                        )}
                       </div>
                     </TableCell>
 
@@ -758,23 +739,6 @@ export function UsersPage() {
                     </SelectContent>
                   </Select>
                 </div>
-
-                {selectedAvailability === StaffAvailabilityStatus.AVAILABLE && (
-                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor="shiftStartAt" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
-                        Shift Start
-                      </Label>
-                      <Input id="shiftStartAt" type="datetime-local" {...form.register('shiftStartAt')} className={inputClasses} />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor="shiftEndAt" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">
-                        Shift End
-                      </Label>
-                      <Input id="shiftEndAt" type="datetime-local" {...form.register('shiftEndAt')} className={inputClasses} />
-                    </div>
-                  </div>
-                )}
 
                 <div className="space-y-1.5">
                   <Label htmlFor="availabilityNote" className="text-gray-700 text-[13px] font-medium dark:text-slate-300">

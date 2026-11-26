@@ -61,8 +61,6 @@ export function useUpdateUser() {
       expiresAt?: string | null;
       availabilityStatus?: StaffAvailabilityStatus;
       availabilityNote?: string | null;
-      shiftStartAt?: string | null;
-      shiftEndAt?: string | null;
     }) => {
       const { data } = await api.patch<ApiResponse<User>>(`/users/admin/users/${id}`, body);
       return data.data;
@@ -156,51 +154,6 @@ export function useUpdateProfile() {
     },
     onError: (err) => {
       toast.error(extractErrorMessage(err, 'Failed to update profile'));
-    },
-  });
-}
-
-interface UpdateOwnAvailabilityPayload {
-  availabilityStatus?: StaffAvailabilityStatus;
-  availabilityNote?: string | null;
-  shiftStartAt?: string | null;
-  shiftEndAt?: string | null;
-}
-
-export function useUpdateOwnAvailability() {
-  const qc = useQueryClient();
-  const { fetchMe } = useAuthStore();
-
-  return useMutation({
-    mutationFn: async (payload: UpdateOwnAvailabilityPayload) => {
-      const { data } = await api.patch<ApiResponse<User>>('/users/profile/availability', payload);
-      return data.data;
-    },
-    onSuccess: async () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
-      await fetchMe();
-    },
-    onError: (err) => {
-      toast.error(extractErrorMessage(err, 'Failed to update availability'));
-    },
-  });
-}
-
-export function useCloseOwnAvailability() {
-  const qc = useQueryClient();
-  const { fetchMe } = useAuthStore();
-
-  return useMutation({
-    mutationFn: async () => {
-      const { data } = await api.post<ApiResponse<User>>('/users/profile/availability/close');
-      return data.data;
-    },
-    onSuccess: async () => {
-      qc.invalidateQueries({ queryKey: KEYS.all });
-      await fetchMe();
-    },
-    onError: (err) => {
-      toast.error(extractErrorMessage(err, 'Failed to close availability'));
     },
   });
 }

@@ -23,7 +23,6 @@ import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
   { label: 'Requested', value: 'requested' },
-  { label: 'Assigned', value: 'assigned' },
   { label: 'Appointed', value: 'confirmed' },
   { label: 'Completed', value: 'completed' },
   { label: 'No Show', value: 'no_show' },
