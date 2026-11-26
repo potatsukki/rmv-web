@@ -3254,7 +3254,7 @@ export function ProjectDetailPage() {
                       </p>
                     ) : !project.deliverySchedule?.date && (
                       <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
-                        RMV books the courier (e.g. Lalamove) outside the system. Set the delivery date; required before Ready for Delivery.
+                        Set the delivery date. Required before Ready for Delivery.
                       </p>
                     )}
                     {project.deliverySchedule?.date && (

@@ -75,7 +75,7 @@ export function DeliveryFeeSection({
             <Badge variant="outline" className={isDark ? 'border-emerald-300/40 text-emerald-200' : 'border-emerald-300 text-emerald-700'}>Manual</Badge>
           </div>
           <p className={`mt-1 text-xs ${muted}`}>
-            Estimated courier fee (e.g. Lalamove). RMV books the courier outside the system; this amount is added to the quotation total and paid with the payment plan.
+            Enter the estimated cost of delivering the items. RMV arranges the delivery separately. This amount is added to the quotation total and paid together with the payment plan.
           </p>
         </div>
         <label className={`flex items-center gap-2 text-sm ${isDark ? 'text-slate-200' : 'text-[#1d1d1f]'}`}>
