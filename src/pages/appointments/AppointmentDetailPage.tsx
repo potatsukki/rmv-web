@@ -113,7 +113,6 @@ export function AppointmentDetailPage() {
     firstName: string; 
     lastName: string;
     availabilityStatus?: StaffAvailabilityStatus;
-    activeShift?: { shiftStartAt: string; shiftEndAt?: string } | null;
     assignmentEligible?: boolean;
     assignmentBlockedReason?: string;
   }[]>([]);
@@ -216,7 +215,6 @@ export function AppointmentDetailPage() {
         firstName: string; 
         lastName: string;
         availabilityStatus?: StaffAvailabilityStatus;
-        activeShift?: { shiftStartAt: string; shiftEndAt?: string } | null;
         assignmentEligible?: boolean;
         assignmentBlockedReason?: string;
       }[]>>(`/users/sales-staff?${params.toString()}`)
@@ -784,7 +782,7 @@ export function AppointmentDetailPage() {
               <Info className="mt-0.5 h-5 w-5 shrink-0 text-cyan-700 dark:text-cyan-300" />
               <div>
                 <p className="text-sm font-semibold text-cyan-950 dark:text-cyan-100">
-                  {isAssignedSalesForReview ? 'Assigned to you - Please confirm' : 'Assigned - Waiting for sales staff confirmation'}
+                  {isAssignedSalesForReview ? 'Requested - Please confirm' : 'Requested - Waiting for sales staff confirmation'}
                 </p>
                 <p className="mt-0.5 text-xs text-cyan-800 dark:text-cyan-200">
                   {isCustomer
@@ -1812,15 +1810,8 @@ export function AppointmentDetailPage() {
                                 ? 'Already assigned'
                                 : isBlocked
                                   ? s.assignmentBlockedReason || 'Ineligible'
-                                  : s.availabilityStatus || 'setup_required').replace(/_/g, ' ')}
+                                  : s.availabilityStatus || StaffAvailabilityStatus.AVAILABLE).replace(/_/g, ' ')}
                             </span>
-                            {s.activeShift && (
-                              <span className="text-[11px] text-[#8e8e93] dark:text-slate-400">
-                                {s.activeShift.shiftEndAt
-                                  ? `${format(new Date(s.activeShift.shiftStartAt), 'h:mm a')} - ${format(new Date(s.activeShift.shiftEndAt), 'h:mm a')}`
-                                  : `Timed in ${format(new Date(s.activeShift.shiftStartAt), 'h:mm a')}`}
-                              </span>
-                            )}
                           </div>
                         </div>
                         {isSelected && (

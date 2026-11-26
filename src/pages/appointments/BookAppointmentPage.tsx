@@ -9,7 +9,6 @@ import toast from 'react-hot-toast';
 
 import { extractErrorMessage } from '@/lib/utils';
 import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
-import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
 import { buildAppointmentPurpose } from '@/lib/booking-intent';
 import { CUSTOMER_BOOKING_CUTOFF, getCustomerBookingWindow } from '@/lib/customer-booking-time';
 import { serverNow, serverNowMs } from '@/lib/server-clock';
@@ -117,6 +116,7 @@ export function BookAppointmentPage() {
   const selectedServiceIdParam = searchParams.get('serviceId');
   const initialSelectedDesign = useMemo(() => getInitialSelectedDesign(searchParams), [searchParams]);
   const [bookingNow, setBookingNow] = useState(serverNow);
+  const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
   const bookingWindow = getCustomerBookingWindow(bookingNow);
 
   useEffect(() => {
@@ -170,7 +170,6 @@ export function BookAppointmentPage() {
   const eligibleDate = dateUnavailable ? '' : selectedDate;
   const selectedDateIsToday = selectedDate === bookingWindow.today;
   const slotElapsed = Boolean(selectedDateIsToday && selectedSlot && selectedSlot <= bookingWindow.time);
-  const hasValidSchedule = Boolean(eligibleDate && selectedSlot && !slotElapsed);
 
   // Service types + notes state
   const [serviceTypes, setServiceTypes] = useState<string[]>(
@@ -276,6 +275,14 @@ export function BookAppointmentPage() {
     'office',
     { flow: 'customer_booking' },
   );
+  const isAlreadyBooked = (slotCode: string | undefined) => Boolean(
+    (slotsData?.date === selectedDate && slotsData.slots.some((slot) => slot.slotCode === slotCode && slot.customerBooked))
+    || conflictForSelection(scheduleConflict, selectedDate, slotCode),
+  );
+  const selectedSlotBooked = isAlreadyBooked(selectedSlot);
+  const hasValidSchedule = Boolean(eligibleDate && selectedSlot && !slotElapsed && !selectedSlotBooked);
+
+  useEffect(() => { setScheduleConflict(null); }, [selectedDate, slotsUpdatedAt]);
 
   useEffect(() => {
     const { unavailableAt } = getBookingError(slotsError);
@@ -298,7 +305,7 @@ export function BookAppointmentPage() {
   const [currentStep, setCurrentStep] = useState(0);
 
   useEffect(() => {
-    if (!dateUnavailable && !slotElapsed) return;
+    if (!dateUnavailable && !slotElapsed && !selectedSlotBooked) return;
     if (dateUnavailable) {
       let nextDay = parseISO(bookingWindow.earliestDate);
       while (holidayDates.has(format(nextDay, 'yyyy-MM-dd'))) nextDay = addDays(nextDay, 1);
@@ -309,11 +316,7 @@ export function BookAppointmentPage() {
       setValue('slotCode', '');
       setCurrentStep((step) => Math.min(step, DATE_TIME_STEP));
     }
-  }, [bookingWindow.earliestDate, dateUnavailable, holidayDates, selectedSlot, setValue, slotElapsed]);
-
-  // The customer's other appointment at the chosen time; shown until the date or time changes.
-  const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
-  const visibleConflict = conflictForSelection(scheduleConflict, selectedDate, selectedSlot);
+  }, [bookingWindow.earliestDate, dateUnavailable, holidayDates, selectedSlot, selectedSlotBooked, setValue, slotElapsed]);
   // Not-yet-finished appointments (same statuses the server counts). A customer may hold several,
   // each at its own date and time, up to MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER.
   const activeAppointments = useMemo(() => {
@@ -414,11 +417,14 @@ export function BookAppointmentPage() {
         if (selectedDate >= getCustomerBookingWindow(unavailableAt).earliestDate) void refetchSlots();
       }
 
-      // Another appointment of theirs is at this time: back to Date & Time, where the reason is shown.
+      // Another appointment of theirs is at this time: back to Date & Time, where that slot shows "Already booked".
       const conflict = getCustomerScheduleConflict(error);
       if (conflict) {
         setScheduleConflict(conflict);
+        setValue('slotCode', '');
         setCurrentStep(DATE_TIME_STEP);
+        void refetchSlots();
+        return;
       }
       toast.error(extractErrorMessage(error, 'Booking failed'));
     }
@@ -802,7 +808,8 @@ export function BookAppointmentPage() {
                     {SLOT_CODES.map((slot) => {
                       const slotInfo = slotsData?.slots.find((entry) => entry.slotCode === slot);
                       const elapsed = selectedDateIsToday && slot <= bookingWindow.time;
-                      const available = Boolean(slotInfo?.available && !elapsed);
+                      const alreadyBooked = isAlreadyBooked(slot);
+                      const available = Boolean(slotInfo?.available && !elapsed && !alreadyBooked);
                       const remaining = slotInfo?.remaining ?? 0;
 
                       return (
@@ -813,7 +820,9 @@ export function BookAppointmentPage() {
                           onClick={() => setValue('slotCode', slot)}
                           className={cn(
                             'rounded-xl border-2 p-3 text-center transition-all',
-                            selectedSlot === slot
+                            alreadyBooked
+                              ? 'cursor-not-allowed border-red-500/60 bg-red-50 text-red-800 dark:border-red-500/60 dark:bg-red-500/15 dark:text-red-200'
+                              : selectedSlot === slot
                               ? 'border-[#86868b] bg-[#f5f5f7]/50 text-[#1d1d1f] ring-2 ring-[#d2d2d7] dark:border-[#d6b36a]/35 dark:bg-[linear-gradient(180deg,rgba(255,248,235,0.88)_0%,rgba(224,209,181,0.78)_100%)] dark:text-[#4a3617] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-[#d6b36a]/12'
                               : available
                                 ? 'border-[#d2d2d7] hover:border-[#c8c8cd] dark:border-white/10 dark:bg-white/[0.03] dark:text-slate-200 dark:hover:border-white/20 dark:hover:bg-white/[0.05]'
@@ -826,8 +835,8 @@ export function BookAppointmentPage() {
                               {remaining} staff available
                             </p>
                           ) : (
-                            <p className="mt-0.5 text-xs text-red-400">
-                              {elapsed ? 'Time passed' : slotInfo?.blocked ? 'Blocked' : 'No staff available'}
+                            <p className={cn('mt-0.5 text-xs', alreadyBooked ? 'text-red-700 dark:text-red-300' : 'text-red-400')}>
+                              {alreadyBooked ? 'Already booked' : elapsed ? 'Time passed' : slotInfo?.blocked ? 'Blocked' : 'No staff available'}
                             </p>
                           )}
                         </button>
@@ -836,7 +845,6 @@ export function BookAppointmentPage() {
                   </div>
                 )}
                 {errors.slotCode && <p className="mt-2 text-sm text-red-500">{errors.slotCode.message}</p>}
-                {visibleConflict && <ScheduleConflictAlert conflict={visibleConflict} className="mt-3" />}
               </CardContent>
             </Card>
           </>

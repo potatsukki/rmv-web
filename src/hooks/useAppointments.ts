@@ -134,7 +134,7 @@ export function useAvailableSlots(
     queryKey: [...KEYS.slots(date, type), salesStaffId ?? '', travelMinutes ?? '', distanceKm ?? '', flow ?? ''],
     queryFn: async () => {
       const { data } = await api.get<
-        ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number; blocked: boolean }[] }>
+        ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number; blocked: boolean; customerBooked?: boolean }[] }>
       >('/appointments/slots', {
         params: {
           date,

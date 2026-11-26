@@ -47,8 +47,8 @@ type AppointmentWorkflowInput = {
   slotCode?: string;
 };
 
-/** The five appointment statuses the UI shows; the database keeps the detailed ones. */
-export const APPOINTMENT_STATUS_GROUPS = ['requested', 'assigned', 'confirmed', 'completed', 'no_show'] as const;
+/** The four appointment statuses the UI shows; the database keeps the detailed ones. */
+export const APPOINTMENT_STATUS_GROUPS = ['requested', 'confirmed', 'completed', 'no_show'] as const;
 export type AppointmentStatusGroup = (typeof APPOINTMENT_STATUS_GROUPS)[number];
 
 const CONFIRMED_APPOINTMENT_STATUSES = new Set<string>([
@@ -131,19 +131,19 @@ export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | u
 
 const STATUS_GROUP_BY_KEY: Record<string, AppointmentStatusGroup> = {
   appointment_pending: 'requested',
-  appointment_assigned: 'assigned',
   appointment_confirmed: 'confirmed',
   appointment_completed: 'completed',
   no_show: 'no_show',
 };
 
-/** Which of the five displayed statuses an appointment falls under. */
+/** Which of the four displayed statuses an appointment falls under. */
 export function resolveAppointmentStatusGroup(appointment: AppointmentWorkflowInput): AppointmentStatusGroup {
   return STATUS_GROUP_BY_KEY[resolveAppointmentWorkflowStatus(appointment).key] ?? 'requested';
 }
 
 /**
- * Every role sees five appointment statuses: Requested, Assigned, Appointed, Completed, No Show.
+ * Every role sees four appointment statuses: Requested, Appointed, Completed, No Show.
+ * Legacy assigned records and preassigned requests stay Requested until confirmation.
  * Visit steps (preparing, on the way, in progress) show as Appointed; cancelled closes as plain
  * Completed; a no-show shows only No Show (no Completed badge). Keep in sync with the server's status groups.
  */
@@ -186,9 +186,6 @@ export function resolveAppointmentWorkflowStatus(
     || (status === AppointmentStatus.RESCHEDULE_REQUESTED && hasSalesStaff)
   ) {
     return { key: 'appointment_confirmed', label: 'Appointed', tone: 'blue', stage: 'appointment', isTerminal: false };
-  }
-  if (status === AppointmentStatus.ASSIGNED || (status === AppointmentStatus.REQUESTED && hasSalesStaff)) {
-    return { key: 'appointment_assigned', label: 'Assigned', tone: 'cyan', stage: 'appointment', isTerminal: false };
   }
   return { key: 'appointment_pending', label: 'Requested', tone: 'yellow', stage: 'appointment', isTerminal: false };
 }

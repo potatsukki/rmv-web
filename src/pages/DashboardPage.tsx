@@ -217,7 +217,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     case Role.SALES_STAFF:
       return [
         { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Visits for today', detail: 'Customer visits assigned to you today, including office and ocular appointments.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
-        { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', detail: 'Visit reports that still need to be completed or corrected before project handoff.', path: '/appointments?tab=visit-reports&reportStatus=draft', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
+        { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', detail: 'Visit reports that still need to be completed or corrected before project handoff. Drafts open here; returned reports are under Projects → Returned.', path: '/appointments?tab=visit-reports&reportStatus=draft', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
         { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', detail: 'Cash-based ocular fees you still need to collect and turn over.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
       ];
@@ -692,7 +692,7 @@ function CustomerDashboard({
   const now = useNow();
   const metrics = [
     // Each card opens the list filtered by the same rule the server counts with.
-    // Pending Visits = the Requested + Assigned filters on the Appointments page.
+    // Pending Visits = the Requested filter on the Appointments page.
     { label: 'Pending Visits', value: summary?.pendingAppointments ?? 0, detail: 'Appointments awaiting confirmation', icon: CalendarDays, to: '/appointments' },
     { label: 'Active Projects', value: summary?.activeProjects ?? 0, detail: 'Projects currently moving forward', icon: FolderOpen, to: '/projects?stage=active' },
     { label: 'Pending Payments', value: summary?.pendingPayments ?? 0, detail: 'Items that may need your action', icon: CreditCard, to: '/payments?filter=due' },

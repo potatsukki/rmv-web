@@ -135,7 +135,7 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
   });
 
-  it('labels office appointments Requested, Assigned, then Appointed', () => {
+  it('keeps office appointments Requested until confirmed as Appointed', () => {
     const appointment = {
       status: AppointmentStatus.REQUESTED,
       type: 'office',
@@ -152,8 +152,8 @@ describe('resolveAppointmentWorkflowStatus', () => {
       status: AppointmentStatus.ASSIGNED,
       salesStaffId: 'sales-1',
     })).toMatchObject({
-      key: 'appointment_assigned',
-      label: 'Assigned',
+      key: 'appointment_pending',
+      label: 'Requested',
     });
     expect(resolveAppointmentWorkflowStatus({
       ...appointment,
@@ -231,8 +231,9 @@ describe('resolveAppointmentWorkflowStatus', () => {
 
   it.each([
     [AppointmentStatus.REQUESTED, undefined, 'Requested', undefined],
-    [AppointmentStatus.REQUESTED, 'sales-1', 'Assigned', undefined],
-    [AppointmentStatus.ASSIGNED, 'sales-1', 'Assigned', undefined],
+    [AppointmentStatus.REQUESTED, 'sales-1', 'Requested', undefined],
+    [AppointmentStatus.ASSIGNED, 'sales-1', 'Requested', undefined],
+    [AppointmentStatus.ASSIGNED, undefined, 'Requested', undefined],
     [AppointmentStatus.CONFIRMED, 'sales-1', 'Appointed', undefined],
     [AppointmentStatus.PREPARING, 'sales-1', 'Appointed', undefined],
     [AppointmentStatus.ON_THE_WAY, 'sales-1', 'Appointed', undefined],
@@ -248,7 +249,8 @@ describe('resolveAppointmentWorkflowStatus', () => {
     const result = resolveAppointmentWorkflowStatus({ status, salesStaffId });
     expect(result.label).toBe(label);
     expect(result.secondaryLabel).toBe(secondaryLabel);
-    expect(['Requested', 'Assigned', 'Appointed', 'Completed', 'No Show']).toContain(result.label);
+    expect(['Requested', 'Appointed', 'Completed', 'No Show']).toContain(result.label);
+    if (label === 'Requested') expect(resolveAppointmentStatusGroup({ status, salesStaffId })).toBe('requested');
   });
 
   it('keeps a ready-for-ocular consultation in the upcoming list', () => {
@@ -263,6 +265,6 @@ describe('resolveAppointmentWorkflowStatus', () => {
       salesStaffId: 'sales-1',
       ocularFeeStatus: 'pending',
       ocularFeePaid: false,
-    })).toMatchObject({ key: 'appointment_assigned', label: 'Assigned' });
+    })).toMatchObject({ key: 'appointment_pending', label: 'Requested' });
   });
 });

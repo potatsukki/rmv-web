@@ -31,21 +31,6 @@ export interface User {
   availabilityStatus?: StaffAvailabilityStatus;
   availabilityNote?: string;
   availabilityUpdatedAt?: string;
-  activeShift?: {
-    sessionId: string;
-    shiftStartAt: string;
-    shiftEndAt?: string;
-    isCurrent: boolean;
-    reminderSentAt?: string;
-  };
-  expiredShift?: {
-    sessionId: string;
-    shiftStartAt: string;
-    shiftEndAt?: string;
-    isCurrent: boolean;
-    reminderSentAt?: string;
-  };
-  availabilitySetupRequired?: boolean;
   mustChangePassword: boolean;
   twoFactorEnabled?: boolean;
   provider?: 'local' | 'google';
@@ -133,9 +118,6 @@ export interface SalesStaffLookupUser {
   availabilityStatus?: StaffAvailabilityStatus;
   availabilityNote?: string;
   availabilityUpdatedAt?: string;
-  activeShift?: User['activeShift'];
-  expiredShift?: User['expiredShift'];
-  availabilitySetupRequired?: boolean;
   assignmentEligible?: boolean;
   assignmentBlockedReason?: string;
 }

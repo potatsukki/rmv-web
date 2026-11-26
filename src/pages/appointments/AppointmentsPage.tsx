@@ -1,5 +1,5 @@
 import { Fragment, useEffect, useState } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, Navigate, useNavigate, useSearchParams } from 'react-router';
 import { Plus, Calendar, FileText, ChevronRight, MapPin, RefreshCw, TicketCheck, Users, Radio } from 'lucide-react';
 import { format } from 'date-fns';
 
@@ -24,15 +24,13 @@ import { useAuthStore } from '@/stores/auth.store';
 import { useThemeStore } from '@/stores/theme.store';
 import { Role, AppointmentStatus, APPOINTMENT_TYPE_LABELS } from '@/lib/constants';
 import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
-import { OcularVisitsList } from '@/pages/appointments/OcularVisitsList';
 import { APPOINTMENT_STATUS_GROUPS, resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
-// Every role filters by the same five statuses the badges show.
+// Every role filters by the same four statuses the badges show.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
   { label: 'Requested', value: 'requested' },
-  { label: 'Assigned', value: 'assigned' },
   { label: 'Appointed', value: 'confirmed' },
   { label: 'Completed', value: 'completed' },
   { label: 'No Show', value: 'no_show' },
@@ -42,6 +40,7 @@ const STATUS_FILTERS = [
 // "no_show" is a group of its own, so it is kept by the first check.
 function initialStatusGroup(value: string | null): string | null {
   if (!value) return null;
+  if (value === 'assigned') return 'requested';
   if ((APPOINTMENT_STATUS_GROUPS as readonly string[]).includes(value)) return value;
   if (['cancelled', 'ready_for_ocular'].includes(value)) return 'completed';
   return null;
@@ -202,13 +201,9 @@ export function AppointmentsPage() {
   const canSeeVisitReports = Boolean(
     user?.roles.some((role) => [Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN].includes(role)),
   );
-  const canSeeOculars = Boolean(
-    user?.roles.some((role) => [Role.SALES_STAFF, Role.APPOINTMENT_AGENT, Role.ADMIN].includes(role)),
-  );
   const tabs = [
     { key: 'appointments', label: 'Appointments' },
     ...(canSeeVisitReports ? [{ key: 'visit-reports', label: 'Visit Reports' }] : []),
-    ...(canSeeOculars ? [{ key: 'oculars', label: 'Ocular' }] : []),
   ];
   const requestedTab = searchParams.get('tab');
   const activeTab = tabs.some((tab) => tab.key === requestedTab) ? requestedTab! : 'appointments';
@@ -327,6 +322,10 @@ export function AppointmentsPage() {
   );
   const trimmedSearch = search.trim();
 
+  // Staff bookmarks to the former Ocular tab follow its new location.
+  if (requestedTab === 'oculars' && user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role))) {
+    return <Navigate to="/projects?tab=oculars" replace />;
+  }
   if (isError) return <PageError onRetry={refetch} />;
 
   const customerCtaClassName = isDark
@@ -453,8 +452,6 @@ export function AppointmentsPage() {
 
       {activeTab === 'visit-reports' ? (
         <VisitReportsListPage isEmbedded />
-      ) : activeTab === 'oculars' ? (
-        <OcularVisitsList showSalesStaff={!isSalesOnly} />
       ) : (
       <>
       {/* Filters */}
@@ -546,9 +543,6 @@ export function AppointmentsPage() {
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="h-5 px-1.5 py-0 text-[10px]" />
-                            {workflowStatus.secondaryKey && (
-                              <StatusBadge status={workflowStatus.secondaryKey} className="h-5 px-1.5 py-0 text-[10px]" />
-                            )}
                             <ChevronRight className="h-4 w-4 text-[#c8c8cd] dark:text-slate-500" />
                           </div>
                         </div>
@@ -770,9 +764,6 @@ export function AppointmentsPage() {
                           <TableCell className="py-5">
                             <div className="flex flex-wrap items-center gap-1.5">
                               <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="text-[11px]" />
-                              {workflowStatus.secondaryKey && (
-                                <StatusBadge status={workflowStatus.secondaryKey} className="text-[11px]" />
-                              )}
                             </div>
                           </TableCell>
 

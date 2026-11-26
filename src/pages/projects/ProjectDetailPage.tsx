@@ -1293,7 +1293,7 @@ export function ProjectDetailPage() {
   const deliveryCrewNames = deliveryCrew.map((member) => member.name).filter(Boolean);
   // On-site installation uses RMV's own crew; a delivery goes out with a third-party courier (date only).
   const isOnSiteInstallation = project.deliveryType === DeliveryType.ON_SITE_INSTALLATION;
-  const scheduleTitle = isOnSiteInstallation ? 'Installation Schedule' : 'Delivery Date (third-party courier)';
+  const scheduleTitle = isOnSiteInstallation ? 'Installation Schedule' : 'Delivery Date';
   const deliveryDateLocked = project.deliveryDateUnlocked === false;
   // Engineer or admin picks the crew once the fabrication team exists, until the project is completed.
   const canAssignDeliveryCrew = Boolean(
