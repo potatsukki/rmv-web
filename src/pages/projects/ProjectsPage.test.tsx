@@ -50,7 +50,7 @@ describe('Ocular visits in Projects', () => {
     const html = renderPage();
     expect(html).toContain('>Ocular</a>');
     expect(html).toContain('href="/projects?tab=oculars"');
-    expect(html).toContain('>Returned</a>');
+    expect(html).not.toContain('>Returned</a>');
     expect(html).toContain('Find a project faster');
   });
 
@@ -114,17 +114,9 @@ describe('Declined initial designs in Projects', () => {
   });
 });
 
-describe('Returned reports in Projects', () => {
-  it.each([Role.SALES_STAFF, Role.ADMIN])('offers Returned alongside the project list to %s', (role) => {
-    auth.user.roles = [role];
-    const html = renderPage('/projects?stage=billing');
-    expect(html).toContain('>Returned</a>');
-    expect(html).toContain('Find a project faster');
-    expect(projectRequests).toContainEqual({ limit: '100', stage: 'billing' });
-    expect(reportRequests).toHaveLength(0);
-  });
-
-  it.each([Role.CUSTOMER, Role.APPOINTMENT_AGENT, Role.ENGINEER, Role.FABRICATION_STAFF, Role.CASHIER])('keeps the report queue unavailable to %s', (role) => {
+// User decision 2026-11-27: Returned stays in Appointments → Visit Reports; only Ocular moved to Projects.
+describe('Returned reports stay in Visit Reports', () => {
+  it.each([Role.SALES_STAFF, Role.ADMIN, Role.ENGINEER, Role.CUSTOMER])('has no Returned tab in Projects for %s, even from an old link', (role) => {
     auth.user.roles = [role];
     const html = renderPage('/projects?tab=returned');
     expect(html).not.toContain('>Returned</a>');
@@ -133,37 +125,29 @@ describe('Returned reports in Projects', () => {
     expect(projectRequests).toHaveLength(1);
   });
 
-  it('loads only returned reports and keeps them accessible when the project query fails', () => {
-    projectsQuery.isError = true;
-    reportsQuery.data.items = ['returned', 'draft', 'submitted'].map((status) => ({
-      _id: `${status}-report`, appointmentId: `${status}-visit`, customerId: 'customer-1',
-      customerName: `${status} customer`, serviceType: 'railings', visitType: 'ocular', status,
-      createdAt: '2026-11-26T02:00:00Z', updatedAt: '2026-11-26T02:00:00Z',
-    } as Partial<VisitReport>));
-    const html = renderPage('/projects?tab=returned&stage=billing&reportStatus=completed');
-    expect(reportRequests).toEqual([{ status: 'returned' }]);
-    expect(projectRequests).toHaveLength(0);
-    expect(html).toContain('Returned reports');
-    expect(html).toContain('href="/visit-reports/returned-report"');
-    expect(html).not.toContain('draft customer');
-    expect(html).not.toContain('submitted customer');
-    expect(html).not.toContain('Find a project faster');
-    expect(html).not.toContain('>Completed</button>');
-  });
-
-  it('shows a useful empty Returned queue without an ineffective Clear Filters action', () => {
-    const html = renderPage('/projects?tab=returned');
-    expect(html).toContain('No returned reports');
-    expect(html).not.toContain('Clear Filters');
-  });
-
-  it('keeps Visit Reports in Appointments with the remaining review filters', () => {
+  // Only Sales Staff and Admin reach Visit Reports (the /appointments route does not admit engineers).
+  it.each([Role.SALES_STAFF, Role.ADMIN])('offers the Returned filter in Visit Reports for %s', (role) => {
+    auth.user.roles = [role];
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={['/appointments?tab=visit-reports']}><VisitReportsListPage isEmbedded /></MemoryRouter>,
     );
-    for (const label of ['All Reports', 'Draft', 'Submitted', 'Completed']) {
+    for (const label of ['All Reports', 'Draft', 'Submitted', 'Returned', 'Completed']) {
       expect(html).toContain(`>${label}</button>`);
     }
-    expect(html).not.toContain('>Returned</button>');
+  });
+
+  it('lists returned reports in Visit Reports instead of sending the user to Projects', () => {
+    reportsQuery.data.items = [{
+      _id: 'returned-report', appointmentId: 'returned-visit', customerId: 'customer-1',
+      customerName: 'Returned customer', serviceType: 'railings', visitType: 'ocular', status: 'returned',
+      createdAt: '2026-11-26T02:00:00Z', updatedAt: '2026-11-26T02:00:00Z',
+    } as Partial<VisitReport>];
+    const html = renderToStaticMarkup(
+      <MemoryRouter initialEntries={['/appointments?tab=visit-reports&reportStatus=returned']}><VisitReportsListPage isEmbedded /></MemoryRouter>,
+    );
+    expect(reportRequests).toEqual([{ status: 'returned' }]);
+    expect(html).toContain('Find the right report faster');
+    expect(html).toContain('Returned customer');
+    expect(html).toContain('href="/visit-reports/returned-report"');
   });
 });

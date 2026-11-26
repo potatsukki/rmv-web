@@ -32,7 +32,6 @@ import {
 } from '@/lib/project-stage-filter';
 import type { Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
-import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
 import { OcularVisitsList } from '@/pages/appointments/OcularVisitsList';
 
 type ProjectListFilter = ProjectListingStage | 'declined';
@@ -122,15 +121,13 @@ function getActionSortTime(project: any) {
 export function ProjectsPage() {
   const { user } = useAuthStore();
   const [searchParams] = useSearchParams();
-  const canSeeVisitQueues = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role));
+  const canSeeOculars = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role));
   const showOcularSalesStaff = Boolean(user?.roles.some((role) => [Role.ADMIN, Role.APPOINTMENT_AGENT].includes(role)));
 
+  // Returned reports stay in Appointments → Visit Reports (user decision 2026-11-27); only Ocular moved here.
   const tabs = [
     { key: 'projects', label: 'Projects' },
-    ...(canSeeVisitQueues ? [
-      { key: 'returned', label: 'Returned' },
-      { key: 'oculars', label: 'Ocular' },
-    ] : []),
+    ...(canSeeOculars ? [{ key: 'oculars', label: 'Ocular' }] : []),
   ];
   const requestedTab = searchParams.get('tab');
   const activeTab = tabs.some((tab) => tab.key === requestedTab) ? requestedTab : 'projects';
@@ -141,7 +138,6 @@ export function ProjectsPage() {
         <nav aria-label="Project views" className="flex items-center gap-1 overflow-x-auto rounded-xl border border-[color:var(--color-border)]/60 bg-[color:var(--color-muted)]/40 p-1">
           {tabs.map((tab) => {
             const nextParams = new URLSearchParams(searchParams);
-            nextParams.delete('reportStatus');
             if (tab.key !== 'projects') nextParams.set('tab', tab.key);
             else nextParams.delete('tab');
             const active = activeTab === tab.key;
@@ -160,9 +156,7 @@ export function ProjectsPage() {
           })}
         </nav>
       )}
-      {activeTab === 'returned' ? <VisitReportsListPage isEmbedded returnedOnly />
-        : activeTab === 'oculars' ? <OcularVisitsList showSalesStaff={showOcularSalesStaff} />
-        : <ProjectsList />}
+      {activeTab === 'oculars' ? <OcularVisitsList showSalesStaff={showOcularSalesStaff} /> : <ProjectsList />}
     </div>
   );
 }
