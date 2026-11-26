@@ -32,10 +32,17 @@ vi.mock('@/components/shared/FileUpload', () => ({ FileUpload: () => null }));
 
 import { FabricationTab } from './FabricationTab';
 
-function renderTab(canViewUpdates = true, canManageUpdates = false) {
+function renderTab(canViewUpdates = true, canManageUpdates = false, onSetInstallationDate?: () => void) {
   return renderToStaticMarkup(
     <QueryClientProvider client={new QueryClient()}>
-      <FabricationTab projectId="project-1" projectStatus={state.project.status} canViewUpdates={canViewUpdates} canManageUpdates={canManageUpdates} showAssignmentNotice={!canViewUpdates} />
+      <FabricationTab
+        projectId="project-1"
+        projectStatus={state.project.status}
+        canViewUpdates={canViewUpdates}
+        canManageUpdates={canManageUpdates}
+        showAssignmentNotice={!canViewUpdates}
+        onSetInstallationDate={onSetInstallationDate}
+      />
     </QueryClientProvider>,
   );
 }
@@ -149,6 +156,49 @@ describe('FabricationTab customer confirmation banners', () => {
     const customerHtml = renderTab();
     expect(customerHtml).toContain('Installation at your location');
     expect(customerHtml).toContain('Confirm Installation');
+  });
+
+  it('names the installation date in the staff banner once it is set', () => {
+    onSiteAt('welding_assembly', 'installation');
+    const staffHtml = renderTab(true, true, () => {});
+    expect(staffHtml).toContain('Installation is set on');
+    expect(staffHtml).not.toContain('Waiting for the installation date');
+    expect(staffHtml).not.toContain('Set Installation Date');
+
+    state.user = { _id: 'customer-1', roles: [Role.CUSTOMER] };
+    const customerHtml = renderTab();
+    expect(customerHtml).toContain('Confirm Installation');
+    expect(customerHtml).not.toMatch(/<button[^>]*\sdisabled=""[^>]*>Confirm Installation/);
+  });
+
+  describe('on-site project with no installation date yet', () => {
+    beforeEach(() => {
+      onSiteAt('welding_assembly', 'installation');
+      state.project.deliverySchedule = undefined;
+    });
+
+    it('tells the customer RMV sets the date and hides the confirm button', () => {
+      state.user = { _id: 'customer-1', roles: [Role.CUSTOMER] };
+      const html = renderTab();
+      expect(html).toContain('Installation date not set yet');
+      expect(html).toContain('RMV will set your installation date');
+      expect(html).not.toContain('Confirm Installation');
+    });
+
+    it('tells the fabricator the date is missing instead of awaiting the customer', () => {
+      const html = renderTab(true, true);
+      expect(html).toContain('Waiting for the installation date');
+      expect(html).toContain('The admin or the assigned engineer needs to set the installation date and crew');
+      expect(html).not.toContain('Awaiting Customer Confirmation');
+      expect(html).not.toContain('Set Installation Date');
+    });
+
+    it('gives the admin / assigned engineer a Set Installation Date button', () => {
+      state.user = { _id: 'admin-1', roles: [Role.ADMIN] };
+      const html = renderTab(true, false, () => {});
+      expect(html).toContain('Waiting for the installation date');
+      expect(html).toContain('Set Installation Date');
+    });
   });
 
   it('no longer shows the on-site confirmation at Quality Check', () => {

@@ -13,6 +13,7 @@ import {
   Trash2,
   PackageCheck,
   CalendarCheck,
+  CalendarDays,
   ChevronLeft,
   ChevronRight,
   Boxes,
@@ -67,6 +68,8 @@ interface FabricationTabProps {
   canViewUpdates: boolean;
   canManageUpdates: boolean;
   showAssignmentNotice: boolean;
+  /** Given to the admin / assigned engineer: opens the installation schedule form on the page. */
+  onSetInstallationDate?: () => void;
 }
 
 const SHOP_FABRICATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
@@ -214,6 +217,7 @@ export function FabricationTab({
   canViewUpdates,
   canManageUpdates,
   showAssignmentNotice,
+  onSetInstallationDate,
 }: FabricationTabProps) {
   const { user, accessToken } = useAuthStore();
   const { resolvedTheme } = useThemeStore();
@@ -364,7 +368,7 @@ export function FabricationTab({
   const isOnSiteWork = deliveryType === DeliveryType.ON_SITE_INSTALLATION;
   const confirmButtonLabel = isOnSiteWork ? 'Confirm Installation' : 'Confirm Order Received';
   const awaitingConfirmationText = isOnSiteWork
-    ? 'The customer has been notified and must confirm the installation schedule before you can move this to Installation.'
+    ? `Installation is set on ${describeDeliverySchedule(project?.deliverySchedule)}. The customer has been notified and must confirm it before you can move this to Installation.`
     : 'The customer has been notified and must confirm they received the order before you can mark this as Done.';
   const confirmedText = isOnSiteWork
     ? 'Customer confirmed the installation schedule — you may proceed to Installation.'
@@ -380,7 +384,7 @@ export function FabricationTab({
   const crewRequired = crewGate?.crewRequired ?? true;
   const crewReady = Boolean((!crewRequired || crewGate?.hasCrew) && crewGate?.hasDeliveryDate !== false);
   const crewGateMessage = crewRequired
-    ? 'Installation needs the installation crew and date. Ask the engineer or admin to assign them on the Fabrication tab.'
+    ? 'Installation needs the installation date and crew. Ask the admin or the assigned engineer to set the Installation Schedule on the Fabrication tab.'
     : 'Ready for Delivery needs the delivery date. Ask the engineer or admin to set it on the Fabrication tab.';
   const isCrewBlockedStatus = (value: string) => Boolean(crewGate && !crewReady && crewGate.gatedStatuses.includes(value));
   const deliveryDay = project?.deliverySchedule?.date;
@@ -419,6 +423,8 @@ export function FabricationTab({
   };
 
   const allowedStatuses = fabricationStatus?.allowedTransitions || [];
+  // The customer confirmation step is next (on-site: Installation; delivery: Done).
+  const showConfirmationGate = Boolean(confirmationGateStatus && allowedStatuses.includes(confirmationGateStatus));
   const selectableStatuses = deliveryType === DeliveryType.ON_SITE_INSTALLATION
     ? allowedStatuses.filter((value) => fabricationStepMarkers.some((step) => step.key === value))
     : allowedStatuses.length > 0
@@ -729,49 +735,65 @@ export function FabricationTab({
       )}
 
       {/* Customer confirmation banners */}
-      {confirmationGateStatus && allowedStatuses.includes(confirmationGateStatus) && !installationConfirmed && isCustomer && (
+      {showConfirmationGate && !installationConfirmed && isCustomer && (
         <Card className="rounded-xl border-blue-200 bg-blue-50/60 dark:border-blue-500/35 dark:bg-blue-500/10">
           <CardContent className="p-4 flex items-start gap-3">
             <CalendarCheck className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
             <div className="flex-1">
               <p className="text-sm font-semibold text-blue-900 dark:text-blue-100">
-                {isOnSiteWork ? 'Installation at your location' : 'Confirm you received your order'}
+                {isOnSiteWork
+                  ? (awaitingDeliveryDate ? 'Installation date not set yet' : 'Installation at your location')
+                  : 'Confirm you received your order'}
               </p>
               <p className="mt-0.5 text-xs text-blue-700 dark:text-blue-300">
                 {isOnSiteWork
                   ? (deliveryDay
                     ? `Installation is scheduled on ${describeDeliverySchedule(project?.deliverySchedule)}. Please confirm this schedule.`
-                    : 'RMV will set your installation date. You can confirm once it is scheduled.')
+                    : 'RMV will set your installation date. You will get a notification, then you can confirm it here.')
                   : `Your order is out for delivery${deliveryDay ? ` (scheduled on ${formatDeliveryDay(deliveryDay)})` : ''}. Confirm once you have received it.`}
               </p>
             </div>
-            <Button
-              size="sm"
-              className="bg-[linear-gradient(180deg,#c49a62_0%,#a07d4a_100%)] hover:bg-[linear-gradient(180deg,#d4aa72_0%,#b08d5a_100%)] text-white rounded-xl shrink-0 shadow-[0_2px_8px_rgba(196,154,98,0.3)]"
-              disabled={confirmInstallationMutation.isPending || awaitingDeliveryDate}
-              onClick={handleConfirmInstallation}
-            >
-              {confirmInstallationMutation.isPending ? 'Confirming...' : confirmButtonLabel}
-            </Button>
+            {!awaitingDeliveryDate && (
+              <Button
+                size="sm"
+                className="bg-[linear-gradient(180deg,#c49a62_0%,#a07d4a_100%)] hover:bg-[linear-gradient(180deg,#d4aa72_0%,#b08d5a_100%)] text-white rounded-xl shrink-0 shadow-[0_2px_8px_rgba(196,154,98,0.3)]"
+                disabled={confirmInstallationMutation.isPending}
+                onClick={handleConfirmInstallation}
+              >
+                {confirmInstallationMutation.isPending ? 'Confirming...' : confirmButtonLabel}
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {confirmationGateStatus && allowedStatuses.includes(confirmationGateStatus) && !installationConfirmed && canAddUpdate && (
+      {showConfirmationGate && !installationConfirmed && !isCustomer && (canAddUpdate || onSetInstallationDate) && (
         <Card className="rounded-xl border-amber-200 bg-amber-50/50 dark:border-amber-500/35 dark:bg-amber-500/10">
-          <CardContent className="p-4 flex items-start gap-3">
-            <CalendarCheck className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-            <div>
-              <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">Awaiting Customer Confirmation</p>
-              <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
-                {awaitingConfirmationText}
-              </p>
+          <CardContent className="p-4 flex flex-col gap-3 sm:flex-row sm:items-start">
+            <div className="flex flex-1 items-start gap-3">
+              <CalendarCheck className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+              <div>
+                <p className="text-sm font-semibold text-amber-800 dark:text-amber-100">
+                  {awaitingDeliveryDate ? 'Waiting for the installation date' : 'Awaiting Customer Confirmation'}
+                </p>
+                <p className="mt-0.5 text-xs text-amber-700 dark:text-amber-300">
+                  {awaitingDeliveryDate
+                    ? 'The admin or the assigned engineer needs to set the installation date and crew. The customer confirms it before this can move to Installation.'
+                    : awaitingConfirmationText}
+                </p>
+              </div>
             </div>
+            {awaitingDeliveryDate && onSetInstallationDate && (
+              <Button size="sm" variant="outline" className="w-full shrink-0 sm:w-auto" onClick={onSetInstallationDate}>
+                <CalendarDays className="mr-1.5 h-4 w-4" />
+                Set Installation Date
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
 
-      {confirmationGateStatus && allowedStatuses.includes(confirmationGateStatus) && installationConfirmed && (
+      {showConfirmationGate && installationConfirmed && (
         <Card className="rounded-xl border-emerald-200 bg-emerald-50/50 dark:border-emerald-500/35 dark:bg-emerald-500/10">
           <CardContent className="p-4 flex items-center gap-3">
             <PackageCheck className="h-5 w-5 shrink-0 text-emerald-600 dark:text-emerald-300" />

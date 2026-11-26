@@ -679,6 +679,7 @@ export function ProjectDetailPage() {
   const [showCrewForm, setShowCrewForm] = useState(false);
   const [crewIds, setCrewIds] = useState<string[]>([]);
   const [crewDate, setCrewDate] = useState('');
+  const deliveryScheduleRef = useRef<HTMLDivElement | null>(null);
   const [designReviewNotes, setDesignReviewNotes] = useState('');
   const [projectReviewRating, setProjectReviewRating] = useState('5');
   const [projectReviewComment, setProjectReviewComment] = useState('');
@@ -1292,7 +1293,7 @@ export function ProjectDetailPage() {
   const deliveryCrewNames = deliveryCrew.map((member) => member.name).filter(Boolean);
   // On-site installation uses RMV's own crew; a delivery goes out with a third-party courier (date only).
   const isOnSiteInstallation = project.deliveryType === DeliveryType.ON_SITE_INSTALLATION;
-  const scheduleTitle = isOnSiteInstallation ? 'Installation Crew' : 'Delivery Date (third-party courier)';
+  const scheduleTitle = isOnSiteInstallation ? 'Installation Schedule' : 'Delivery Date (third-party courier)';
   const deliveryDateLocked = project.deliveryDateUnlocked === false;
   // Engineer or admin picks the crew once the fabrication team exists, until the project is completed.
   const canAssignDeliveryCrew = Boolean(
@@ -1300,6 +1301,18 @@ export function ProjectDetailPage() {
     && project.fabricationLeadId
     && [ProjectStatus.PAYMENT_PENDING, ProjectStatus.FABRICATION].includes(project.status as ProjectStatus),
   );
+  const openDeliveryScheduleForm = () => {
+    setCrewIds(deliveryCrew.map((member) => member._id));
+    setCrewDate(project.deliverySchedule?.date || '');
+    setShowCrewForm(true);
+  };
+  // The "Set Installation Date" button on the fabrication banner jumps here with the form open.
+  const openInstallationScheduleFromBanner = () => {
+    openDeliveryScheduleForm();
+    requestAnimationFrame(() => {
+      deliveryScheduleRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
   const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
   const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
   const headerTitle = activeProjectServiceLabel || projectServiceTitle;
@@ -3238,19 +3251,23 @@ export function ProjectDetailPage() {
 
           {/* Installation crew (on-site) or delivery date (shop, third-party courier); separate from the workshop team. */}
           {(canAssignDeliveryCrew || (isStaff && (deliveryCrewNames.length > 0 || Boolean(project.deliverySchedule?.date)))) && (
-            <Card className="rounded-none border-x-0 sm:rounded-xl sm:border-x">
+            <Card
+              ref={deliveryScheduleRef}
+              id="delivery-schedule"
+              className="scroll-mt-24 rounded-none border-x-0 sm:rounded-xl sm:border-x"
+            >
               <CardContent className="space-y-3 p-4">
                 <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                   <div className="min-w-0">
                     <p className="flex items-center gap-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
-                      <Truck className="h-4 w-4" />
+                      {isOnSiteInstallation ? <CalendarDays className="h-4 w-4" /> : <Truck className="h-4 w-4" />}
                       {scheduleTitle}
                     </p>
                     {isOnSiteInstallation ? (
                       <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
-                        {deliveryCrewNames.length > 0
-                          ? deliveryCrewNames.join(', ')
-                          : 'No crew assigned yet. Choose who does the on-site installation and the date. Required before Installation.'}
+                        {project.deliverySchedule?.date || deliveryCrewNames.length > 0
+                          ? `Crew: ${deliveryCrewNames.length > 0 ? deliveryCrewNames.join(', ') : 'not assigned yet'}`
+                          : 'No installation date yet. Set the date and the crew who will install. The customer is asked to confirm it. Required before Installation.'}
                       </p>
                     ) : !project.deliverySchedule?.date && (
                       <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
@@ -3275,15 +3292,11 @@ export function ProjectDetailPage() {
                       variant="outline"
                       className="w-full shrink-0 sm:w-auto"
                       disabled={deliveryDateLocked && !project.deliverySchedule?.date}
-                      onClick={() => {
-                        setCrewIds(deliveryCrew.map((member) => member._id));
-                        setCrewDate(project.deliverySchedule?.date || '');
-                        setShowCrewForm(true);
-                      }}
+                      onClick={openDeliveryScheduleForm}
                     >
-                      {isOnSiteInstallation ? <Users className="mr-1.5 h-4 w-4" /> : <CalendarDays className="mr-1.5 h-4 w-4" />}
+                      <CalendarDays className="mr-1.5 h-4 w-4" />
                       {isOnSiteInstallation
-                        ? (deliveryCrewNames.length > 0 ? 'Change Crew' : 'Assign Crew')
+                        ? (project.deliverySchedule?.date ? 'Change Schedule' : 'Set Installation Date')
                         : (project.deliverySchedule?.date ? 'Change Date' : 'Set Date')}
                     </Button>
                   )}
@@ -3333,7 +3346,7 @@ export function ProjectDetailPage() {
                         disabled={assignDeliveryCrew.isPending || (isOnSiteInstallation && crewIds.length === 0) || !crewDate}
                       >
                         {assignDeliveryCrew.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                        {isOnSiteInstallation ? 'Save Crew' : 'Save Date'}
+                        {isOnSiteInstallation ? 'Save Schedule' : 'Save Date'}
                       </Button>
                       <Button size="sm" variant="ghost" onClick={() => setShowCrewForm(false)}>
                         Cancel
@@ -3495,6 +3508,11 @@ export function ProjectDetailPage() {
               canViewUpdates={canViewFabrication}
               canManageUpdates={canManageFabrication}
               showAssignmentNotice={showFabricationAssignmentNotice}
+              onSetInstallationDate={
+                canAssignDeliveryCrew && isOnSiteInstallation && !deliveryDateLocked
+                  ? openInstallationScheduleFromBanner
+                  : undefined
+              }
             />
           </Suspense>
         </div>
