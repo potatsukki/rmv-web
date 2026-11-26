@@ -302,7 +302,7 @@ export function UsersPage() {
   const inputClasses = 'h-11';
 
   return (
-    <div className="space-y-8">
+    <div className="@container/accounts min-w-0 space-y-8">
       {/* Header */}
       <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -339,7 +339,7 @@ export function UsersPage() {
       {isLoading ? (
         <>
           {/* Mobile skeleton */}
-          <div className="space-y-3 md:hidden">
+          <div className="space-y-3 @4xl/accounts:hidden">
             {Array.from({ length: 5 }).map((_, i) => (
               <div key={i} className="metal-panel rounded-[1.35rem] p-4 space-y-3">
                 <div className="flex items-center gap-3">
@@ -354,7 +354,7 @@ export function UsersPage() {
             ))}
           </div>
           {/* Desktop skeleton */}
-          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] md:block">
+          <div className="metal-panel hidden overflow-hidden rounded-[1.5rem] @4xl/accounts:block">
             <div className="p-4 space-y-4">
               {Array.from({ length: 6 }).map((_, i) => (
                 <div key={i} className="flex items-center gap-4">
@@ -376,12 +376,12 @@ export function UsersPage() {
         />
       ) : (
         <>
-          {/* ── Mobile list (< md) ── */}
-          <div className="md:hidden space-y-2">
+          {/* Cards for panels that are too narrow for readable table columns. */}
+          <div className="space-y-2 @4xl/accounts:hidden">
             {userList.map((u) => (
               <div
                 key={u._id}
-                className={`metal-panel rounded-[1.35rem] px-4 py-3.5 transition-colors ${
+                className={`metal-panel rounded-[1.35rem] px-4 py-3.5 [overflow-wrap:anywhere] transition-colors ${
                   !u.isActive ? 'opacity-60' : ''
                 }`}
               >
@@ -398,10 +398,11 @@ export function UsersPage() {
                   </div>
                   {/* Info */}
                   <div className="flex-1 min-w-0">
-                    <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
+                    <p className="text-[15px] font-medium text-[#171b21] dark:text-slate-100">
                       {u.firstName} {u.lastName}
                     </p>
-                    <p className="truncate text-xs text-[#68727d] dark:text-slate-400">{u.email}</p>
+                    <p className="text-xs text-[#68727d] dark:text-slate-400">{u.email}</p>
+                    {u.phone && <p className="mt-1 text-xs text-[#68727d] dark:text-slate-400">{u.phone}</p>}
                     {u.customerNumber && (
                       <p className="mt-0.5 font-mono text-[10px] font-semibold text-[#69737d] dark:text-slate-400">{u.customerNumber}</p>
                     )}
@@ -475,18 +476,18 @@ export function UsersPage() {
             </div>
           </div>
 
-          {/* ── Desktop table (md+) ── */}
-          <div className="metal-panel hidden overflow-x-auto rounded-[1.5rem] md:block">
-            <Table className="min-w-[980px]">
+          {/* Use the panel width, including space taken by the workspace sidebar. */}
+          <div className="metal-panel hidden rounded-[1.5rem] @4xl/accounts:block">
+            <Table className="w-full table-fixed">
               <TableHeader>
                 <TableRow className="hover:bg-transparent">
-                  <TableHead className="w-[210px] pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">User</TableHead>
-                  <TableHead className="w-[250px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Email</TableHead>
-                  <TableHead className="hidden w-[135px] text-xs font-semibold uppercase tracking-wider text-[#68727d] lg:table-cell">Phone</TableHead>
-                  <TableHead className="w-[155px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Role</TableHead>
-                  <TableHead className="w-[230px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Availability</TableHead>
-                  <TableHead className="w-[110px] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
-                  <TableHead className="w-10 pr-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">Actions</span></TableHead>
+                  <TableHead className="w-[20%] pl-5 text-xs font-semibold uppercase tracking-wider text-[#68727d]">User</TableHead>
+                  <TableHead className="w-[22%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Email</TableHead>
+                  <TableHead className="w-[12%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Phone</TableHead>
+                  <TableHead className="w-[12%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Role</TableHead>
+                  <TableHead className="w-[16%] text-xs font-semibold uppercase tracking-wider text-[#68727d]">Availability</TableHead>
+                  <TableHead className="w-24 px-2 text-xs font-semibold uppercase tracking-wider text-[#68727d]">Status</TableHead>
+                  <TableHead className="w-14 px-2 text-xs font-semibold uppercase tracking-wider text-[#68727d]"><span className="sr-only">Actions</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -510,11 +511,11 @@ export function UsersPage() {
                           {u.firstName[0]}{u.lastName[0]}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
+                          <p className="text-[15px] font-medium whitespace-normal [overflow-wrap:anywhere] text-[#171b21] dark:text-slate-100">
                             {u.firstName} {u.lastName}
                           </p>
                           {u.customerNumber && (
-                            <p className="mt-0.5 font-mono text-[10px] font-semibold text-[#69737d] dark:text-slate-400">{u.customerNumber}</p>
+                            <p className="mt-0.5 font-mono text-[10px] font-semibold [overflow-wrap:anywhere] text-[#69737d] dark:text-slate-400">{u.customerNumber}</p>
                           )}
                         </div>
                       </div>
@@ -522,12 +523,12 @@ export function UsersPage() {
 
                     {/* Email */}
                     <TableCell className="py-5">
-                      <span className="text-sm text-[#616a74] dark:text-slate-400">{u.email}</span>
+                      <span className="block text-sm [overflow-wrap:anywhere] text-[#616a74] dark:text-slate-400">{u.email}</span>
                     </TableCell>
 
-                    {/* Phone — hidden below lg */}
-                    <TableCell className="py-5 hidden lg:table-cell">
-                      <span className="text-sm text-[#616a74] dark:text-slate-400">{u.phone || '—'}</span>
+                    {/* Phone */}
+                    <TableCell className="py-5">
+                      <span className="block text-sm [overflow-wrap:anywhere] text-[#616a74] dark:text-slate-400">{u.phone || '—'}</span>
                     </TableCell>
 
                     {/* Role */}
@@ -537,7 +538,7 @@ export function UsersPage() {
                           <Badge
                             key={r}
                             variant="outline"
-                            className={`text-[11px] font-bold uppercase tracking-wider ${
+                            className={`max-w-full text-[11px] font-bold uppercase tracking-wider whitespace-normal [overflow-wrap:anywhere] ${
                               roleBadgeStyles[r] || 'border-[#c6ccd3] text-[#5b6470]'
                             }`}
                           >
@@ -548,7 +549,7 @@ export function UsersPage() {
                     </TableCell>
 
                     <TableCell className="py-5">
-                      <div className="min-w-[180px]">
+                      <div className="min-w-0 [overflow-wrap:anywhere]">
                         <p className="text-sm font-medium capitalize text-[#171b21] dark:text-slate-100">
                           {availabilitySummaryLabel(u)}
                         </p>
@@ -561,7 +562,7 @@ export function UsersPage() {
                     </TableCell>
 
                     {/* Status */}
-                    <TableCell className="py-5">
+                    <TableCell className="px-2 py-5">
                       <StatusBadge
                         status={u.isActive ? 'enabled' : 'disabled'}
                         label={u.isActive ? 'Active' : 'Disabled'}
@@ -570,7 +571,7 @@ export function UsersPage() {
                     </TableCell>
 
                     {/* Actions */}
-                    <TableCell className="py-5 pr-5">
+                    <TableCell className="px-2 py-5">
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                           <Button variant="ghost" className="h-8 w-8 rounded-lg p-0 text-[#9ca6b1] hover:text-[#68727d] group-hover:text-[#7a838d]">

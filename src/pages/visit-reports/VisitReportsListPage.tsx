@@ -1,5 +1,5 @@
 import { Fragment, useState, useMemo } from 'react';
-import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router';
+import { Link, useNavigate, useSearchParams } from 'react-router';
 import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
 import { format, parse } from 'date-fns';
 
@@ -131,6 +131,7 @@ const STATUS_FILTERS = [
   { label: 'All Reports', value: '' },
   { label: 'Draft', value: VisitReportStatus.DRAFT },
   { label: 'Submitted', value: VisitReportStatus.SUBMITTED },
+  { label: 'Returned', value: VisitReportStatus.RETURNED },
   { label: 'Completed', value: VisitReportStatus.COMPLETED },
 ];
 
@@ -157,14 +158,12 @@ const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]' };
 
 /* ── Component ── */
 
-export function VisitReportsListPage({ isEmbedded, returnedOnly = false }: { isEmbedded?: boolean; returnedOnly?: boolean } = {}) {
+export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = {}) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
-  const location = useLocation();
   const [searchParams, setSearchParams] = useSearchParams();
-  const statusFilter = returnedOnly ? VisitReportStatus.RETURNED : normalizeVisitReportStatusFilter(searchParams.get('reportStatus'));
+  const statusFilter = normalizeVisitReportStatusFilter(searchParams.get('reportStatus'));
   const [search, setSearch] = useState('');
-  const detailState = returnedOnly ? { from: location.pathname + location.search } : undefined;
 
   const filtersByDisplayedStatus = isDisplayedStatusFilter(statusFilter);
   const params: Record<string, string> = {};
@@ -183,7 +182,7 @@ export function VisitReportsListPage({ isEmbedded, returnedOnly = false }: { isE
   };
 
   const loadedReports = data?.items || [];
-  const reports = filtersByDisplayedStatus || returnedOnly
+  const reports = filtersByDisplayedStatus
     ? loadedReports.filter((report) => displayVisitReportStatus(report) === statusFilter)
     : loadedReports;
 
@@ -230,10 +229,6 @@ export function VisitReportsListPage({ isEmbedded, returnedOnly = false }: { isE
     ? 'Review submitted visit reports and create projects.'
     : 'Manage your visit reports and site inspection records.';
 
-  // Keep bookmarks to the former Returned filter pointed at its new home.
-  if (!returnedOnly && statusFilter === VisitReportStatus.RETURNED) {
-    return <Navigate to="/projects?tab=returned" replace />;
-  }
   if (isError) return <PageError onRetry={refetch} />;
 
   return (
@@ -252,12 +247,12 @@ export function VisitReportsListPage({ isEmbedded, returnedOnly = false }: { isE
 
       {/* Filters */}
       <CollectionToolbar
-        title={returnedOnly ? 'Returned reports' : 'Find the right report faster'}
-        description={returnedOnly ? 'Review reports returned for revision. Open a report to view the reason, update it, and resubmit.' : 'Search by customer name or report ID, then narrow the queue by review state.'}
+        title="Find the right report faster"
+        description="Search by customer name or report ID, then narrow the queue by review state."
         searchPlaceholder="Search by customer name or report ID"
         searchValue={search}
         onSearchChange={setSearch}
-        filters={returnedOnly ? [] : STATUS_FILTERS}
+        filters={STATUS_FILTERS}
         activeFilter={statusFilter}
         onFilterChange={handleStatusFilterChange}
       />
@@ -301,18 +296,17 @@ export function VisitReportsListPage({ isEmbedded, returnedOnly = false }: { isE
       ) : !groups.length ? (
         <EmptyState
           icon={<ClipboardList className="h-6 w-6" />}
-          title={returnedOnly ? 'No returned reports' : 'No visit reports found'}
-          description={search || (!returnedOnly && statusFilter)
+          title="No visit reports found"
+          description={search || statusFilter
             ? 'Try adjusting the search terms or review-state filter.'
-            : returnedOnly ? 'Reports returned for revision will appear here.'
             : 'Visit reports will appear here after appointments are confirmed and inspections begin.'}
-          action={(search || (!returnedOnly && statusFilter)) ? (
+          action={(search || statusFilter) ? (
             <Button
               variant="outline"
               className="text-[#171b21] dark:text-slate-100 dark:border-slate-600 dark:hover:bg-slate-800"
               onClick={() => {
                 setSearch('');
-                if (!returnedOnly) handleStatusFilterChange('');
+                handleStatusFilterChange('');
               }}
             >
               Clear Filters
@@ -336,7 +330,6 @@ export function VisitReportsListPage({ isEmbedded, returnedOnly = false }: { isE
                 <Link
                   key={group.appointmentId}
                   to={`/visit-reports/${firstReport._id}`}
-                  state={detailState}
                   className="group block"
                 >
                   <div className="metal-panel rounded-xl px-4 py-3.5 transition-colors active:bg-white/45">
@@ -425,7 +418,7 @@ export function VisitReportsListPage({ isEmbedded, returnedOnly = false }: { isE
                   return (
                     <TableRow
                       key={group.appointmentId}
-                      onClick={() => navigate(`/visit-reports/${firstReport._id}`, { state: detailState })}
+                      onClick={() => navigate(`/visit-reports/${firstReport._id}`)}
                       className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group dark:border-slate-700 dark:hover:bg-slate-800/50"
                     >
                       {/* Customer */}
