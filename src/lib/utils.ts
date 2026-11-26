@@ -1,6 +1,7 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { formatDistanceToNow, formatDistanceToNowStrict } from 'date-fns';
+import { formatDistanceStrict } from 'date-fns';
+import { serverNow } from '@/lib/server-clock';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -15,13 +16,35 @@ export function parseApiTimestamp(value: string | Date): Date {
   return new Date(hasTimezone ? timestamp : `${timestamp}Z`);
 }
 
-export function formatApiTimeAgo(value: string | Date, strict = false): string {
+/**
+ * "3 hours ago" from the real elapsed time on the server clock, rounded DOWN: 23 h 59 min is
+ * "23 hours ago" and "1 day ago" starts at exactly 24 hours. Calendar days never count, so a
+ * notification from 11:00 PM reads "3 hours ago" at 2:00 AM.
+ */
+export function formatApiTimeAgo(value: string | Date, now: Date = serverNow()): string {
   const timestamp = parseApiTimestamp(value);
   if (Number.isNaN(timestamp.getTime())) return 'recently';
+  // Under a minute old, or a moment ahead of this clock: it just happened.
+  if (now.getTime() - timestamp.getTime() < 60_000) return 'just now';
 
-  return strict
-    ? formatDistanceToNowStrict(timestamp, { addSuffix: true })
-    : formatDistanceToNow(timestamp, { addSuffix: true });
+  return formatDistanceStrict(timestamp, now, { addSuffix: true, roundingMethod: 'floor' });
+}
+
+const MANILA_DATE_TIME = new Intl.DateTimeFormat('en-US', {
+  timeZone: 'Asia/Manila',
+  month: 'short',
+  day: 'numeric',
+  year: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+/** The exact date and time in Asia/Manila, whatever the device's time zone: "Nov 25, 2026, 11:00 PM". */
+export function formatManilaDateTime(value: string | Date): string {
+  const timestamp = parseApiTimestamp(value);
+  if (Number.isNaN(timestamp.getTime())) return '';
+  // Newer ICU puts a narrow no-break space before AM/PM.
+  return MANILA_DATE_TIME.format(timestamp).replace(/ /g, ' ');
 }
 
 /**

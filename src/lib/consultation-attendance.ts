@@ -2,6 +2,7 @@ import {
   AppointmentAttendanceStatus,
   AppointmentStatus,
 } from '@/lib/constants';
+import { serverNow } from '@/lib/server-clock';
 
 const TERMINAL_ATTENDANCE_STATUSES = new Set<string>([
   AppointmentAttendanceStatus.COMPLETED,
@@ -36,12 +37,13 @@ export interface NoShowAvailability {
 
 /**
  * A no-show is recorded on the appointment date itself, from 15 minutes after the scheduled time
- * (Manila time); never before, and never on another day. The server enforces the same rule.
+ * (Manila time); never before, and never on another day. The server enforces the same rule, and
+ * `now` defaults to the server clock so a device with a wrong clock opens the button on time.
  */
 export function getNoShowAvailability(
   date: string | undefined,
   slotCode: string | undefined,
-  now = new Date(),
+  now = serverNow(),
 ): NoShowAvailability {
   const day = String(date ?? '').slice(0, 10);
   const start = new Date(`${day}T${slotCode ?? ''}:00+08:00`);
@@ -64,7 +66,7 @@ export function getNoShowAvailability(
 export function getAutoNoShowNotice(
   date: string | undefined,
   slotCode: string | undefined,
-  now = new Date(),
+  now = serverNow(),
 ): string | undefined {
   const day = String(date ?? '').slice(0, 10);
   const start = new Date(`${day}T${slotCode ?? ''}:00+08:00`);
@@ -102,7 +104,7 @@ export function getNextConsultationAttendanceBoundary(
     slotCode?: string;
     attendanceStatus?: string;
   } | null | undefined,
-  now = new Date(),
+  now = serverNow(),
 ): Date | undefined {
   if (
     appointment?.type !== 'office'

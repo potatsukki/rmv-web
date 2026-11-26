@@ -28,6 +28,7 @@ import { PageError } from '@/components/shared/PageError';
 import { useDashboardSummary, useAuditLogs } from '@/hooks/useReports';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProjects } from '@/hooks/useProjects';
+import { useNow } from '@/hooks/useNow';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, Role } from '@/lib/constants';
 import type { Project } from '@/lib/types';
@@ -326,6 +327,8 @@ export function DashboardPage() {
   const auditQuery = useAuditLogs({ limit: 5 }, !!isAdmin);
   const notifQuery = useNotifications({ limit: '5' }, !isAdmin);
   const projectsQuery = useProjects({ limit: '1000' });
+  // Keeps the "x minutes ago" labels counting while the dashboard stays open.
+  const now = useNow();
 
   // Decide which data source to use
   const activityLoading = isAdmin ? auditQuery.isLoading : notifQuery.isLoading;
@@ -584,7 +587,7 @@ export function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-[11px] text-[#7b8592] dark:text-slate-300">
-                          {formatApiTimeAgo(log.createdAt, true)}
+                          {formatApiTimeAgo(log.createdAt, now)}
                         </span>
                         {navPath && (
                           <Eye className="h-3.5 w-3.5 text-[#8a94a3] dark:text-slate-400" />
@@ -633,7 +636,7 @@ export function DashboardPage() {
                       </div>
                       <div className="flex items-center gap-2 flex-shrink-0">
                         <span className="text-[11px] text-[#7b8592] dark:text-slate-300">
-                          {formatApiTimeAgo(notif.createdAt, true)}
+                          {formatApiTimeAgo(notif.createdAt, now)}
                         </span>
                         {!notif.isRead && (
                           <span className="h-2 w-2 rounded-full bg-[#4f6679]" />
@@ -686,6 +689,7 @@ function CustomerDashboard({
   activeProject?: { _id: string; title: string; projectNumber?: string; serviceType?: string; status: string; updatedAt: string };
 }) {
   const [selectedSample, setSelectedSample] = useState<ServiceProjectReference | null>(null);
+  const now = useNow();
   const metrics = [
     // Each card opens the list filtered by the same rule the server counts with.
     // Pending Visits = the Requested + Assigned filters on the Appointments page.
@@ -841,7 +845,7 @@ function CustomerDashboard({
         <div className="workspace-panel overflow-hidden">
           <div className="flex items-center justify-between border-b border-white/10 px-5 py-4 sm:px-6"><div><p className="workspace-eyebrow">Recent activity</p><h2 className="mt-1 text-lg font-bold text-[#f7f7f5]">Latest updates</h2></div><Link to="/notifications" className="workspace-focus text-sm font-semibold text-[#f5b400] hover:text-[#ffd047]">View all</Link></div>
           <div className="divide-y divide-white/8">
-            {notificationsLoading ? <div className="p-6 text-sm text-slate-400">Loading updates…</div> : notifications.length ? notifications.slice(0, 4).map((notification) => <Link key={notification._id} to={notification.link || '/notifications'} className="workspace-focus block px-5 py-4 hover:bg-white/[.035] sm:px-6"><p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-400">{notification.message}</p><p className="mt-2 text-xs text-slate-500">{formatApiTimeAgo(notification.createdAt, true)}</p></Link>) : <div className="p-6 text-sm text-slate-400">Updates about your appointments, projects, and payments will appear here.</div>}
+            {notificationsLoading ? <div className="p-6 text-sm text-slate-400">Loading updates…</div> : notifications.length ? notifications.slice(0, 4).map((notification) => <Link key={notification._id} to={notification.link || '/notifications'} className="workspace-focus block px-5 py-4 hover:bg-white/[.035] sm:px-6"><p className="truncate text-sm font-semibold text-slate-100">{notification.title}</p><p className="mt-1 line-clamp-2 text-sm leading-5 text-slate-400">{notification.message}</p><p className="mt-2 text-xs text-slate-500">{formatApiTimeAgo(notification.createdAt, now)}</p></Link>) : <div className="p-6 text-sm text-slate-400">Updates about your appointments, projects, and payments will appear here.</div>}
           </div>
         </div>
       </section>

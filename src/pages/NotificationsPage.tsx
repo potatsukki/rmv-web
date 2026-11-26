@@ -29,11 +29,12 @@ import {
   useMarkAsRead,
   useMarkAllAsRead,
 } from '@/hooks/useNotifications';
+import { useNow } from '@/hooks/useNow';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useAuthStore } from '@/stores/auth.store';
 import { Role } from '@/lib/constants';
 import type { Notification } from '@/lib/types';
-import { extractItems, formatApiTimeAgo } from '@/lib/utils';
+import { extractItems, formatApiTimeAgo, formatManilaDateTime } from '@/lib/utils';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
 const CATEGORY_TABS = [
@@ -68,6 +69,8 @@ export function NotificationsPage() {
   const setNotifications = useNotificationStore((state) => state.setNotifications);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState('');
+  // Re-renders every 30 s so "x minutes ago" keeps counting while the tab stays open.
+  const now = useNow();
 
   const notifications = extractItems<Notification>(data);
   const categoryTabs = user?.roles.some((role) => APPOINTMENT_NOTIFICATION_ROLES.includes(role))
@@ -265,12 +268,22 @@ export function NotificationsPage() {
                     >
                       {String(n.title || '')}
                     </p>
-                    <span className="flex items-center gap-1 whitespace-nowrap text-xs text-[#75808b] dark:text-slate-300">
-                      <Clock className="h-3 w-3" />
-                      {n.createdAt
-                        ? formatApiTimeAgo(String(n.createdAt))
-                        : null}
-                    </span>
+                    {n.createdAt ? (
+                      // Relative time from when the notification was created, plus the exact Manila date and time.
+                      <time
+                        dateTime={String(n.createdAt)}
+                        title={formatManilaDateTime(String(n.createdAt))}
+                        className="flex shrink-0 flex-col items-end text-right"
+                      >
+                        <span className="flex items-center gap-1 whitespace-nowrap text-xs text-[#75808b] dark:text-slate-300">
+                          <Clock className="h-3 w-3" />
+                          {formatApiTimeAgo(String(n.createdAt), now)}
+                        </span>
+                        <span className="mt-0.5 whitespace-nowrap text-[11px] text-[#8b95a0] dark:text-slate-500">
+                          {formatManilaDateTime(String(n.createdAt))}
+                        </span>
+                      </time>
+                    ) : null}
                   </div>
                   <p className="mt-1 text-sm leading-relaxed text-[#616a74] dark:text-slate-300">
                     {String(n.message || '')}

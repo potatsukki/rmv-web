@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
-import { LIVE_QUERY_OPTIONS } from '@/lib/query-options';
+import { LIVE_LIST_POLL_OPTIONS, LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingFees, FabricationStaffWorkload } from '@/lib/types';
 
 // Kept outside ['projects'] so project cache updates never touch the staff list.
@@ -41,7 +41,8 @@ function syncProjectCaches(qc: ReturnType<typeof useQueryClient>, project: Proje
   );
 }
 
-export function useProjects(params?: Record<string, string>) {
+/** `live`: the list page itself, which also re-checks every 30 s while the tab is visible. */
+export function useProjects(params?: Record<string, string>, options: { live?: boolean } = {}) {
   return useQuery({
     queryKey: KEYS.list(params),
     queryFn: async () => {
@@ -51,7 +52,7 @@ export function useProjects(params?: Record<string, string>) {
       return data.data;
     },
     // Project stages change from other users' screens (engineer costing, customer approval).
-    ...LIVE_QUERY_OPTIONS,
+    ...(options.live ? LIVE_LIST_POLL_OPTIONS : LIVE_QUERY_OPTIONS),
   });
 }
 
@@ -216,6 +217,7 @@ export function useAssignFabrication() {
       syncProjectCaches(qc, project);
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
+      qc.invalidateQueries({ queryKey: ['fabrication', 'status', project._id] });
     },
   });
 }
@@ -362,6 +364,7 @@ export function useSelectProjectPaymentPlan() {
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: KEYS.detail(variables.id) });
       qc.invalidateQueries({ queryKey: ['payment-plans'] });
+      qc.invalidateQueries({ queryKey: ['fabrication', 'status', variables.id] });
     },
   });
 }

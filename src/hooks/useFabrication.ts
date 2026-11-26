@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 import type { ApiResponse, FabricationUpdate } from '@/lib/types';
 
 const KEYS = {
@@ -73,6 +74,7 @@ interface FabricationStatusResponse {
   /** crewRequired: on-site installation needs RMV's crew; shop delivery (third-party courier) needs the date only. */
   crewGate?: { hasCrew: boolean; hasDeliveryDate?: boolean; gatedStatuses: string[]; crewRequired?: boolean };
   paymentGate?: {
+    readyToStart?: boolean;
     allPaid: boolean;
     unpaidCount: number;
     paidCount: number;
@@ -110,6 +112,7 @@ export function useFabricationStatus(projectId: string, enabled = true, projectI
       };
     },
     enabled: !!projectId && enabled,
+    ...LIVE_QUERY_OPTIONS,
   });
 }
 
@@ -137,8 +140,9 @@ export function useCreateFabricationUpdate() {
       const { data } = await api.post<ApiResponse<FabricationApiUpdate>>('/fabrication', body);
       return normalizeUpdate(data.data);
     },
-    onSuccess: () => {
+    onSuccess: (update) => {
       qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: ['projects', update.projectId] });
     },
   });
 }

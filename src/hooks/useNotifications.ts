@@ -1,9 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { LIVE_LIST_REFETCH_MS, whileTabVisible } from '@/lib/query-options';
 import type { ApiResponse, Notification, PaginatedResponse } from '@/lib/types';
-
-const getActiveTabRefetchInterval = (ms: number) =>
-  typeof document === 'undefined' || document.visibilityState === 'visible' ? ms : false;
 
 const KEYS = {
   all: ['notifications'] as const,
@@ -21,7 +19,8 @@ export function useNotifications(params?: Record<string, string>, enabled = true
       return data.data;
     },
     enabled,
-    refetchInterval: () => getActiveTabRefetchInterval(60_000),
+    // New notifications arrive over the socket; this is the fallback when it is disconnected.
+    refetchInterval: whileTabVisible(LIVE_LIST_REFETCH_MS),
   });
 }
 

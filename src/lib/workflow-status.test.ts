@@ -2,7 +2,13 @@ import { describe, expect, it } from 'vitest';
 
 import { AppointmentAttendanceStatus, AppointmentStatus, PaymentStageStatus } from './constants';
 import type { PaymentPlan, PaymentStage } from './types';
-import { isInitialPaymentVerified, resolveAppointmentWorkflowStatus, resolvePaymentWorkflowStatus, resolveProjectWorkflowStatus } from './workflow-status';
+import {
+  isInitialPaymentVerified,
+  resolveAppointmentStatusGroup,
+  resolveAppointmentWorkflowStatus,
+  resolvePaymentWorkflowStatus,
+  resolveProjectWorkflowStatus,
+} from './workflow-status';
 
 describe('project status', () => {
   it.each(['requested', 'confirmed', 'in_progress', 'completed', undefined])(
@@ -159,19 +165,33 @@ describe('resolveAppointmentWorkflowStatus', () => {
     });
   });
 
-  it('shows a no-show consultation as Completed with a No Show badge', () => {
-    expect(resolveAppointmentWorkflowStatus({
+  it('shows a no-show consultation as No Show only, without a Completed badge', () => {
+    const status = resolveAppointmentWorkflowStatus({
       status: AppointmentStatus.COMPLETED,
       attendanceStatus: AppointmentAttendanceStatus.NO_SHOW,
       type: 'office',
       ocularFeeStatus: undefined,
       ocularFeePaid: false,
+    });
+    expect(status).toMatchObject({ key: 'no_show', label: 'No Show', tone: 'gray', isTerminal: true });
+    expect(status.secondaryKey).toBeUndefined();
+    expect(status.secondaryLabel).toBeUndefined();
+    expect(resolveAppointmentStatusGroup({
+      status: AppointmentStatus.COMPLETED,
+      attendanceStatus: AppointmentAttendanceStatus.NO_SHOW,
+    })).toBe('no_show');
+  });
+
+  it('keeps a customer-declined consultation as Completed with a Customer Declined badge', () => {
+    expect(resolveAppointmentWorkflowStatus({
+      status: AppointmentStatus.COMPLETED,
+      attendanceStatus: AppointmentAttendanceStatus.CUSTOMER_DECLINED,
+      type: 'office',
     })).toMatchObject({
       key: 'appointment_completed',
       label: 'Completed',
-      isTerminal: true,
-      secondaryKey: 'no_show',
-      secondaryLabel: 'No Show',
+      secondaryKey: 'customer_declined',
+      secondaryLabel: 'Customer Declined',
     });
   });
 
@@ -223,12 +243,12 @@ describe('resolveAppointmentWorkflowStatus', () => {
     [AppointmentStatus.READY_FOR_OCULAR, 'sales-1', 'Completed', undefined],
     [AppointmentStatus.COMPLETED, 'sales-1', 'Completed', undefined],
     [AppointmentStatus.CANCELLED, undefined, 'Completed', undefined],
-    [AppointmentStatus.NO_SHOW, 'sales-1', 'Completed', 'No Show'],
+    [AppointmentStatus.NO_SHOW, 'sales-1', 'No Show', undefined],
   ])('shows %s (sales staff: %s) as %s', (status, salesStaffId, label, secondaryLabel) => {
     const result = resolveAppointmentWorkflowStatus({ status, salesStaffId });
     expect(result.label).toBe(label);
     expect(result.secondaryLabel).toBe(secondaryLabel);
-    expect(['Requested', 'Assigned', 'Appointed', 'Completed']).toContain(result.label);
+    expect(['Requested', 'Assigned', 'Appointed', 'Completed', 'No Show']).toContain(result.label);
   });
 
   it('keeps a ready-for-ocular consultation in the upcoming list', () => {

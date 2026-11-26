@@ -3,7 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { addDays, format, startOfDay, startOfMonth } from 'date-fns';
+import { addDays, format, parseISO, startOfMonth } from 'date-fns';
 import { ArrowLeft, ArrowRight, CheckCircle, CheckCircle2, Loader2, Calendar, FileText, Image as ImageIcon, Info, Wrench, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 
@@ -11,15 +11,16 @@ import { extractErrorMessage } from '@/lib/utils';
 import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
 import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
 import { buildAppointmentPurpose } from '@/lib/booking-intent';
+import { CUSTOMER_BOOKING_CUTOFF, getCustomerBookingWindow } from '@/lib/customer-booking-time';
+import { serverNow, serverNowMs } from '@/lib/server-clock';
 import { Calendar as CalendarUI } from '@/components/ui/calendar';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { ServiceTypePicker } from '@/components/shared/ServiceTypePicker';
-import { useAvailableSlots, useRequestAppointment } from '@/hooks/useAppointments';
-import { useAppointments } from '@/hooks/useAppointments';
+import { useAppointments, useAvailableSlots, useRequestAppointment } from '@/hooks/useAppointments';
 import { useHolidays } from '@/hooks/useConfig';
-import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS, MIN_BOOKING_LEAD_DAYS, MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER } from '@/lib/constants';
+import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS, MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import {
@@ -87,11 +88,19 @@ function formatSlotTime(slotCode: string): string {
   return `${displayHour}:00 ${ampm}`;
 }
 
-/** Return the earliest bookable date (MIN_BOOKING_LEAD_DAYS from today; every day of the week is open). */
-function getNextValidBookingDate(): Date {
-  return addDays(new Date(), MIN_BOOKING_LEAD_DAYS);
-}
+const DATE_TIME_STEP = 1;
+const MINUTE_MS = 60_000;
 
+function getBookingError(error: unknown) {
+  const apiError = (error as {
+    response?: { data?: { error?: { code?: string; details?: { serverTime?: number } } } };
+  })?.response?.data?.error;
+  if (apiError?.code !== 'BOOKING_TIME_UNAVAILABLE') return { code: apiError?.code };
+
+  const timestamp = apiError.details?.serverTime;
+  const unavailableAt = typeof timestamp === 'number' && Number.isFinite(timestamp) ? new Date(timestamp) : serverNow();
+  return { code: apiError.code, unavailableAt };
+}
 
 const bookingSchema = z.object({
   type: z.literal('office'),
@@ -107,7 +116,24 @@ export function BookAppointmentPage() {
   const selectedServiceTypeParam = searchParams.get('serviceType');
   const selectedServiceIdParam = searchParams.get('serviceId');
   const initialSelectedDesign = useMemo(() => getInitialSelectedDesign(searchParams), [searchParams]);
-  const initialBookingDate = useMemo(() => getNextValidBookingDate(), []);
+  const [bookingNow, setBookingNow] = useState(serverNow);
+  const bookingWindow = getCustomerBookingWindow(bookingNow);
+
+  useEffect(() => {
+    const refreshClock = () => setBookingNow(serverNow());
+    const nextMinute = (Math.floor(bookingNow.getTime() / MINUTE_MS) + 1) * MINUTE_MS;
+    const timer = window.setTimeout(refreshClock, Math.max(0, nextMinute - serverNowMs()));
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') refreshClock();
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('focus', refreshClock);
+    return () => {
+      window.clearTimeout(timer);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('focus', refreshClock);
+    };
+  }, [bookingNow]);
 
   const {
     watch,
@@ -117,14 +143,14 @@ export function BookAppointmentPage() {
     resolver: zodResolver(bookingSchema),
     defaultValues: {
       type: 'office',
-      date: format(initialBookingDate, 'yyyy-MM-dd'),
+      date: bookingWindow.earliestDate,
     },
   });
 
   const selectedDate = watch('date');
   const selectedSlot = watch('slotCode');
 
-  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(initialBookingDate));
+  const [visibleMonth, setVisibleMonth] = useState(() => startOfMonth(parseISO(bookingWindow.earliestDate)));
 
   // Load restrictions for the year the customer is currently viewing.
   const visibleYear = String(visibleMonth.getFullYear());
@@ -137,11 +163,14 @@ export function BookAppointmentPage() {
 
   /** True when a calendar day should be disabled (too soon or holiday). */
   const isDateDisabled = (day: Date): boolean => {
-    if (startOfDay(day) < startOfDay(addDays(new Date(), MIN_BOOKING_LEAD_DAYS))) return true;
     const dateStr = format(day, 'yyyy-MM-dd');
-    if (holidayDates.has(dateStr)) return true;
-    return false;
+    return dateStr < bookingWindow.earliestDate || holidayDates.has(dateStr);
   };
+  const dateUnavailable = selectedDate < bookingWindow.earliestDate || holidayDates.has(selectedDate);
+  const eligibleDate = dateUnavailable ? '' : selectedDate;
+  const selectedDateIsToday = selectedDate === bookingWindow.today;
+  const slotElapsed = Boolean(selectedDateIsToday && selectedSlot && selectedSlot <= bookingWindow.time);
+  const hasValidSchedule = Boolean(eligibleDate && selectedSlot && !slotElapsed);
 
   // Service types + notes state
   const [serviceTypes, setServiceTypes] = useState<string[]>(
@@ -239,10 +268,20 @@ export function BookAppointmentPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const { data: slotsData, isLoading: slotsLoading, isError: slotsIsError, error: slotsError } = useAvailableSlots(
-    selectedDate,
+  const {
+    data: slotsData, dataUpdatedAt: slotsUpdatedAt, isLoading: slotsLoading,
+    isError: slotsIsError, error: slotsError, refetch: refetchSlots,
+  } = useAvailableSlots(
+    eligibleDate,
     'office',
+    { flow: 'customer_booking' },
   );
+
+  useEffect(() => {
+    const { unavailableAt } = getBookingError(slotsError);
+    if (unavailableAt) setBookingNow(unavailableAt);
+    else if (slotsUpdatedAt) setBookingNow(serverNow());
+  }, [slotsError, slotsUpdatedAt]);
 
   const activeAppointmentsQuery = useAppointments();
 
@@ -257,6 +296,21 @@ export function BookAppointmentPage() {
   ];
 
   const [currentStep, setCurrentStep] = useState(0);
+
+  useEffect(() => {
+    if (!dateUnavailable && !slotElapsed) return;
+    if (dateUnavailable) {
+      let nextDay = parseISO(bookingWindow.earliestDate);
+      while (holidayDates.has(format(nextDay, 'yyyy-MM-dd'))) nextDay = addDays(nextDay, 1);
+      setValue('date', format(nextDay, 'yyyy-MM-dd'));
+      setVisibleMonth(startOfMonth(nextDay));
+    }
+    if (selectedSlot) {
+      setValue('slotCode', '');
+      setCurrentStep((step) => Math.min(step, DATE_TIME_STEP));
+    }
+  }, [bookingWindow.earliestDate, dateUnavailable, holidayDates, selectedSlot, setValue, slotElapsed]);
+
   // The customer's other appointment at the chosen time; shown until the date or time changes.
   const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
   const visibleConflict = conflictForSelection(scheduleConflict, selectedDate, selectedSlot);
@@ -287,14 +341,13 @@ export function BookAppointmentPage() {
       }
       return false;
     }
-    if (stepKey === 'date') return !!selectedDate && !!selectedSlot;
+    if (stepKey === 'date') return hasValidSchedule;
     if (stepKey === 'review') return true;
     return false;
   }, [
     currentStep,
     steps,
-    selectedDate,
-    selectedSlot,
+    hasValidSchedule,
     bookingMode,
     selectedDesigns,
     serviceTypes,
@@ -311,6 +364,7 @@ export function BookAppointmentPage() {
   };
 
   const onSubmit = async () => {
+    if (!hasValidSchedule) return;
     try {
       if (appointmentPurpose.length > 500) {
         toast.error('Shorten the additional notes so the appointment request stays within 500 characters.');
@@ -344,22 +398,27 @@ export function BookAppointmentPage() {
           : `/appointments/${result._id}`,
       );
     } catch (error: unknown) {
-      const apiError = (error as {
-        response?: { data?: { error?: { code?: string } } };
-      })?.response?.data?.error;
+      const { code, unavailableAt } = getBookingError(error);
 
       // Already holding the maximum number of active appointments: show them on the Appointments page.
-      if (apiError?.code === 'ACTIVE_APPOINTMENT_LIMIT') {
+      if (code === 'ACTIVE_APPOINTMENT_LIMIT') {
         toast.error(extractErrorMessage(error, 'Booking failed'), { duration: 6000 });
         navigate('/appointments');
         return;
+      }
+
+      if (unavailableAt) {
+        setBookingNow(unavailableAt);
+        setValue('slotCode', '');
+        setCurrentStep(DATE_TIME_STEP);
+        if (selectedDate >= getCustomerBookingWindow(unavailableAt).earliestDate) void refetchSlots();
       }
 
       // Another appointment of theirs is at this time: back to Date & Time, where the reason is shown.
       const conflict = getCustomerScheduleConflict(error);
       if (conflict) {
         setScheduleConflict(conflict);
-        setCurrentStep(steps.findIndex((step) => step.key === 'date'));
+        setCurrentStep(DATE_TIME_STEP);
       }
       toast.error(extractErrorMessage(error, 'Booking failed'));
     }
@@ -686,7 +745,7 @@ export function BookAppointmentPage() {
                   <div className="space-y-0.5 text-sm text-[#3a3a3e] dark:text-slate-300">
                     <p className="font-medium">Scheduling Rules</p>
                     <ul className="list-inside list-disc space-y-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
-                      <li>Appointments must be booked <span className="font-medium text-[#1d1d1f] dark:text-slate-100">at least {MIN_BOOKING_LEAD_DAYS} day{MIN_BOOKING_LEAD_DAYS === 1 ? '' : 's'}</span> in advance</li>
+                      <li>Same-day booking closes at <span className="font-medium text-[#1d1d1f] dark:text-slate-100">{formatSlotTime(CUSTOMER_BOOKING_CUTOFF)} Manila time</span>. After that, choose tomorrow or a later date.</li>
                       <li>Bookings are open <span className="font-medium text-[#1d1d1f] dark:text-slate-100">every day, including weekends</span> (holidays excluded)</li>
                       <li>You can hold <span className="font-medium text-[#1d1d1f] dark:text-slate-100">up to {MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER} active appointments</span>, each on a different date or time</li>
                     </ul>
@@ -695,7 +754,7 @@ export function BookAppointmentPage() {
                 <div className="flex justify-center">
                   <CalendarUI
                     mode="single"
-                    selected={selectedDate ? new Date(`${selectedDate}T00:00:00`) : undefined}
+                    selected={eligibleDate ? parseISO(eligibleDate) : undefined}
                     onSelect={(day) => {
                       if (!day) return;
                       const nextDate = format(day, 'yyyy-MM-dd');
@@ -705,13 +764,14 @@ export function BookAppointmentPage() {
                     month={visibleMonth}
                     onMonthChange={setVisibleMonth}
                     disabled={isDateDisabled}
-                    startMonth={startOfMonth(new Date())}
+                    today={parseISO(bookingWindow.today)}
+                    startMonth={startOfMonth(parseISO(bookingWindow.today))}
                     className="rounded-xl border border-[#c8c8cd]/50 dark:border-white/10 dark:bg-white/[0.02]"
                   />
                 </div>
-                {selectedDate && (
+                {eligibleDate && (
                   <p className="mt-3 text-center text-sm text-[#6e6e73] dark:text-slate-400">
-                    Selected: <span className="font-medium text-[#1d1d1f] dark:text-slate-100">{format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}</span>
+                    Selected: <span className="font-medium text-[#1d1d1f] dark:text-slate-100">{format(parseISO(eligibleDate), 'MMMM d, yyyy')}</span>
                   </p>
                 )}
                 {errors.date && <p className="text-sm text-red-500 mt-2">{errors.date.message}</p>}
@@ -722,13 +782,13 @@ export function BookAppointmentPage() {
               <CardHeader>
                 <CardTitle className="text-lg text-[#1d1d1f] dark:text-slate-100">Select a Time Slot</CardTitle>
                 <CardDescription className="text-[#6e6e73] dark:text-slate-400">
-                  {selectedDate
-                    ? `Showing slots for ${format(new Date(`${selectedDate}T00:00:00`), 'MMMM d, yyyy')}`
+                  {eligibleDate
+                    ? `Showing slots for ${format(parseISO(eligibleDate), 'MMMM d, yyyy')}`
                     : 'Select a date first'}
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                {slotsLoading ? (
+                {!eligibleDate ? null : slotsLoading ? (
                   <div className="flex items-center justify-center py-8">
                     <Loader2 className="h-6 w-6 animate-spin text-[#6e6e73] dark:text-slate-400" />
                   </div>
@@ -741,8 +801,8 @@ export function BookAppointmentPage() {
                   <div className="grid grid-cols-3 gap-3 sm:grid-cols-4">
                     {SLOT_CODES.map((slot) => {
                       const slotInfo = slotsData?.slots.find((entry) => entry.slotCode === slot);
-                      const available = slotInfo?.available ?? false;
-                      const blocked = (slotInfo as { blocked?: boolean })?.blocked ?? false;
+                      const elapsed = selectedDateIsToday && slot <= bookingWindow.time;
+                      const available = Boolean(slotInfo?.available && !elapsed);
                       const remaining = slotInfo?.remaining ?? 0;
 
                       return (
@@ -767,7 +827,7 @@ export function BookAppointmentPage() {
                             </p>
                           ) : (
                             <p className="mt-0.5 text-xs text-red-400">
-                              {blocked ? 'Blocked' : 'No staff available'}
+                              {elapsed ? 'Time passed' : slotInfo?.blocked ? 'Blocked' : 'No staff available'}
                             </p>
                           )}
                         </button>
@@ -887,7 +947,7 @@ export function BookAppointmentPage() {
               <Button
                 type="button"
                 onClick={onSubmit}
-                disabled={isPending || !selectedSlot}
+                disabled={isPending || !hasValidSchedule}
                 className={submitButtonClassName}
               >
                 {isPending ? (

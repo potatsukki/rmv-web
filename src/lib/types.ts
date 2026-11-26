@@ -193,6 +193,33 @@ export interface SelectedDesignTemplate {
   serviceType: string;
 }
 
+/**
+ * An ocular visit's schedule, computed by the server (scheduling/travel-time.ts): the web shows
+ * these times as they are and never recomputes travel time.
+ */
+export interface OcularSchedule {
+  travelMinutes: number;
+  roundedTravelMinutes: number;
+  /** "1 hr" */
+  travelLabel: string;
+  distanceKm: number | null;
+  /** Traffic allowance per way (0 near the shop). */
+  trafficMinutes: number;
+  nearShop: boolean;
+  prepMinutes: number;
+  siteMinutes: number;
+  /** "7:45 AM": start preparing at the shop. */
+  prepFrom: string;
+  /** "8:00 AM" */
+  leaveAt: string;
+  onSiteStart: string;
+  onSiteEnd: string;
+  /** "1:30 PM": back at the shop. */
+  backAt: string;
+  /** Back after 5:00 PM: a warning, not a block. */
+  endsAfterWorkday: boolean;
+}
+
 export interface Appointment {
   _id: string;
   appointmentNumber?: string;
@@ -271,6 +298,8 @@ export interface Appointment {
   distanceKm?: number;
   /** Estimated one-way drive from the RMV shop to the site, in minutes. */
   travelDurationMinutes?: number;
+  /** Ocular visit: prep / leave / on-site / back times from the server (null without a site pin). */
+  ocularSchedule?: OcularSchedule | null;
   ocularFee?: number;
   ocularFeeBreakdown?: {
     label: string;

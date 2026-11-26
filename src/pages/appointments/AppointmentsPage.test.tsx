@@ -55,16 +55,48 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('Ready for Ocular');
   });
 
-  it.each([Role.CUSTOMER, Role.SALES_STAFF, Role.APPOINTMENT_AGENT])('offers only the four status filters to %s', (role) => {
+  it.each([Role.CUSTOMER, Role.SALES_STAFF, Role.APPOINTMENT_AGENT])('offers the five status filters to %s', (role) => {
     auth.user.roles = [role];
     query.data.items = [];
 
     const html = renderToStaticMarkup(<MemoryRouter><AppointmentsPage /></MemoryRouter>);
 
-    for (const label of ['All', 'Requested', 'Assigned', 'Appointed', 'Completed']) {
-      expect(html).toContain(`>${label}<`);
+    for (const label of ['All', 'Requested', 'Assigned', 'Appointed', 'Completed', 'No Show']) {
+      expect(html).toContain(`>${label}</button>`);
     }
     expect(html).not.toContain('>Cancelled<');
-    expect(html).not.toContain('>No Show<');
+  });
+
+  it.each([Role.CUSTOMER, Role.SALES_STAFF])('shows a no-show consultation as No Show only, without Completed, for %s', (role) => {
+    const appointment: Appointment = {
+      _id: 'appointment-3',
+      appointmentNumber: 'APT-20261125-0003',
+      customerId: 'customer-1',
+      customerName: 'Kiryu Kazuma',
+      type: 'office',
+      status: AppointmentStatus.COMPLETED,
+      attendanceStatus: AppointmentAttendanceStatus.NO_SHOW,
+      date: '2026-11-25',
+      slotCode: '09:00',
+      rescheduleCount: 0,
+      maxReschedules: 3,
+      createdAt: '2026-11-20T02:00:00.000Z',
+      updatedAt: '2026-11-25T01:15:00.000Z',
+    };
+    auth.user.roles = [role];
+    query.data.items = role === Role.CUSTOMER ? [appointment] : [{
+      appointment,
+      segment: 'recent',
+      actions: {},
+      sampleProjects: [],
+    }];
+
+    const html = renderToStaticMarkup(<MemoryRouter><AppointmentsPage /></MemoryRouter>);
+
+    expect(html).toContain('APT-20261125-0003');
+    // Mobile and desktop badges say No Show; the only "Completed" left is the filter chip.
+    expect((html.match(/>No Show<\/span>/g) || []).length).toBeGreaterThanOrEqual(2);
+    expect(html).not.toContain('>Completed</span>');
+    expect(html).toContain('>Completed</button>');
   });
 });

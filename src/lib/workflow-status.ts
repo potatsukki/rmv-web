@@ -29,7 +29,7 @@ export interface WorkflowStatus {
   stage: WorkflowStatusStage;
   isTerminal: boolean;
   secondaryLabel?: string;
-  /** Status key for an extra badge, e.g. the no-show outcome of a completed consultation. */
+  /** Status key for an extra badge, e.g. the Customer Declined outcome of a completed consultation. */
   secondaryKey?: string;
 }
 
@@ -47,8 +47,8 @@ type AppointmentWorkflowInput = {
   slotCode?: string;
 };
 
-/** The four appointment statuses the UI shows; the database keeps the detailed ones. */
-export const APPOINTMENT_STATUS_GROUPS = ['requested', 'assigned', 'confirmed', 'completed'] as const;
+/** The five appointment statuses the UI shows; the database keeps the detailed ones. */
+export const APPOINTMENT_STATUS_GROUPS = ['requested', 'assigned', 'confirmed', 'completed', 'no_show'] as const;
 export type AppointmentStatusGroup = (typeof APPOINTMENT_STATUS_GROUPS)[number];
 
 const CONFIRMED_APPOINTMENT_STATUSES = new Set<string>([
@@ -134,17 +134,18 @@ const STATUS_GROUP_BY_KEY: Record<string, AppointmentStatusGroup> = {
   appointment_assigned: 'assigned',
   appointment_confirmed: 'confirmed',
   appointment_completed: 'completed',
+  no_show: 'no_show',
 };
 
-/** Which of the four displayed statuses an appointment falls under. */
+/** Which of the five displayed statuses an appointment falls under. */
 export function resolveAppointmentStatusGroup(appointment: AppointmentWorkflowInput): AppointmentStatusGroup {
   return STATUS_GROUP_BY_KEY[resolveAppointmentWorkflowStatus(appointment).key] ?? 'requested';
 }
 
 /**
- * Every role sees four appointment statuses: Requested, Assigned, Appointed, Completed.
+ * Every role sees five appointment statuses: Requested, Assigned, Appointed, Completed, No Show.
  * Visit steps (preparing, on the way, in progress) show as Appointed; cancelled closes as plain
- * Completed, no-show as Completed with an outcome badge. Keep in sync with the server's status groups.
+ * Completed; a no-show shows only No Show (no Completed badge). Keep in sync with the server's status groups.
  */
 export function resolveAppointmentWorkflowStatus(
   appointment: AppointmentWorkflowInput,
@@ -154,18 +155,22 @@ export function resolveAppointmentWorkflowStatus(
   const completed = (extra: Partial<WorkflowStatus> = {}): WorkflowStatus => ({
     key: 'appointment_completed', label: 'Completed', tone: 'green', stage: 'completed', isTerminal: true, ...extra,
   });
+  const noShow = (): WorkflowStatus => ({
+    key: 'no_show', label: 'No Show', tone: 'gray', stage: 'completed', isTerminal: true,
+  });
 
   // Cancelled appointments show "Completed" only (QA 11/20: no separate "Cancelled" badge).
   if (status === AppointmentStatus.CANCELLED) {
     return completed();
   }
+  // Ocular visits close as no_show; office consultations close as completed with attendance no_show.
   if (status === AppointmentStatus.NO_SHOW) {
-    return completed({ secondaryKey: 'no_show', secondaryLabel: 'No Show' });
+    return noShow();
   }
   if (status === AppointmentStatus.COMPLETED) {
     const attendance = String(appointment.attendanceStatus || '');
     if (attendance === AppointmentAttendanceStatus.NO_SHOW) {
-      return completed({ secondaryKey: attendance, secondaryLabel: 'No Show' });
+      return noShow();
     }
     if (attendance === AppointmentAttendanceStatus.CUSTOMER_DECLINED) {
       return completed({ secondaryKey: attendance, secondaryLabel: 'Customer Declined' });

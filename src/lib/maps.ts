@@ -1,5 +1,5 @@
 import { api } from './api';
-import type { ApiResponse } from './types';
+import type { ApiResponse, OcularSchedule } from './types';
 
 export interface MapPoint {
   lat: number;
@@ -18,6 +18,10 @@ export interface OcularFeePreview {
     distanceKm: number;
     durationMinutes: number;
   };
+  /** The rounded drive time, from the server: "1 hr". */
+  travelLabel?: string;
+  /** The ocular schedule for each slot code ("10:00"), from the server. */
+  ocularSchedules?: Record<string, OcularSchedule>;
   fee: {
     label: string;
     isWithinNCR: boolean;
