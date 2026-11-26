@@ -11,7 +11,7 @@ import type {
 } from '@/lib/types';
 import type { SlotCode } from '@/lib/constants';
 import { extractItems } from '@/lib/utils';
-import { LIVE_QUERY_OPTIONS } from '@/lib/query-options';
+import { LIVE_LIST_POLL_OPTIONS, LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 import { UNPAID_OCULAR_FEE_STATUSES } from '@/lib/onsite-cash';
 
 // ── Keys ──
@@ -57,7 +57,8 @@ export function useUpdateAppointmentSalesNotes() {
 // list from before an appointment moved into it.
 const LIVE_LIST_OPTIONS = LIVE_QUERY_OPTIONS;
 
-export function useAppointments(params?: Record<string, string>, enabled = true) {
+/** `live`: a list page people keep open, which also re-checks every 30 s while the tab is visible. */
+export function useAppointments(params?: Record<string, string>, enabled = true, options: { live?: boolean } = {}) {
   return useQuery({
     queryKey: KEYS.list(params),
     queryFn: async () => {
@@ -68,11 +69,11 @@ export function useAppointments(params?: Record<string, string>, enabled = true)
       return data.data;
     },
     enabled,
-    ...LIVE_LIST_OPTIONS,
+    ...(options.live ? LIVE_LIST_POLL_OPTIONS : LIVE_LIST_OPTIONS),
   });
 }
 
-export function useAppointmentQueue(params?: Record<string, string>, enabled = true) {
+export function useAppointmentQueue(params?: Record<string, string>, enabled = true, options: { live?: boolean } = {}) {
   return useQuery({
     queryKey: KEYS.queue(params),
     queryFn: async () => {
@@ -83,7 +84,7 @@ export function useAppointmentQueue(params?: Record<string, string>, enabled = t
       return data.data;
     },
     enabled,
-    ...LIVE_LIST_OPTIONS,
+    ...(options.live ? LIVE_LIST_POLL_OPTIONS : LIVE_LIST_OPTIONS),
   });
 }
 
@@ -114,25 +115,31 @@ export function useAppointment(id: string) {
   });
 }
 
-/** `salesStaffId` (staff only) shows just that sales staff member's free days. */
+interface AvailableSlotOptions {
+  /** Staff only: show just this sales staff member's availability. */
+  salesStaffId?: string;
+  /** Ocular only: the pinned site's route, so only the visit's busy time must be free (else the whole day). */
+  route?: { travelMinutes?: number | null; distanceKm?: number | null };
+  flow?: 'customer_booking';
+}
+
 export function useAvailableSlots(
   date: string,
   type: string,
-  salesStaffId?: string,
-  /** Ocular only: the pinned site's route, so only the visit's busy time must be free (else the whole day). */
-  route?: { travelMinutes?: number | null; distanceKm?: number | null },
+  { salesStaffId, route, flow }: AvailableSlotOptions = {},
 ) {
   const travelMinutes = route?.travelMinutes ?? undefined;
   const distanceKm = route?.distanceKm ?? undefined;
   return useQuery({
-    queryKey: [...KEYS.slots(date, type), salesStaffId ?? '', travelMinutes ?? '', distanceKm ?? ''],
+    queryKey: [...KEYS.slots(date, type), salesStaffId ?? '', travelMinutes ?? '', distanceKm ?? '', flow ?? ''],
     queryFn: async () => {
       const { data } = await api.get<
-        ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number }[] }>
+        ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number; blocked: boolean }[] }>
       >('/appointments/slots', {
         params: {
           date,
           type,
+          ...(flow ? { flow } : {}),
           ...(salesStaffId ? { salesStaffId } : {}),
           ...(travelMinutes != null ? { travelMinutes: Math.ceil(travelMinutes), ...(distanceKm != null ? { distanceKm } : {}) } : {}),
         },

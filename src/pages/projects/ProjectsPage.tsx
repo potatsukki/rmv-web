@@ -141,7 +141,8 @@ export function ProjectsPage() {
     setSearchParams(next, { replace: true });
   };
 
-  const { data, isLoading, isError, refetch } = useProjects(params);
+  // Live: re-checks every 30 s while the tab is visible, so other users' changes show without F5.
+  const { data, isLoading, isError, refetch } = useProjects(params, { live: true });
   const showOcularVisits = Boolean(isCustomer) && !search && (statusFilter === '' || statusFilter === 'pending_ocular');
   const ocularVisitsQuery = useAppointments({
     type: 'ocular',
@@ -149,7 +150,7 @@ export function ProjectsPage() {
     limit: '100',
     sortBy: 'date',
     sortOrder: 'desc',
-  }, showOcularVisits);
+  }, showOcularVisits, { live: true });
 
   if (isError) return <PageError onRetry={refetch} />;
 

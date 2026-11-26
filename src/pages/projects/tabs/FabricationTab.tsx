@@ -324,10 +324,12 @@ export function FabricationTab({
   const updateMutation = useUpdateFabricationUpdate(projectId);
   const deleteMutation = useDeleteFabricationUpdate(projectId);
   const confirmInstallationMutation = useConfirmInstallation();
-  const isProjectInFabrication = projectStatus === 'fabrication';
+  const paymentReadyToStart = fabricationStatus?.paymentGate?.readyToStart === true;
+  const isProjectInFabrication = projectStatus === 'fabrication' || paymentReadyToStart;
   const isWaitingForInitialPayment = Boolean(
     project?.fabricationLeadId
-    && projectStatus === 'payment_pending',
+    && projectStatus === 'payment_pending'
+    && !paymentReadyToStart,
   );
 
   const canAddUpdate = isProjectInFabrication && canManageUpdates;

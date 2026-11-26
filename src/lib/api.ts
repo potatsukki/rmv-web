@@ -7,6 +7,7 @@ import {
   getStoredRefreshToken,
   setAuthRedirectReason,
 } from '@/lib/auth-session';
+import { syncServerClock } from '@/lib/server-clock';
 
 const API_BASE = '/api/v1';
 
@@ -145,10 +146,14 @@ api.interceptors.request.use(async (config) => {
   return config;
 });
 
-// Response interceptor: handle 401 / 403
+// Response interceptor: keep the server clock in sync, then handle 401 / 403
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    syncServerClock(response.headers?.date);
+    return response;
+  },
   async (error) => {
+    syncServerClock(error.response?.headers?.date);
     const originalRequest = error.config as RetryableRequestConfig | undefined;
     const status = error.response?.status;
     const requestUrl = originalRequest?.url ?? '';

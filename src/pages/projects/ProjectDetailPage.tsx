@@ -1492,7 +1492,7 @@ export function ProjectDetailPage() {
               : ocularAppointment.data.salesStaffName,
             date: ocularAppointment.data.date,
             slotCode: ocularAppointment.data.slotCode,
-            travelDurationMinutes: ocularAppointment.data.travelDurationMinutes,
+            travelLabel: ocularAppointment.data.ocularSchedule?.travelLabel,
             distanceKm: ocularAppointment.data.distanceKm,
           } : undefined}
         />

@@ -307,11 +307,25 @@ export function AppLayout() {
   addNotificationRef.current = addNotification;
   const queryClientRef = useRef(queryClient);
   queryClientRef.current = queryClient;
+  // Set while the socket is down (kept across token refreshes): notifications sent meanwhile never arrive.
+  const socketMissedEventsRef = useRef(false);
 
   useEffect(() => {
     if (!user) return;
     const sock = connectSocket(accessToken);
     if (!sock) return;
+
+    const handleConnectionLost = () => {
+      socketMissedEventsRef.current = true;
+    };
+    // Back online: reload the live data at once instead of waiting for the next 30 s poll.
+    const handleConnected = () => {
+      if (!socketMissedEventsRef.current) return;
+      socketMissedEventsRef.current = false;
+      for (const queryKey of [['notifications'], ['appointments'], ['projects'], ['reports', 'dashboard']]) {
+        queryClientRef.current.invalidateQueries({ queryKey });
+      }
+    };
 
     const handleNewNotification = (n: import('@/lib/types').Notification) => {
       addNotificationRef.current(n);
@@ -354,10 +368,16 @@ export function AppLayout() {
 
     sock.on('notification:new', handleNewNotification);
     sock.on('payments:queue-updated', handlePaymentsQueueUpdate);
+    sock.on('disconnect', handleConnectionLost);
+    sock.on('connect_error', handleConnectionLost);
+    sock.on('connect', handleConnected);
 
     return () => {
       sock.off('notification:new', handleNewNotification);
       sock.off('payments:queue-updated', handlePaymentsQueueUpdate);
+      sock.off('disconnect', handleConnectionLost);
+      sock.off('connect_error', handleConnectionLost);
+      sock.off('connect', handleConnected);
     };
   }, [user, accessToken]);
 

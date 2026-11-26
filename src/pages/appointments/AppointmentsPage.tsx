@@ -28,20 +28,22 @@ import { OcularVisitsList } from '@/pages/appointments/OcularVisitsList';
 import { APPOINTMENT_STATUS_GROUPS, resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
-// Every role filters by the same four statuses the badges show.
+// Every role filters by the same five statuses the badges show.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
   { label: 'Requested', value: 'requested' },
   { label: 'Assigned', value: 'assigned' },
   { label: 'Appointed', value: 'confirmed' },
   { label: 'Completed', value: 'completed' },
+  { label: 'No Show', value: 'no_show' },
 ];
 
 // Older links (e.g. from Reports) pass a raw status; map it to the group that shows it.
+// "no_show" is a group of its own, so it is kept by the first check.
 function initialStatusGroup(value: string | null): string | null {
   if (!value) return null;
   if ((APPOINTMENT_STATUS_GROUPS as readonly string[]).includes(value)) return value;
-  if (['cancelled', 'no_show', 'ready_for_ocular'].includes(value)) return 'completed';
+  if (['cancelled', 'ready_for_ocular'].includes(value)) return 'completed';
   return null;
 }
 
@@ -246,8 +248,9 @@ export function AppointmentsPage() {
     params.sortOrder = 'desc';
   }
 
-  const listQuery = useAppointments(params, !isQueueRole);
-  const queueQuery = useAppointmentQueue(params, isQueueRole);
+  // Live: re-checks every 30 s while the tab is visible (e.g. the automatic No Show at slot + 15 min).
+  const listQuery = useAppointments(params, !isQueueRole, { live: true });
+  const queueQuery = useAppointmentQueue(params, isQueueRole, { live: true });
 
   const activeQuery = isQueueRole ? queueQuery : listQuery;
   const { isLoading, isError, isFetching, refetch } = activeQuery;

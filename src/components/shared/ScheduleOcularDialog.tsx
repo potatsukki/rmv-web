@@ -15,14 +15,7 @@ import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/l
 import { cn, extractErrorMessage } from '@/lib/utils';
 import { conflictForSelection, getCustomerScheduleConflict, type CustomerScheduleConflict } from '@/lib/schedule-conflict';
 import { ScheduleConflictAlert } from '@/components/shared/ScheduleConflictAlert';
-import {
-  MIN_BOOKING_LEAD_DAYS,
-  OCULAR_MIN_DAYS_AFTER_CONSULTATION,
-  OCULAR_NEAR_SHOP_KM,
-  OCULAR_SITE_MINUTES,
-  OCULAR_TRAFFIC_BUFFER_MINUTES,
-  OCULAR_TRAVEL_STEP_MINUTES,
-} from '@/lib/constants';
+import { MIN_BOOKING_LEAD_DAYS, OCULAR_MIN_DAYS_AFTER_CONSULTATION } from '@/lib/constants';
 
 const LazyLocationPicker = lazy(() =>
   import('@/components/maps/LocationPicker').then((module) => ({ default: module.LocationPicker })),
@@ -43,58 +36,10 @@ export function formatTravelDuration(minutes: number) {
   return rest ? `${hours} hr ${rest} min` : `${hours} hr`;
 }
 
-/** Drive time rounded up to the next 30 min (48 → 60, 70 → 90); 0 stays 0. Same rule as the server. */
-export function roundTravelMinutes(travelMinutes: number) {
-  return Math.ceil(Math.max(0, travelMinutes) / OCULAR_TRAVEL_STEP_MINUTES) * OCULAR_TRAVEL_STEP_MINUTES;
-}
-
-/** The ocular drive time as shown to staff: "30 min", "1 hr", "1 hr 30 min". */
-export function ocularTravelLabel(travelMinutes: number) {
-  return formatTravelDuration(roundTravelMinutes(travelMinutes));
-}
-
-/** True when the site is close enough to the shop to skip the traffic allowance. */
-export function isNearShop(distanceKm?: number | null) {
-  return typeof distanceKm === 'number' && Number.isFinite(distanceKm) && distanceKm <= OCULAR_NEAR_SHOP_KM;
-}
-
-/** One-way trip to the site: rounded drive + the traffic allowance (none for a site near the shop); same rule as the server. */
-export function ocularLegMinutes(travelMinutes: number, distanceKm?: number | null) {
-  return roundTravelMinutes(travelMinutes) + (isNearShop(distanceKm) ? 0 : OCULAR_TRAFFIC_BUFFER_MINUTES);
-}
-
-function slotMinutes(slotCode: string) {
-  const [hour = 0, minute = 0] = slotCode.split(':').map(Number);
-  return hour * 60 + minute;
-}
-
-function formatMinutes(totalMinutes: number) {
-  const minutes = Math.min(Math.max(0, Math.round(totalMinutes)), 24 * 60 - 1);
-  return formatSlotTime(`${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`);
-}
-
-/** Latest time to leave the shop to reach the site by the slot's start, traffic included (never before midnight). */
-export function departureTime(slotCode: string, travelMinutes: number, distanceKm?: number | null) {
-  return formatMinutes(slotMinutes(slotCode) - ocularLegMinutes(travelMinutes, distanceKm));
-}
-
-/** When the time on site ends (slot + 1.5 hr). */
-export function ocularVisitEnd(slotCode: string) {
-  return formatMinutes(slotMinutes(slotCode) + OCULAR_SITE_MINUTES);
-}
-
-/** Minutes of the day the staff is back at the shop: slot + time on site + the trip back, traffic included. */
-export function returnMinutes(slotCode: string, travelMinutes: number, distanceKm?: number | null) {
-  return slotMinutes(slotCode) + OCULAR_SITE_MINUTES + ocularLegMinutes(travelMinutes, distanceKm);
-}
-
-/** When the staff is back at the shop, traffic included. */
-export function returnTime(slotCode: string, travelMinutes: number, distanceKm?: number | null) {
-  return formatMinutes(returnMinutes(slotCode, travelMinutes, distanceKm));
-}
-
-/** End of the last slot (5:00 PM): getting back later than this is shown as a warning. */
-const WORKDAY_END_MINUTES = 17 * 60;
+/*
+ * Travel time, prep, leave and back times are NOT computed here: the server sends them
+ * (OcularSchedule from scheduling/travel-time.ts) so every screen and every availability check agree.
+ */
 
 /** Today's date (yyyy-MM-dd) in Asia/Manila, whatever the browser's time zone. */
 function manilaToday(now: Date = new Date()) {
@@ -159,11 +104,11 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
   // The customer's own appointment at the chosen time; shown until the date or time changes.
   const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
   const visibleConflict = conflictForSelection(scheduleConflict, date, slotCode);
-  // The pinned site's route: with it, staff are only busy from leaving the shop until back
+  // The pinned site's route: with it, staff are only busy from preparing at the shop until back
   // (travel + traffic allowance + 1.5 hr on site). Before a pin, an ocular visit holds the whole day.
   const route = fee ? { travelMinutes: Math.ceil(fee.route.durationMinutes), distanceKm: fee.route.distanceKm } : undefined;
   // A time is offered when any sales staff member is free; the list below shows who.
-  const slots = useAvailableSlots(open ? date : '', 'ocular', undefined, route);
+  const slots = useAvailableSlots(open ? date : '', 'ocular', { route });
   const staff = useQuery({
     queryKey: ['users', 'sales-staff', 'ocular', date, slotCode, route?.travelMinutes ?? '', route?.distanceKm ?? ''],
     // Anyone with an appointment during the visit's busy time is disabled with the reason.
@@ -173,6 +118,9 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
   });
   const staffList = staff.data;
   const selectedStaff = staffList?.find((member) => member._id === selectedStaffId);
+  // The server's schedule for the picked time (prep, leave, measuring, back), and any one of them for the traffic note.
+  const selectedSchedule = slotCode ? fee?.ocularSchedules?.[slotCode] : undefined;
+  const anySchedule = fee?.ocularSchedules ? Object.values(fee.ocularSchedules)[0] : undefined;
 
   // Keep the chosen person while they stay free; otherwise fall back to the project's own staff.
   useEffect(() => {
@@ -297,7 +245,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
               <p className="text-xs text-destructive">
                 No sales staff is free for an ocular visit on this date.{' '}
                 {route
-                  ? 'Each time needs the staff free from leaving the shop until back (travel, traffic allowance and 1.5 hr on site), so choose another date.'
+                  ? 'Each time needs the staff free from preparing at the shop until back (15 min prep, travel, traffic allowance and 1.5 hr on site), so choose another date.'
                   : 'Until the site is pinned, an ocular visit needs a staff member’s whole day. Pin the site below to see more times, or choose another date.'}
               </p>
             )}
@@ -308,7 +256,7 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
             <div>
               <Label id="schedule-ocular-staff-label">Ocular Staff</Label>
               <p className="mt-1 text-xs text-muted-foreground">
-                Who will go to the project site. The project stays with its own sales staff. The visit keeps them busy from leaving the shop until back (travel, traffic allowance and 1.5 hr on site), so anyone with an appointment in that time can&apos;t take it; other times that day stay open.
+                Who will go to the project site. The project stays with its own sales staff. The visit keeps them busy from preparing at the shop until back (15 min prep, travel, traffic allowance and 1.5 hr on site), so anyone with an appointment in that time can&apos;t take it; other times that day stay open.
                 {!route && ' Pin the site below to see who is free at this time.'}
               </p>
             </div>
@@ -391,30 +339,33 @@ export function ScheduleOcularDialog({ projectId, open, onOpenChange, consultati
                 <div className="rounded-lg border bg-background p-3 text-sm">
                   <p className="flex items-center gap-2 font-semibold">
                     <Car className="h-4 w-4 shrink-0" aria-hidden="true" />
-                    Travel time: ~{ocularTravelLabel(fee.route.durationMinutes)} from the RMV shop ({fee.route.distanceKm.toFixed(1)} km)
+                    Travel time: ~{fee.travelLabel ?? formatTravelDuration(fee.route.durationMinutes)} from the RMV shop ({fee.route.distanceKm.toFixed(1)} km)
                   </p>
-                  {slotCode && (
+                  {selectedSchedule && (
                     <>
                       <p className="mt-2 text-xs font-medium">
                         {selectedStaff ? `${selectedStaff.firstName} ${selectedStaff.lastName}` : 'The ocular staff'}&apos;s schedule:
                       </p>
                       <ul className="mt-1 space-y-0.5 text-xs text-muted-foreground">
-                        <li>Leave the shop by {departureTime(slotCode, fee.route.durationMinutes, fee.route.distanceKm)}</li>
-                        <li>Measuring {formatSlotTime(slotCode)}–{ocularVisitEnd(slotCode)} ({OCULAR_SITE_MINUTES / 60} hr)</li>
-                        <li>Back at the shop around {returnTime(slotCode, fee.route.durationMinutes, fee.route.distanceKm)}</li>
+                        <li>Prepare at the shop from {selectedSchedule.prepFrom} ({selectedSchedule.prepMinutes} min)</li>
+                        <li>Leave the shop by {selectedSchedule.leaveAt}</li>
+                        <li>Measuring {selectedSchedule.onSiteStart}–{selectedSchedule.onSiteEnd} ({formatTravelDuration(selectedSchedule.siteMinutes)})</li>
+                        <li>Back at the shop around {selectedSchedule.backAt}</li>
                       </ul>
-                      {returnMinutes(slotCode, fee.route.durationMinutes, fee.route.distanceKm) > WORKDAY_END_MINUTES && (
+                      {selectedSchedule.endsAfterWorkday && (
                         <p className="mt-2 rounded-md border border-amber-300 bg-amber-50 px-2 py-1.5 text-xs text-amber-800 dark:border-amber-500/40 dark:bg-amber-500/10 dark:text-amber-200">
                           The staff gets back after 5:00 PM. Choose an earlier time if possible.
                         </p>
                       )}
                     </>
                   )}
-                  <p className="mt-2 text-xs text-muted-foreground">
-                    {isNearShop(fee.route.distanceKm)
-                      ? `Near the shop (within ${OCULAR_NEAR_SHOP_KM} km): no traffic allowance added.`
-                      : `Includes ${formatTravelDuration(OCULAR_TRAFFIC_BUFFER_MINUTES)} for traffic each way (sites more than ${OCULAR_NEAR_SHOP_KM} km from the shop).`}
-                  </p>
+                  {anySchedule && (
+                    <p className="mt-2 text-xs text-muted-foreground">
+                      {anySchedule.nearShop
+                        ? 'Near the shop: no traffic allowance added.'
+                        : `Includes ${formatTravelDuration(anySchedule.trafficMinutes)} for traffic each way (the route estimate has no live traffic).`}
+                    </p>
+                  )}
                 </div>
                 <div className="rounded-lg border bg-background p-3 text-sm">
                   <p className="font-semibold">

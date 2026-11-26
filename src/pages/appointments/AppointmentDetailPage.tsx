@@ -4,7 +4,7 @@ import { ArrowLeft, MapPin, Clock, User, Phone, CreditCard, CheckCircle2, Users,
 import toast from 'react-hot-toast';
 
 import { extractErrorMessage, cn } from '@/lib/utils';
-import { departureTime, ocularTravelLabel, ocularVisitEnd, returnTime } from '@/components/shared/ScheduleOcularDialog';
+import { serverNowMs } from '@/lib/server-clock';
 import { fetchOcularFeePreview, type MapPoint, type OcularFeePreview } from '@/lib/maps';
 import { consultationAttendanceLabel, consultationClosedAtLabel, getAutoNoShowNotice, getNextConsultationAttendanceBoundary, getNoShowAvailability } from '@/lib/consultation-attendance';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
@@ -251,25 +251,28 @@ export function AppointmentDetailPage() {
 
     const timer = window.setTimeout(() => {
       void refetch();
-    }, Math.max(0, boundary.getTime() - Date.now()) + 100);
+    }, Math.max(0, boundary.getTime() - serverNowMs()) + 100);
 
     return () => window.clearTimeout(timer);
   }, [appt, refetch]);
 
-  // Re-render when "Mark as No Show" opens (15 minutes after the scheduled time) so it enables itself,
-  // then reload once the server's every-minute automatic no-show has had time to run.
+  // Re-render when "Mark as No Show" opens (15 minutes after the scheduled time, server clock) so it
+  // enables itself, then reload once the server's automatic no-show has run: it runs at the start of
+  // each minute (+2 s), so 15 s later; the 75 s reload covers a server that runs it later in the minute.
   const [, setNoShowClock] = useState(0);
   const apptDate = appt?.date;
   const apptSlotCode = appt?.slotCode;
   useEffect(() => {
     const { opensAt } = getNoShowAvailability(apptDate, apptSlotCode);
-    const wait = opensAt ? opensAt.getTime() - Date.now() : -1;
+    const wait = opensAt ? opensAt.getTime() - serverNowMs() : -1;
     if (wait <= 0 || wait > 24 * 60 * 60 * 1000) return;
     const timer = window.setTimeout(() => setNoShowClock((tick) => tick + 1), wait + 100);
-    const reload = window.setTimeout(() => { void refetch(); }, wait + 75_000);
+    const reload = window.setTimeout(() => { void refetch(); }, wait + 15_000);
+    const lateReload = window.setTimeout(() => { void refetch(); }, wait + 75_000);
     return () => {
       window.clearTimeout(timer);
       window.clearTimeout(reload);
+      window.clearTimeout(lateReload);
     };
   }, [apptDate, apptSlotCode, refetch]);
 
@@ -1241,20 +1244,24 @@ export function AppointmentDetailPage() {
                 <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">Distance</p>
                 <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                   {appt.distanceKm.toFixed(1)} km
-                  {appt.travelDurationMinutes != null && ` · ~${ocularTravelLabel(appt.travelDurationMinutes)} drive from the RMV shop`}
+                  {appt.ocularSchedule && ` · ~${appt.ocularSchedule.travelLabel} drive from the RMV shop`}
                 </p>
               </div>
             )}
 
-            {/* The ocular visit's time: staff see their whole trip (traffic allowance included), customers the visit itself. */}
-            {isOcularAppointment && appt.slotCode && appt.travelDurationMinutes != null && (
+            {/* The ocular visit's time, computed by the server: staff see their whole trip (prep and
+                traffic allowance included), customers the visit itself. */}
+            {isOcularAppointment && appt.ocularSchedule && (
               <div>
                 <p className="text-[13px] font-medium text-[#3a3a3e] dark:text-slate-400">{isCustomer ? 'Site Visit' : 'Visit Schedule'}</p>
                 <p className="text-sm text-[#6e6e73] dark:text-slate-300">
                   {isCustomer
-                    ? `${formatSlotTime(appt.slotCode)}–${ocularVisitEnd(appt.slotCode)} (about 1.5 hr)`
-                    : `Leave ${departureTime(appt.slotCode, appt.travelDurationMinutes, appt.distanceKm)} · Measuring ${formatSlotTime(appt.slotCode)}–${ocularVisitEnd(appt.slotCode)} · Back ~${returnTime(appt.slotCode, appt.travelDurationMinutes, appt.distanceKm)}`}
+                    ? `${appt.ocularSchedule.onSiteStart}–${appt.ocularSchedule.onSiteEnd} (about 1.5 hr)`
+                    : `Prepare ${appt.ocularSchedule.prepFrom} · Leave ${appt.ocularSchedule.leaveAt} · Measuring ${appt.ocularSchedule.onSiteStart}–${appt.ocularSchedule.onSiteEnd} · Back ~${appt.ocularSchedule.backAt}`}
                 </p>
+                {!isCustomer && appt.ocularSchedule.endsAfterWorkday && (
+                  <p className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-300">The staff gets back after 5:00 PM.</p>
+                )}
               </div>
             )}
 

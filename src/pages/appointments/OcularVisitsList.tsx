@@ -26,6 +26,7 @@ const STATUS_FILTERS = [
   { label: 'Assigned', value: 'assigned' },
   { label: 'Appointed', value: 'confirmed' },
   { label: 'Completed', value: 'completed' },
+  { label: 'No Show', value: 'no_show' },
 ];
 
 const FEE_LABELS: Record<string, string> = {
@@ -76,7 +77,7 @@ export function OcularVisitsList({ showSalesStaff }: { showSalesStaff: boolean }
   if (statusFilter) params.statusGroup = statusFilter;
   if (debouncedSearch) params.search = debouncedSearch;
 
-  const { data, isLoading, isError, refetch } = useAppointments(params);
+  const { data, isLoading, isError, refetch } = useAppointments(params, true, { live: true });
   const oculars = data?.items ?? [];
 
   if (isError) return <PageError onRetry={refetch} />;

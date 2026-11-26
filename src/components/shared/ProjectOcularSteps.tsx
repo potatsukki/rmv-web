@@ -3,14 +3,15 @@ import { CalendarClock, CheckCircle2, FileSignature, Info, MapPin } from 'lucide
 
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { formatSlotTime, ocularTravelLabel, ScheduleOcularDialog } from '@/components/shared/ScheduleOcularDialog';
+import { formatSlotTime, ScheduleOcularDialog } from '@/components/shared/ScheduleOcularDialog';
 
 /** Who takes the scheduled ocular visit, when, and how far the site is from the shop. */
 export interface OcularVisitSummary {
   staffName?: string;
   date?: string;
   slotCode?: string;
-  travelDurationMinutes?: number;
+  /** The rounded drive time from the server's ocular schedule: "1 hr". */
+  travelLabel?: string;
   distanceKm?: number;
 }
 
@@ -99,8 +100,8 @@ export function ProjectOcularSteps({
             <div>
               <dt className="text-xs text-muted-foreground">Travel from RMV shop</dt>
               <dd className="font-medium">
-                {ocularVisit.travelDurationMinutes != null
-                  ? `~${ocularTravelLabel(ocularVisit.travelDurationMinutes)}${ocularVisit.distanceKm != null ? ` (${ocularVisit.distanceKm.toFixed(1)} km)` : ''}`
+                {ocularVisit.travelLabel
+                  ? `~${ocularVisit.travelLabel}${ocularVisit.distanceKm != null ? ` (${ocularVisit.distanceKm.toFixed(1)} km)` : ''}`
                   : ocularVisit.distanceKm != null ? `${ocularVisit.distanceKm.toFixed(1)} km` : '—'}
               </dd>
             </div>
