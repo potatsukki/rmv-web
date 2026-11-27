@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { useParams, useNavigate } from 'react-router';
+import { useParams, useNavigate, useLocation } from 'react-router';
 import {
   ArrowLeft,
   Send,
@@ -33,6 +33,7 @@ import {
   Environment,
 } from '@/lib/constants';
 import type { SiteConditions } from '@/lib/types';
+import { ConsultationAttendanceReminder } from './ConsultationAttendanceReminder';
 
 const DEFAULT_SITE_CONDITIONS: SiteConditions = {
   environment: Environment.INDOOR,
@@ -41,6 +42,7 @@ const DEFAULT_SITE_CONDITIONS: SiteConditions = {
 export function CustomerSiteDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const { state } = useLocation();
   const { data: appt, isLoading, isError, refetch } = useAppointment(id!);
 
   const submitMutation = useSubmitSiteDetails();
@@ -166,6 +168,8 @@ export function CustomerSiteDetailsPage() {
           </p>
         </div>
       </div>
+
+      {isOffice && state?.showConsultationAttendanceReminder === true && <ConsultationAttendanceReminder />}
 
       {/* Info banner for office */}
       {isOffice && (

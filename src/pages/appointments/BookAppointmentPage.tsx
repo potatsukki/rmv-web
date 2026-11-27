@@ -399,10 +399,12 @@ export function BookAppointmentPage() {
 
       // The request is forwarded to the team; it is confirmed once a sales staff member is assigned.
       toast.success('Appointment request sent. Please wait for confirmation.');
+      window.scrollTo({ top: 0, behavior: 'instant' });
       navigate(
         bookingMode === 'custom'
           ? `/appointments/${result._id}/site-details`
           : `/appointments/${result._id}`,
+        { state: { showConsultationAttendanceReminder: true } },
       );
     } catch (error: unknown) {
       const { code, unavailableAt } = getBookingError(error);

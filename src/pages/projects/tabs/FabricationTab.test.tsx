@@ -125,6 +125,14 @@ describe('FabricationTab project site address', () => {
     expect(html).toContain('Step 4 of 8');
     expect(html).toContain('grid-cols-8');
   });
+
+  it.each([DeliveryType.ON_SITE_INSTALLATION, DeliveryType.SHOP_FABRICATED])('renders the Done marker green for %s', (deliveryType) => {
+    state.project.deliveryType = deliveryType;
+    state.fabricationStatus = { currentStatus: 'done', deliveryType, allowedTransitions: [], confirmationGateStatus: null };
+    const markerClasses = [...renderTab().matchAll(/<span class="relative z-10 flex h-12 w-12 items-center justify-center rounded-full border ([^"]+)"/g)];
+
+    expect(markerClasses.at(-1)?.[1]).toContain('bg-emerald-500/10');
+  });
 });
 
 describe('FabricationTab customer confirmation banners', () => {
