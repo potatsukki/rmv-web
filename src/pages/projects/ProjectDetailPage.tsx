@@ -40,6 +40,9 @@ import {
 } from '@/components/shared/FabricationStaffPicker';
 import { deliveryDateError, describeDeliverySchedule, formatDeliveryDay, manilaToday } from '@/lib/delivery-schedule';
 import {
+  autoAssignedLabel, canChangeFabricationTeam, canEditFabricationAssistants, fabricationTeamIds, fabricationTeamWaitingText, personName,
+} from '@/lib/fabrication-team';
+import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
 import { StatusBadge } from '@/components/shared/StatusBadge';
@@ -52,6 +55,7 @@ import {
   useAssignEngineers,
   useReassignProjectSales,
   useAssignFabrication,
+  useUpdateFabricationAssistants,
   useAssignDeliveryCrew,
   useFabricationStaffWorkload,
   useReviewInitialDesign,
@@ -599,6 +603,7 @@ export function ProjectDetailPage() {
   const updateProject = useUpdateProject();
   const reassignProjectSales = useReassignProjectSales();
   const assignFabrication = useAssignFabrication();
+  const updateFabricationAssistants = useUpdateFabricationAssistants();
   const assignDeliveryCrew = useAssignDeliveryCrew();
   const reviewInitialDesign = useReviewInitialDesign();
   const resubmitInitialDesign = useResubmitInitialDesign();
@@ -653,8 +658,10 @@ export function ProjectDetailPage() {
     return ALL_TABS;
   }, [isEngineer, isFabricationStaff, isCustomer]);
 
-  // ── Fabrication staff with their availability and active projects (engineer / admin only) ──
-  const fabWorkload = useFabricationStaffWorkload(Boolean(isEngineer || isAdmin));
+  // The project's own lead fabricator picks their assistants (the system assigns the lead only).
+  const isProjectFabricationLead = canEditFabricationAssistants(project, user?._id);
+  // ── Fabrication staff with their availability and active projects (engineer / admin / this lead) ──
+  const fabWorkload = useFabricationStaffWorkload(Boolean(isEngineer || isAdmin || isProjectFabricationLead));
 
   const [salesStaffList, setSalesStaffList] = useState<Array<{
     _id: string;
@@ -675,6 +682,9 @@ export function ProjectDetailPage() {
   const [fabLeadId, setFabLeadId] = useState('');
   const [fabAssistantIds, setFabAssistantIds] = useState<string[]>([]);
   const fabricationAssignFormRef = useRef<HTMLDivElement | null>(null);
+  // ── Lead's own assistants form ──
+  const [showAssistantsForm, setShowAssistantsForm] = useState(false);
+  const [assistantDraft, setAssistantDraft] = useState<string[]>([]);
   // ── Delivery / installation crew form state ──
   const [showCrewForm, setShowCrewForm] = useState(false);
   const [crewIds, setCrewIds] = useState<string[]>([]);
@@ -1138,6 +1148,7 @@ export function ProjectDetailPage() {
       toast.error('Team assignment unlocks after the customer approves the blueprint and costing.');
       return;
     }
+    const changingTeam = Boolean(fabricationTeamIds(project).leadId);
     try {
       await assignFabrication.mutateAsync({
         id: id!,
@@ -1145,9 +1156,11 @@ export function ProjectDetailPage() {
         fabricationAssistantIds: fabAssistantIds,
       });
       toast.success(
-        allRequiredInitialFabricationPaymentsVerified
-          ? 'Fabrication team assigned! They can now post fabrication updates.'
-          : 'Fabrication team assigned. Updates will unlock after the required downpayment or full payment is verified.',
+        changingTeam
+          ? 'Fabrication team updated.'
+          : allRequiredInitialFabricationPaymentsVerified
+            ? 'Fabrication team assigned! They can now post fabrication updates.'
+            : 'Fabrication team assigned. Updates will unlock after the required downpayment or full payment is verified.',
         { duration: 5000 },
       );
       setShowFabForm(false);
@@ -1197,6 +1210,40 @@ export function ProjectDetailPage() {
     setFabAssistantIds((prev) =>
       prev.includes(staffId) ? prev.filter((id) => id !== staffId) : [...prev, staffId],
     );
+  };
+
+  /** Engineer / admin: the assign form, pre-filled with the current team. */
+  const handleOpenChangeTeam = () => {
+    const team = fabricationTeamIds(project);
+    setFabLeadId(team.leadId);
+    setFabAssistantIds(team.assistantIds);
+    setShowFabForm(true);
+    requestAnimationFrame(() => {
+      fabricationAssignFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  };
+
+  /** Lead: their own assistants, starting from the current ones. */
+  const handleOpenAssistantsForm = () => {
+    setAssistantDraft(fabricationTeamIds(project).assistantIds);
+    setShowAssistantsForm(true);
+  };
+
+  const toggleAssistantDraft = (staffId: string) => {
+    setAssistantDraft((prev) =>
+      prev.includes(staffId) ? prev.filter((assistantId) => assistantId !== staffId) : [...prev, staffId],
+    );
+  };
+
+  const handleSaveAssistants = async () => {
+    try {
+      await updateFabricationAssistants.mutateAsync({ id: id!, fabricationAssistantIds: assistantDraft });
+      toast.success(assistantDraft.length > 0 ? 'Assistants saved.' : 'Assistants removed.');
+      setShowAssistantsForm(false);
+      refetch();
+    } catch (err) {
+      toast.error(extractErrorMessage(err, 'Failed to save the assistants'));
+    }
   };
 
   const toggleCrewMember = (staffId: string) => {
@@ -1285,6 +1332,13 @@ export function ProjectDetailPage() {
   if (isError || !project) return <PageError onRetry={refetch} />;
 
   const hasFabLead = project.fabricationLeadId && typeof project.fabricationLeadId !== 'string';
+  // Assigned engineer / admin: assign the team (or change it); the system may have picked the lead.
+  const canManageFabricationTeamForm = Boolean((isEngineer && isAssignedEngineer) || isAdmin);
+  const canChangeTeam = canChangeFabricationTeam(project, { isAssignedEngineer: Boolean(isEngineer && isAssignedEngineer), isAdmin: Boolean(isAdmin) });
+  const fabricationLeadName = personName(project.fabricationLeadId);
+  const fabricationAssistantNames = (project.fabricationAssistantIds || []).map(personName).filter(Boolean);
+  const fabricationAutoAssignedText = autoAssignedLabel(project.fabricationAutoAssignedAt);
+  const fabricationLeadIdValue = fabricationTeamIds(project).leadId;
   const deliveryCrew = (project.deliveryCrewIds || []).map((member) => (
     typeof member === 'string'
       ? { _id: member, name: '' }
@@ -3121,7 +3175,7 @@ export function ProjectDetailPage() {
           id="project-panel-fabrication"
           aria-labelledby="project-tab-fabrication"
         >
-          {canAssignFabricationTeam && isAssignedEngineer && !hasFabLead && !showFabForm && (
+          {canAssignFabricationTeam && canManageFabricationTeamForm && !hasFabLead && !showFabForm && (
             <Card className={cn(
               'rounded-none sm:rounded-xl border-x-0 sm:border-x',
               isDark ? 'metal-panel-strong border-[color:var(--color-border)]/60' : 'border-violet-200 bg-violet-50/50',
@@ -3130,11 +3184,11 @@ export function ProjectDetailPage() {
                 <div className="flex items-start gap-3 flex-1 min-w-0">
                   <Users className={cn('h-5 w-5 shrink-0 mt-0.5 sm:mt-0', isDark ? 'text-violet-300' : 'text-violet-600')} />
                   <div className="flex-1 min-w-0">
-                    <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-violet-800')}>Assign fabrication team</p>
+                    <p className={cn('text-sm font-semibold', isDark ? 'text-slate-100' : 'text-violet-800')}>
+                      {allRequiredInitialFabricationPaymentsVerified ? 'Waiting for a fabricator' : 'Assign fabrication team'}
+                    </p>
                     <p className={cn('text-xs', isDark ? 'text-slate-400' : 'text-violet-700')}>
-                      {allRequiredInitialFabricationPaymentsVerified
-                        ? 'Customer payment is verified. Select a lead fabricator and assistants for this project.'
-                        : 'Select the fabrication team now. They can view the project, but updates stay locked until the required downpayment or full payment is verified.'}
+                      {fabricationTeamWaitingText(allRequiredInitialFabricationPaymentsVerified)}
                     </p>
                   </div>
                 </div>
@@ -3168,7 +3222,7 @@ export function ProjectDetailPage() {
             </Card>
           )}
 
-          {isEngineer && isAssignedEngineer && showFabForm && (
+          {canManageFabricationTeamForm && showFabForm && (
             <Card
               ref={fabricationAssignFormRef}
               className="rounded-none border-x-0 border-violet-200 bg-violet-50/30 dark:border-violet-900/60 dark:bg-violet-950/30 sm:rounded-xl sm:border-x"
@@ -3176,11 +3230,11 @@ export function ProjectDetailPage() {
               <CardContent className="space-y-4 p-4">
                 <p className="flex items-center gap-2 text-sm font-semibold text-violet-800 dark:text-violet-200">
                   <Users className="h-4 w-4" />
-                  Assign Fabrication Team
+                  {hasFabLead ? 'Change Fabrication Team' : 'Assign Fabrication Team'}
                 </p>
 
                 <p className="text-xs text-[#6e6e73] dark:text-slate-400">
-                  Each fabricator shows whether they are available and the projects they are already on. A fabricator can work on one active project at a time, so anyone already leading or assisting another active project can't be picked. Recommended = free now; when everyone is busy, the list starts with whoever finishes their current project soonest.
+                  Each fabricator shows whether they are available and the projects they are on. A fabricator works on one project in the workshop at a time: anyone still leading or assisting a project that has not reached Quality Check can't be picked. Finishing soon = their project reached Quality Check, so they can take this one. Recommended = free now; Nearest completion = the one furthest along. The system assigns a lead automatically once the downpayment is verified, and you can still change the team here.
                 </p>
 
                 <div>
@@ -3235,7 +3289,7 @@ export function ProjectDetailPage() {
                     disabled={assignFabrication.isPending || !fabLeadId}
                   >
                     {assignFabrication.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
-                    Assign Team
+                    {hasFabLead ? 'Save Team' : 'Assign Team'}
                   </Button>
                   <Button
                     size="sm"
@@ -3245,6 +3299,90 @@ export function ProjectDetailPage() {
                     Cancel
                   </Button>
                 </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* The team once it has a lead: the system may have picked the lead (nearest completion);
+              the engineer / admin can change it and the lead picks their own assistants. */}
+          {hasFabLead && (canChangeTeam || isProjectFabricationLead) && !showFabForm && (
+            <Card className="rounded-none border-x-0 sm:rounded-xl sm:border-x" aria-label="Fabrication team">
+              <CardContent className="space-y-3 p-4">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0">
+                    <p className="flex items-center gap-2 text-sm font-semibold text-[#1d1d1f] dark:text-slate-100">
+                      <Users className="h-4 w-4" />
+                      Fabrication Team
+                    </p>
+                    <p className="mt-1 text-xs text-[#6e6e73] dark:text-slate-400">
+                      Lead: <span className="font-medium text-[#1d1d1f] dark:text-slate-100">{fabricationLeadName || 'Assigned'}</span>
+                    </p>
+                    <p className="mt-0.5 text-xs text-[#6e6e73] dark:text-slate-400">
+                      Assistants: {fabricationAssistantNames.length > 0 ? fabricationAssistantNames.join(', ') : 'none yet'}
+                    </p>
+                    {fabricationAutoAssignedText && (
+                      <span className="mt-2 inline-flex rounded-full border border-sky-300 bg-sky-50 px-2 py-0.5 text-[11px] font-semibold text-sky-700 dark:border-sky-500/40 dark:bg-sky-500/10 dark:text-sky-200">
+                        {fabricationAutoAssignedText}
+                      </span>
+                    )}
+                    {isProjectFabricationLead && fabricationAutoAssignedText && fabricationAssistantNames.length === 0 && !showAssistantsForm && (
+                      <p className="mt-2 text-xs text-[#6e6e73] dark:text-slate-400">
+                        You were assigned automatically as lead. Add your assistants if you need help on this project.
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {canChangeTeam && (
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleOpenChangeTeam}>
+                        <Users className="mr-1.5 h-4 w-4" />
+                        Change Team
+                      </Button>
+                    )}
+                    {isProjectFabricationLead && !showAssistantsForm && (
+                      <Button size="sm" variant="outline" className="w-full sm:w-auto" onClick={handleOpenAssistantsForm}>
+                        <UserPlus className="mr-1.5 h-4 w-4" />
+                        {fabricationAssistantNames.length > 0 ? 'Edit Assistants' : 'Add Assistants'}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+
+                {isProjectFabricationLead && showAssistantsForm && (
+                  <div className="space-y-3 border-t border-[#e8e8ed] pt-3 dark:border-slate-700">
+                    <p className="text-xs text-[#6e6e73] dark:text-slate-400">
+                      Pick who helps you on this project. Anyone still leading or assisting a project that has not reached Quality Check can't be picked. Unchecking someone removes them.
+                    </p>
+                    <FabricationStaffPicker
+                      ariaLabel="Your assistants"
+                      mode="multi"
+                      staff={fabWorkload.data}
+                      isLoading={fabWorkload.isLoading}
+                      isError={fabWorkload.isError}
+                      selectedIds={assistantDraft}
+                      onToggle={toggleAssistantDraft}
+                      excludeIds={[fabricationLeadIdValue]}
+                      currentProjectId={project._id}
+                      getBlockedReason={(member) => teamConflict(member, project._id)}
+                      recommendation={fabricatorRecommendation(fabWorkload.data, project._id, [fabricationLeadIdValue, ...assistantDraft])}
+                      emptyText="No other fabrication staff available"
+                    />
+                    <FabricationWorkloadWarning warnings={workloadWarnings(fabWorkload.data, assistantDraft, project._id)} />
+                    <div className="flex gap-2">
+                      <Button
+                        size="sm"
+                        className="bg-violet-600 text-white hover:bg-violet-700 dark:bg-none dark:bg-slate-100 dark:text-slate-950 dark:hover:bg-white"
+                        onClick={handleSaveAssistants}
+                        disabled={updateFabricationAssistants.isPending}
+                      >
+                        {updateFabricationAssistants.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
+                        Save Assistants
+                      </Button>
+                      <Button size="sm" variant="ghost" onClick={() => setShowAssistantsForm(false)}>
+                        Cancel
+                      </Button>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           )}

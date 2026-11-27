@@ -3,15 +3,20 @@ import { AlertTriangle, Check, Loader2, Lock } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import type { FabricationStaffWorkload, FabricationWorkloadStatus } from '@/lib/types';
 
-const STATUS_LABEL: Record<FabricationWorkloadStatus, string> = {
+/** What a row shows: the server's status, or Finishing soon when every team project reached Quality Check. */
+export type FabricationDisplayStatus = FabricationWorkloadStatus | 'finishing';
+
+const STATUS_LABEL: Record<FabricationDisplayStatus, string> = {
   available: 'Available',
+  finishing: 'Finishing soon',
   busy: 'Busy',
   on_leave: 'On leave',
   unavailable: 'Unavailable',
 };
 
-const STATUS_CLASS: Record<FabricationWorkloadStatus, string> = {
+const STATUS_CLASS: Record<FabricationDisplayStatus, string> = {
   available: 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-500/30 dark:bg-emerald-500/10 dark:text-emerald-300',
+  finishing: 'border-sky-200 bg-sky-50 text-sky-700 dark:border-sky-500/30 dark:bg-sky-500/10 dark:text-sky-200',
   busy: 'border-amber-200 bg-amber-50 text-amber-800 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200',
   on_leave: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300',
   unavailable: 'border-slate-200 bg-slate-100 text-slate-600 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-300',
@@ -19,35 +24,46 @@ const STATUS_CLASS: Record<FabricationWorkloadStatus, string> = {
 
 const ROLE_LABEL = { lead: 'Lead', assistant: 'Assistant', delivery_crew: 'Delivery crew' } as const;
 
+type WorkloadProject = FabricationStaffWorkload['activeProjects'][number];
+
+const isTeamProject = (project: WorkloadProject) => project.roles.some((role) => role === 'lead' || role === 'assistant');
+
 function projectCountLabel(count: number) {
   return `${count} active project${count === 1 ? '' : 's'}`;
 }
 
 /**
  * A person's load without the project being assigned, so re-opening this project's own team
- * never shows its members as busy because of it. On Leave / Unavailable always stays.
+ * never shows its members as busy because of it. On Leave / Unavailable always stays. Someone
+ * whose every team project reached Quality Check is "Finishing soon" and can take this project.
  */
-export function effectiveWorkload(member: FabricationStaffWorkload, currentProjectId?: string) {
+export function effectiveWorkload(member: FabricationStaffWorkload, currentProjectId?: string): {
+  status: FabricationDisplayStatus;
+  projects: WorkloadProject[];
+} {
   const projects = member.activeProjects.filter((project) => project._id !== currentProjectId);
-  const status: FabricationWorkloadStatus = member.workloadStatus === 'on_leave' || member.workloadStatus === 'unavailable'
-    ? member.workloadStatus
-    : projects.length > 0 ? 'busy' : 'available';
-  return { status, projects };
+  if (member.workloadStatus === 'on_leave' || member.workloadStatus === 'unavailable') {
+    return { status: member.workloadStatus, projects };
+  }
+  if (projects.length === 0) return { status: 'available', projects };
+  const teamProjects = projects.filter(isTeamProject);
+  const finishing = teamProjects.length > 0 && teamProjects.every((project) => project.nearCompletion);
+  return { status: finishing ? 'finishing' : 'busy', projects };
 }
 
 /**
- * Lead / assistant on another active project. A fabricator works on one active project at a time,
- * so the team picker blocks them. Being on another delivery crew does not count.
+ * Lead / assistant on another project still in the workshop. A fabricator works on one project in
+ * the workshop at a time, so the team picker blocks them until that project reaches Quality Check.
+ * Being on another delivery crew does not count. (An older server sends no nearCompletion: blocked.)
  */
 export function teamConflict(member: FabricationStaffWorkload, currentProjectId?: string): string | null {
   const project = member.activeProjects.find((item) => item._id !== currentProjectId
-    && item.roles.some((role) => role === 'lead' || role === 'assistant'));
+    && !item.nearCompletion
+    && isTeamProject(item));
   if (!project) return null;
   const role = project.roles.includes('lead') ? 'Lead' : 'Assistant';
-  return `Already on ${project.projectNumber || project.title} (${role})`;
+  return `On ${project.projectNumber || project.title} (${role}) until it reaches Quality Check`;
 }
-
-type WorkloadProject = FabricationStaffWorkload['activeProjects'][number];
 
 const shortDate = (value: string) => new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric' }).format(new Date(value));
 const stageLabel = (stage: string) => stage.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
@@ -63,9 +79,9 @@ export function projectProgressLabel(project: WorkloadProject) {
 }
 
 /**
- * Who to suggest for the team: the first person free for workshop work ("Recommended"), or, when
- * everyone is busy, the one who finishes soonest ("Finishes soonest"). The server already sorts the
- * staff that way, so this picks the first eligible row.
+ * Who to suggest for the team, among the rows that can be picked: someone free for workshop work
+ * ("Recommended"), otherwise the one nearest completion ("Nearest completion": their project
+ * reached Quality Check). The server lists the staff in that order. Nobody pickable → no badge.
  */
 export function fabricatorRecommendation(
   staff: FabricationStaffWorkload[] | undefined,
@@ -73,11 +89,12 @@ export function fabricatorRecommendation(
   excludeIds: string[] = [],
 ): { id: string; label: string } | null {
   const candidates = (staff || []).filter((member) => !excludeIds.includes(member._id)
-    && member.workloadStatus !== 'on_leave' && member.workloadStatus !== 'unavailable');
-  const free = candidates.find((member) => !teamConflict(member, currentProjectId));
+    && member.workloadStatus !== 'on_leave' && member.workloadStatus !== 'unavailable'
+    && !teamConflict(member, currentProjectId));
+  const free = candidates.find((member) => effectiveWorkload(member, currentProjectId).status !== 'finishing');
   if (free) return { id: free._id, label: 'Recommended' };
-  const soonest = candidates[0];
-  return soonest ? { id: soonest._id, label: 'Finishes soonest' } : null;
+  const nearest = candidates[0];
+  return nearest ? { id: nearest._id, label: 'Nearest completion' } : null;
 }
 
 /** Already out on another project's delivery / installation that day (a delivery takes the whole day). */
@@ -200,7 +217,7 @@ export function FabricationStaffPicker({
                 {projects.length === 0
                   ? 'No active projects'
                   : projects.map(projectProgressLabel).join(' | ')}
-                {member.availabilityNote && status !== 'available' && status !== 'busy' ? ` · ${member.availabilityNote}` : ''}
+                {member.availabilityNote && (status === 'on_leave' || status === 'unavailable') ? ` · ${member.availabilityNote}` : ''}
               </span>
               {blockedReason && (
                 <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
