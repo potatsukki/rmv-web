@@ -22,6 +22,8 @@ import { useHolidays } from '@/hooks/useConfig';
 import { SLOT_CODES, ServiceType, APPOINTMENT_TYPE_LABELS, MAX_ACTIVE_APPOINTMENTS_PER_CUSTOMER } from '@/lib/constants';
 import { cn } from '@/lib/utils';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
+import type { CustomerSlotBooking } from '@/lib/customer-slot-booking';
+import { BookedSlotDialog } from './BookedSlotDialog';
 import {
   hasDesignSelection,
   MAX_SELECTED_DESIGNS,
@@ -117,6 +119,8 @@ export function BookAppointmentPage() {
   const initialSelectedDesign = useMemo(() => getInitialSelectedDesign(searchParams), [searchParams]);
   const [bookingNow, setBookingNow] = useState(serverNow);
   const [scheduleConflict, setScheduleConflict] = useState<CustomerScheduleConflict | null>(null);
+  // The customer's appointment behind a clicked "Already booked" slot.
+  const [openBooking, setOpenBooking] = useState<CustomerSlotBooking | null>(null);
   const bookingWindow = getCustomerBookingWindow(bookingNow);
 
   useEffect(() => {
@@ -811,17 +815,22 @@ export function BookAppointmentPage() {
                       const alreadyBooked = isAlreadyBooked(slot);
                       const available = Boolean(slotInfo?.available && !elapsed && !alreadyBooked);
                       const remaining = slotInfo?.remaining ?? 0;
+                      // The customer's own appointment: clicking shows it, never selects the slot.
+                      const ownBooking = alreadyBooked && slotsData?.date === selectedDate ? slotInfo?.customerBooking : undefined;
 
                       return (
                         <button
                           key={slot}
                           type="button"
-                          disabled={!available}
-                          onClick={() => setValue('slotCode', slot)}
+                          disabled={!available && !ownBooking}
+                          onClick={() => (ownBooking ? setOpenBooking(ownBooking) : setValue('slotCode', slot))}
+                          aria-label={ownBooking ? `${formatSlotTime(slot)}: already booked, view your appointment` : undefined}
                           className={cn(
                             'rounded-xl border-2 p-3 text-center transition-all',
                             alreadyBooked
-                              ? 'cursor-not-allowed border-red-500/60 bg-red-50 text-red-800 dark:border-red-500/60 dark:bg-red-500/15 dark:text-red-200'
+                              ? ownBooking
+                                ? 'cursor-pointer border-red-500/60 bg-red-50 text-red-800 hover:border-red-500 hover:bg-red-100 dark:border-red-500/60 dark:bg-red-500/15 dark:text-red-200 dark:hover:border-red-400 dark:hover:bg-red-500/25'
+                                : 'cursor-not-allowed border-red-500/60 bg-red-50 text-red-800 dark:border-red-500/60 dark:bg-red-500/15 dark:text-red-200'
                               : selectedSlot === slot
                               ? 'border-[#86868b] bg-[#f5f5f7]/50 text-[#1d1d1f] ring-2 ring-[#d2d2d7] dark:border-[#d6b36a]/35 dark:bg-[linear-gradient(180deg,rgba(255,248,235,0.88)_0%,rgba(224,209,181,0.78)_100%)] dark:text-[#4a3617] dark:shadow-[inset_0_1px_0_rgba(255,255,255,0.2)] dark:ring-[#d6b36a]/12'
                               : available
@@ -836,7 +845,7 @@ export function BookAppointmentPage() {
                             </p>
                           ) : (
                             <p className={cn('mt-0.5 text-xs', alreadyBooked ? 'text-red-700 dark:text-red-300' : 'text-red-400')}>
-                              {alreadyBooked ? 'Already booked' : elapsed ? 'Time passed' : slotInfo?.blocked ? 'Blocked' : 'No staff available'}
+                              {alreadyBooked ? (ownBooking ? 'Already booked · View' : 'Already booked') : elapsed ? 'Time passed' : slotInfo?.blocked ? 'Blocked' : 'No staff available'}
                             </p>
                           )}
                         </button>
@@ -845,6 +854,7 @@ export function BookAppointmentPage() {
                   </div>
                 )}
                 {errors.slotCode && <p className="mt-2 text-sm text-red-500">{errors.slotCode.message}</p>}
+                <BookedSlotDialog booking={openBooking} onClose={() => setOpenBooking(null)} />
               </CardContent>
             </Card>
           </>

@@ -10,6 +10,7 @@ import type {
   SelectedDesignTemplate,
 } from '@/lib/types';
 import type { SlotCode } from '@/lib/constants';
+import type { CustomerSlotBooking } from '@/lib/customer-slot-booking';
 import { extractItems } from '@/lib/utils';
 import { LIVE_LIST_POLL_OPTIONS, LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 import { UNPAID_OCULAR_FEE_STATUSES } from '@/lib/onsite-cash';
@@ -134,7 +135,7 @@ export function useAvailableSlots(
     queryKey: [...KEYS.slots(date, type), salesStaffId ?? '', travelMinutes ?? '', distanceKm ?? '', flow ?? ''],
     queryFn: async () => {
       const { data } = await api.get<
-        ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number; blocked: boolean; customerBooked?: boolean }[] }>
+        ApiResponse<{ date: string; slots: { slotCode: SlotCode; time: string; available: boolean; remaining: number; blocked: boolean; customerBooked?: boolean; customerBooking?: CustomerSlotBooking }[] }>
       >('/appointments/slots', {
         params: {
           date,

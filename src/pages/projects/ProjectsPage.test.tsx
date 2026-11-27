@@ -162,7 +162,7 @@ describe('Returned reports stay in Visit Reports', () => {
   });
 });
 
-// User decision 2026-11-27: reports before Create Project in Appointments, after it in Projects.
+// User decision 2026-11-27: consultation reports in Appointments, ocular reports in Projects (server filters by visitType).
 describe('Visit reports split by project stage', () => {
   const renderList = (path: string, stage?: 'appointment' | 'project') => renderToStaticMarkup(
     <MemoryRouter initialEntries={[path]}><VisitReportsListPage isEmbedded stage={stage} /></MemoryRouter>,
@@ -173,7 +173,7 @@ describe('Visit reports split by project stage', () => {
     const html = renderPage('/projects?tab=visit-reports');
     expect(html).toContain('>Visit Reports</a>');
     expect(html).toContain('href="/projects?tab=visit-reports"');
-    expect(html).toContain('went through Create Project');
+    expect(html).toContain('Ocular visit reports of projects');
     expect(reportRequests).toEqual([{ stage: 'project' }]);
     expect(projectRequests).toHaveLength(0);
   });
@@ -189,7 +189,7 @@ describe('Visit reports split by project stage', () => {
   it('asks Appointments → Visit Reports for appointment-stage reports and points to Projects', () => {
     const html = renderList('/appointments?tab=visit-reports', 'appointment');
     expect(reportRequests).toEqual([{ stage: 'appointment' }]);
-    expect(html).toContain('have not gone through Create Project');
+    expect(html).toContain('Consultation reports from appointments');
     expect(html).toContain('Projects → Visit Reports');
   });
 

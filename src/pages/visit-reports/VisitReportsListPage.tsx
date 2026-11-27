@@ -160,19 +160,20 @@ const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]' };
 /* ── Component ── */
 
 /**
- * Where the list sits: Appointments → Visit Reports shows reports until Create Project ("appointment"),
- * Projects → Visit Reports shows them after ("project"). Without a stage (Reports page) every report is listed.
+ * Where the list sits: Appointments → Visit Reports shows consultation reports ("appointment"),
+ * Projects → Visit Reports shows ocular reports ("project") (user decision 2026-11-27).
+ * Without a stage (Reports page) every report is listed.
  */
 export type VisitReportListStage = 'appointment' | 'project';
 
 const STAGE_COPY: Record<VisitReportListStage | 'all', { description: string; empty: string }> = {
   appointment: {
-    description: 'Reports from appointments that have not gone through Create Project yet. Search by customer name or report ID, then narrow the queue by review state.',
-    empty: 'Visit reports appear here after appointments are confirmed. After Create Project they move to Projects → Visit Reports.',
+    description: 'Consultation reports from appointments. Ocular reports are under Projects → Visit Reports. Search by customer name or report ID, then narrow the queue by review state.',
+    empty: 'Consultation reports appear here after appointments are confirmed.',
   },
   project: {
-    description: 'Reports of projects that went through Create Project. Search by customer name or report ID, then narrow the queue by review state.',
-    empty: 'Visit reports move here after Create Project.',
+    description: 'Ocular visit reports of projects. Consultation reports are under Appointments → Visit Reports. Search by customer name or report ID, then narrow the queue by review state.',
+    empty: 'Ocular visit reports appear here once an ocular visit is scheduled.',
   },
   all: {
     description: 'Search by customer name or report ID, then narrow the queue by review state.',
