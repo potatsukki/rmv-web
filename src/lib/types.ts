@@ -72,8 +72,10 @@ export interface AuthState {
 }
 
 export type FabricationWorkloadStatus = 'available' | 'busy' | 'on_leave' | 'unavailable';
+/** Workshop load from lead / assistant work: free, finishing (all at Quality Check or later) or busy. */
+export type FabricationTeamStatus = 'free' | 'finishing' | 'busy';
 
-/** One fabrication staff member and the projects they are currently on (engineer's pickers). */
+/** One fabrication staff member and the projects they are currently on (engineer's and lead's pickers). */
 export interface FabricationStaffWorkload {
   _id: string;
   firstName: string;
@@ -87,16 +89,20 @@ export interface FabricationStaffWorkload {
     title: string;
     status: string;
     roles: Array<'lead' | 'assistant' | 'delivery_crew'>;
+    /** Stage of the project's slowest part. */
     currentStage?: string | null;
     stageIndex?: number;
     stageCount?: number;
     progressPercent?: number;
+    /** Every part reached Quality Check, so the project no longer keeps its team in the workshop. */
+    nearCompletion?: boolean;
     estimatedCompletionDate?: string | null;
   }>;
   /** When their lead / assistant projects are expected to finish (null if unknown or none). */
   freeAt?: string | null;
   lowestProgressPercent?: number;
   hasTeamProject?: boolean;
+  teamStatus?: FabricationTeamStatus;
   /** Upcoming delivery / installation days (YYYY-MM-DD) this person is on the crew for. */
   deliveryDates?: Array<{ projectId: string; projectNumber?: string; date: string }>;
 }
@@ -441,6 +447,8 @@ export interface Project {
   engineerIds: (string | { _id: string; firstName: string; lastName: string; phone?: string })[];
   fabricationLeadId?: string | { _id: string; firstName: string; lastName: string };
   fabricationAssistantIds: (string | { _id: string; firstName: string; lastName: string })[];
+  /** Set when the system picked the lead (fabricator nearest completion); null after a manual team change. */
+  fabricationAutoAssignedAt?: string | null;
   /** Installation crew (on-site installation only; delivery uses a third-party courier). */
   deliveryCrewIds?: (string | { _id: string; firstName: string; lastName: string })[];
   deliverySchedule?: DeliverySchedule;

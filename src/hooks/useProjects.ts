@@ -222,7 +222,23 @@ export function useAssignFabrication() {
   });
 }
 
-/** Fabrication staff with the projects they are on, for the engineer's team and crew pickers. */
+/** The lead fabricator's own assistants (the full list: checking adds, unchecking removes). */
+export function useUpdateFabricationAssistants() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, fabricationAssistantIds }: { id: string; fabricationAssistantIds: string[] }) => {
+      const { data } = await api.put<ApiResponse<Project>>(`/projects/${id}/fabrication-assistants`, { fabricationAssistantIds });
+      return data.data;
+    },
+    onSuccess: () => {
+      // The response has ids only; refetch so the team names stay populated.
+      qc.invalidateQueries({ queryKey: KEYS.all });
+      qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
+    },
+  });
+}
+
+/** Fabrication staff with the projects they are on, for the engineer's team and crew pickers and the lead's assistants. */
 export function useFabricationStaffWorkload(enabled = true) {
   return useQuery({
     queryKey: FABRICATION_WORKLOAD_KEY,

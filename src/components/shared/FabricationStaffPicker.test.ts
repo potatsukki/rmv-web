@@ -37,18 +37,28 @@ describe('effectiveWorkload', () => {
   it('keeps on leave even with no projects', () => {
     expect(effectiveWorkload(member({ workloadStatus: 'on_leave' })).status).toBe('on_leave');
   });
+
+  it('is finishing soon when every other team project reached Quality Check', () => {
+    const atQc = { ...projectA, nearCompletion: true };
+    const crewOnly = { _id: 'project-c', projectNumber: 'PRJ-2026-00003', title: 'Fence', status: 'fabrication', roles: ['delivery_crew' as const] };
+    expect(effectiveWorkload(member({ workloadStatus: 'busy', activeProjects: [atQc, crewOnly] }), 'project-x').status).toBe('finishing');
+    expect(effectiveWorkload(member({ workloadStatus: 'busy', activeProjects: [atQc, projectB] }), 'project-x').status).toBe('busy');
+    // Only delivery crew duty elsewhere: still shown as busy, like before.
+    expect(effectiveWorkload(member({ workloadStatus: 'busy', activeProjects: [crewOnly] }), 'project-x').status).toBe('busy');
+  });
 });
 
-describe('teamConflict (one active project per fabricator)', () => {
+describe('teamConflict (one project in the workshop per fabricator)', () => {
   const crewOnly = { _id: 'project-c', projectNumber: 'PRJ-2026-00003', title: 'Fence', status: 'fabrication', roles: ['delivery_crew' as const] };
 
-  it('blocks a lead or assistant of another active project, naming it', () => {
-    expect(teamConflict(member({ activeProjects: [projectA] }), 'project-x')).toBe('Already on PRJ-2026-00001 (Lead)');
-    expect(teamConflict(member({ activeProjects: [projectB] }), 'project-x')).toBe('Already on PRJ-2026-00002 (Assistant)');
+  it('blocks a lead or assistant of another project still in the workshop, naming it', () => {
+    expect(teamConflict(member({ activeProjects: [projectA] }), 'project-x')).toBe('On PRJ-2026-00001 (Lead) until it reaches Quality Check');
+    expect(teamConflict(member({ activeProjects: [projectB] }), 'project-x')).toBe('On PRJ-2026-00002 (Assistant) until it reaches Quality Check');
   });
 
-  it('does not block for this project or for delivery crew duty elsewhere', () => {
+  it('does not block for this project, a project at Quality Check or later, or delivery crew duty elsewhere', () => {
     expect(teamConflict(member({ activeProjects: [projectA] }), 'project-a')).toBeNull();
+    expect(teamConflict(member({ activeProjects: [{ ...projectA, nearCompletion: true }] }), 'project-x')).toBeNull();
     expect(teamConflict(member({ activeProjects: [crewOnly] }), 'project-x')).toBeNull();
   });
 });
@@ -68,27 +78,36 @@ describe('deliveryConflict (a delivery takes the whole day)', () => {
 });
 
 describe('nearest to completion', () => {
-  const inProgress = {
-    ...projectA, currentStage: 'quality_check', stageIndex: 6, stageCount: 8, progressPercent: 75,
+  const atQualityCheck = {
+    ...projectA, currentStage: 'quality_check', stageIndex: 6, stageCount: 8, progressPercent: 75, nearCompletion: true,
     estimatedCompletionDate: '2026-11-22T09:00:00.000Z',
   };
+  const atWelding = { ...projectA, _id: 'project-w', projectNumber: 'PRJ-2026-00009', currentStage: 'welding', stageIndex: 3, stageCount: 8, nearCompletion: false };
 
   it('shows the stage and target finish of a busy fabricator', () => {
-    expect(projectProgressLabel(inProgress)).toBe('PRJ-2026-00001 (Lead) · Quality Check 6/8 · finishes ~Nov 22');
+    expect(projectProgressLabel(atQualityCheck)).toBe('PRJ-2026-00001 (Lead) · Quality Check 6/8 · finishes ~Nov 22');
     expect(projectProgressLabel(projectB)).toBe('PRJ-2026-00002 (Assistant) · waiting for payment');
   });
 
-  it('recommends someone free now, otherwise the one who finishes soonest', () => {
-    const soonest = member({ _id: 'soonest', workloadStatus: 'busy', activeProjects: [inProgress] });
-    const later = member({ _id: 'later', workloadStatus: 'busy', activeProjects: [projectB] });
+  it('recommends someone free now, otherwise the one nearest completion', () => {
+    const nearest = member({ _id: 'nearest', workloadStatus: 'busy', activeProjects: [atQualityCheck] });
+    const welding = member({ _id: 'welding', workloadStatus: 'busy', activeProjects: [atWelding] });
     const free = member({ _id: 'free' });
     const away = member({ _id: 'away', workloadStatus: 'on_leave' });
 
-    expect(fabricatorRecommendation([free, soonest, later], 'project-x')).toEqual({ id: 'free', label: 'Recommended' });
-    // The server lists busy staff by soonest finish, so the first busy one is suggested.
-    expect(fabricatorRecommendation([soonest, later, away], 'project-x')).toEqual({ id: 'soonest', label: 'Finishes soonest' });
-    expect(fabricatorRecommendation([free, soonest], 'project-x', ['free'])).toEqual({ id: 'soonest', label: 'Finishes soonest' });
+    expect(fabricatorRecommendation([free, nearest, welding], 'project-x')).toEqual({ id: 'free', label: 'Recommended' });
+    // The server lists the ones whose project reached Quality Check first, nearest completion first.
+    expect(fabricatorRecommendation([nearest, welding, away], 'project-x')).toEqual({ id: 'nearest', label: 'Nearest completion' });
+    expect(fabricatorRecommendation([free, nearest], 'project-x', ['free'])).toEqual({ id: 'nearest', label: 'Nearest completion' });
     expect(fabricatorRecommendation([away], 'project-x')).toBeNull();
+  });
+
+  it('never puts the badge on a row that cannot be picked', () => {
+    const welding = member({ _id: 'welding', workloadStatus: 'busy', activeProjects: [atWelding] });
+    const waitingForPayment = member({ _id: 'payment', workloadStatus: 'busy', activeProjects: [projectB] });
+    expect(fabricatorRecommendation([welding, waitingForPayment], 'project-x')).toBeNull();
+    // The team being changed does not count against its own members.
+    expect(fabricatorRecommendation([welding], 'project-w')).toEqual({ id: 'welding', label: 'Recommended' });
   });
 });
 
@@ -109,5 +128,10 @@ describe('workloadWarnings', () => {
   it('has no warning when nobody selected is busy', () => {
     expect(workloadWarnings(staff, ['free'])).toEqual([]);
     expect(workloadWarnings(undefined, ['busy'])).toEqual([]);
+  });
+
+  it('has no warning for someone finishing soon (their project reached Quality Check)', () => {
+    const finishing = member({ _id: 'finishing', workloadStatus: 'busy', activeProjects: [{ ...projectA, nearCompletion: true }] });
+    expect(workloadWarnings([finishing], ['finishing'], 'project-x')).toEqual([]);
   });
 });
