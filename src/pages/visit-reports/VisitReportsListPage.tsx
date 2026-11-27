@@ -1,5 +1,5 @@
 import { Fragment, useState, useMemo } from 'react';
-import { Link, useNavigate, useSearchParams } from 'react-router';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router';
 import { ClipboardList, ChevronRight, Layers } from 'lucide-react';
 import { format, parse } from 'date-fns';
 
@@ -26,6 +26,7 @@ import {
   displayVisitReportStatus,
   groupSubmittedState,
   isDisplayedStatusFilter,
+  matchesVisitReportStatusFilter,
   normalizeVisitReportStatusFilter,
   type SubmittedState,
 } from '@/lib/visit-report-filters';
@@ -131,7 +132,7 @@ const STATUS_FILTERS = [
   { label: 'All Reports', value: '' },
   { label: 'Draft', value: VisitReportStatus.DRAFT },
   { label: 'Submitted', value: VisitReportStatus.SUBMITTED },
-  { label: 'Returned', value: VisitReportStatus.RETURNED },
+  // Returned reports are listed under Draft (both are still with Sales); their badge says Returned.
   { label: 'Completed', value: VisitReportStatus.COMPLETED },
 ];
 
@@ -158,16 +159,42 @@ const defaultConfig = { label: 'Draft', dot: 'bg-[#9099a3]' };
 
 /* ── Component ── */
 
-export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = {}) {
+/**
+ * Where the list sits: Appointments → Visit Reports shows reports until Create Project ("appointment"),
+ * Projects → Visit Reports shows them after ("project"). Without a stage (Reports page) every report is listed.
+ */
+export type VisitReportListStage = 'appointment' | 'project';
+
+const STAGE_COPY: Record<VisitReportListStage | 'all', { description: string; empty: string }> = {
+  appointment: {
+    description: 'Reports from appointments that have not gone through Create Project yet. Search by customer name or report ID, then narrow the queue by review state.',
+    empty: 'Visit reports appear here after appointments are confirmed. After Create Project they move to Projects → Visit Reports.',
+  },
+  project: {
+    description: 'Reports of projects that went through Create Project. Search by customer name or report ID, then narrow the queue by review state.',
+    empty: 'Visit reports move here after Create Project.',
+  },
+  all: {
+    description: 'Search by customer name or report ID, then narrow the queue by review state.',
+    empty: 'Visit reports will appear here after appointments are confirmed and inspections begin.',
+  },
+};
+
+export function VisitReportsListPage({ isEmbedded, stage }: { isEmbedded?: boolean; stage?: VisitReportListStage } = {}) {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const location = useLocation();
+  // Back on a report returns to this tab and filter.
+  const reportLinkState = { from: `${location.pathname}${location.search}` };
+  const copy = STAGE_COPY[stage ?? 'all'];
   const [searchParams, setSearchParams] = useSearchParams();
   const statusFilter = normalizeVisitReportStatusFilter(searchParams.get('reportStatus'));
   const [search, setSearch] = useState('');
 
   const filtersByDisplayedStatus = isDisplayedStatusFilter(statusFilter);
   const params: Record<string, string> = {};
-  // Submitted / Completed also depend on the appointment, so those filter the loaded reports below.
+  if (stage) params.stage = stage;
+  // Draft (draft + returned), Submitted and Completed filter the loaded reports below.
   if (statusFilter && !filtersByDisplayedStatus) params.status = statusFilter;
   if (filtersByDisplayedStatus) params.limit = '100';
   if (search) params.search = search;
@@ -183,7 +210,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
 
   const loadedReports = data?.items || [];
   const reports = filtersByDisplayedStatus
-    ? loadedReports.filter((report) => displayVisitReportStatus(report) === statusFilter)
+    ? loadedReports.filter((report) => matchesVisitReportStatusFilter(report, statusFilter))
     : loadedReports;
 
   /* ── Group reports by appointment ── */
@@ -248,7 +275,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
       {/* Filters */}
       <CollectionToolbar
         title="Find the right report faster"
-        description="Search by customer name or report ID, then narrow the queue by review state."
+        description={copy.description}
         searchPlaceholder="Search by customer name or report ID"
         searchValue={search}
         onSearchChange={setSearch}
@@ -299,7 +326,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
           title="No visit reports found"
           description={search || statusFilter
             ? 'Try adjusting the search terms or review-state filter.'
-            : 'Visit reports will appear here after appointments are confirmed and inspections begin.'}
+            : copy.empty}
           action={(search || statusFilter) ? (
             <Button
               variant="outline"
@@ -330,6 +357,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                 <Link
                   key={group.appointmentId}
                   to={`/visit-reports/${firstReport._id}`}
+                  state={reportLinkState}
                   className="group block"
                 >
                   <div className="metal-panel rounded-xl px-4 py-3.5 transition-colors active:bg-white/45">
@@ -418,7 +446,7 @@ export function VisitReportsListPage({ isEmbedded }: { isEmbedded?: boolean } = 
                   return (
                     <TableRow
                       key={group.appointmentId}
-                      onClick={() => navigate(`/visit-reports/${firstReport._id}`)}
+                      onClick={() => navigate(`/visit-reports/${firstReport._id}`, { state: reportLinkState })}
                       className="border-b border-[#f0f0f5] cursor-pointer transition-colors hover:bg-[#f9f9fb] group dark:border-slate-700 dark:hover:bg-slate-800/50"
                     >
                       {/* Customer */}

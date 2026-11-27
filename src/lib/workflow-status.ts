@@ -83,7 +83,8 @@ function billingStatus(key: string, label: string, tone: WorkflowStatusTone): Wo
 
 /**
  * Payment progress for the plan: No Payment, Down Payment Paid, For Second Payment (due at
- * Welding/Assembly), Partially Paid, For Final Payment (due at Quality Check), Fully Paid.
+ * Welding/Assembly, required before Installation), Partially Paid, For Final Payment (due at
+ * Quality Check), Fully Paid.
  */
 export function resolvePaymentWorkflowStatus(plans: Array<PaymentPlan | null | undefined> = []): WorkflowStatus {
   const validPlans = plans.filter((plan): plan is PaymentPlan => Boolean(plan?.stages?.length));

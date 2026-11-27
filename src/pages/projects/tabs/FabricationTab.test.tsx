@@ -81,10 +81,10 @@ describe('FabricationTab project site address', () => {
   it.each([Role.CUSTOMER, Role.FABRICATION_STAFF, Role.SALES_STAFF, Role.ENGINEER])('shows the six on-site lifecycle markers in order to %s', (role) => {
     state.user.roles = [role];
     state.project.deliveryType = DeliveryType.ON_SITE_INSTALLATION;
-    state.fabricationStatus = { deliveryType: DeliveryType.ON_SITE_INSTALLATION, currentStatus: 'installation', allowedTransitions: ['finishing'], confirmationGateStatus: 'installation' };
+    state.fabricationStatus = { deliveryType: DeliveryType.ON_SITE_INSTALLATION, currentStatus: 'finishing', allowedTransitions: ['quality_check'], confirmationGateStatus: 'installation' };
     const html = renderTab(true, role === Role.FABRICATION_STAFF || role === Role.ENGINEER);
     const labels = [...html.matchAll(/<span[^>]*>\d<\/span>([^<]+)<\/p>/g)].map((match) => match[1]);
-    expect(labels).toEqual(['Preparing Materials', 'Welding / Assembly', 'Installation', 'Finishing', 'Quality Check', 'Done']);
+    expect(labels).toEqual(['Preparing Materials', 'Welding / Assembly', 'Finishing', 'Quality Check', 'Installation', 'Done']);
     expect(html).toContain('Step 3 of 6');
     expect(html).toContain('grid-cols-6');
     expect(html).not.toMatch(/Site Preparation|Measurement \/ Layout|Material Prep|Fabrication \/ Installation|Turnover/);
@@ -92,10 +92,10 @@ describe('FabricationTab project site address', () => {
 
   it.each([
     ['fabrication', 'welding_assembly', 1, 17],
-    ['welding_assembly', 'installation', 2, 33],
-    ['installation', 'finishing', 3, 50],
-    ['finishing', 'quality_check', 4, 67],
-    ['quality_check', 'done', 5, 83],
+    ['welding_assembly', 'finishing', 2, 33],
+    ['finishing', 'quality_check', 3, 50],
+    ['quality_check', 'installation', 4, 67],
+    ['installation', 'done', 5, 83],
     ['done', '', 6, 100],
   ])('uses six-stage item progress at %s', (currentStatus, next, step, progress) => {
     state.project.deliveryType = DeliveryType.ON_SITE_INSTALLATION;
@@ -146,8 +146,26 @@ describe('FabricationTab customer confirmation banners', () => {
     state.fabricationStatus = { currentStatus, deliveryType: DeliveryType.SHOP_FABRICATED, allowedTransitions: [next], confirmationGateStatus: 'done' };
   };
 
-  it('shows the on-site installation confirmation at Welding / Assembly, before Installation', () => {
-    onSiteAt('welding_assembly', 'installation');
+  // QA 2026-11-27: the customer saw the confirmation banner while the work was still at Welding.
+  it.each([
+    ['fabrication', 'welding_assembly'],
+    ['welding_assembly', 'finishing'],
+    ['finishing', 'quality_check'],
+  ])('shows no installation banner at %s, even with a date set and no confirmation yet', (currentStatus, next) => {
+    onSiteAt(currentStatus, next);
+    const staffHtml = renderTab(true, true, () => {});
+    expect(staffHtml).not.toContain('Awaiting Customer Confirmation');
+    expect(staffHtml).not.toContain('Waiting for the installation date');
+
+    state.user = { _id: 'customer-1', roles: [Role.CUSTOMER] };
+    const customerHtml = renderTab();
+    expect(customerHtml).not.toContain('Installation at your location');
+    expect(customerHtml).not.toContain('Installation date not set yet');
+    expect(customerHtml).not.toContain('Confirm Installation');
+  });
+
+  it('shows the on-site installation confirmation at Quality Check, before Installation', () => {
+    onSiteAt('quality_check', 'installation');
     const staffHtml = renderTab(true, true);
     expect(staffHtml).toContain('Awaiting Customer Confirmation');
     expect(staffHtml).toContain('before you can move this to Installation');
@@ -159,7 +177,7 @@ describe('FabricationTab customer confirmation banners', () => {
   });
 
   it('names the installation date in the staff banner once it is set', () => {
-    onSiteAt('welding_assembly', 'installation');
+    onSiteAt('quality_check', 'installation');
     const staffHtml = renderTab(true, true, () => {});
     expect(staffHtml).toContain('Installation is set on');
     expect(staffHtml).not.toContain('Waiting for the installation date');
@@ -173,7 +191,7 @@ describe('FabricationTab customer confirmation banners', () => {
 
   describe('on-site project with no installation date yet', () => {
     beforeEach(() => {
-      onSiteAt('welding_assembly', 'installation');
+      onSiteAt('quality_check', 'installation');
       state.project.deliverySchedule = undefined;
     });
 
@@ -201,8 +219,8 @@ describe('FabricationTab customer confirmation banners', () => {
     });
   });
 
-  it('no longer shows the on-site confirmation at Quality Check', () => {
-    onSiteAt('quality_check', 'done');
+  it('no longer shows the on-site confirmation at Installation, before Done', () => {
+    onSiteAt('installation', 'done');
     expect(renderTab(true, true)).not.toContain('Awaiting Customer Confirmation');
   });
 

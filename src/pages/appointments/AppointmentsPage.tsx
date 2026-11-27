@@ -27,7 +27,8 @@ import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage
 import { APPOINTMENT_STATUS_GROUPS, resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
-// Every role filters by the same four statuses the badges show.
+// Status filters matching the badges. Requested is only for the Appointment Agent, who handles
+// new requests (user decision 2026-11-27); other roles see it under All.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
   { label: 'Requested', value: 'requested' },
@@ -194,7 +195,13 @@ export function AppointmentsPage() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const [statusFilter, setStatusFilter] = useState<string | null>(() => initialStatusGroup(searchParams.get('status')));
+  const canFilterRequested = Boolean(user?.roles.includes(Role.APPOINTMENT_AGENT));
+  const statusFilters = STATUS_FILTERS.filter((filter) => canFilterRequested || filter.value !== 'requested');
+  // An old Requested link opens All for roles without that filter.
+  const [statusFilter, setStatusFilter] = useState<string | null>(() => {
+    const group = initialStatusGroup(searchParams.get('status'));
+    return group && statusFilters.some((filter) => filter.value === group) ? group : null;
+  });
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const isDark = resolvedTheme === 'dark';
@@ -451,7 +458,8 @@ export function AppointmentsPage() {
       )}
 
       {activeTab === 'visit-reports' ? (
-        <VisitReportsListPage isEmbedded />
+        // Only reports before Create Project; later ones are under Projects → Visit Reports.
+        <VisitReportsListPage isEmbedded stage="appointment" />
       ) : (
       <>
       {/* Filters */}
@@ -461,7 +469,7 @@ export function AppointmentsPage() {
         searchPlaceholder={searchPlaceholder}
         searchValue={search}
         onSearchChange={setSearch}
-        filters={STATUS_FILTERS}
+        filters={statusFilters}
         activeFilter={statusFilter ?? ''}
         onFilterChange={setStatusFilter}
         action={toolbarActions}

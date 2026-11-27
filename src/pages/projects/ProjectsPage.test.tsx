@@ -126,28 +126,87 @@ describe('Returned reports stay in Visit Reports', () => {
   });
 
   // Only Sales Staff and Admin reach Visit Reports (the /appointments route does not admit engineers).
-  it.each([Role.SALES_STAFF, Role.ADMIN])('offers the Returned filter in Visit Reports for %s', (role) => {
+  // User decision 2026-11-27: the Returned chip is merged into Draft (both are still with Sales).
+  it.each([Role.SALES_STAFF, Role.ADMIN])('has no Returned chip in Visit Reports for %s', (role) => {
     auth.user.roles = [role];
     const html = renderToStaticMarkup(
       <MemoryRouter initialEntries={['/appointments?tab=visit-reports']}><VisitReportsListPage isEmbedded /></MemoryRouter>,
     );
-    for (const label of ['All Reports', 'Draft', 'Submitted', 'Returned', 'Completed']) {
+    for (const label of ['All Reports', 'Draft', 'Submitted', 'Completed']) {
       expect(html).toContain(`>${label}</button>`);
     }
+    expect(html).not.toContain('>Returned</button>');
   });
 
-  it('lists returned reports in Visit Reports instead of sending the user to Projects', () => {
-    reportsQuery.data.items = [{
-      _id: 'returned-report', appointmentId: 'returned-visit', customerId: 'customer-1',
-      customerName: 'Returned customer', serviceType: 'railings', visitType: 'ocular', status: 'returned',
+  it.each(['draft', 'returned'])('lists draft and returned reports under Draft (reportStatus=%s)', (reportStatus) => {
+    const report = (id: string, customerName: string, status: string) => ({
+      _id: id, appointmentId: `${id}-visit`, customerId: 'customer-1', customerName,
+      serviceType: 'railings', visitType: 'ocular', status,
       createdAt: '2026-11-26T02:00:00Z', updatedAt: '2026-11-26T02:00:00Z',
-    } as Partial<VisitReport>];
+    } as Partial<VisitReport>);
+    reportsQuery.data.items = [
+      report('returned-report', 'Returned customer', 'returned'),
+      report('draft-report', 'Draft customer', 'draft'),
+      report('submitted-report', 'Submitted customer', 'submitted'),
+    ];
     const html = renderToStaticMarkup(
-      <MemoryRouter initialEntries={['/appointments?tab=visit-reports&reportStatus=returned']}><VisitReportsListPage isEmbedded /></MemoryRouter>,
+      <MemoryRouter initialEntries={[`/appointments?tab=visit-reports&reportStatus=${reportStatus}`]}><VisitReportsListPage isEmbedded stage="appointment" /></MemoryRouter>,
     );
-    expect(reportRequests).toEqual([{ status: 'returned' }]);
+    expect(reportRequests).toEqual([{ stage: 'appointment', limit: '100' }]);
     expect(html).toContain('Find the right report faster');
     expect(html).toContain('Returned customer');
+    expect(html).toContain('Draft customer');
+    expect(html).not.toContain('Submitted customer');
     expect(html).toContain('href="/visit-reports/returned-report"');
+    expect(html).toContain('>Returned<');
+  });
+});
+
+// User decision 2026-11-27: reports before Create Project in Appointments, after it in Projects.
+describe('Visit reports split by project stage', () => {
+  const renderList = (path: string, stage?: 'appointment' | 'project') => renderToStaticMarkup(
+    <MemoryRouter initialEntries={[path]}><VisitReportsListPage isEmbedded stage={stage} /></MemoryRouter>,
+  );
+
+  it.each([Role.SALES_STAFF, Role.ADMIN])('offers Projects → Visit Reports to %s and requests project-stage reports', (role) => {
+    auth.user.roles = [role];
+    const html = renderPage('/projects?tab=visit-reports');
+    expect(html).toContain('>Visit Reports</a>');
+    expect(html).toContain('href="/projects?tab=visit-reports"');
+    expect(html).toContain('went through Create Project');
+    expect(reportRequests).toEqual([{ stage: 'project' }]);
+    expect(projectRequests).toHaveLength(0);
+  });
+
+  it.each([Role.ENGINEER, Role.CUSTOMER, Role.CASHIER, Role.FABRICATION_STAFF, Role.APPOINTMENT_AGENT])('keeps Projects → Visit Reports away from %s, even from a direct link', (role) => {
+    auth.user.roles = [role];
+    const html = renderPage('/projects?tab=visit-reports');
+    expect(html).not.toContain('>Visit Reports</a>');
+    expect(reportRequests).toHaveLength(0);
+    expect(projectRequests).toHaveLength(1);
+  });
+
+  it('asks Appointments → Visit Reports for appointment-stage reports and points to Projects', () => {
+    const html = renderList('/appointments?tab=visit-reports', 'appointment');
+    expect(reportRequests).toEqual([{ stage: 'appointment' }]);
+    expect(html).toContain('have not gone through Create Project');
+    expect(html).toContain('Projects → Visit Reports');
+  });
+
+  it('keeps every report on pages without a stage (Reports → Visit Reports)', () => {
+    renderList('/reports');
+    expect(reportRequests).toEqual([{}]);
+  });
+
+  // The Back path (link state) is checked in the browser; static markup does not carry it.
+  it('lists project-stage reports with links to the report', () => {
+    reportsQuery.data.items = [{
+      _id: 'project-report', appointmentId: 'visit-1', customerId: 'customer-1', customerName: 'Project customer',
+      serviceType: 'railings', visitType: 'ocular', status: 'submitted',
+      createdAt: '2026-11-26T02:00:00Z', updatedAt: '2026-11-26T02:00:00Z',
+    } as Partial<VisitReport>];
+    const html = renderList('/projects?tab=visit-reports', 'project');
+    expect(html).toContain('Project customer');
+    expect(html).toContain('href="/visit-reports/project-report"');
   });
 });
