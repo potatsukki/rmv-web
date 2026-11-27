@@ -47,6 +47,7 @@ import { SERVICE_TYPE_LABELS } from '@/lib/constants';
 import { Suspense, lazy, useState, useEffect, useRef } from 'react';
 import { api } from '@/lib/api';
 import type { ApiResponse } from '@/lib/types';
+import { ConsultationAttendanceReminder } from './ConsultationAttendanceReminder';
 
 const LazyLocationView = lazy(() =>
   import('@/components/maps/LocationView').then((module) => ({ default: module.LocationView })),
@@ -459,6 +460,9 @@ export function AppointmentDetailPage() {
 
   const attendanceStatus = appt.attendanceStatus || AppointmentAttendanceStatus.SCHEDULED;
   const isOfficeConsultation = appt.type === 'office';
+  const showBookingAttendanceReminder = location.state?.showConsultationAttendanceReminder === true
+    && (appt.status === AppointmentStatus.REQUESTED || appt.status === AppointmentStatus.ASSIGNED);
+  const hasConfirmedConsultation = appt.status === AppointmentStatus.CONFIRMED && Boolean(appt.salesStaffId);
   // A No Show consultation closes as Completed; attendanceStatus keeps the No Show outcome.
   const isNoShowConsultation = isOfficeConsultation && attendanceStatus === AppointmentAttendanceStatus.NO_SHOW;
   const closedAt = consultationClosedAtLabel(attendanceStatus);
@@ -730,7 +734,6 @@ export function AppointmentDetailPage() {
                     ? 'The assigned sales staff is reviewing this appointment.'
                     : 'Assign an available sales staff member for review.'}
               </p>
-              {/* No No Show warning yet: it applies only once a Sales Staff is assigned (QA 11/24). */}
               {isCustomer && !isOcularAppointment && (
                 <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
                   <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
@@ -828,16 +831,12 @@ export function AppointmentDetailPage() {
                     ? 'Mark yourself as "On the Way" when heading to the site.'
                     : 'This consultation is scheduled at the RMV office. Review the customer details and prepare for the appointment.'}
               </p>
-              {/* No Show applies only once a Sales Staff is assigned (QA 11/24). */}
-              {isCustomer && !isOcularAppointment && Boolean(appt.salesStaffId) && (
-                <p className="mt-2 flex items-start gap-1.5 text-xs font-medium text-amber-700 dark:text-amber-300">
-                  <Clock className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                  Please arrive on time. If you are 15 minutes late, your appointment will be marked as No Show.
-                </p>
-              )}
             </div>
           </CardContent>
         </Card>
+      )}
+      {isCustomer && isOfficeConsultation && (showBookingAttendanceReminder || hasConfirmedConsultation) && (
+        <ConsultationAttendanceReminder />
       )}
       {canCustomerSubmitOcularLocation && ![AppointmentStatus.REQUESTED, AppointmentStatus.CONFIRMED].includes(appt.status as AppointmentStatus) && (
         <Card className="rounded-xl border-blue-200 bg-blue-50/50 dark:border-blue-900/60 dark:bg-blue-950/40">

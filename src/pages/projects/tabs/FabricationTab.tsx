@@ -667,10 +667,10 @@ export function FabricationTab({
                       <div className={deliveryType === DeliveryType.ON_SITE_INSTALLATION ? 'grid grid-cols-6 gap-0' : 'grid grid-cols-8 gap-0'}>
                         {fabricationStepMarkers.map((step, idx) => {
                           const isCurrent = step.key === fabricationStatus.currentStatus;
-                          const isComplete = currentFabricationStepIndex >= 0 && idx < currentFabricationStepIndex;
+                          const isComplete = idx < currentFabricationStepIndex || (isCurrent && step.key === terminalStatus);
                           const isLast = idx === fabricationStepMarkers.length - 1;
                           const StageIcon = lifecycleIconByStatus[step.key] || Hammer;
-                          const nodeClass = isCurrent
+                          const nodeClass = isCurrent && !isComplete
                             ? isDark
                               ? 'border-sky-400/50 bg-sky-500/20 text-sky-100'
                               : 'border-sky-300 bg-sky-50 text-sky-700'
