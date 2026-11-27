@@ -33,6 +33,7 @@ import {
 import type { Project } from '@/lib/types';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 import { OcularVisitsList } from '@/pages/appointments/OcularVisitsList';
+import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage';
 
 type ProjectListFilter = ProjectListingStage | 'declined';
 
@@ -124,10 +125,11 @@ export function ProjectsPage() {
   const canSeeOculars = user?.roles.some((role) => [Role.SALES_STAFF, Role.ADMIN].includes(role));
   const showOcularSalesStaff = Boolean(user?.roles.some((role) => [Role.ADMIN, Role.APPOINTMENT_AGENT].includes(role)));
 
-  // Returned reports stay in Appointments → Visit Reports (user decision 2026-11-27); only Ocular moved here.
+  // Visit Reports here = reports of projects past Create Project; earlier ones stay in
+  // Appointments → Visit Reports (user decision 2026-11-27). Sales Staff/Admin only, like Ocular.
   const tabs = [
     { key: 'projects', label: 'Projects' },
-    ...(canSeeOculars ? [{ key: 'oculars', label: 'Ocular' }] : []),
+    ...(canSeeOculars ? [{ key: 'oculars', label: 'Ocular' }, { key: 'visit-reports', label: 'Visit Reports' }] : []),
   ];
   const requestedTab = searchParams.get('tab');
   const activeTab = tabs.some((tab) => tab.key === requestedTab) ? requestedTab : 'projects';
@@ -156,7 +158,9 @@ export function ProjectsPage() {
           })}
         </nav>
       )}
-      {activeTab === 'oculars' ? <OcularVisitsList showSalesStaff={showOcularSalesStaff} /> : <ProjectsList />}
+      {activeTab === 'oculars' ? <OcularVisitsList showSalesStaff={showOcularSalesStaff} />
+        : activeTab === 'visit-reports' ? <VisitReportsListPage isEmbedded stage="project" />
+        : <ProjectsList />}
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { VisitReportStatus } from './constants';
 import {
   displayVisitReportStatus,
   groupSubmittedState,
+  isDisplayedStatusFilter,
+  matchesVisitReportStatusFilter,
   normalizeVisitReportStatusFilter,
   visitReportStatusBadge,
 } from './visit-report-filters';
@@ -13,11 +15,29 @@ describe('normalizeVisitReportStatusFilter', () => {
     expect(normalizeVisitReportStatusFilter('pending')).toBe(VisitReportStatus.DRAFT);
   });
 
+  it('routes old Returned links to Draft, which now lists returned reports', () => {
+    expect(normalizeVisitReportStatusFilter(VisitReportStatus.RETURNED)).toBe(VisitReportStatus.DRAFT);
+  });
+
   it('preserves supported status filters', () => {
-    expect(normalizeVisitReportStatusFilter(VisitReportStatus.RETURNED)).toBe(
-      VisitReportStatus.RETURNED,
-    );
+    expect(normalizeVisitReportStatusFilter(VisitReportStatus.SUBMITTED)).toBe(VisitReportStatus.SUBMITTED);
     expect(normalizeVisitReportStatusFilter(null)).toBe('');
+  });
+});
+
+describe('matchesVisitReportStatusFilter', () => {
+  it('lists draft and returned reports under Draft, filtered on the loaded reports', () => {
+    expect(isDisplayedStatusFilter(VisitReportStatus.DRAFT)).toBe(true);
+    expect(matchesVisitReportStatusFilter({ status: 'draft' }, 'draft')).toBe(true);
+    expect(matchesVisitReportStatusFilter({ status: 'returned' }, 'draft')).toBe(true);
+    expect(matchesVisitReportStatusFilter({ status: 'submitted' }, 'draft')).toBe(false);
+  });
+
+  it('keeps the other chips on the displayed status', () => {
+    const finished = { _id: 'a1', status: 'completed' };
+    expect(matchesVisitReportStatusFilter({ status: 'submitted', appointmentId: finished }, 'completed')).toBe(true);
+    expect(matchesVisitReportStatusFilter({ status: 'submitted', appointmentId: finished }, 'submitted')).toBe(false);
+    expect(matchesVisitReportStatusFilter({ status: 'returned' }, 'completed')).toBe(false);
   });
 });
 

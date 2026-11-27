@@ -1,7 +1,8 @@
 import { AppointmentStatus, VisitReportStatus } from './constants';
 
 export function normalizeVisitReportStatusFilter(status: string | null): string {
-  if (status === 'pending') return VisitReportStatus.DRAFT;
+  // Returned has no chip of its own: it is listed under Draft (old links included).
+  if (status === 'pending' || status === VisitReportStatus.RETURNED) return VisitReportStatus.DRAFT;
   return status || '';
 }
 
@@ -24,9 +25,23 @@ export function displayVisitReportStatus(report: { status: string; appointmentId
     : report.status;
 }
 
-/** Submitted and Completed depend on the appointment too, so those filters run on the displayed status. */
+/**
+ * Filters that run on the loaded reports instead of the API: Submitted and Completed depend on the
+ * appointment too, and Draft also covers returned reports (Admin's list API has no combined status).
+ */
 export function isDisplayedStatusFilter(filter: string): boolean {
-  return filter === VisitReportStatus.SUBMITTED || filter === VisitReportStatus.COMPLETED;
+  return filter === VisitReportStatus.DRAFT
+    || filter === VisitReportStatus.SUBMITTED
+    || filter === VisitReportStatus.COMPLETED;
+}
+
+/** Whether a report belongs under a status chip. Draft = still with Sales (draft or returned). */
+export function matchesVisitReportStatusFilter(report: { status: string; appointmentId?: unknown }, filter: string): boolean {
+  const status = displayVisitReportStatus(report);
+  if (filter === VisitReportStatus.DRAFT) {
+    return status === VisitReportStatus.DRAFT || status === VisitReportStatus.RETURNED;
+  }
+  return status === filter;
 }
 
 const VISIT_REPORT_STATUS_LABELS: Record<string, string> = {

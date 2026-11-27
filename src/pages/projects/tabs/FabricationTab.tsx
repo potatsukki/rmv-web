@@ -83,12 +83,14 @@ const SHOP_FABRICATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
   { key: FabricationStatus.DONE, label: 'Done' },
 ];
 
+// Installation comes after Quality Check, so the customer's installation banner only shows there
+// (QA 2026-11-27: it showed while the work was still at Welding).
 const ON_SITE_INSTALLATION_STEP_MARKERS: Array<{ key: string; label: string }> = [
   { key: FabricationStatus.FABRICATION, label: 'Preparing Materials' },
   { key: FabricationStatus.WELDING_ASSEMBLY, label: 'Welding / Assembly' },
-  { key: FabricationStatus.INSTALLATION, label: 'Installation' },
   { key: FabricationStatus.FINISHING, label: 'Finishing' },
   { key: FabricationStatus.QUALITY_CHECK, label: 'Quality Check' },
+  { key: FabricationStatus.INSTALLATION, label: 'Installation' },
   { key: FabricationStatus.DONE, label: 'Done' },
 ];
 

@@ -68,8 +68,8 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('Ready for Ocular');
   });
 
-  it.each([Role.CUSTOMER, Role.SALES_STAFF, Role.APPOINTMENT_AGENT, Role.ADMIN])('offers four status filters without Assigned to %s', (role) => {
-    auth.user.roles = [role];
+  it('offers Requested to the Appointment Agent, without Assigned or Cancelled', () => {
+    auth.user.roles = [Role.APPOINTMENT_AGENT];
     query.data.items = [];
 
     const html = renderToStaticMarkup(<MemoryRouter><AppointmentsPage /></MemoryRouter>);
@@ -81,11 +81,33 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('>Assigned<');
   });
 
-  it('opens old Assigned filter links as Requested', () => {
-    auth.user.roles = [Role.CUSTOMER];
+  // User decision 2026-11-27: Requested is a filter for the Appointment Agent only.
+  it.each([Role.CUSTOMER, Role.SALES_STAFF, Role.ADMIN, Role.CASHIER])('has no Requested filter for %s', (role) => {
+    auth.user.roles = [role];
+    query.data.items = [];
+
+    const html = renderToStaticMarkup(<MemoryRouter><AppointmentsPage /></MemoryRouter>);
+
+    for (const label of ['All', 'Appointed', 'Completed', 'No Show']) {
+      expect(html).toContain(`>${label}</button>`);
+    }
+    expect(html).not.toContain('>Requested</button>');
+    expect(html).not.toContain('>Assigned<');
+  });
+
+  it('opens old Assigned filter links as Requested for the Appointment Agent', () => {
+    auth.user.roles = [Role.APPOINTMENT_AGENT];
     query.data.items = [];
     renderToStaticMarkup(<MemoryRouter initialEntries={['/appointments?status=assigned']}><AppointmentsPage /></MemoryRouter>);
     expect(listRequests).toContainEqual(expect.objectContaining({ statusGroup: 'requested' }));
+  });
+
+  it.each(['requested', 'assigned'])('opens an old %s link as All for Sales Staff', (status) => {
+    auth.user.roles = [Role.SALES_STAFF];
+    query.data.items = [];
+    renderToStaticMarkup(<MemoryRouter initialEntries={[`/appointments?status=${status}`]}><AppointmentsPage /></MemoryRouter>);
+    expect(listRequests.length).toBeGreaterThan(0);
+    expect(listRequests.every((params) => !(params as Record<string, string>).statusGroup)).toBe(true);
   });
 
   it('removes Assigned from Ocular filters', () => {
