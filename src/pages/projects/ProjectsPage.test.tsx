@@ -81,9 +81,11 @@ describe('Ocular visits in Projects', () => {
     expect(html).toContain('href="/appointments/ocular-1"');
     expect(html).toContain('>Paid<');
     expect(html).not.toContain('>Sales Staff</th>');
-    for (const label of ['All', 'Requested', 'Appointed', 'Completed', 'No Show']) {
+    // No Requested chip: new oculars are created already Appointed (user decision 2026-11-27).
+    for (const label of ['All', 'Appointed', 'Completed', 'No Show']) {
       expect(html).toContain(`>${label}</button>`);
     }
+    expect(html).not.toContain('>Requested</button>');
     expect(html).not.toContain('>Assigned</button>');
   });
 

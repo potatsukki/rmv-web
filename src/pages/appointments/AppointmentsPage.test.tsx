@@ -110,11 +110,18 @@ describe('AppointmentsPage consultation status', () => {
     expect(listRequests.every((params) => !(params as Record<string, string>).statusGroup)).toBe(true);
   });
 
-  it('removes Assigned from Ocular filters', () => {
+  it('has no Assigned or Requested chip in the Ocular filters', () => {
     query.data.items = [];
     const html = renderToStaticMarkup(<MemoryRouter><OcularVisitsList showSalesStaff /></MemoryRouter>);
-    expect(html).toContain('>Requested</button>');
+    expect(html).toContain('>Appointed</button>');
+    expect(html).not.toContain('>Requested</button>');
     expect(html).not.toContain('>Assigned<');
+  });
+
+  it('still shows an old requested ocular under All with its Requested badge', () => {
+    query.data.items = [{ _id: 'old-ocular', date: '2026-11-20', slotCode: '10:00', type: 'ocular', status: AppointmentStatus.REQUESTED }];
+    const html = renderToStaticMarkup(<MemoryRouter><OcularVisitsList showSalesStaff /></MemoryRouter>);
+    expect(html).toContain('>Requested</span>');
   });
 
   it.each([Role.SALES_STAFF, Role.APPOINTMENT_AGENT, Role.ADMIN])('no longer lists Ocular under Appointments for %s', (role) => {
