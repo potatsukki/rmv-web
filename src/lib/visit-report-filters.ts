@@ -35,11 +35,32 @@ export function isDisplayedStatusFilter(filter: string): boolean {
     || filter === VisitReportStatus.COMPLETED;
 }
 
-/** Whether a report belongs under a status chip. Draft = still with Sales (draft or returned). */
+/** Attendance outcomes that end a visit without a report (the server refuses to submit one). */
+const CLOSED_ATTENDANCE_STATUSES = new Set<string>(['no_show', 'customer_declined', 'rescheduled']);
+
+/**
+ * True when the report's appointment ended without a report: cancelled, No Show, Customer Declined
+ * or Rescheduled. Its draft can never be submitted, so it is not pending work (same rule as the
+ * server's closedWithoutReportFilter, which the dashboard's Pending Reports uses).
+ */
+export function appointmentClosedWithoutReport(appointmentId: unknown): boolean {
+  if (!appointmentId || typeof appointmentId !== 'object') return false;
+  const { status, attendanceStatus } = appointmentId as { status?: string; attendanceStatus?: string };
+  return status === AppointmentStatus.CANCELLED
+    || status === AppointmentStatus.NO_SHOW
+    || CLOSED_ATTENDANCE_STATUSES.has(String(attendanceStatus ?? ''));
+}
+
+/**
+ * Whether a report belongs under a status chip. Draft = still with Sales (draft or returned) and
+ * still possible to complete; drafts of appointments that ended without a report stay under All
+ * (user decision 2026-11-27: finished appointments are not counted as pending).
+ */
 export function matchesVisitReportStatusFilter(report: { status: string; appointmentId?: unknown }, filter: string): boolean {
   const status = displayVisitReportStatus(report);
   if (filter === VisitReportStatus.DRAFT) {
-    return status === VisitReportStatus.DRAFT || status === VisitReportStatus.RETURNED;
+    return (status === VisitReportStatus.DRAFT || status === VisitReportStatus.RETURNED)
+      && !appointmentClosedWithoutReport(report.appointmentId);
   }
   return status === filter;
 }

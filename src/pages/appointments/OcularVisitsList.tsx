@@ -20,9 +20,10 @@ import { useAppointments } from '@/hooks/useAppointments';
 import type { Appointment } from '@/lib/types';
 import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 
+// No Requested chip (user decision 2026-11-27): every new ocular is created already Appointed
+// (Schedule Ocular, consultation report). An old requested ocular still shows under All with its badge.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
-  { label: 'Requested', value: 'requested' },
   { label: 'Appointed', value: 'confirmed' },
   { label: 'Completed', value: 'completed' },
   { label: 'No Show', value: 'no_show' },

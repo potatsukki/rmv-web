@@ -68,8 +68,9 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('Ready for Ocular');
   });
 
-  it('offers Requested to the Appointment Agent, without Assigned or Cancelled', () => {
-    auth.user.roles = [Role.APPOINTMENT_AGENT];
+  // User decisions 2026-11-27: Requested is for the Appointment Agent and (brought back) the Customer.
+  it.each([Role.APPOINTMENT_AGENT, Role.CUSTOMER])('offers Requested to %s, without Assigned or Cancelled', (role) => {
+    auth.user.roles = [role];
     query.data.items = [];
 
     const html = renderToStaticMarkup(<MemoryRouter><AppointmentsPage /></MemoryRouter>);
@@ -81,8 +82,7 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('>Assigned<');
   });
 
-  // User decision 2026-11-27: Requested is a filter for the Appointment Agent only.
-  it.each([Role.CUSTOMER, Role.SALES_STAFF, Role.ADMIN, Role.CASHIER])('has no Requested filter for %s', (role) => {
+  it.each([Role.SALES_STAFF, Role.ADMIN, Role.CASHIER])('has no Requested filter for %s', (role) => {
     auth.user.roles = [role];
     query.data.items = [];
 
@@ -95,8 +95,8 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('>Assigned<');
   });
 
-  it('opens old Assigned filter links as Requested for the Appointment Agent', () => {
-    auth.user.roles = [Role.APPOINTMENT_AGENT];
+  it.each([Role.APPOINTMENT_AGENT, Role.CUSTOMER])('opens old Assigned filter links as Requested for %s', (role) => {
+    auth.user.roles = [role];
     query.data.items = [];
     renderToStaticMarkup(<MemoryRouter initialEntries={['/appointments?status=assigned']}><AppointmentsPage /></MemoryRouter>);
     expect(listRequests).toContainEqual(expect.objectContaining({ statusGroup: 'requested' }));
@@ -110,11 +110,18 @@ describe('AppointmentsPage consultation status', () => {
     expect(listRequests.every((params) => !(params as Record<string, string>).statusGroup)).toBe(true);
   });
 
-  it('removes Assigned from Ocular filters', () => {
+  it('has no Assigned or Requested chip in the Ocular filters', () => {
     query.data.items = [];
     const html = renderToStaticMarkup(<MemoryRouter><OcularVisitsList showSalesStaff /></MemoryRouter>);
-    expect(html).toContain('>Requested</button>');
+    expect(html).toContain('>Appointed</button>');
+    expect(html).not.toContain('>Requested</button>');
     expect(html).not.toContain('>Assigned<');
+  });
+
+  it('still shows an old requested ocular under All with its Requested badge', () => {
+    query.data.items = [{ _id: 'old-ocular', date: '2026-11-20', slotCode: '10:00', type: 'ocular', status: AppointmentStatus.REQUESTED }];
+    const html = renderToStaticMarkup(<MemoryRouter><OcularVisitsList showSalesStaff /></MemoryRouter>);
+    expect(html).toContain('>Requested</span>');
   });
 
   it.each([Role.SALES_STAFF, Role.APPOINTMENT_AGENT, Role.ADMIN])('no longer lists Ocular under Appointments for %s', (role) => {

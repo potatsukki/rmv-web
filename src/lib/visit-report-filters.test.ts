@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { VisitReportStatus } from './constants';
 import {
+  appointmentClosedWithoutReport,
   displayVisitReportStatus,
   groupSubmittedState,
   isDisplayedStatusFilter,
@@ -31,6 +32,29 @@ describe('matchesVisitReportStatusFilter', () => {
     expect(matchesVisitReportStatusFilter({ status: 'draft' }, 'draft')).toBe(true);
     expect(matchesVisitReportStatusFilter({ status: 'returned' }, 'draft')).toBe(true);
     expect(matchesVisitReportStatusFilter({ status: 'submitted' }, 'draft')).toBe(false);
+  });
+
+  // User decision 2026-11-27: drafts that can never be submitted are not pending work.
+  it('leaves drafts of appointments that ended without a report out of Draft', () => {
+    const closed = [
+      { _id: 'a1', status: 'completed', attendanceStatus: 'customer_declined' },
+      { _id: 'a2', status: 'completed', attendanceStatus: 'no_show' },
+      { _id: 'a3', status: 'no_show' },
+      { _id: 'a4', status: 'cancelled' },
+    ];
+    for (const appointmentId of closed) {
+      expect(appointmentClosedWithoutReport(appointmentId)).toBe(true);
+      expect(matchesVisitReportStatusFilter({ status: 'draft', appointmentId }, 'draft')).toBe(false);
+    }
+    // Still to happen, under way, or a normal finished visit: the draft is pending work.
+    for (const appointmentId of [
+      { _id: 'b1', status: 'confirmed', attendanceStatus: 'scheduled' },
+      { _id: 'b2', status: 'in_progress', attendanceStatus: 'in_progress' },
+      'b3',
+    ]) {
+      expect(appointmentClosedWithoutReport(appointmentId)).toBe(false);
+      expect(matchesVisitReportStatusFilter({ status: 'draft', appointmentId }, 'draft')).toBe(true);
+    }
   });
 
   it('keeps the other chips on the displayed status', () => {
