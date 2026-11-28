@@ -22,6 +22,7 @@ import {
 import { useAuthStore } from '@/stores/auth.store';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useNotifications } from '@/hooks/useNotifications';
+import { invalidateFabricationTeamQueries } from '@/hooks/useProjects';
 import { connectSocket } from '@/lib/socket';
 import { Role } from '@/lib/constants';
 import { api } from '@/lib/api';
@@ -325,6 +326,13 @@ export function AppLayout() {
       for (const queryKey of [['notifications'], ['appointments'], ['projects'], ['reports', 'dashboard']]) {
         queryClientRef.current.invalidateQueries({ queryKey });
       }
+      invalidateFabricationTeamQueries(queryClientRef.current);
+    };
+
+    // Realtime (2026-11-28): a fabrication team, stage or project status changed somewhere. Team
+    // cards, project pages, lists and every fabricator picker reload, no browser refresh needed.
+    const handleFabricationTeamUpdated = () => {
+      invalidateFabricationTeamQueries(queryClientRef.current);
     };
 
     const handleNewNotification = (n: import('@/lib/types').Notification) => {
@@ -336,6 +344,7 @@ export function AppLayout() {
       queryClientRef.current.invalidateQueries({ queryKey: ['visit-reports'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['blueprints'] });
       queryClientRef.current.invalidateQueries({ queryKey: ['fabrication'] });
+      invalidateFabricationTeamQueries(queryClientRef.current);
       queryClientRef.current.invalidateQueries({ queryKey: ['cash'] });
       if (n.category === 'payment') {
         queryClientRef.current.invalidateQueries({ queryKey: ['payments'] });
@@ -368,6 +377,7 @@ export function AppLayout() {
 
     sock.on('notification:new', handleNewNotification);
     sock.on('payments:queue-updated', handlePaymentsQueueUpdate);
+    sock.on('fabrication:team-updated', handleFabricationTeamUpdated);
     sock.on('disconnect', handleConnectionLost);
     sock.on('connect_error', handleConnectionLost);
     sock.on('connect', handleConnected);
@@ -375,6 +385,7 @@ export function AppLayout() {
     return () => {
       sock.off('notification:new', handleNewNotification);
       sock.off('payments:queue-updated', handlePaymentsQueueUpdate);
+      sock.off('fabrication:team-updated', handleFabricationTeamUpdated);
       sock.off('disconnect', handleConnectionLost);
       sock.off('connect_error', handleConnectionLost);
       sock.off('connect', handleConnected);

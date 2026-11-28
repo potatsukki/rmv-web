@@ -61,6 +61,25 @@ describe('teamConflict (one project in the workshop per fabricator)', () => {
     expect(teamConflict(member({ activeProjects: [{ ...projectA, nearCompletion: true }] }), 'project-x')).toBeNull();
     expect(teamConflict(member({ activeProjects: [crewOnly] }), 'project-x')).toBeNull();
   });
+
+  // QA 2026-11-28: Change Team of an old project (at QC) whose lead already took the next one.
+  it('never blocks someone already on this team, even with another project in the workshop', () => {
+    const oldAtQc = { ...projectA, nearCompletion: true };
+    const next = { _id: 'project-n', projectNumber: 'PRJ-2026-00009', title: 'Stairs', status: 'fabrication', roles: ['lead' as const] };
+    expect(teamConflict(member({ activeProjects: [oldAtQc, next] }), 'project-a')).toBeNull();
+    // Only delivery crew on this project does not count as being on its team.
+    const crewHere = { ...projectA, roles: ['delivery_crew' as const] };
+    expect(teamConflict(member({ activeProjects: [crewHere, next] }), 'project-a')).toBe('On PRJ-2026-00009 (Lead) until it reaches Quality Check');
+  });
+
+  it('never recommends a current member who is busy in the workshop elsewhere', () => {
+    const oldAtQc = { ...projectA, nearCompletion: true };
+    const next = { _id: 'project-n', projectNumber: 'PRJ-2026-00009', title: 'Stairs', status: 'fabrication', roles: ['lead' as const] };
+    const busyLead = member({ _id: 'lead', workloadStatus: 'busy', activeProjects: [oldAtQc, next] });
+    const free = member({ _id: 'free' });
+    expect(fabricatorRecommendation([busyLead, free], 'project-a')).toEqual({ id: 'free', label: 'Recommended' });
+    expect(fabricatorRecommendation([busyLead], 'project-a')).toBeNull();
+  });
 });
 
 describe('deliveryConflict (a delivery takes the whole day)', () => {
