@@ -15,6 +15,7 @@ import {
   Wrench,
   Settings,
   Filter,
+  UserCheck,
 } from 'lucide-react';
 import { useEffect, useState, useMemo } from 'react';
 import { useNavigate } from 'react-router';
@@ -32,13 +33,18 @@ import {
 import { useNow } from '@/hooks/useNow';
 import { useNotificationStore } from '@/stores/notification.store';
 import { useAuthStore } from '@/stores/auth.store';
-import { Role } from '@/lib/constants';
 import type { Notification } from '@/lib/types';
 import { extractItems, formatApiTimeAgo, formatManilaDateTime } from '@/lib/utils';
+import {
+  matchesNotificationFilter,
+  notificationFiltersFor,
+  type NotificationFilter,
+} from '@/lib/notification-filters';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
-const CATEGORY_TABS = [
+const CATEGORY_TABS: ReadonlyArray<{ label: string; value: NotificationFilter; icon: typeof LayoutGrid }> = [
   { label: 'All', value: 'all', icon: LayoutGrid },
+  { label: 'Assigned', value: 'assigned', icon: UserCheck },
   { label: 'Appointments', value: 'appointment', icon: CalendarDays },
   { label: 'Reschedule', value: 'reschedule', icon: CalendarClock },
   { label: 'Projects', value: 'project', icon: FolderOpen },
@@ -46,46 +52,35 @@ const CATEGORY_TABS = [
   { label: 'Blueprints', value: 'blueprint', icon: FileText },
   { label: 'Fabrication', value: 'fabrication', icon: Wrench },
   { label: 'System', value: 'system', icon: Settings },
-] as const;
-
-const APPOINTMENT_NOTIFICATION_ROLES: Role[] = [
-  Role.CUSTOMER,
-  Role.APPOINTMENT_AGENT,
-  Role.SALES_STAFF,
-  Role.ADMIN,
 ];
 
-function isRescheduleNotification(notification: Notification): boolean {
-  const haystack = `${notification.title} ${notification.message}`.toLowerCase();
-  return notification.category === 'appointment' && haystack.includes('reschedule');
-}
+// The newest 100 (the server maximum), so each filter still has its older notices.
+const NOTIFICATION_LIST_PARAMS = { limit: '100' };
 
 export function NotificationsPage() {
   const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
-  const { data, isLoading, isError, refetch } = useNotifications();
+  const { data, isLoading, isError, refetch } = useNotifications(NOTIFICATION_LIST_PARAMS);
   const markAsRead = useMarkAsRead();
   const markAllAsRead = useMarkAllAsRead();
   const setNotifications = useNotificationStore((state) => state.setNotifications);
-  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const [selectedFilter, setActiveFilter] = useState<NotificationFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   // Re-renders every 30 s so "x minutes ago" keeps counting while the tab stays open.
   const now = useNow();
 
   const notifications = extractItems<Notification>(data);
-  const categoryTabs = user?.roles.some((role) => APPOINTMENT_NOTIFICATION_ROLES.includes(role))
-    ? CATEGORY_TABS
-    : CATEGORY_TABS.filter((tab) => tab.value !== 'appointment');
+  // Each role sees only its own chips; a notice without a chip for this viewer shows under System.
+  const offeredFilters = useMemo(() => notificationFiltersFor(user?.roles), [user?.roles]);
+  const categoryTabs = CATEGORY_TABS.filter((tab) => offeredFilters.includes(tab.value));
+  const activeFilter: NotificationFilter = offeredFilters.includes(selectedFilter) ? selectedFilter : 'all';
 
   const filteredNotifications = useMemo(
     () => {
       const normalizedQuery = searchQuery.trim().toLowerCase();
 
       return notifications.filter((notification) => {
-        const matchesCategory =
-          activeFilter === 'all'
-          || (activeFilter === 'reschedule' && isRescheduleNotification(notification))
-          || notification.category === activeFilter;
+        const matchesCategory = matchesNotificationFilter(notification, activeFilter, offeredFilters);
 
         const matchesSearch =
           normalizedQuery.length === 0 ||
@@ -95,7 +90,7 @@ export function NotificationsPage() {
         return matchesCategory && matchesSearch;
       });
     },
-    [notifications, activeFilter, searchQuery],
+    [notifications, activeFilter, offeredFilters, searchQuery],
   );
 
   const unreadCount = notifications.filter((n) => !n.isRead).length;

@@ -2,12 +2,12 @@ import { renderToStaticMarkup } from 'react-dom/server';
 import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { Role } from '@/lib/constants';
-import type { Appointment, VisitReport } from '@/lib/types';
+import { ProjectStatus, Role } from '@/lib/constants';
+import type { Appointment, Project, VisitReport } from '@/lib/types';
 
 const { auth, projectsQuery, reportsQuery, ocularQuery, projectRequests, reportRequests, appointmentRequests } = vi.hoisted(() => ({
   auth: { user: { roles: ['sales_staff'] } },
-  projectsQuery: { data: { items: [], total: 0 }, isLoading: false, isError: false, refetch: vi.fn() },
+  projectsQuery: { data: { items: [] as Partial<Project>[], total: 0 }, isLoading: false, isError: false, refetch: vi.fn() },
   reportsQuery: { data: { items: [] as Partial<VisitReport>[] }, isLoading: false, isError: false, refetch: vi.fn() },
   ocularQuery: { data: { items: [] as Partial<Appointment>[] }, isLoading: false, isError: false, refetch: vi.fn() },
   projectRequests: [] as unknown[],
@@ -37,6 +37,8 @@ function renderPage(path = '/projects') {
 beforeEach(() => {
   auth.user.roles = [Role.SALES_STAFF];
   projectsQuery.isError = false;
+  projectsQuery.data.items = [];
+  projectsQuery.data.total = 0;
   projectRequests.length = 0;
   reportRequests.length = 0;
   appointmentRequests.length = 0;
@@ -99,6 +101,27 @@ describe('Ocular visits in Projects', () => {
 });
 
 describe('Declined initial designs in Projects', () => {
+  const declinedProject: Partial<Project> = {
+    _id: 'declined-project', projectNumber: 'PRJ-2026-00088', title: 'Commercial Stainless Guardrail',
+    status: ProjectStatus.APPROVED, createdAt: '2026-11-08T02:00:00.000Z',
+  };
+
+  it.each([Role.ENGINEER, Role.SALES_STAFF, Role.ADMIN])('opens Design Review from desktop and mobile Declined links for %s', (role) => {
+    auth.user.roles = [role];
+    projectsQuery.data.items = [declinedProject];
+    const html = renderPage('/projects?stage=declined');
+    expect(html.match(/href="\/projects\/declined-project\/design-review"/g)).toHaveLength(2);
+    expect(html).not.toContain('href="/projects/declined-project"');
+  });
+
+  it.each([Role.ENGINEER, Role.SALES_STAFF, Role.ADMIN])('keeps the default project destination outside Declined for %s', (role) => {
+    auth.user.roles = [role];
+    projectsQuery.data.items = [declinedProject];
+    const html = renderPage('/projects');
+    expect(html.match(/href="\/projects\/declined-project"/g)).toHaveLength(2);
+    expect(html).not.toContain('/projects/declined-project/design-review');
+  });
+
   it.each([Role.SALES_STAFF, Role.ENGINEER, Role.ADMIN])('offers Declined and requests its review state for %s', (role) => {
     auth.user.roles = [role];
     const html = renderPage('/projects?stage=declined');
