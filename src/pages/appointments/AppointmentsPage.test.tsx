@@ -68,8 +68,9 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('Ready for Ocular');
   });
 
-  // User decisions 2026-11-27: Requested is for the Appointment Agent and (brought back) the Customer.
-  it.each([Role.APPOINTMENT_AGENT, Role.CUSTOMER])('offers Requested to %s, without Assigned or Cancelled', (role) => {
+  // User decisions 2026-11-27/28: Requested is for the Appointment Agent, the Admin (both assign
+  // sales staff) and (brought back) the Customer.
+  it.each([Role.APPOINTMENT_AGENT, Role.ADMIN, Role.CUSTOMER])('offers Requested to %s, without Assigned or Cancelled', (role) => {
     auth.user.roles = [role];
     query.data.items = [];
 
@@ -82,7 +83,7 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('>Assigned<');
   });
 
-  it.each([Role.SALES_STAFF, Role.ADMIN, Role.CASHIER])('has no Requested filter for %s', (role) => {
+  it.each([Role.SALES_STAFF, Role.CASHIER])('has no Requested filter for %s', (role) => {
     auth.user.roles = [role];
     query.data.items = [];
 
@@ -95,7 +96,7 @@ describe('AppointmentsPage consultation status', () => {
     expect(html).not.toContain('>Assigned<');
   });
 
-  it.each([Role.APPOINTMENT_AGENT, Role.CUSTOMER])('opens old Assigned filter links as Requested for %s', (role) => {
+  it.each([Role.APPOINTMENT_AGENT, Role.ADMIN, Role.CUSTOMER])('opens old Assigned filter links as Requested for %s', (role) => {
     auth.user.roles = [role];
     query.data.items = [];
     renderToStaticMarkup(<MemoryRouter initialEntries={['/appointments?status=assigned']}><AppointmentsPage /></MemoryRouter>);
