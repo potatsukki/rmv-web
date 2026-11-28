@@ -47,10 +47,10 @@ beforeEach(() => {
 });
 
 describe('TodaySchedulePage', () => {
-  it('has its own table: Time, Type, Customer, Reference, Status', () => {
+  it('has Time, Type, Customer, Reference columns without a Status column', () => {
     const html = render();
     const headers = [...html.matchAll(/<th[^>]*>([^<]*)<\/th>/g)].map((match) => match[1]);
-    expect(headers.slice(0, 5)).toEqual(['Time', 'Type', 'Customer', 'Reference', 'Status']);
+    expect(headers).toEqual(['Time', 'Type', 'Customer', 'Reference']);
     expect(html).toContain("Today&#x27;s Schedule");
     expect(html).toContain('Nov 28, 2026');
   });
@@ -63,13 +63,14 @@ describe('TodaySchedulePage', () => {
     expect(michael).toBeGreaterThan(jay);
     expect(html).toContain('>9:00 AM<');
     expect(html).toContain('>10:00 AM<');
-    expect(html).toContain('>Consultation<');
+    expect(html).toContain('>Appointment<');
     expect(html).toContain('>Ocular<');
+    expect(html).not.toContain('>Consultation<');
     expect(html).toContain('Tetuan Street, Santa Cruz, Manila');
     expect(html).toContain('href="/appointments/office-1"');
     expect(html).toContain('href="/appointments/ocular-1"');
     expect(html).toContain('APT-20261128-0003');
-    expect(html).toContain('>Appointed</span>');
+    expect(html).not.toContain('>Appointed</span>');
     expect(html).toContain('2 visits today');
   });
 
