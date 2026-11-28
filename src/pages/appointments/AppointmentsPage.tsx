@@ -27,9 +27,9 @@ import { VisitReportsListPage } from '@/pages/visit-reports/VisitReportsListPage
 import { APPOINTMENT_STATUS_GROUPS, resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 import { WorkspacePageHeader } from '@/components/workspace/WorkspacePageHeader';
 
-// Status filters matching the badges. Requested is for the Appointment Agent, who handles new
-// requests, and the Customer, who follows their own (user decisions 2026-11-27); Sales Staff,
-// Admin and Cashier see requested appointments under All.
+// Status filters matching the badges. Requested is for the Appointment Agent and the Admin, who
+// both assign sales staff to new requests, and the Customer, who follows their own (user decisions
+// 2026-11-27/28); Sales Staff and Cashier see requested appointments under All.
 const STATUS_FILTERS = [
   { label: 'All', value: '' },
   { label: 'Requested', value: 'requested' },
@@ -196,7 +196,7 @@ export function AppointmentsPage() {
   const resolvedTheme = useThemeStore((state) => state.resolvedTheme);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const canFilterRequested = Boolean(user?.roles.some((role) => [Role.APPOINTMENT_AGENT, Role.CUSTOMER].includes(role)));
+  const canFilterRequested = Boolean(user?.roles.some((role) => [Role.APPOINTMENT_AGENT, Role.ADMIN, Role.CUSTOMER].includes(role)));
   const statusFilters = STATUS_FILTERS.filter((filter) => canFilterRequested || filter.value !== 'requested');
   // An old Requested link opens All for roles without that filter.
   const [statusFilter, setStatusFilter] = useState<string | null>(() => {
