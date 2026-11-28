@@ -3544,6 +3544,7 @@ export function ProjectDetailPage() {
                       <>
                         <FabricationStaffPicker
                           ariaLabel="Installation crew"
+                          listView="schedule"
                           mode="multi"
                           staff={fabWorkload.data}
                           isLoading={fabWorkload.isLoading}

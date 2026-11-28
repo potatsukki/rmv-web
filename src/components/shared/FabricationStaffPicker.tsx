@@ -2,6 +2,8 @@ import { AlertTriangle, Check, Loader2, Lock } from 'lucide-react';
 
 import { cn } from '@/lib/utils';
 import type { FabricationStaffWorkload, FabricationWorkloadStatus } from '@/lib/types';
+import { formatDeliveryDay, manilaToday } from '@/lib/delivery-schedule';
+import { serverNow } from '@/lib/server-clock';
 
 /** What a row shows: the server's status, or Finishing soon when every team project reached Quality Check. */
 export type FabricationDisplayStatus = FabricationWorkloadStatus | 'finishing';
@@ -49,6 +51,41 @@ export function effectiveWorkload(member: FabricationStaffWorkload, currentProje
   const teamProjects = projects.filter(isTeamProject);
   const finishing = teamProjects.length > 0 && teamProjects.every((project) => project.nearCompletion);
   return { status: finishing ? 'finishing' : 'busy', projects };
+}
+
+/** Latest valid target among the person's other projects, for the schedule list only. */
+export function latestTargetFinish(member: FabricationStaffWorkload, currentProjectId?: string): string | null {
+  let latest: string | null = null;
+  let latestTime = Number.NEGATIVE_INFINITY;
+  for (const project of effectiveWorkload(member, currentProjectId).projects) {
+    const date = project.estimatedCompletionDate;
+    if (!date) continue;
+    const time = Date.parse(date);
+    if (Number.isFinite(time) && time > latestTime) {
+      latest = date;
+      latestTime = time;
+    }
+  }
+  return latest;
+}
+
+/** Presentation order only: free, latest target first, undated, then away. Keep ties stable. */
+export function sortForSchedule(members: FabricationStaffWorkload[], currentProjectId?: string): FabricationStaffWorkload[] {
+  return members.map((member, index) => {
+    const { status } = effectiveWorkload(member, currentProjectId);
+    const target = latestTargetFinish(member, currentProjectId);
+    const group = status === 'on_leave' || status === 'unavailable' ? 3
+      : status === 'available' ? 0 : target ? 1 : 2;
+    return { member, index, group, time: target ? Date.parse(target) : 0 };
+  }).sort((a, b) => a.group - b.group || (a.group === 1 ? b.time - a.time : 0) || a.index - b.index)
+    .map(({ member }) => member);
+}
+
+/** Full Manila date and overdue flag; unknown targets stay unknown rather than breaking the list. */
+export function targetFinishLabel(date: string | null | undefined, today: string): { text: string; pastTarget: boolean } {
+  if (!date || !Number.isFinite(Date.parse(date))) return { text: 'Target finish: Not set', pastTarget: false };
+  const day = manilaToday(new Date(date));
+  return { text: `Target finish: ${formatDeliveryDay(day)}`, pastTarget: day < today };
 }
 
 /** Another project this person leads / assists that is still in the workshop (not yet at Quality Check). */
@@ -151,6 +188,8 @@ interface FabricationStaffPickerProps {
   getBlockedReason?: (member: FabricationStaffWorkload) => string | null;
   /** Badge on one suggested person (see fabricatorRecommendation). */
   recommendation?: { id: string; label: string } | null;
+  /** Installation crew presentation; does not change the shared team/auto-assignment ordering. */
+  listView?: 'default' | 'schedule';
 }
 
 /** Fabrication staff with Available / Busy and their active projects. Blocked people can't be picked. */
@@ -168,6 +207,7 @@ export function FabricationStaffPicker({
   className,
   getBlockedReason,
   recommendation,
+  listView = 'default',
 }: FabricationStaffPickerProps) {
   if (isLoading) {
     return (
@@ -181,10 +221,12 @@ export function FabricationStaffPicker({
     return <p className="text-xs text-red-600 dark:text-red-400">Unable to load fabrication staff availability.</p>;
   }
 
-  const members = (staff || []).filter((member) => !excludeIds.includes(member._id));
+  const offered = (staff || []).filter((member) => !excludeIds.includes(member._id));
+  const members = listView === 'schedule' ? sortForSchedule(offered, currentProjectId) : offered;
   if (members.length === 0) {
     return <p className="text-xs text-[#86868b] dark:text-slate-400">{emptyText}</p>;
   }
+  const today = manilaToday(serverNow());
 
   return (
     <div
@@ -224,12 +266,37 @@ export function FabricationStaffPicker({
                   </span>
                 )}
               </span>
-              <span className="block text-xs text-[#6e6e73] dark:text-slate-400">
-                {projects.length === 0
-                  ? 'No active projects'
-                  : projects.map(projectProgressLabel).join(' | ')}
-                {member.availabilityNote && (status === 'on_leave' || status === 'unavailable') ? ` · ${member.availabilityNote}` : ''}
-              </span>
+              {listView === 'schedule' ? (
+                <span className="mt-1 block space-y-2 text-xs text-[#6e6e73] dark:text-slate-400">
+                  {projects.length === 0 ? 'No active projects' : projects.map((project) => {
+                    const finish = targetFinishLabel(project.estimatedCompletionDate, today);
+                    return (
+                      <span key={project._id} className="block space-y-0.5">
+                        <span className="block break-words">
+                          <span className="break-all font-mono font-medium text-[#434c56] dark:text-slate-300">{project.projectNumber || project.title}</span>
+                          {' · '}{project.roles.map((role) => ROLE_LABEL[role]).join(', ')}
+                          {project.status === 'payment_pending' ? ' · Waiting for payment'
+                            : project.currentStage && project.stageCount ? ` · ${stageLabel(project.currentStage)} ${project.stageIndex}/${project.stageCount}` : ''}
+                        </span>
+                        <span className="block">
+                          {finish.text}
+                          {finish.pastTarget && <span className="font-medium text-amber-700 dark:text-amber-300"> · Past target</span>}
+                        </span>
+                      </span>
+                    );
+                  })}
+                  {member.availabilityNote && (status === 'on_leave' || status === 'unavailable') && (
+                    <span className="block break-words">{member.availabilityNote}</span>
+                  )}
+                </span>
+              ) : (
+                <span className="block text-xs text-[#6e6e73] dark:text-slate-400">
+                  {projects.length === 0
+                    ? 'No active projects'
+                    : projects.map(projectProgressLabel).join(' | ')}
+                  {member.availabilityNote && (status === 'on_leave' || status === 'unavailable') ? ` · ${member.availabilityNote}` : ''}
+                </span>
+              )}
               {blockedReason && (
                 <span className="mt-0.5 flex items-center gap-1 text-[11px] font-medium text-amber-700 dark:text-amber-300">
                   <Lock className="h-3 w-3" aria-hidden="true" />
@@ -254,6 +321,7 @@ export function FabricationStaffPicker({
             onClick={() => onToggle(member._id)}
             className={cn(
               'flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors hover:bg-[#f5f5f7] dark:hover:bg-slate-800',
+              listView === 'schedule' && 'items-start py-3',
               selected && 'bg-violet-50 dark:bg-violet-950/40',
               disabled && 'cursor-not-allowed opacity-60 hover:bg-transparent dark:hover:bg-transparent',
             )}
@@ -261,7 +329,7 @@ export function FabricationStaffPicker({
             {body}
           </button>
         ) : (
-          <div key={member._id} role="listitem" className="flex items-center gap-3 px-3 py-2.5">
+          <div key={member._id} role="listitem" className={cn('flex items-center gap-3 px-3 py-2.5', listView === 'schedule' && 'items-start py-3')}>
             {body}
           </div>
         );
