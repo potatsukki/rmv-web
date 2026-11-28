@@ -187,7 +187,11 @@ function roleCanOpenDashboardPath(role: Role, path: string) {
   return !rule || rule.roles.includes(role);
 }
 
-function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): KpiItem[] {
+function getRoleKpis(
+  role: Role,
+  data: Record<string, unknown> | undefined,
+  projectCounts: { design?: number; review?: number },
+): KpiItem[] {
   const d = data as Record<string, number> | undefined;
 
   const activeProjects: KpiItem = {
@@ -197,6 +201,16 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
     description: 'In progress',
     detail: 'Projects that are still moving through design, payment, fabrication, or delivery.',
     path: '/projects',
+    color: 'text-[#2b3138] silver-sheen',
+    badgeTone: 'progress',
+  };
+  const designBlueprint: KpiItem = {
+    label: 'Design / Blueprint',
+    value: projectCounts.design ?? '\u2014',
+    icon: FileText,
+    description: 'Active design work',
+    detail: 'Active projects in the Design / Blueprint stage, including blueprint and costing work.',
+    path: '/projects?stage=design',
     color: 'text-[#2b3138] silver-sheen',
     badgeTone: 'progress',
   };
@@ -220,12 +234,14 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
         { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', detail: 'Visit reports that still need to be completed or corrected before project handoff.', path: '/appointments?tab=visit-reports&reportStatus=draft', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
         { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', detail: 'Cash-based ocular fees you still need to collect and turn over.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
+        designBlueprint,
       ];
     case Role.ENGINEER:
       return [
         activeProjects,
         { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'In workshop', detail: 'Projects that already left engineering review and are now being built by fabrication.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'fabrication' },
-        { label: 'Pending Review', value: d?.pendingBlueprints ?? 0, icon: FileText, description: 'Blueprints', detail: 'Blueprint packages waiting for your review, approval, or revision request.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
+        { label: 'Pending Review', value: projectCounts.review ?? '\u2014', icon: FileText, description: 'Projects for review', detail: 'Projects in the For Review stage that are visible to you.', path: '/projects?stage=review', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
+        designBlueprint,
       ];
     case Role.CASHIER:
       return [
@@ -244,6 +260,7 @@ function getRoleKpis(role: Role, data: Record<string, unknown> | undefined): Kpi
       return [
         { label: 'Monthly Revenue', value: formatCurrencyDashboard(d?.revenueThisMonth ?? 0), icon: Coins, description: 'Collected this month', detail: 'Verified revenue booked during the current reporting month.', path: '/reports', trend: 'up', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'success' },
         activeProjects,
+        designBlueprint,
         { label: 'Pending Payments', value: d?.pendingPayments ?? 0, icon: AlertCircle, description: 'Records to verify', detail: 'Received payment records waiting for cashier review or admin visibility.', path: '/payments?tab=cashier-queue', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Today\'s Schedule', value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Appointments', detail: 'All appointments scheduled for today across the operation.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
         { label: 'In Fabrication', value: d?.fabricationInProgress ?? 0, icon: Hammer, description: 'Being built', detail: 'Projects currently active in the workshop.', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'fabrication' },
@@ -318,6 +335,9 @@ function getRoleActions(role: Role): QuickAction[] {
 
 export function DashboardPage() {
   const { user } = useAuthStore();
+  const primaryRole =
+    user?.roles.find((r) => r !== Role.ADMIN) ?? user?.roles[0] ?? Role.CUSTOMER;
+  const dashboardRole = primaryRole as Role;
   const navigate = useNavigate();
   const { data, isLoading, isError, refetch } = useDashboardSummary();
 
@@ -327,6 +347,15 @@ export function DashboardPage() {
   const auditQuery = useAuditLogs({ limit: 5 }, !!isAdmin);
   const notifQuery = useNotifications({ limit: '5' }, !isAdmin);
   const projectsQuery = useProjects({ limit: '1000' });
+  // Use the filtered total, not the number of rows returned on the first page.
+  const designProjectsQuery = useProjects({ stage: 'design', limit: '1' }, {
+    live: true,
+    enabled: [Role.ENGINEER, Role.SALES_STAFF, Role.ADMIN].includes(dashboardRole),
+  });
+  const reviewProjectsQuery = useProjects({ stage: 'review', limit: '1' }, {
+    live: true,
+    enabled: dashboardRole === Role.ENGINEER,
+  });
   // Keeps the "x minutes ago" labels counting while the dashboard stays open.
   const now = useNow();
 
@@ -335,9 +364,6 @@ export function DashboardPage() {
 
   if (isError) return <PageError onRetry={refetch} />;
 
-  const primaryRole =
-    user?.roles.find((r) => r !== Role.ADMIN) ?? user?.roles[0] ?? Role.CUSTOMER;
-  const dashboardRole = primaryRole as Role;
   const activeProjects = projectsQuery.data?.items.filter(
     (project) => ![ProjectStatus.COMPLETED, ProjectStatus.CANCELLED].includes(project.status as ProjectStatus),
   );
@@ -349,6 +375,7 @@ export function DashboardPage() {
   const kpis = getRoleKpis(
     primaryRole as Role,
     dashboardData as Record<string, unknown> | undefined,
+    { design: designProjectsQuery.data?.total, review: reviewProjectsQuery.data?.total },
   ).filter((item) => roleCanOpenDashboardPath(dashboardRole, item.path));
   const actions = getRoleActions(primaryRole as Role)
     .filter((action) => roleCanOpenDashboardPath(dashboardRole, action.path));

@@ -108,8 +108,9 @@ function deriveDisplayStatus(project: { status?: string; latestBlueprintStatus?:
 const ACTIVE_OCULAR_STATUSES = ['requested', 'confirmed', 'preparing', 'on_the_way', 'arrived_at_site', 'in_progress'];
 
 // Ocular visits that don't have a project yet open their appointment instead.
-function projectHref(project: any) {
-  return project.isOcularVisit ? `/appointments/${project._id}` : `/projects/${project._id}`;
+function projectHref(project: any, filter: ProjectListFilter | '') {
+  if (project.isOcularVisit) return `/appointments/${project._id}`;
+  return `/projects/${project._id}${filter === 'declined' ? '/design-review' : ''}`;
 }
 
 function getActionSortTime(project: any) {
@@ -365,7 +366,7 @@ function ProjectsList() {
                     <TableRow
                       key={String(project._id)}
                       className="group cursor-pointer border-b border-[color:var(--color-border)] transition-colors hover:bg-[color:var(--color-muted)]/70"
-                      onClick={() => navigate(projectHref(project))}
+                      onClick={() => navigate(projectHref(project, statusFilter))}
                     >
                       {/* Project info */}
                       <TableCell className="pl-5 py-5">
@@ -441,7 +442,7 @@ function ProjectsList() {
                       {/* Arrow */}
                       <TableCell className="py-5 pr-5">
                         <Link
-                          to={projectHref(project)}
+                          to={projectHref(project, statusFilter)}
                           onClick={(e) => e.stopPropagation()}
                           className="flex h-7 w-7 items-center justify-center rounded-lg text-[var(--text-metal-muted-color)] transition-colors hover:bg-[color:var(--color-muted)]/85 hover:text-[var(--text-metal-color)]"
                         >
@@ -489,7 +490,7 @@ function ProjectsList() {
                   return (
                 <Link
                   key={String(project._id)}
-                  to={projectHref(project)}
+                  to={projectHref(project, statusFilter)}
                   className="metal-panel block rounded-[1.35rem] px-4 py-3.5 transition-shadow hover:shadow-[inset_0_1px_0_rgba(255,255,255,0.82),0_18px_32px_rgba(18,22,27,0.1)]"
                 >
                   <div className="flex items-start justify-between gap-2">

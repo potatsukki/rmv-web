@@ -53,7 +53,7 @@ function syncProjectCaches(qc: ReturnType<typeof useQueryClient>, project: Proje
 }
 
 /** `live`: the list page itself, which also re-checks every 30 s while the tab is visible. */
-export function useProjects(params?: Record<string, string>, options: { live?: boolean } = {}) {
+export function useProjects(params?: Record<string, string>, options: { live?: boolean; enabled?: boolean } = {}) {
   return useQuery({
     queryKey: KEYS.list(params),
     queryFn: async () => {
@@ -62,6 +62,7 @@ export function useProjects(params?: Record<string, string>, options: { live?: b
       });
       return data.data;
     },
+    enabled: options.enabled ?? true,
     // Project stages change from other users' screens (engineer costing, customer approval).
     ...(options.live ? LIVE_LIST_POLL_OPTIONS : LIVE_QUERY_OPTIONS),
   });

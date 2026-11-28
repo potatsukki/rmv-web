@@ -41,7 +41,7 @@ import {
 import { deliveryDateError, describeDeliverySchedule, formatDeliveryDay, manilaToday } from '@/lib/delivery-schedule';
 import {
   ASSISTANTS_CHANGED_NOTICE, autoAssignedLabel, canChangeFabricationTeam, canEditFabricationAssistants, fabricationTeamIds,
-  fabricationTeamSnapshot, fabricationTeamWaitingText, personName, teamChangedSince, teamChangeNotice,
+  fabricationTeamSnapshot, fabricationTeamWaitingText, personName, teamChangedSince,
   type FabricationTeamSnapshot,
 } from '@/lib/fabrication-team';
 import { projectCustomerName } from '@/lib/project-customer';
@@ -513,6 +513,7 @@ export function ProjectDetailPage() {
   // Determine initial tab from URL path segment (e.g., /projects/:id/blueprint)
   const initialTab = useMemo<TabKey>(() => {
     const path = location.pathname;
+    if (path.endsWith('/design-review')) return 'design_review';
     if (path.endsWith('/contract')) return 'contract';
     if (path.endsWith('/blueprint')) return 'blueprint';
     if (path.endsWith('/costing')) return 'costing';
@@ -688,7 +689,6 @@ export function ProjectDetailPage() {
   // The team each form was opened on (sent as expected*, so a save never replaces a newer team),
   // and the notice shown when the live team changes under an open form (realtime, 2026-11-28).
   const [fabFormBase, setFabFormBase] = useState<FabricationTeamSnapshot | null>(null);
-  const [fabFormNotice, setFabFormNotice] = useState<string | null>(null);
   // ── Lead's own assistants form ──
   const [showAssistantsForm, setShowAssistantsForm] = useState(false);
   const [assistantDraft, setAssistantDraft] = useState<string[]>([]);
@@ -1180,7 +1180,6 @@ export function ProjectDetailPage() {
       setFabLeadId('');
       setFabAssistantIds([]);
       setFabFormBase(null);
-      setFabFormNotice(null);
       refetch();
     } catch (err) {
       // The hook reloads the team, so a team that changed meanwhile shows up in this form at once.
@@ -1234,7 +1233,6 @@ export function ProjectDetailPage() {
     setFabLeadId(team.leadId);
     setFabAssistantIds(team.assistantIds);
     setFabFormBase(fabricationTeamSnapshot(project));
-    setFabFormNotice(null);
     setShowFabForm(true);
     requestAnimationFrame(() => {
       fabricationAssignFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1275,8 +1273,8 @@ export function ProjectDetailPage() {
   };
 
   // Realtime (2026-11-28): the socket reloads the project. When its team changed under an open
-  // form (the system assigned a lead, or someone else saved), the form takes the latest team and
-  // says so, instead of saving over it. A lead who was removed loses the assistants form.
+  // form (the system assigned a lead, or someone else saved), the form takes the latest team
+  // instead of saving over it. A lead who was removed loses the assistants form.
   useEffect(() => {
     if (!project || !showFabForm || !fabFormBase) return;
     const live = fabricationTeamSnapshot(project);
@@ -1284,7 +1282,6 @@ export function ProjectDetailPage() {
     setFabLeadId(live.leadId ?? '');
     setFabAssistantIds(live.assistantIds);
     setFabFormBase(live);
-    setFabFormNotice(teamChangeNotice(project, personName(project.fabricationLeadId)));
   }, [project, showFabForm, fabFormBase]);
 
   useEffect(() => {
@@ -1337,7 +1334,6 @@ export function ProjectDetailPage() {
       return;
     }
     setFabFormBase(fabricationTeamSnapshot(project));
-    setFabFormNotice(null);
     setShowFabForm(true);
     requestAnimationFrame(() => {
       fabricationAssignFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3303,13 +3299,6 @@ export function ProjectDetailPage() {
                   Each fabricator shows whether they are available and the projects they are on. A fabricator works on one project in the workshop at a time: anyone still leading or assisting a project that has not reached Quality Check can't be picked. Finishing soon = their project reached Quality Check, so they can take this one. Recommended = free now; Nearest completion = the one furthest along. The system assigns a lead automatically once the downpayment is verified, and you can still change the team here.
                 </p>
 
-                {fabFormNotice && (
-                  <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
-                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-                    {fabFormNotice}
-                  </p>
-                )}
-
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[#6e6e73] dark:text-slate-400">Lead Fabricator *</label>
                   <FabricationStaffPicker
@@ -3370,7 +3359,6 @@ export function ProjectDetailPage() {
                     onClick={() => {
                       setShowFabForm(false);
                       setFabFormBase(null);
-                      setFabFormNotice(null);
                     }}
                   >
                     Cancel
