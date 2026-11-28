@@ -42,6 +42,7 @@ import { deliveryDateError, describeDeliverySchedule, formatDeliveryDay, manilaT
 import {
   autoAssignedLabel, canChangeFabricationTeam, canEditFabricationAssistants, fabricationTeamIds, fabricationTeamWaitingText, personName,
 } from '@/lib/fabrication-team';
+import { projectCustomerName } from '@/lib/project-customer';
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from '@/components/ui/select';
@@ -1370,6 +1371,8 @@ export function ProjectDetailPage() {
   const activeProjectServiceLabel = projectServiceItems.find((item) => item.id === activeProjectItemId)?.label || '';
   const projectServiceTitle = projectServiceItems.map((item) => item.label).join(', ') || project.title;
   const headerTitle = activeProjectServiceLabel || projectServiceTitle;
+  // Staff see whose project this is; the customer is looking at their own.
+  const customerDisplayName = isStaff ? projectCustomerName(project) : '';
   const projectSnapshotLabels = getProjectSnapshotLabels(projectServiceItems.length, activeProjectServiceLabel);
   const approvedProjectCost = getPositiveAmount(project.totalCost);
   const approvedItemQuotationTotal = blueprint?.status === 'approved'
@@ -1421,7 +1424,14 @@ export function ProjectDetailPage() {
                 <StatusBadge status={paymentWorkflowStatus.key} label={paymentWorkflowStatus.label} />
               )}
             </div>
-            <p className="mt-1.5 text-sm text-[var(--text-metal-color)] dark:text-slate-300">
+            <p className="mt-1.5 break-words text-sm text-[var(--text-metal-color)] dark:text-slate-300">
+              {customerDisplayName && (
+                <>
+                  Customer:{' '}
+                  <span className="font-medium text-[var(--color-card-foreground)] dark:text-slate-100">{customerDisplayName}</span>
+                  {' · '}
+                </>
+              )}
               Created {format(new Date(project.createdAt), 'MMM d, yyyy')}
             </p>
           </div>
@@ -2075,8 +2085,8 @@ export function ProjectDetailPage() {
                   )}
                 </DetailField>
               )}
-              {isStaff && project.customerName && (
-                <DetailField label="Customer" value={project.customerName} />
+              {customerDisplayName && (
+                <DetailField label="Customer" value={customerDisplayName} />
               )}
               {projectSiteAddress && (
                 <DetailField label="Site Address" value={projectSiteAddress} />
