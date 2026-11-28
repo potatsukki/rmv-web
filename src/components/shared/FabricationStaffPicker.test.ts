@@ -1,6 +1,9 @@
 import { describe, expect, it } from 'vitest';
+import { createElement } from 'react';
+import { renderToStaticMarkup } from 'react-dom/server';
 import {
-  deliveryConflict, effectiveWorkload, fabricatorRecommendation, projectProgressLabel, teamConflict, workloadWarnings,
+  FabricationStaffPicker, deliveryConflict, effectiveWorkload, fabricatorRecommendation, latestTargetFinish,
+  projectProgressLabel, sortForSchedule, targetFinishLabel, teamConflict, workloadWarnings,
 } from './FabricationStaffPicker';
 import type { FabricationStaffWorkload } from '@/lib/types';
 
@@ -18,6 +21,95 @@ function member(overrides: Partial<FabricationStaffWorkload>): FabricationStaffW
 
 const projectA = { _id: 'project-a', projectNumber: 'PRJ-2026-00001', title: 'Gate', status: 'fabrication', roles: ['lead' as const] };
 const projectB = { _id: 'project-b', projectNumber: 'PRJ-2026-00002', title: 'Railings', status: 'payment_pending', roles: ['assistant' as const] };
+
+describe('installation schedule list', () => {
+  const staff: [FabricationStaffWorkload, FabricationStaffWorkload] = [
+    member({ _id: 'march', firstName: 'Jose', lastName: 'Valdez', workloadStatus: 'busy', activeProjects: [{ ...projectA, currentStage: 'welding', stageIndex: 3, stageCount: 8, estimatedCompletionDate: '2026-03-30T00:00:00Z' }] }),
+    member({ _id: 'november', firstName: 'Alie', lastName: 'Tyson', workloadStatus: 'busy', activeProjects: [{ ...projectB, estimatedCompletionDate: '2026-11-28T00:00:00Z' }] }),
+  ];
+
+  it('shows newer targets first with full dates in the schedule view', () => {
+    const html = renderToStaticMarkup(createElement(FabricationStaffPicker, {
+      staff, ariaLabel: 'Installation crew', listView: 'schedule',
+    }));
+    expect(html.indexOf('Alie Tyson')).toBeLessThan(html.indexOf('Jose Valdez'));
+    expect(html).toContain('Target finish: Nov 28, 2026');
+    expect(html).toContain('Target finish: Mar 30, 2026');
+    expect(html).not.toContain('finishes ~');
+  });
+
+  it('preserves the server order and existing labels in the default team view', () => {
+    const html = renderToStaticMarkup(createElement(FabricationStaffPicker, {
+      staff, ariaLabel: 'Fabrication team',
+    }));
+    expect(html.indexOf('Jose Valdez')).toBeLessThan(html.indexOf('Alie Tyson'));
+    expect(html).toContain('finishes ~Mar 30');
+    expect(html).not.toContain('Target finish:');
+  });
+
+  it('sorts by the full date across years without mutating the server list', () => {
+    const nextYear = member({ _id: 'next-year', activeProjects: [{ ...projectA, estimatedCompletionDate: '2027-03-01T00:00:00Z' }] });
+    const original = [...staff, nextYear];
+    expect(sortForSchedule(original).map((row) => row._id)).toEqual(['next-year', 'november', 'march']);
+    expect(original.map((row) => row._id)).toEqual(['march', 'november', 'next-year']);
+  });
+
+  it('puts free staff first, undated work after dated work, and away staff last', () => {
+    const undated = member({ _id: 'undated', activeProjects: [projectA] });
+    const free = member({ _id: 'free' });
+    const leave = member({ _id: 'leave', workloadStatus: 'on_leave', activeProjects: [{ ...projectA, estimatedCompletionDate: '2028-01-01' }] });
+    const unavailable = member({ _id: 'unavailable', workloadStatus: 'unavailable' });
+    expect(sortForSchedule([leave, undated, ...staff, unavailable, free]).map((row) => row._id))
+      .toEqual(['free', 'november', 'march', 'undated', 'leave', 'unavailable']);
+  });
+
+  it('keeps equal targets in the existing server order', () => {
+    const tie = member({ _id: 'tie', activeProjects: [{ ...projectA, estimatedCompletionDate: '2026-11-28T00:00:00Z' }] });
+    expect(sortForSchedule([staff[1], tie, staff[0]]).map((row) => row._id)).toEqual(['november', 'tie', 'march']);
+  });
+
+  it('uses the latest target of the other projects and excludes the current project', () => {
+    const multi = member({ activeProjects: [
+      { ...projectA, estimatedCompletionDate: '2028-01-01' },
+      { ...projectB, estimatedCompletionDate: '2026-11-28T00:00:00Z' },
+      { ...projectA, _id: 'third', estimatedCompletionDate: '2026-03-30' },
+    ] });
+    expect(latestTargetFinish(multi, 'project-a')).toBe('2026-11-28T00:00:00Z');
+    const onlyCurrent = member({ _id: 'current-only', activeProjects: [projectA] });
+    expect(latestTargetFinish(onlyCurrent, 'project-a')).toBeNull();
+    expect(sortForSchedule([staff[1], onlyCurrent], 'project-a').map((row) => row._id)).toEqual(['current-only', 'november']);
+  });
+
+  it('treats invalid target dates as unknown and labels them safely', () => {
+    const invalid = member({ _id: 'invalid', activeProjects: [{ ...projectA, estimatedCompletionDate: 'invalid-date' }] });
+    expect(latestTargetFinish(invalid)).toBeNull();
+    expect(sortForSchedule([invalid, staff[0]]).map((row) => row._id)).toEqual(['march', 'invalid']);
+    expect(targetFinishLabel('invalid-date', '2026-11-28')).toEqual({ text: 'Target finish: Not set', pastTarget: false });
+    expect(targetFinishLabel(undefined, '2026-11-28').pastTarget).toBe(false);
+  });
+
+  it('labels past targets using the Manila day, with the year visible', () => {
+    expect(targetFinishLabel('2026-03-30T00:00:00Z', '2026-11-28'))
+      .toEqual({ text: 'Target finish: Mar 30, 2026', pastTarget: true });
+    expect(targetFinishLabel('2026-11-28T00:00:00Z', '2026-11-28').pastTarget).toBe(false);
+    expect(targetFinishLabel('2026-11-28T18:00:00Z', '2026-11-29'))
+      .toEqual({ text: 'Target finish: Nov 29, 2026', pastTarget: false });
+  });
+
+  it('retains checkbox selection, exclusions and delivery conflict blocking in the schedule view', () => {
+    const booked = member({ ...staff[0], deliveryDates: [{ projectId: 'other-project', date: '2026-11-28' }] });
+    const html = renderToStaticMarkup(createElement(FabricationStaffPicker, {
+      staff: [booked, staff[1], member({ _id: 'excluded', firstName: 'Hidden', lastName: 'Staff' })],
+      ariaLabel: 'Installation crew', listView: 'schedule', onToggle: () => {},
+      selectedIds: ['november'], excludeIds: ['excluded'],
+      getBlockedReason: (row) => deliveryConflict(row, '2026-11-28'),
+    }));
+    expect(html).toContain('role="checkbox" aria-checked="true" aria-disabled="false"');
+    expect(html).toContain('aria-disabled="true" disabled=""');
+    expect(html).toContain('Delivery that day (another project)');
+    expect(html).not.toContain('Hidden Staff');
+  });
+});
 
 describe('effectiveWorkload', () => {
   it('is available with no active projects', () => {
