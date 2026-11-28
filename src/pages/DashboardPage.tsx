@@ -28,6 +28,7 @@ import { PageError } from '@/components/shared/PageError';
 import { useDashboardSummary, useAuditLogs } from '@/hooks/useReports';
 import { useNotifications } from '@/hooks/useNotifications';
 import { useProjects } from '@/hooks/useProjects';
+import { useTodaySchedule } from '@/hooks/useAppointments';
 import { useNow } from '@/hooks/useNow';
 import { useAuthStore } from '@/stores/auth.store';
 import { ProjectStatus, Role } from '@/lib/constants';
@@ -190,7 +191,7 @@ function roleCanOpenDashboardPath(role: Role, path: string) {
 function getRoleKpis(
   role: Role,
   data: Record<string, unknown> | undefined,
-  projectCounts: { design?: number; review?: number },
+  projectCounts: { design?: number; review?: number; todaySchedule?: number },
 ): KpiItem[] {
   const d = data as Record<string, number> | undefined;
 
@@ -230,7 +231,8 @@ function getRoleKpis(
       ];
     case Role.SALES_STAFF:
       return [
-        { label: "Today's Schedule", value: d?.totalAppointmentsToday ?? 0, icon: CalendarDays, description: 'Visits for today', detail: 'Customer visits assigned to you today, including office and ocular appointments.', path: '/appointments', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
+        // Same list as the Today's Schedule page, so the count always equals its rows (2026-11-28).
+        { label: "Today's Schedule", value: projectCounts.todaySchedule ?? '\u2014', icon: CalendarDays, description: 'Visits for today', detail: 'Appointed customer visits assigned to you today, including office and ocular appointments.', path: '/appointments/today', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'progress' },
         { label: 'Pending Reports', value: d?.pendingVisitReports ?? 0, icon: FileText, description: 'Draft / returned', detail: 'Visit reports that still need to be completed or corrected before project handoff.', path: '/appointments?tab=visit-reports&reportStatus=draft', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'attention' },
         { label: 'Pending Cash', value: d?.pendingCashPayments ?? 0, icon: Banknote, description: 'Ocular cash to collect', detail: 'Cash-based ocular fees you still need to collect and turn over.', path: '/cash', color: 'text-[#1d1d1f] bg-[#f0f0f5]', badgeTone: 'pending' },
         { label: 'Active Projects', value: d?.activeProjects ?? 0, icon: FolderOpen, description: 'In progress', path: '/projects', color: 'text-[#1d1d1f] bg-[#f0f0f5]' },
@@ -356,6 +358,7 @@ export function DashboardPage() {
     live: true,
     enabled: dashboardRole === Role.ENGINEER,
   });
+  const todaySchedule = useTodaySchedule(dashboardRole === Role.SALES_STAFF);
   // Keeps the "x minutes ago" labels counting while the dashboard stays open.
   const now = useNow();
 
@@ -375,7 +378,11 @@ export function DashboardPage() {
   const kpis = getRoleKpis(
     primaryRole as Role,
     dashboardData as Record<string, unknown> | undefined,
-    { design: designProjectsQuery.data?.total, review: reviewProjectsQuery.data?.total },
+    {
+      design: designProjectsQuery.data?.total,
+      review: reviewProjectsQuery.data?.total,
+      todaySchedule: todaySchedule.data ? todaySchedule.items.length : undefined,
+    },
   ).filter((item) => roleCanOpenDashboardPath(dashboardRole, item.path));
   const actions = getRoleActions(primaryRole as Role)
     .filter((action) => roleCanOpenDashboardPath(dashboardRole, action.path));

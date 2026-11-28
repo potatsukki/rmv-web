@@ -105,6 +105,11 @@ const AppointmentsPage = lazy(() =>
     default: module.AppointmentsPage,
   })),
 );
+const TodaySchedulePage = lazy(() =>
+  import('@/pages/appointments/TodaySchedulePage').then((module) => ({
+    default: module.TodaySchedulePage,
+  })),
+);
 const AppointmentDetailPage = lazy(() =>
   import('@/pages/appointments/AppointmentDetailPage').then((module) => ({
     default: module.AppointmentDetailPage,
@@ -312,6 +317,10 @@ export default function App() {
                 }
               >
                 <Route path="/appointments" element={<AppointmentsPage />} />
+              </Route>
+              {/* Sales Staff dashboard "Today's Schedule" card (2026-11-28). */}
+              <Route element={<ProtectedRoute allowedRoles={[Role.SALES_STAFF]} />}>
+                <Route path="/appointments/today" element={<TodaySchedulePage />} />
               </Route>
               <Route
                 element={

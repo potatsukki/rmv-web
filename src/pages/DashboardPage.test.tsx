@@ -3,17 +3,24 @@ import { MemoryRouter } from 'react-router';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { Role } from '@/lib/constants';
 
-const { auth, countQuery, reviewQuery, requests } = vi.hoisted(() => ({
+const { auth, countQuery, reviewQuery, requests, todaySchedule } = vi.hoisted(() => ({
   auth: { user: { _id: 'staff-1', firstName: 'Test', roles: ['engineer'] } },
   countQuery: { data: { items: [{ _id: 'first-project' }], total: 173 } as { items: { _id: string }[]; total: number } | undefined, isLoading: false, isError: false },
   reviewQuery: { data: { items: [{ _id: 'review-project' }], total: 1 } as { items: { _id: string }[]; total: number } | undefined, isLoading: false, isError: false },
   requests: [] as { params: Record<string, string>; options: { live?: boolean; enabled?: boolean } }[],
+  todaySchedule: { items: [] as { _id: string }[], loaded: true, enabledCalls: [] as boolean[] },
 }));
 
 vi.mock('@/stores/auth.store', () => ({ useAuthStore: () => auth }));
 vi.mock('@/hooks/useReports', () => ({
-  useDashboardSummary: () => ({ data: { activeProjects: 18, fabricationInProgress: 7, pendingBlueprints: 7 }, isLoading: false, isError: false }),
+  useDashboardSummary: () => ({ data: { activeProjects: 18, fabricationInProgress: 7, pendingBlueprints: 7, totalAppointmentsToday: 9 }, isLoading: false, isError: false }),
   useAuditLogs: () => ({ data: { items: [] }, isLoading: false }),
+}));
+vi.mock('@/hooks/useAppointments', () => ({
+  useTodaySchedule: (enabled: boolean) => {
+    todaySchedule.enabledCalls.push(enabled);
+    return { items: todaySchedule.items, data: todaySchedule.loaded ? { items: todaySchedule.items } : undefined };
+  },
 }));
 vi.mock('@/hooks/useNotifications', () => ({ useNotifications: () => ({ data: { items: [] }, isLoading: false }) }));
 vi.mock('@/hooks/useProjects', () => ({
@@ -44,6 +51,9 @@ beforeEach(() => {
   reviewQuery.isLoading = false;
   reviewQuery.isError = false;
   requests.length = 0;
+  todaySchedule.items = [];
+  todaySchedule.loaded = true;
+  todaySchedule.enabledCalls.length = 0;
 });
 
 describe('Engineer Pending Review count and destination', () => {
@@ -104,5 +114,38 @@ describe('Dashboard Design / Blueprint count', () => {
     auth.user.roles = [role];
     expect(designCard(renderDashboard())).toBeUndefined();
     expect(requests).toContainEqual({ params: { stage: 'design', limit: '1' }, options: { live: true, enabled: false } });
+  });
+});
+
+describe("Today's Schedule card", () => {
+  /** The dashboard link with this exact href that holds the Today's Schedule card. */
+  function todayCard(html: string, href: string) {
+    return html.split('<a ').slice(1)
+      .map((chunk) => chunk.slice(0, chunk.indexOf('</a>')))
+      .find((card) => card.includes(`href="${href}"`) && card.includes('Today&#x27;s Schedule'));
+  }
+
+  it("opens the Sales Staff Today's Schedule page and counts the same Appointed rows", () => {
+    auth.user.roles = [Role.SALES_STAFF];
+    todaySchedule.items = [{ _id: 'office-9am' }, { _id: 'ocular-10am' }];
+    const card = todayCard(renderDashboard(), '/appointments/today');
+    expect(card).toBeDefined();
+    expect(card).toContain('>2</div>');
+    expect(card).not.toContain('>9</div>');
+    expect(todaySchedule.enabledCalls).toContain(true);
+  });
+
+  it('shows a dash, not a false zero, until the Sales Staff list has loaded', () => {
+    auth.user.roles = [Role.SALES_STAFF];
+    todaySchedule.loaded = false;
+    expect(todayCard(renderDashboard(), '/appointments/today')).toContain('>—</div>');
+  });
+
+  it.each([Role.ADMIN, Role.APPOINTMENT_AGENT])('keeps the %s card on the server count and the Appointments page', (role) => {
+    auth.user.roles = [role];
+    const html = renderDashboard();
+    expect(todayCard(html, '/appointments/today')).toBeUndefined();
+    expect(todayCard(html, '/appointments')).toContain('>9</div>');
+    expect(todaySchedule.enabledCalls.every((enabled) => !enabled)).toBe(true);
   });
 });
