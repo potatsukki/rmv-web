@@ -1,5 +1,9 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
+import { manilaToday } from '@/lib/delivery-schedule';
+import { todayScheduleItems, todayScheduleParams } from '@/lib/today-schedule';
+import { useNow } from '@/hooks/useNow';
 import type {
   ApiResponse,
   Appointment,
@@ -72,6 +76,18 @@ export function useAppointments(params?: Record<string, string>, enabled = true,
     enabled,
     ...(options.live ? LIVE_LIST_POLL_OPTIONS : LIVE_LIST_OPTIONS),
   });
+}
+
+/**
+ * Sales Staff "Today's Schedule": the page and the dashboard card read this same list, so the
+ * count always equals the rows. Live: a "New Appointment Assigned" notice refetches it at once.
+ */
+export function useTodaySchedule(enabled = true) {
+  // Server clock, re-read every 30 s, so "today" turns over at Manila midnight.
+  const today = manilaToday(useNow());
+  const query = useAppointments(todayScheduleParams(today), enabled, { live: true });
+  const items = useMemo(() => todayScheduleItems(query.data?.items ?? []), [query.data]);
+  return { ...query, today, items };
 }
 
 export function useAppointmentQueue(params?: Record<string, string>, enabled = true, options: { live?: boolean } = {}) {
