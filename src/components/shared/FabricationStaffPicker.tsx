@@ -51,15 +51,25 @@ export function effectiveWorkload(member: FabricationStaffWorkload, currentProje
   return { status: finishing ? 'finishing' : 'busy', projects };
 }
 
+/** Another project this person leads / assists that is still in the workshop (not yet at Quality Check). */
+function workshopProjectElsewhere(member: FabricationStaffWorkload, currentProjectId?: string) {
+  return member.activeProjects.find((item) => item._id !== currentProjectId
+    && !item.nearCompletion
+    && isTeamProject(item));
+}
+
 /**
  * Lead / assistant on another project still in the workshop. A fabricator works on one project in
  * the workshop at a time, so the team picker blocks them until that project reaches Quality Check.
  * Being on another delivery crew does not count. (An older server sends no nearCompletion: blocked.)
+ * Someone already on THIS project's team is never blocked: keeping them adds no project to their
+ * load, even if they already took the next one (QA 2026-11-28, Change Team of an older project).
  */
 export function teamConflict(member: FabricationStaffWorkload, currentProjectId?: string): string | null {
-  const project = member.activeProjects.find((item) => item._id !== currentProjectId
-    && !item.nearCompletion
-    && isTeamProject(item));
+  if (currentProjectId && member.activeProjects.some((item) => item._id === currentProjectId && isTeamProject(item))) {
+    return null;
+  }
+  const project = workshopProjectElsewhere(member, currentProjectId);
   if (!project) return null;
   const role = project.roles.includes('lead') ? 'Lead' : 'Assistant';
   return `On ${project.projectNumber || project.title} (${role}) until it reaches Quality Check`;
@@ -88,9 +98,10 @@ export function fabricatorRecommendation(
   currentProjectId?: string,
   excludeIds: string[] = [],
 ): { id: string; label: string } | null {
+  // Never suggest someone still in the workshop elsewhere, not even a current member kept pickable.
   const candidates = (staff || []).filter((member) => !excludeIds.includes(member._id)
     && member.workloadStatus !== 'on_leave' && member.workloadStatus !== 'unavailable'
-    && !teamConflict(member, currentProjectId));
+    && !workshopProjectElsewhere(member, currentProjectId));
   const free = candidates.find((member) => effectiveWorkload(member, currentProjectId).status !== 'finishing');
   if (free) return { id: free._id, label: 'Recommended' };
   const nearest = candidates[0];

@@ -64,3 +64,37 @@ export function personName(person: PersonRef) {
   if (!person || typeof person === 'string') return '';
   return `${person.firstName ?? ''} ${person.lastName ?? ''}`.trim();
 }
+
+// QA 2026-11-28: no double assign, realtime. A team form remembers the team it was opened on
+// (sent as `expected*`, so the server refuses a save over a newer team). When the live project
+// shows another team, the open form reloads it and says so: no browser refresh needed.
+
+export interface FabricationTeamSnapshot {
+  leadId: string | null;
+  assistantIds: string[];
+}
+
+/** The team as the form should remember it (lead null when there is none yet). */
+export function fabricationTeamSnapshot(project: TeamProject | undefined | null): FabricationTeamSnapshot {
+  const { leadId, assistantIds } = fabricationTeamIds(project);
+  return { leadId: leadId || null, assistantIds };
+}
+
+/** True when the stored team is not the one the form was opened on (any order of assistants). */
+export function teamChangedSince(base: FabricationTeamSnapshot | null, live: FabricationTeamSnapshot) {
+  if (!base) return false;
+  const before = new Set(base.assistantIds);
+  return base.leadId !== live.leadId
+    || before.size !== new Set(live.assistantIds).size
+    || live.assistantIds.some((id) => !before.has(id));
+}
+
+/** The line an open team form shows after the team changed under it. */
+export function teamChangeNotice(project: TeamProject | undefined | null, leadName: string) {
+  if (!fabricationTeamIds(project).leadId) return 'The team was just changed. The form now shows the latest team.';
+  const how = project?.fabricationAutoAssignedAt ? ' automatically' : '';
+  return `The team was just changed${how}: the lead is now ${leadName || 'another fabricator'}. The form now shows the latest team.`;
+}
+
+/** The line the lead's assistants form shows after someone else changed the assistants. */
+export const ASSISTANTS_CHANGED_NOTICE = 'The assistants were just changed. The list now shows the latest team.';

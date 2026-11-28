@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
-  autoAssignedLabel, canChangeFabricationTeam, canEditFabricationAssistants, fabricationTeamIds,
-  fabricationTeamWaitingText, personName,
+  ASSISTANTS_CHANGED_NOTICE, autoAssignedLabel, canChangeFabricationTeam, canEditFabricationAssistants, fabricationTeamIds,
+  fabricationTeamSnapshot, fabricationTeamWaitingText, personName, teamChangedSince, teamChangeNotice,
 } from './fabrication-team';
 import { ProjectStatus } from '@/lib/constants';
 
@@ -53,5 +53,31 @@ describe('fabrication team (auto-assigned lead, panel note 2026-11-27)', () => {
   it('names a populated person and leaves bare ids blank', () => {
     expect(personName(lead)).toBe('Ana Reyes');
     expect(personName('lead-1')).toBe('');
+  });
+});
+
+// QA 2026-11-28: no double assign, realtime (an open form follows the live team).
+describe('team form follows the live team', () => {
+  it('remembers the team the form opened on, with no lead as null', () => {
+    expect(fabricationTeamSnapshot(project())).toEqual({ leadId: 'lead-1', assistantIds: ['assistant-1', 'assistant-2'] });
+    expect(fabricationTeamSnapshot(project({ fabricationLeadId: undefined, fabricationAssistantIds: [] })))
+      .toEqual({ leadId: null, assistantIds: [] });
+  });
+
+  it('sees a new lead or other assistants, but not the same team in another order', () => {
+    const base = { leadId: null, assistantIds: [] };
+    expect(teamChangedSince(base, { leadId: 'lead-1', assistantIds: [] })).toBe(true);
+    expect(teamChangedSince({ leadId: 'lead-1', assistantIds: ['a', 'b'] }, { leadId: 'lead-1', assistantIds: ['b', 'a'] })).toBe(false);
+    expect(teamChangedSince({ leadId: 'lead-1', assistantIds: ['a'] }, { leadId: 'lead-1', assistantIds: ['a', 'b'] })).toBe(true);
+    expect(teamChangedSince(null, { leadId: 'lead-1', assistantIds: [] })).toBe(false);
+  });
+
+  it('says who leads now, and whether the system assigned them', () => {
+    expect(teamChangeNotice(project({ fabricationAutoAssignedAt: '2026-11-28T01:00:00Z' }), 'Ana Reyes'))
+      .toBe('The team was just changed automatically: the lead is now Ana Reyes. The form now shows the latest team.');
+    expect(teamChangeNotice(project(), 'Ana Reyes'))
+      .toBe('The team was just changed: the lead is now Ana Reyes. The form now shows the latest team.');
+    expect(teamChangeNotice(project({ fabricationLeadId: undefined }), '')).toBe('The team was just changed. The form now shows the latest team.');
+    expect(ASSISTANTS_CHANGED_NOTICE).toContain('latest team');
   });
 });

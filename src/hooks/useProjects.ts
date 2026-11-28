@@ -1,10 +1,21 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient, type QueryClient } from '@tanstack/react-query';
 import { api } from '@/lib/api';
 import { LIVE_LIST_POLL_OPTIONS, LIVE_QUERY_OPTIONS } from '@/lib/query-options';
 import type { ApiResponse, Project, PaginatedResponse, LineItem, ServiceSpecifications, ProjectFeeSummary, PendingFees, FabricationStaffWorkload } from '@/lib/types';
 
 // Kept outside ['projects'] so project cache updates never touch the staff list.
 const FABRICATION_WORKLOAD_KEY = ['fabrication-staff-workload'] as const;
+
+/**
+ * Realtime (2026-11-28): reloads every screen that shows a fabrication team, a stage or the
+ * fabricator picker. Run on the `fabrication:team-updated` socket event, on new notifications,
+ * after a reconnect, and when a team save was refused because the team changed meanwhile.
+ */
+export function invalidateFabricationTeamQueries(qc: QueryClient) {
+  qc.invalidateQueries({ queryKey: KEYS.all });
+  qc.invalidateQueries({ queryKey: ['fabrication'] });
+  qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
+}
 
 const KEYS = {
   all: ['projects'] as const,
@@ -206,6 +217,9 @@ export function useAssignFabrication() {
       id: string;
       fabricationLeadId: string;
       fabricationAssistantIds?: string[];
+      /** The team the form was opened on; the server refuses a save over a newer team (409). */
+      expectedLeadId?: string | null;
+      expectedAssistantIds?: string[];
     }) => {
       const { data } = await api.post<ApiResponse<Project>>(
         `/projects/${id}/assign-fabrication`,
@@ -219,6 +233,8 @@ export function useAssignFabrication() {
       qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
       qc.invalidateQueries({ queryKey: ['fabrication', 'status', project._id] });
     },
+    // A refused save (team changed meanwhile, fabricator busy) shows the latest team at once.
+    onError: () => invalidateFabricationTeamQueries(qc),
   });
 }
 
@@ -226,8 +242,8 @@ export function useAssignFabrication() {
 export function useUpdateFabricationAssistants() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: async ({ id, fabricationAssistantIds }: { id: string; fabricationAssistantIds: string[] }) => {
-      const { data } = await api.put<ApiResponse<Project>>(`/projects/${id}/fabrication-assistants`, { fabricationAssistantIds });
+    mutationFn: async ({ id, ...body }: { id: string; fabricationAssistantIds: string[]; expectedAssistantIds?: string[] }) => {
+      const { data } = await api.put<ApiResponse<Project>>(`/projects/${id}/fabrication-assistants`, body);
       return data.data;
     },
     onSuccess: () => {
@@ -235,6 +251,7 @@ export function useUpdateFabricationAssistants() {
       qc.invalidateQueries({ queryKey: KEYS.all });
       qc.invalidateQueries({ queryKey: FABRICATION_WORKLOAD_KEY });
     },
+    onError: () => invalidateFabricationTeamQueries(qc),
   });
 }
 

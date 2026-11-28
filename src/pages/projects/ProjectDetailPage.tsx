@@ -40,7 +40,9 @@ import {
 } from '@/components/shared/FabricationStaffPicker';
 import { deliveryDateError, describeDeliverySchedule, formatDeliveryDay, manilaToday } from '@/lib/delivery-schedule';
 import {
-  autoAssignedLabel, canChangeFabricationTeam, canEditFabricationAssistants, fabricationTeamIds, fabricationTeamWaitingText, personName,
+  ASSISTANTS_CHANGED_NOTICE, autoAssignedLabel, canChangeFabricationTeam, canEditFabricationAssistants, fabricationTeamIds,
+  fabricationTeamSnapshot, fabricationTeamWaitingText, personName, teamChangedSince, teamChangeNotice,
+  type FabricationTeamSnapshot,
 } from '@/lib/fabrication-team';
 import { projectCustomerName } from '@/lib/project-customer';
 import {
@@ -683,9 +685,15 @@ export function ProjectDetailPage() {
   const [fabLeadId, setFabLeadId] = useState('');
   const [fabAssistantIds, setFabAssistantIds] = useState<string[]>([]);
   const fabricationAssignFormRef = useRef<HTMLDivElement | null>(null);
+  // The team each form was opened on (sent as expected*, so a save never replaces a newer team),
+  // and the notice shown when the live team changes under an open form (realtime, 2026-11-28).
+  const [fabFormBase, setFabFormBase] = useState<FabricationTeamSnapshot | null>(null);
+  const [fabFormNotice, setFabFormNotice] = useState<string | null>(null);
   // ── Lead's own assistants form ──
   const [showAssistantsForm, setShowAssistantsForm] = useState(false);
   const [assistantDraft, setAssistantDraft] = useState<string[]>([]);
+  const [assistantsBase, setAssistantsBase] = useState<string[] | null>(null);
+  const [assistantsNotice, setAssistantsNotice] = useState<string | null>(null);
   // ── Delivery / installation crew form state ──
   const [showCrewForm, setShowCrewForm] = useState(false);
   const [crewIds, setCrewIds] = useState<string[]>([]);
@@ -1150,11 +1158,15 @@ export function ProjectDetailPage() {
       return;
     }
     const changingTeam = Boolean(fabricationTeamIds(project).leadId);
+    // The team this form was opened on: a save over a newer one (e.g. the system's) is refused.
+    const base = fabFormBase ?? fabricationTeamSnapshot(project);
     try {
       await assignFabrication.mutateAsync({
         id: id!,
         fabricationLeadId: fabLeadId,
         fabricationAssistantIds: fabAssistantIds,
+        expectedLeadId: base.leadId,
+        expectedAssistantIds: base.assistantIds,
       });
       toast.success(
         changingTeam
@@ -1167,8 +1179,11 @@ export function ProjectDetailPage() {
       setShowFabForm(false);
       setFabLeadId('');
       setFabAssistantIds([]);
+      setFabFormBase(null);
+      setFabFormNotice(null);
       refetch();
     } catch (err) {
+      // The hook reloads the team, so a team that changed meanwhile shows up in this form at once.
       toast.error(extractErrorMessage(err, 'Failed to assign fabrication team'));
     }
   };
@@ -1218,6 +1233,8 @@ export function ProjectDetailPage() {
     const team = fabricationTeamIds(project);
     setFabLeadId(team.leadId);
     setFabAssistantIds(team.assistantIds);
+    setFabFormBase(fabricationTeamSnapshot(project));
+    setFabFormNotice(null);
     setShowFabForm(true);
     requestAnimationFrame(() => {
       fabricationAssignFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -1226,7 +1243,10 @@ export function ProjectDetailPage() {
 
   /** Lead: their own assistants, starting from the current ones. */
   const handleOpenAssistantsForm = () => {
-    setAssistantDraft(fabricationTeamIds(project).assistantIds);
+    const current = fabricationTeamIds(project).assistantIds;
+    setAssistantDraft(current);
+    setAssistantsBase(current);
+    setAssistantsNotice(null);
     setShowAssistantsForm(true);
   };
 
@@ -1238,14 +1258,48 @@ export function ProjectDetailPage() {
 
   const handleSaveAssistants = async () => {
     try {
-      await updateFabricationAssistants.mutateAsync({ id: id!, fabricationAssistantIds: assistantDraft });
+      await updateFabricationAssistants.mutateAsync({
+        id: id!,
+        fabricationAssistantIds: assistantDraft,
+        expectedAssistantIds: assistantsBase ?? fabricationTeamIds(project).assistantIds,
+      });
       toast.success(assistantDraft.length > 0 ? 'Assistants saved.' : 'Assistants removed.');
       setShowAssistantsForm(false);
+      setAssistantsBase(null);
+      setAssistantsNotice(null);
       refetch();
     } catch (err) {
+      // The hook reloads the team; the list below follows it.
       toast.error(extractErrorMessage(err, 'Failed to save the assistants'));
     }
   };
+
+  // Realtime (2026-11-28): the socket reloads the project. When its team changed under an open
+  // form (the system assigned a lead, or someone else saved), the form takes the latest team and
+  // says so, instead of saving over it. A lead who was removed loses the assistants form.
+  useEffect(() => {
+    if (!project || !showFabForm || !fabFormBase) return;
+    const live = fabricationTeamSnapshot(project);
+    if (!teamChangedSince(fabFormBase, live)) return;
+    setFabLeadId(live.leadId ?? '');
+    setFabAssistantIds(live.assistantIds);
+    setFabFormBase(live);
+    setFabFormNotice(teamChangeNotice(project, personName(project.fabricationLeadId)));
+  }, [project, showFabForm, fabFormBase]);
+
+  useEffect(() => {
+    if (!project || !showAssistantsForm || !assistantsBase) return;
+    if (!canEditFabricationAssistants(project, user?._id)) {
+      setShowAssistantsForm(false);
+      setAssistantsBase(null);
+      return;
+    }
+    const live = fabricationTeamSnapshot(project).assistantIds;
+    if (!teamChangedSince({ leadId: null, assistantIds: assistantsBase }, { leadId: null, assistantIds: live })) return;
+    setAssistantDraft(live);
+    setAssistantsBase(live);
+    setAssistantsNotice(ASSISTANTS_CHANGED_NOTICE);
+  }, [project, showAssistantsForm, assistantsBase, user?._id]);
 
   const toggleCrewMember = (staffId: string) => {
     setCrewIds((prev) =>
@@ -1282,6 +1336,8 @@ export function ProjectDetailPage() {
       toast.error('Team assignment unlocks after the customer approves the blueprint and costing.');
       return;
     }
+    setFabFormBase(fabricationTeamSnapshot(project));
+    setFabFormNotice(null);
     setShowFabForm(true);
     requestAnimationFrame(() => {
       fabricationAssignFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -3247,6 +3303,13 @@ export function ProjectDetailPage() {
                   Each fabricator shows whether they are available and the projects they are on. A fabricator works on one project in the workshop at a time: anyone still leading or assisting a project that has not reached Quality Check can't be picked. Finishing soon = their project reached Quality Check, so they can take this one. Recommended = free now; Nearest completion = the one furthest along. The system assigns a lead automatically once the downpayment is verified, and you can still change the team here.
                 </p>
 
+                {fabFormNotice && (
+                  <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+                    <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                    {fabFormNotice}
+                  </p>
+                )}
+
                 <div>
                   <label className="mb-1 block text-xs font-medium text-[#6e6e73] dark:text-slate-400">Lead Fabricator *</label>
                   <FabricationStaffPicker
@@ -3304,7 +3367,11 @@ export function ProjectDetailPage() {
                   <Button
                     size="sm"
                     variant="ghost"
-                    onClick={() => setShowFabForm(false)}
+                    onClick={() => {
+                      setShowFabForm(false);
+                      setFabFormBase(null);
+                      setFabFormNotice(null);
+                    }}
                   >
                     Cancel
                   </Button>
@@ -3362,6 +3429,12 @@ export function ProjectDetailPage() {
                     <p className="text-xs text-[#6e6e73] dark:text-slate-400">
                       Pick who helps you on this project. Anyone still leading or assisting a project that has not reached Quality Check can't be picked. Unchecking someone removes them.
                     </p>
+                    {assistantsNotice && (
+                      <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs font-medium text-amber-800 dark:border-amber-500/35 dark:bg-amber-500/10 dark:text-amber-200">
+                        <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+                        {assistantsNotice}
+                      </p>
+                    )}
                     <FabricationStaffPicker
                       ariaLabel="Your assistants"
                       mode="multi"
@@ -3387,7 +3460,15 @@ export function ProjectDetailPage() {
                         {updateFabricationAssistants.isPending && <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />}
                         Save Assistants
                       </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setShowAssistantsForm(false)}>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          setShowAssistantsForm(false);
+                          setAssistantsBase(null);
+                          setAssistantsNotice(null);
+                        }}
+                      >
                         Cancel
                       </Button>
                     </div>
