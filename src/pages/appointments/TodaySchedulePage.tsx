@@ -13,12 +13,10 @@ import {
 } from '@/components/ui/table';
 import { EmptyState } from '@/components/shared/EmptyState';
 import { PageError } from '@/components/shared/PageError';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { useTodaySchedule } from '@/hooks/useAppointments';
 import { AppointmentType } from '@/lib/constants';
 import { formatDeliveryDay } from '@/lib/delivery-schedule';
 import type { Appointment } from '@/lib/types';
-import { resolveAppointmentWorkflowStatus } from '@/lib/workflow-status';
 
 const HEAD_CLASS = 'text-xs font-semibold uppercase tracking-wider text-[#68727d]';
 
@@ -29,7 +27,7 @@ function slotLabel(slotCode?: string): string {
 }
 
 function typeLabel(appt: Appointment): string {
-  return appt.type === AppointmentType.OCULAR ? 'Ocular' : 'Consultation';
+  return appt.type === AppointmentType.OCULAR ? 'Ocular' : 'Appointment';
 }
 
 function addressOf(appt: Appointment): string | undefined {
@@ -73,7 +71,7 @@ export function TodaySchedulePage() {
               <Skeleton className="h-4 w-16" />
               <Skeleton className="h-4 w-24" />
               <Skeleton className="h-4 w-40" />
-              <Skeleton className="h-5 w-20 rounded-full" />
+              <Skeleton className="h-4 w-24" />
             </div>
           ))}
         </div>
@@ -93,23 +91,22 @@ export function TodaySchedulePage() {
           {/* ── Mobile list (< md) ── */}
           <div className="space-y-2 md:hidden">
             {items.map((appt) => {
-              const workflowStatus = resolveAppointmentWorkflowStatus(appt);
               const address = addressOf(appt);
               return (
                 <Link key={appt._id} to={`/appointments/${appt._id}`} className="block">
                   <div className="metal-panel rounded-[1.35rem] px-4 py-3.5">
-                    <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
-                        {appt.customerName || 'Customer'}
-                      </p>
-                      <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="h-5 shrink-0 px-1.5 py-0 text-[10px]" />
-                    </div>
-                    <p className="mt-1.5 text-xs text-[#68727d] dark:text-slate-400">
-                      {[slotLabel(appt.slotCode), typeLabel(appt), appt.appointmentNumber].filter(Boolean).join(' · ')}
+                    <p className="text-sm font-medium text-[#1d1d1f] dark:text-slate-100">
+                      {slotLabel(appt.slotCode)} · {typeLabel(appt)}
+                    </p>
+                    <p className="mt-1.5 truncate text-[15px] font-medium text-[#171b21] dark:text-slate-100">
+                      {appt.customerName || 'Customer'}
                     </p>
                     {address && (
                       <p className="mt-1 truncate text-xs text-[#68727d] dark:text-slate-400">{address}</p>
                     )}
+                    <p className="mt-1.5 font-mono text-xs text-[#4f6679] dark:text-sky-300">
+                      {appt.appointmentNumber || 'Open'}
+                    </p>
                   </div>
                 </Link>
               );
@@ -128,13 +125,11 @@ export function TodaySchedulePage() {
                   <TableHead className={HEAD_CLASS}>Type</TableHead>
                   <TableHead className={HEAD_CLASS}>Customer</TableHead>
                   <TableHead className={HEAD_CLASS}>Reference</TableHead>
-                  <TableHead className={HEAD_CLASS}>Status</TableHead>
                   <TableHead className="w-10 pr-5"><span className="sr-only">Open</span></TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {items.map((appt) => {
-                  const workflowStatus = resolveAppointmentWorkflowStatus(appt);
                   const address = addressOf(appt);
                   return (
                     <TableRow
@@ -160,9 +155,6 @@ export function TodaySchedulePage() {
                         >
                           {appt.appointmentNumber || 'Open'}
                         </Link>
-                      </TableCell>
-                      <TableCell className="py-4">
-                        <StatusBadge status={workflowStatus.key} label={workflowStatus.label} className="text-[11px]" />
                       </TableCell>
                       <TableCell className="py-4 pr-5">
                         <ChevronRight className="h-4 w-4 text-[#c8c8cd] transition-colors group-hover:text-[#86868b] dark:text-slate-500" />
